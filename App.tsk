@@ -2,17 +2,19 @@ import { useEffect, useCallback } from "react";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { ChatInterface } from "./components/Chat/ChatInterface";
 import { ResearchTerminal } from "./components/ResearchTerminal/ResearchTerminal";
-import { StatusBar } from "./components/Layout/StatusBar";
 import { useStore } from "./store/useStore";
 import { fetchMarketPrices, fetchMarketNews } from "./services/api";
 import "./App.css";
 
-const POLL_INTERVAL = 60000; // 1 minute
+const POLL_INTERVAL = 60000;
 
 export default function App() {
   const {
     activeView,
     isPro,
+    preferences,
+    dailyMessageCount,
+    isFounder,
     setLivePrices,
     setMarketNews,
   } = useStore();
@@ -31,7 +33,7 @@ export default function App() {
         setMarketNews(newsRes.value.data);
       }
     } catch {
-      // Silent fail for background updates
+      // Silent fail
     }
   }, [isPro, setLivePrices, setMarketNews]);
 
@@ -41,13 +43,39 @@ export default function App() {
     return () => clearInterval(interval);
   }, [refreshMarketData]);
 
+  const modelLabels: Record<string, string> = {
+    fast: "Fast",
+    smart: "Smart",
+    deep: "Deep Think",
+  };
+  const modelLabel = modelLabels[preferences.model] || "Smart";
+  const tierLabel = isFounder ? "Founder" : isPro ? "Pro" : "Free";
+  const remaining = isPro ? "Unlimited" : `${Math.max(0, 10 - dailyMessageCount)} remaining`;
+
   return (
     <div className="app">
       <Sidebar />
       <main className="main">
         {activeView === "chat" && <ChatInterface />}
         {activeView === "terminal" && <ResearchTerminal />}
-        <StatusBar />
+        <div className="status-bar">
+          <span className="status-dot" />
+          <span>CAPITAN AI</span>
+          <span style={{ opacity: 0.3 }}>|</span>
+          <span>{modelLabel}</span>
+          {preferences.webSearch && (
+            <>
+              <span style={{ opacity: 0.3 }}>|</span>
+              <span>Web</span>
+            </>
+          )}
+          <span style={{ opacity: 0.3 }}>|</span>
+          <span>{tierLabel}</span>
+          <span style={{ opacity: 0.3 }}>|</span>
+          <span style={{ color: isPro ? "var(--accent)" : "var(--text-muted)" }}>
+            {remaining}
+          </span>
+        </div>
       </main>
     </div>
   );
