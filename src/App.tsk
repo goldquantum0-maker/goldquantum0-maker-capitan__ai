@@ -5,29 +5,19 @@ import { useStore } from "./store/useStore";
 import "./App.css";
 
 export default function App() {
-  const { activeView } = useStore();
-
-  const renderView = () => {
-    switch (activeView) {
-      case "chat":
-        return <ChatInterface />;
-      case "terminal":
-        return <ResearchTerminal />;
-      default:
-        return <ChatInterface />;
-    }
-  };
+  const store = useStore();
 
   return (
     <div className="app">
       <Sidebar />
       <main className="main">
-        {renderView()}
+        {store.activeView === "chat" && <ChatInterface />}
+        {store.activeView === "terminal" && <ResearchTerminal />}
+        <div className="status-bar">
+          <span className="status-dot" />
+          <span>CAPITAN AI</span>
+        </div>
       </main>
-      <div className="status-bar">
-        <span className="status-dot" />
-        <span>CAPITAN AI</span>
-      </div>
     </div>
   );
 }
