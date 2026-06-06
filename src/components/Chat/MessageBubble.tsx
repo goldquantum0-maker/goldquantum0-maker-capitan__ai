@@ -1,1 +1,46 @@
-import ReactMarkdown from'react-markdown';interface Message{id:string;role:'user'|'assistant';content:string}export function MessageBubble({message}:{message:Message}){if(message.role==='user')return<div className='msg user'>{message.content}</div>;return(<div className='msg assistant'><div className='msg-header'>CAPITAN AI</div>{message.content?<div className='msg-content'><ReactMarkdown>{message.content}</ReactMarkdown></div>:<div>Thinking...</div>}<div className='note'>CAPITAN AI can make mistakes.</div></div>)}
+import ReactMarkdown from "react-markdown";
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
+
+export function MessageBubble({ message }: { message: Message }) {
+  if (message.role === "user") {
+    return <div className="msg user">{message.content}</div>;
+  }
+
+  return (
+    <div className="msg assistant">
+      <div className="msg-header">
+        <span className="logo">⚓</span> CAPITAN AI
+      </div>
+      {message.content ? (
+        <div className="msg-content">
+          <ReactMarkdown>{message.content}</ReactMarkdown>
+        </div>
+      ) : (
+        <div className="thinking">
+          <div className="dots">
+            <div className="d" />
+            <div className="d" />
+            <div className="d" />
+          </div>
+          Thinking...
+        </div>
+      )}
+      {message.content && (
+        <div className="msg-actions">
+          <button onClick={() => navigator.clipboard.writeText(message.content)}>
+            Copy
+          </button>
+          <button>Retry</button>
+        </div>
+      )}
+      <div className="note">
+        CAPITAN AI can make mistakes. Verify important information.
+      </div>
+    </div>
+  );
+}
