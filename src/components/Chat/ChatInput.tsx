@@ -1,33 +1,65 @@
-import { useState } from "react";
+import { useState, useRef, KeyboardEvent } from "react";
+
+interface ChatInputProps {
+  onSend: (message: string) => void;
+  disabled: boolean;
+  placeholder?: string;
+}
 
 export function ChatInput({
   onSend,
   disabled,
-}: {
-  onSend: (m: string) => void;
-  disabled: boolean;
-}) {
+  placeholder = "Ask me anything...",
+}: ChatInputProps) {
   const [input, setInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (input.trim() && !disabled) {
-      onSend(input);
+  const handleSubmit = () => {
+    const trimmed = input.trim();
+    if (trimmed && !disabled) {
+      onSend(trimmed);
       setInput("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
     }
   };
 
   return (
-    <form className="input-bar" onSubmit={submit}>
-      <input
+    <div className="chat-input-container">
+      <textarea
+        ref={textareaRef}
+        className="chat-input"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Ask me anything..."
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
         disabled={disabled}
+        rows={1}
       />
-      <button type="submit" disabled={disabled || !input.trim()}>
-        Send
+      <button
+        className="send-btn"
+        onClick={handleSubmit}
+        disabled={disabled || !input.trim()}
+        aria-label="Send message"
+      >
+        ➤
       </button>
-    </form>
+    </div>
   );
 }
