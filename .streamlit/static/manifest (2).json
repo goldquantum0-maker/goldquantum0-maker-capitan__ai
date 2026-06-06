@@ -1,0 +1,51 @@
+{
+  "background_color": "#0d1117",
+  "dir": "auto",
+  "display": "standalone",
+  "name": "capitan-ai-7hrl.onrender",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "capitan-ai-7hrl.onrender",
+  "start_url": "/https://capitan-ai-7hrl.onrender.com",
+  "theme_color": "#4ade80",
+  "icons": [
+    {
+      "src": "https://capitan-ai-7hrl.onrender.com/favicon.png",
+      "type": "image/png",
+      "sizes": "32x32",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 32,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://capitan-ai-7hrl.onrender.com/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "id": "srv-d8edhff40ujc73dgce9g",
+  "description": "CAPITAN AI ⚓ is Africa's premier AI intelligence — delivering world-class financial analysis, code generation, and market data at zero cost.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nLIVE AFRICAN MARKETS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nTrack stocks across 7 African exchanges: NGX (Nigeria), JSE (South Africa), GSE (Ghana), BRVM (West Africa), NSE (Kenya), EGX (Egypt), and MASI (Morocco). African currencies including Naira, Cedi, Rand, and Shilling — live and free.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nWORLD-CLASS INTELLIGENCE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPowered by Claude 3.5 Sonnet, GPT-4o, DeepSeek R1, and Gemini Pro 1.5. Eight elite specialist personas from quantitative research to African finance. Multi-stage reasoning with adversarial self-critique for maximum accuracy.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPRIVACY FIRST\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNo accounts. No email. No phone number. No personal data stored. Pro upgrades via cryptocurrency with blockchain TXID verification — we never know who you are.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFEATURES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n• 50+ live prices across stocks, crypto, commodities, and forex\n• Market news from Dow Jones and Yahoo Finance\n• Code generation in Python, JavaScript, Rust, Go, SQL\n• Quantum computing support (Qiskit/Cirq)\n• Project management with file uploads\n• Vector memory that remembers your conversations\n• Goal tracking that detects your objectives\n• Web search integration\n• Offline-capable PWA\n\nBuilt by Sovereign AI Technologies in Nigeria. For Africa. For the world.",
+  "lang": "en",
+  "categories": [
+    "business",
+    "education",
+    "finance",
+    "government",
+    "productivity"
+  ],
+  "share_target": {
+    "method": "GET"
+  }
+}
