@@ -1,1 +1,46 @@
-import{useRef,useEffect}from'react';import{useStore}from'../../store/useStore';import{streamChat}from'../../services/api';import{MessageBubble}from'./MessageBubble';import{ChatInput}from'./ChatInput';const uuid=()=>Math.random().toString(36).substring(2,15);export function ChatInterface(){const{messages,isStreaming,addMessage,updateLastMessage,setIsStreaming}=useStore();const endRef=useRef<HTMLDivElement>(null);useEffect(()=>{endRef.current?.scrollIntoView({behavior:'smooth'})},[messages]);const handleSend=async(content:string)=>{if(isStreaming||!content.trim())return;addMessage({id:uuid(),role:'user',content});addMessage({id:uuid(),role:'assistant',content:''});setIsStreaming(true);const allMsgs=[...useStore.getState().messages];await streamChat(allMsgs.map(m=>({role:m.role,content:m.content})),(chunk)=>updateLastMessage(chunk),()=>setIsStreaming(false))};return(<div className='chat-container'><div className='chat-messages'>{messages.length===0&&<div className='welcome'><h1>How can I help today?</h1></div>}{messages.map(m=><MessageBubble key={m.id} message={m}/>)}<div ref={endRef}/></div><ChatInput onSend={handleSend} disabled={isStreaming}/></div>)}
+import { useRef, useEffect } from "react";
+import { useStore } from "../../store/useStore";
+import { streamChat } from "../../services/api";
+import { MessageBubble } from "./MessageBubble";
+import { ChatInput } from "./ChatInput";
+
+const uuid = () => Math.random().toString(36).substring(2, 15);
+
+export function ChatInterface() {
+  const { messages, isStreaming, addMessage, updateLastMessage, setIsStreaming } = useStore();
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async (content: string) => {
+    if (isStreaming || !content.trim()) return;
+    addMessage({ id: uuid(), role: "user", content });
+    addMessage({ id: uuid(), role: "assistant", content: "" });
+    setIsStreaming(true);
+    const allMsgs = [...useStore.getState().messages];
+    await streamChat(
+      allMsgs.map((m) => ({ role: m.role, content: m.content })),
+      (chunk) => updateLastMessage(chunk),
+      () => setIsStreaming(false)
+    );
+  };
+
+  return (
+    <div className="chat-container">
+      <div className="chat-messages">
+        {messages.length === 0 && (
+          <div className="welcome">
+            <h1>How can I help today?</h1>
+          </div>
+        )}
+        {messages.map((m) => (
+          <MessageBubble key={m.id} message={m} />
+        ))}
+        <div ref={endRef} />
+      </div>
+      <ChatInput onSend={handleSend} disabled={isStreaming} />
+    </div>
+  );
+}
