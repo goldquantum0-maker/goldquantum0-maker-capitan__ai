@@ -1,24 +1,45 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { ChatInterface } from "./components/Chat/ChatInterface";
 import { ResearchTerminal } from "./components/ResearchTerminal/ResearchTerminal";
+import { StatusBar } from "./components/Layout/StatusBar";
 import { useStore } from "./store/useStore";
-import { fetchPrices } from "./services/api";
+import { fetchMarketPrices, fetchMarketNews } from "./services/api";
 import "./App.css";
 
+const POLL_INTERVAL = 60000; // 1 minute
+
 export default function App() {
-  const { activeView, isPro, setLivePrices } = useStore();
+  const {
+    activeView,
+    isPro,
+    setLivePrices,
+    setMarketNews,
+  } = useStore();
+
+  const refreshMarketData = useCallback(async () => {
+    if (!isPro) return;
+    try {
+      const [pricesRes, newsRes] = await Promise.allSettled([
+        fetchMarketPrices(),
+        fetchMarketNews(),
+      ]);
+      if (pricesRes.status === "fulfilled" && pricesRes.value.data) {
+        setLivePrices(pricesRes.value.data);
+      }
+      if (newsRes.status === "fulfilled" && newsRes.value.data) {
+        setMarketNews(newsRes.value.data);
+      }
+    } catch {
+      // Silent fail for background updates
+    }
+  }, [isPro, setLivePrices, setMarketNews]);
 
   useEffect(() => {
-    if (isPro) {
-      fetchPrices().then((r) => r.data && setLivePrices(r.data));
-      const interval = setInterval(
-        () => fetchPrices().then((r) => r.data && setLivePrices(r.data)),
-        30000
-      );
-      return () => clearInterval(interval);
-    }
-  }, [isPro]);
+    refreshMarketData();
+    const interval = setInterval(refreshMarketData, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [refreshMarketData]);
 
   return (
     <div className="app">
@@ -26,6 +47,7 @@ export default function App() {
       <main className="main">
         {activeView === "chat" && <ChatInterface />}
         {activeView === "terminal" && <ResearchTerminal />}
+        <StatusBar />
       </main>
     </div>
   );
