@@ -1,0 +1,34 @@
+import { useStore } from "../../store/useStore";
+
+const MODEL_LABELS: Record<string, string> = {
+  fast: "Fast",
+  smart: "Smart",
+  deep: "Deep Think",
+};
+
+export function StatusBar() {
+  const { isPro, isFounder, preferences, dailyMessageCount } = useStore();
+
+  const modelLabel = MODEL_LABELS[preferences.model] || "Smart";
+  const tierLabel = isFounder ? "Founder" : isPro ? "Pro" : "Free";
+  const remaining = isPro ? "Unlimited" : `${Math.max(0, 10 - dailyMessageCount)} remaining`;
+
+  return (
+    <div className="status-bar">
+      <span className="status-dot" />
+      <span>CAPITAN AI</span>
+      <span>·</span>
+      <span>{modelLabel}</span>
+      {preferences.webSearch && (
+        <>
+          <span>·</span>
+          <span>Web</span>
+        </>
+      )}
+      <span>·</span>
+      <span>{tierLabel}</span>
+      <span>·</span>
+      <span>{remaining}</span>
+    </div>
+  );
+}
