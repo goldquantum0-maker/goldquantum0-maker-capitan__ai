@@ -4,1085 +4,139 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CAPITAN AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Newsreader:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════
-   CAPITAN AI — ELITE EDITION v2.0
-   Institutional. Precise. Commanding.
-   ═══════════════════════════════════════ */
-
 :root {
-  --void: #080808;
-  --abyss: #0c0c0c;
-  --surface: #111111;
-  --lift: #171717;
-  --hover: #1d1d1d;
-  --edge: #222222;
-  --line: #2a2a2a;
-  --mute: #383838;
-
-  --ink: #f2f0eb;
-  --ink-2: #9a9690;
-  --ink-3: #4a4845;
-  --ink-4: #2e2d1b;
-
-  --gold: #c9a96e;
-  --gold-dim: #8a7050;
-  --gold-glow: rgba(201,169,110,0.12);
-
-  --font-display: 'Syne', sans-serif;
-  --font-body: 'Newsreader', Georgia, serif;
-  --font-mono: 'DM Mono', monospace;
-
-  --r: 4px;
-  --r-md: 8px;
-  --r-lg: 12px;
-
+  --bg: #000000;
+  --bg2: #0a0a0a;
+  --bg3: #111111;
+  --bdr: #1a1a1a;
+  --bdr2: #252525;
+  --txt: #ffffff;
+  --txt2: #999999;
+  --txt3: #444444;
+  --emoji-filter: grayscale(1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font-xs: 10px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 18px;
+  --font-xl: 26px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-
-  --shadow: 0 0 0 1px var(--edge), 0 8px 32px rgba(0,0,0,0.6);
-  --shadow-lg: 0 0 0 1px var(--line), 0 24px 64px rgba(0,0,0,0.8);
 }
-
 :root.light {
-  --void: #f5f4f0;
-  --abyss: #efede8;
-  --surface: #e8e6e0;
-  --lift: #e2e0d9;
-  --hover: #dbd9d1;
-  --edge: #d4d2ca;
-  --line: #c8c6bd;
-  --mute: #b0ada3;
-  --ink: #1a1916;
-  --ink-2: #4a4845;
-  --ink-3: #8a8880;
-  --ink-4: #bab8b0;
-  --gold: #9a7040;
-  --gold-dim: #c4a878;
-  --gold-glow: rgba(154,112,64,0.08);
-  --shadow: 0 0 0 1px var(--edge), 0 4px 20px rgba(0,0,0,0.06);
-  --shadow-lg: 0 0 0 1px var(--line), 0 16px 48px rgba(0,0,0,0.1);
+  --bg: #ffffff;
+  --bg2: #f5f5f5;
+  --bg3: #eeeeee;
+  --bdr: #e0e0e0;
+  --bdr2: #cccccc;
+  --txt: #000000;
+  --txt2: #444444;
+  --txt3: #999999;
+  --emoji-filter: grayscale(1) brightness(0);
 }
-
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-html { font-size: 13px; }
-
+html { font-size: 14px; }
 body {
-  background: var(--void);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 1.65;
-  height: 100vh; height: 100dvh;
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  background: var(--bg); color: var(--txt);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: var(--font-sm); height: 100vh; height: 100dvh;
+  overflow: hidden; -webkit-font-smoothing: antialiased;
 }
-
-@media (max-height: 500px), (max-width: 360px) {
-  body { overflow: auto; height: auto; min-height: 100vh; }
-  #app { height: auto; min-height: 100vh; }
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-  opacity: 0.022;
-  pointer-events: none;
-  z-index: 9999;
-}
-
 #app { display: flex; height: 100vh; height: 100dvh; }
 
-::-webkit-scrollbar { width: 2px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--mute); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+.sidebar { width: 240px; min-width: 240px; background: var(--bg2); border-right: 1px solid var(--bdr); display: flex; flex-direction: column; z-index: 60; transition: transform 0.3s var(--ease); }
+.sb-top { padding: 20px 16px; border-bottom: 1px solid var(--bdr); }
+.sb-logo { font-size: 28px; cursor: pointer; user-select: none; filter: var(--emoji-filter); display: inline-block; }
+.sb-logo-text { font-size: var(--font-xs); color: var(--txt3); margin-top: 4px; font-weight: 600; letter-spacing: 0.05em; }
+.btn-new-chat { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--font-xs); font-weight: 600; margin-top: 12px; transition: all 0.15s; }
+.btn-new-chat:hover { background: var(--bdr); }
+.sb-nav { flex: 1; overflow-y: auto; padding: 8px; }
+.sb-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--txt2); font-size: var(--font-xs); transition: all 0.15s; }
+.sb-nav-item:hover { background: var(--bg3); color: var(--txt); }
+.sb-nav-item .tier-badge { font-size: 8px; padding: 2px 6px; border-radius: 4px; background: var(--bg3); color: var(--txt2); }
+.sb-nav-item .tier-badge.plus { background: #1a1a1a; color: #ccc; }
+.sb-nav-item .tier-badge.pro { background: #000; color: #fff; border: 1px solid #333; }
+.sb-bottom { padding: 12px 16px; border-top: 1px solid var(--bdr); }
+.sb-user { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--radius-sm); cursor: pointer; }
+.sb-user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 12px; filter: var(--emoji-filter); }
+.sb-user-info { flex: 1; min-width: 0; }
+.sb-user-name { font-size: var(--font-xs); color: var(--txt); font-weight: 600; }
+.sb-user-tier { font-size: 9px; color: var(--txt3); }
 
-/* ═══════════════════════════════════════
-   SIDEBAR
-   ═══════════════════════════════════════ */
-.sidebar {
-  width: 256px;
-  min-width: 256px;
-  background: var(--abyss);
-  border-right: 1px solid var(--edge);
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  z-index: 60;
-  transition: width 0.4s var(--ease), min-width 0.4s var(--ease), transform 0.4s var(--ease);
-  overflow: hidden;
-  min-height: 0;
-  height: 100%;
-}
-.sidebar.collapsed { width: 52px; min-width: 52px; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.chat-wrap { flex: 1; display: flex; flex-direction: column; max-width: 700px; margin: 0 auto; width: 100%; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 24px 20px; scroll-behavior: smooth; }
 
-.sb-top {
-  padding: 20px 18px 16px;
-  border-bottom: 1px solid var(--edge);
-  flex-shrink: 0;
-}
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 55vh; text-align: center; padding: 20px; }
+.welcome-logo { font-size: 56px; filter: var(--emoji-filter); margin-bottom: 16px; }
+.welcome h1 { font-size: var(--font-xl); font-weight: 700; color: var(--txt); margin-bottom: 8px; letter-spacing: -0.02em; }
+.welcome-sub { font-size: var(--font-sm); color: var(--txt3); max-width: 360px; line-height: 1.5; }
 
-.sb-brand {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
+.msg { margin-bottom: 20px; animation: msgIn 0.25s ease; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.msg.user { display: flex; justify-content: flex-end; }
+.msg-user-bubble { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 12px 16px; max-width: 78%; color: var(--txt); line-height: 1.6; font-size: var(--font-sm); }
+.msg.ai { padding-left: 4px; }
+.msg-ai-label { font-size: var(--font-xs); color: var(--txt3); margin-bottom: 6px; font-weight: 600; }
+.msg-ai-body { color: var(--txt); line-height: 1.7; font-size: var(--font-sm); }
+.msg-ai-body p { margin-bottom: 10px; }
+.msg-ai-body strong { color: var(--txt); font-weight: 700; }
+.msg-ai-body code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+.msg-ai-body pre { background: var(--bg2); border: 1px solid var(--bdr); padding: 12px; border-radius: var(--radius-sm); overflow-x: auto; margin: 8px 0; }
+.msg-actions { display: flex; gap: 8px; margin-top: 8px; opacity: 0; transition: opacity 0.2s; }
+.msg:hover .msg-actions { opacity: 0.6; }
+.msg-action-btn { background: none; border: none; color: var(--txt2); font-size: var(--font-xs); cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+.msg-action-btn:hover { color: var(--txt); background: var(--bg3); }
+.ai-note { font-size: 9px; color: var(--txt3); margin-top: 6px; }
 
-.sb-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-  flex: 1;
-  min-width: 0;
-}
-
-.sb-logo-mark {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  position: relative;
-}
-
-.sb-logo-mark svg { width: 28px; height: 28px; }
-
-.sb-logo-text {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: var(--ink);
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  transition: opacity 0.3s;
-}
-.collapsed .sb-logo-text { opacity: 0; pointer-events: none; }
-
-.sb-collapse-btn {
-  width: 28px; height: 28px;
-  background: none;
-  border: 1px solid var(--edge);
-  color: var(--ink-3);
-  border-radius: var(--r);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-.sb-collapse-btn:hover { border-color: var(--mute); color: var(--ink-2); background: var(--lift); }
-.sb-collapse-btn svg { width: 12px; height: 12px; transition: transform 0.4s var(--ease); }
-.collapsed .sb-collapse-btn svg { transform: rotate(180deg); }
-
-.btn-new-chat {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  color: var(--ink);
-  padding: 9px 12px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s var(--ease);
-  white-space: nowrap;
-  overflow: hidden;
-}
-.btn-new-chat:hover { background: var(--lift); border-color: var(--line); }
-.btn-new-chat .icon { width: 14px; height: 14px; flex-shrink: 0; }
-.collapsed .btn-new-chat .btn-new-label { opacity: 0; overflow: hidden; max-width: 0; }
-
-.sb-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 10px 0 0;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
-}
-
-.sb-section { padding: 0 10px 6px; }
-
-.sb-section-label {
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  padding: 8px 8px 4px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  border-radius: var(--r);
-  transition: color 0.2s;
-  user-select: none;
-}
-.collapsed .sb-section-label { opacity: 0; }
-.sb-section-label:hover { color: var(--ink-2); }
-.sb-section-label .arrow { font-size: 7px; transition: transform 0.25s; opacity: 0.5; }
-.sb-section-label.open .arrow { transform: rotate(90deg); opacity: 0.8; }
-
-.sb-section-body { overflow: hidden; transition: max-height 0.3s var(--ease); }
-
-.sb-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 8px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  background: none;
-  border: none;
-  color: var(--ink-2);
-  font-family: var(--font-display);
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  width: 100%;
-  text-align: left;
-  transition: all 0.18s;
-  white-space: nowrap;
-  overflow: hidden;
-  position: relative;
-  min-height: 34px;
-}
-.sb-nav-item:hover { background: var(--surface); color: var(--ink); }
-.sb-nav-item.active { background: var(--lift); color: var(--ink); }
-.sb-nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 25%; bottom: 25%;
-  width: 2px;
-  background: var(--gold);
-  border-radius: 0 2px 2px 0;
-}
-.sb-nav-item .nav-icon { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.6; }
-.sb-nav-item.active .nav-icon { opacity: 1; }
-.sb-nav-item .pro-chip {
-  margin-left: auto;
-  font-size: 7.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  background: var(--gold-glow);
-  color: var(--gold);
-  border: 1px solid var(--gold-dim);
-  padding: 2px 6px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-.collapsed .sb-nav-item .nav-label,
-.collapsed .sb-nav-item .pro-chip { opacity: 0; }
-
-.sb-divider {
-  height: 1px;
-  background: var(--edge);
-  margin: 6px 18px;
-}
-
-.sb-limit {
-  margin: 4px 10px 8px;
-  padding: 10px 10px;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-md);
-  transition: opacity 0.3s;
-}
-.collapsed .sb-limit { opacity: 0; pointer-events: none; }
-.sb-limit-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.sb-limit-label { font-family: var(--font-display); font-size: 9px; font-weight: 600; letter-spacing: 0.1em; color: var(--ink-3); text-transform: uppercase; }
-.sb-limit-count { font-family: var(--font-mono); font-size: 10px; color: var(--ink-2); }
-.sb-limit-track { height: 2px; background: var(--edge); border-radius: 1px; overflow: hidden; }
-.sb-limit-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 1px; transition: width 0.5s var(--ease); }
-.sb-limit-reset { font-size: 8px; color: var(--ink-3); margin-top: 4px; font-family: var(--font-mono); }
-
-.sb-market-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.sb-market-item:hover { background: var(--surface); }
-.sb-market-sym { font-family: var(--font-display); font-size: 10px; font-weight: 700; color: var(--ink); letter-spacing: 0.05em; }
-.sb-market-price { font-family: var(--font-mono); font-size: 9.5px; color: var(--ink-2); }
-.sb-market-chg { font-family: var(--font-mono); font-size: 9px; }
-.sb-market-chg.pos { color: #6dbb8a; }
-.sb-market-chg.neg { color: #c97070; }
-
-.sb-bottom {
-  border-top: 1px solid var(--edge);
-  padding: 12px 10px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.btn-upgrade {
-  width: 100%;
-  background: var(--gold-glow);
-  border: 1px solid var(--gold-dim);
-  color: var(--gold);
-  padding: 10px 12px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  transition: all 0.2s var(--ease);
-  white-space: nowrap;
-  overflow: hidden;
-}
-.btn-upgrade:hover { background: rgba(201,169,110,0.2); border-color: var(--gold); }
-.collapsed .btn-upgrade .upgrade-label { opacity: 0; max-width: 0; overflow: hidden; }
-
-.sb-tier-badge {
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  padding: 4px 0;
-}
-.sb-tier-badge.pro { color: var(--gold); }
-
-.sb-footer-links {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-  padding: 2px 0;
-}
-.sb-footer-links a { font-family: var(--font-display); font-size: 8.5px; color: var(--ink-3); text-decoration: none; letter-spacing: 0.05em; transition: color 0.15s; }
-.sb-footer-links a:hover { color: var(--ink-2); }
-
-.sb-company {
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  color: var(--ink-4);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-/* ═══════════════════════════════════════
-   MAIN AREA
-   ═══════════════════════════════════════ */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--void);
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-}
-
-.main::before {
-  content: '';
-  position: absolute;
-  top: -100px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 600px;
-  height: 400px;
-  background: radial-gradient(ellipse at center, rgba(201,169,110,0.03) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.chat-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  max-width: 760px;
-  margin: 0 auto;
-  width: 100%;
-  position: relative;
-  z-index: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 36px 32px;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
-}
-
-/* ═══════════════════════════════════════
-   WELCOME SCREEN
-   ═══════════════════════════════════════ */
-.welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  min-height: 62vh;
-  padding: 0 4px;
-}
-
-.welcome-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  color: var(--gold);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.welcome-eyebrow::before {
-  content: '';
-  display: block;
-  width: 24px;
-  height: 1px;
-  background: var(--gold-dim);
-}
-
-.welcome h1 {
-  font-family: var(--font-display);
-  font-size: clamp(32px, 5vw, 48px);
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  margin-bottom: 8px;
-}
-
-.welcome-sub {
-  font-family: var(--font-body);
-  font-style: italic;
-  font-size: 15px;
-  color: var(--ink-2);
-  margin-bottom: 36px;
-  font-weight: 300;
-  letter-spacing: 0.01em;
-}
-
-.welcome-pills {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.welcome-pill {
-  font-family: var(--font-display);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--ink-2);
-  background: transparent;
-  border: 1px solid var(--edge);
-  padding: 8px 16px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-  text-transform: uppercase;
-  position: relative;
-  overflow: hidden;
-}
-.welcome-pill::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--gold-glow);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.welcome-pill:hover { border-color: var(--gold-dim); color: var(--gold); }
-.welcome-pill:hover::after { opacity: 1; }
-.welcome-pill.locked { opacity: 0.35; border-style: dashed; cursor: default; }
-.welcome-pill.locked:hover { border-color: var(--edge); color: var(--ink-2); }
-.welcome-pill.locked:hover::after { opacity: 0; }
-
-/* ═══════════════════════════════════════
-   MESSAGES
-   ═══════════════════════════════════════ */
-.msg {
-  margin-bottom: 24px;
-  animation: fadeUp 0.3s var(--ease) both;
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.msg.user {
-  display: flex;
-  justify-content: flex-end;
-}
-.msg-user-bubble {
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg) var(--r-lg) var(--r) var(--r-lg);
-  padding: 12px 18px;
-  max-width: 72%;
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  color: var(--ink);
-  line-height: 1.7;
-  font-weight: 400;
-  word-break: break-word;
-}
-
-.msg.ai {}
-
-.msg-ai-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.msg-ai-sigil {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-.msg-ai-label {
-  font-family: var(--font-display);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--ink-3);
-  text-transform: uppercase;
-}
-.msg-model-chip {
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  color: var(--ink-3);
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  padding: 2px 7px;
-  border-radius: 2px;
-  letter-spacing: 0.06em;
-}
-.msg-confidence {
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  margin-left: auto;
-  color: var(--gold-dim);
-  letter-spacing: 0.08em;
-}
-
-.msg-ai-body {
-  padding-left: 30px;
-}
-
-.msg-content {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--ink);
-  line-height: 1.85;
-  font-weight: 400;
-}
-.msg-content p { margin-bottom: 14px; }
-.msg-content p:last-child { margin-bottom: 0; }
-.msg-content h2, .msg-content h3 {
-  font-family: var(--font-display);
-  color: var(--ink);
-  margin: 20px 0 10px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.msg-content h2 { font-size: 16px; }
-.msg-content h3 { font-size: 13.5px; }
-.msg-content strong { font-weight: 700; color: var(--ink); }
-.msg-content em { font-style: italic; color: var(--ink-2); }
-.msg-content code {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  padding: 1px 6px;
-  border-radius: var(--r);
-  color: var(--ink);
-}
-.msg-content pre {
-  background: var(--abyss);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
-  padding: 16px 18px;
-  overflow-x: auto;
-  margin: 12px 0;
-}
-.msg-content pre code { background: none; border: none; padding: 0; font-size: 11px; color: var(--ink-2); }
-
-.source-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
-.source-chip {
-  font-family: var(--font-display);
-  font-size: 8.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  padding: 4px 10px;
-  border-radius: 2px;
-  color: var(--ink-2);
-  cursor: pointer;
-  transition: all 0.15s;
-  text-transform: uppercase;
-}
-.source-chip:hover { border-color: var(--mute); color: var(--ink); }
-
-.msg-actions {
-  display: flex;
-  gap: 2px;
-  margin-top: 10px;
-  padding-left: 30px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.msg:hover .msg-actions { opacity: 1; }
-.msg-action-btn {
-  background: none;
-  border: none;
-  color: var(--ink-3);
-  font-family: var(--font-display);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: var(--r);
-  transition: all 0.15s;
-  text-transform: uppercase;
-}
-.msg-action-btn:hover { background: var(--surface); color: var(--ink-2); }
-
-.msg-disclaimer {
-  font-family: var(--font-mono);
-  font-size: 8px;
-  color: var(--ink-4);
-  margin-top: 10px;
-  padding-left: 30px;
-  letter-spacing: 0.04em;
-}
-
-.thinking-wrap {
-  padding-left: 30px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.thinking-text {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-3);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.thinking-dots { display: flex; gap: 4px; }
-.thinking-dot {
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--gold);
-  animation: pulse 1.4s ease-in-out infinite;
-  opacity: 0.4;
-}
-.thinking-dot:nth-child(1) { animation-delay: 0s; }
+.thinking { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.thinking-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--txt3); animation: dotPulse 1.2s infinite; }
 .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
 .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes pulse { 0%,80%,100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+@keyframes dotPulse { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
 
-.market-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
-  margin: 14px 0;
-}
-.market-card {
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
-  padding: 12px 14px;
-  transition: border-color 0.15s;
-}
-.market-card:hover { border-color: var(--line); }
-.market-card-sym { font-family: var(--font-display); font-size: 10px; font-weight: 700; color: var(--ink-2); letter-spacing: 0.1em; margin-bottom: 4px; }
-.market-card-price { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: -0.02em; }
-.market-card-chg { font-family: var(--font-mono); font-size: 9px; margin-top: 4px; }
-.market-card-chg.pos { color: #6dbb8a; }
-.market-card-chg.neg { color: #c97070; }
+.input-area { padding: 12px 20px 20px; }
+.input-box { display: flex; gap: 8px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 6px 6px 6px 14px; transition: border-color 0.2s; align-items: center; }
+.input-box:focus-within { border-color: var(--bdr2); }
+.input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: var(--font-sm); padding: 8px 0; font-family: inherit; }
+.input-field::placeholder { color: var(--txt3); }
+.send-btn { width: 36px; height: 36px; background: var(--txt); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: opacity 0.15s; flex-shrink: 0; }
+.send-btn:hover { opacity: 0.8; }
+.send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+.limit-bar { text-align: center; padding: 4px; font-size: 9px; color: var(--txt3); }
+.limit-bar span { color: var(--txt2); cursor: pointer; text-decoration: underline; }
 
-/* ═══════════════════════════════════════
-   INPUT
-   ═══════════════════════════════════════ */
-.input-area {
-  padding: 0 32px 28px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 28px; width: 420px; max-width: 92vw; max-height: 85vh; overflow-y: auto; }
+.modal h2 { font-size: var(--font-lg); font-weight: 700; color: var(--txt); margin-bottom: 8px; }
+.modal p { font-size: var(--font-xs); color: var(--txt2); margin-bottom: 16px; line-height: 1.6; }
+.modal input { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 10px 12px; border-radius: var(--radius-sm); font-size: var(--font-xs); margin-bottom: 10px; outline: none; font-family: inherit; }
+.modal input:focus { border-color: var(--bdr2); }
+.modal-btn { width: 100%; background: var(--txt); color: var(--bg); border: none; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; font-size: var(--font-xs); margin-top: 8px; font-family: inherit; }
+.modal-btn.secondary { background: transparent; border: 1px solid var(--bdr); color: var(--txt); margin-top: 4px; }
+.modal-btn:hover { opacity: 0.85; }
 
-.input-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-.model-tabs { display: flex; gap: 4px; }
-.model-tab {
-  font-family: var(--font-display);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--ink-3);
-  background: none;
-  border: 1px solid transparent;
-  padding: 5px 10px;
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: all 0.15s;
-  text-transform: uppercase;
-}
-.model-tab:hover { color: var(--ink-2); border-color: var(--edge); }
-.model-tab.active {
-  color: var(--ink);
-  background: var(--surface);
-  border-color: var(--edge);
-}
+.tier-card { border: 1px solid var(--bdr); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+.tier-card:hover { border-color: var(--bdr2); }
+.tier-card h3 { font-size: var(--font-md); font-weight: 700; color: var(--txt); margin-bottom: 4px; }
+.tier-card .price { font-size: var(--font-lg); font-weight: 700; color: var(--txt); }
+.tier-card .price span { font-size: var(--font-xs); color: var(--txt2); font-weight: 400; }
+.tier-card ul { list-style: none; margin-top: 8px; }
+.tier-card li { font-size: var(--font-xs); color: var(--txt2); padding: 3px 0; }
+.tier-card li::before { content: '• '; color: var(--txt3); }
 
-.input-box {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  background: var(--abyss);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
-  padding: 12px 12px 12px 18px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.input-box:focus-within {
-  border-color: var(--line);
-  box-shadow: 0 0 0 3px rgba(201,169,110,0.05);
-}
-
-.input-field {
-  flex: 1;
-  background: none;
-  border: none;
-  outline: none;
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.6;
-  resize: none;
-  min-height: 24px;
-  max-height: 120px;
-  overflow-y: auto;
-  padding: 2px 0;
-}
-.input-field::placeholder { color: var(--ink-4); font-style: italic; }
-.input-field:disabled { opacity: 0.3; }
-
-.send-btn {
-  width: 38px; height: 38px;
-  background: var(--ink);
-  border: none;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s var(--ease);
-}
-.send-btn:hover { background: var(--gold); transform: scale(1.04); }
-.send-btn:disabled { opacity: 0.15; cursor: not-allowed; transform: none; }
-.send-btn:disabled:hover { background: var(--ink); }
-.send-btn svg { width: 14px; height: 14px; color: var(--void); }
-
-.input-hint {
-  text-align: center;
-  padding: 6px 0 0;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--ink-4);
-  letter-spacing: 0.06em;
-}
-.input-hint a, .input-hint span {
-  color: var(--gold-dim);
-  cursor: pointer;
-  text-decoration: none;
-  transition: color 0.15s;
-}
-.input-hint a:hover, .input-hint span:hover { color: var(--gold); }
-
-/* ═══════════════════════════════════════
-   MODALS
-   ═══════════════════════════════════════ */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(8,8,8,0.9);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  backdrop-filter: blur(12px);
-}
-.modal-overlay.open { display: flex; animation: fadeIn 0.2s var(--ease); }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.modal {
-  background: var(--abyss);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 36px;
-  width: 460px;
-  max-width: 92vw;
-  max-height: 88vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-  animation: modalIn 0.3s var(--ease);
-}
-@keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
-
-.modal-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--gold);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.modal h2 {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.03em;
-  margin-bottom: 6px;
-}
-
-.modal-desc { font-size: 13px; color: var(--ink-2); margin-bottom: 24px; line-height: 1.7; }
-
-.modal-price {
-  font-family: var(--font-display);
-  font-size: 44px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.05em;
-  margin-bottom: 6px;
-}
-.modal-price span { font-size: 15px; color: var(--ink-3); font-weight: 400; }
-
-.modal-features {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  margin-bottom: 24px;
-}
-.modal-feature {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: var(--ink-2);
-}
-.modal-feature-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
-
-.modal-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--edge);
-  margin-bottom: 20px;
-  gap: 0;
-}
-.modal-tab {
-  flex: 1;
-  text-align: center;
-  padding: 10px;
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--ink-3);
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  text-transform: uppercase;
-}
-.modal-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-
-.modal input {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  color: var(--ink);
-  padding: 11px 14px;
-  border-radius: var(--r-md);
-  font-family: var(--font-body);
-  font-size: 13px;
-  margin-bottom: 10px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.modal input:focus { border-color: var(--gold-dim); }
-.modal input::placeholder { color: var(--ink-3); font-style: italic; }
-
-.input-row { display: flex; gap: 8px; }
-.input-row .modal-input-wrap { flex: 1; }
-
-.modal-btn-row { display: flex; gap: 8px; margin-top: 18px; }
-.modal-btn-primary {
-  flex: 1;
-  background: var(--ink);
-  color: var(--void);
-  border: none;
-  padding: 12px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  transition: all 0.2s var(--ease);
-  min-height: 44px;
-}
-.modal-btn-primary:hover { background: var(--gold); }
-.modal-btn-secondary {
-  flex: 1;
-  background: transparent;
-  color: var(--ink-2);
-  border: 1px solid var(--edge);
-  padding: 12px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  min-height: 44px;
-}
-.modal-btn-secondary:hover { background: var(--surface); color: var(--ink); }
-
-.crypto-addr {
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-md);
-  padding: 12px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-2);
-  word-break: break-all;
-  margin-bottom: 10px;
-  line-height: 1.6;
-}
-.crypto-label { font-family: var(--font-display); font-size: 9px; font-weight: 700; letter-spacing: 0.12em; color: var(--ink-3); text-transform: uppercase; margin-bottom: 6px; }
-
-/* ═══════════════════════════════════════
-   TOAST
-   ═══════════════════════════════════════ */
-.toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  background: var(--ink);
-  color: var(--void);
-  padding: 9px 20px;
-  border-radius: 3px;
-  font-family: var(--font-display);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  z-index: 300;
-  white-space: nowrap;
-  animation: toastAnim 2.8s var(--ease) forwards;
-  pointer-events: none;
-}
-@keyframes toastAnim {
-  0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  12% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  78% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* ═══════════════════════════════════════
-   MOBILE
-   ═══════════════════════════════════════ */
-.mobile-menu-btn {
-  display: none;
-  position: fixed;
-  top: 18px;
-  left: 14px;
-  z-index: 70;
-  background: var(--abyss);
-  border: 1px solid var(--edge);
-  color: var(--ink);
-  width: 34px; height: 34px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-}
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--txt); color: var(--bg); padding: 8px 18px; border-radius: 20px; font-size: var(--font-xs); font-weight: 600; z-index: 300; animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards; pointer-events: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
 
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    top: 0; bottom: 0; left: 0;
-    transform: translateX(-100%);
-    width: 280px !important;
-    min-width: 280px !important;
-    box-shadow: 20px 0 60px rgba(0,0,0,0.8);
-    z-index: 65;
-  }
-  .sidebar.mobile-open { transform: translateX(0); }
-  .mobile-menu-btn { display: flex; }
-  .chat-messages { padding: 60px 18px 20px; }
-  .input-area { padding: 0 18px 24px; }
-  .msg-user-bubble { max-width: 85%; }
-  .chat-wrap { max-width: 100%; }
-}
-@media (max-width: 480px) {
-  .modal { padding: 24px; }
-  .modal h2 { font-size: 18px; }
-  .modal-price { font-size: 36px; }
-  .input-field { font-size: 16px; }
+  .sidebar { position: fixed; left: -250px; top: 0; bottom: 0; width: 250px; min-width: 250px; box-shadow: 10px 0 40px rgba(0,0,0,0.6); }
+  .sidebar.open { left: 0; }
+  .msg-user-bubble { max-width: 88%; }
+  .chat-messages { padding: 16px 12px; }
+  .input-area { padding: 8px 12px 16px; }
 }
 </style>
 </head>
@@ -1090,173 +144,96 @@ body::before {
 
 <div id="app"></div>
 
-<button class="mobile-menu-btn" id="mobileMenuBtn">
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <line x1="1" y1="3.5" x2="13" y2="3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="1" y1="10.5" x2="13" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  </svg>
-</button>
-
-<!-- Payment Modal -->
-<div id="paymentModal" class="modal-overlay">
+<div id="authModal" class="modal-overlay">
   <div class="modal">
-    <div class="modal-eyebrow">Upgrade</div>
-    <h2>Capitan Pro</h2>
-    <p class="modal-desc">Institutional intelligence. Unlimited access across every domain and model tier.</p>
-    <div class="modal-price">$17<span> / month</span></div>
-    <div class="modal-features">
-      <div class="modal-feature"><div class="modal-feature-dot"></div>Unlimited messages &amp; all model tiers</div>
-      <div class="modal-feature"><div class="modal-feature-dot"></div>Finance, quant, science &amp; coding modes</div>
-      <div class="modal-feature"><div class="modal-feature-dot"></div>Workspaces, memory &amp; prompt library</div>
-      <div class="modal-feature"><div class="modal-feature-dot"></div>Live market data &amp; export tools</div>
+    <h2>👋 Welcome to CAPITAN</h2>
+    <p>Enter your email to start. We'll send you a prompt.</p>
+    <input type="email" id="authEmail" placeholder="you@gmx.com" autocomplete="email">
+    <button class="modal-btn" id="authBtn">Continue</button>
+    <button class="modal-btn secondary" id="authSkip">Skip for now</button>
+  </div>
+</div>
+
+<div id="upgradeModal" class="modal-overlay">
+  <div class="modal">
+    <h2>Upgrade</h2>
+    <div class="tier-card" id="tierPlus">
+      <h3>Plus</h3>
+      <div class="price">$6<span>/month</span></div>
+      <ul>
+        <li>Limited daily messaging</li>
+        <li>Standard AI responses</li>
+        <li>Finance & general knowledge</li>
+        <li>Basic support</li>
+      </ul>
     </div>
-    <div class="modal-tabs">
-      <div class="modal-tab active" data-tab="card">Card</div>
-      <div class="modal-tab" data-tab="crypto">Crypto</div>
+    <div class="tier-card" id="tierPro">
+      <h3>Pro</h3>
+      <div class="price">$17<span>/month</span></div>
+      <ul>
+        <li>Unlimited messaging</li>
+        <li>Advanced AI models</li>
+        <li>Science & tech education</li>
+        <li>Networking features</li>
+        <li>Idea sharing community</li>
+        <li>Priority support</li>
+      </ul>
     </div>
-    <div id="tabCard">
-      <input type="text" placeholder="Card number" id="cardNumber" inputmode="numeric" autocomplete="cc-number">
-      <div class="input-row">
-        <div class="modal-input-wrap"><input type="text" placeholder="MM / YY" id="cardExpiry" inputmode="numeric" autocomplete="cc-exp"></div>
-        <div class="modal-input-wrap"><input type="text" placeholder="CVC" id="cardCvc" inputmode="numeric" autocomplete="cc-csc"></div>
-      </div>
-      <input type="text" placeholder="Name on card" id="cardName" autocomplete="cc-name">
-      <div class="modal-btn-row">
-        <button class="modal-btn-primary" id="payCard">Pay $17</button>
-        <button class="modal-btn-secondary" id="closeModal">Cancel</button>
-      </div>
+    <div id="upgradePayment" style="display:none">
+      <p style="margin-top:12px">Pay with crypto:</p>
+      <select id="cryptoCurrency" style="width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:8px;border-radius:var(--radius-sm);font-size:var(--font-xs);margin-bottom:8px;font-family:inherit">
+        <option value="BTC">BTC</option><option value="ETH">ETH</option><option value="USDC">USDC</option>
+      </select>
+      <input type="text" id="txidInput" placeholder="Transaction hash (TXID)">
+      <button class="modal-btn" id="verifyUpgrade">Verify Payment</button>
     </div>
-    <div id="tabCrypto" style="display:none">
-      <div class="crypto-label">Send exact amount to</div>
-      <div class="crypto-addr">0.00028 BTC · 0.005 ETH · 17 USDC<br>bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new</div>
-      <input type="text" placeholder="Transaction hash" id="txidInput">
-      <div class="modal-btn-row">
-        <button class="modal-btn-primary" id="verifyCrypto">Verify</button>
-        <button class="modal-btn-secondary" id="closeModal2">Cancel</button>
-      </div>
-    </div>
+    <button class="modal-btn secondary" id="closeUpgrade">Close</button>
   </div>
 </div>
 
 <script>
-/* ═══════════════════════════════════════
-   CAPITAN AI — ELITE EDITION v2.0
-   CLOSEAI Technologies
-   closeaitechnologies@gmail.com
-   ═══════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════
+// CAPITAN AI — Frontend v9.0
+// ═══════════════════════════════════════════════════════════════
 
-const CFG = {
-  FOUNDER_CLICKS: 5,
-  FREE_LIMIT: 20,
-  FREE_WINDOW: 7 * 60 * 60 * 1000,
-  PRO_DAYS: 30,
-  EMAIL: 'closeaitechnologies@gmail.com',
-  ADMIN_CODE: 'Osinachi@350'
+const API = 'https://capitan-api.your-subdomain.workers.dev';
+const S = {
+  messages: [], streaming: false, userId: null, email: null,
+  tier: 'free', sidebarOpen: false, theme: 'dark',
+  msgCount: 0, msgLimit: 20, selectedTier: null
 };
 
-// ═══════════════════════ CONNECTED TO RENDER API ═══════════════════════
-const API_BASE = 'https://goldquantum0-capitan-ai-1.onrender.com';
-// ═══════════════════════════════════════════════════════════════════════
-
-const uid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
-const mid = () => 'mem_' + uid();
-
-/* Global memory (localStorage) */
-const Memory = {
-  all() { try { return JSON.parse(localStorage.getItem('cap_gm') || '[]'); } catch { return []; } },
-  push(e) {
-    const a = this.all();
-    a.push({ id: uid(), memId: mid(), ts: Date.now(), userId: 'ANON', tier: S.tier, ...e });
-    localStorage.setItem('cap_gm', JSON.stringify(a.slice(-500)));
-  },
-  recent(n = 50) { return this.all().slice(-n).reverse(); },
-  search(q) {
-    const ql = q.toLowerCase();
-    return this.all().filter(m =>
-      (m.content || '').toLowerCase().includes(ql) ||
-      (m.query || '').toLowerCase().includes(ql) ||
-      (m.memId || '').toLowerCase().includes(ql)
-    ).reverse();
+function init() {
+  const saved = localStorage.getItem('capitan_user');
+  if (saved) {
+    const d = JSON.parse(saved);
+    S.userId = d.userId; S.email = d.email; S.tier = d.tier || 'free';
   }
-};
-
-function defaultState() {
-  return {
-    messages: [], streaming: false, tier: 'free', proExpiry: null,
-    sidebarOpen: false, sidebarCollapsed: false,
-    sections: { workflows: true, settings: false, markets: false, news: false, tools: false },
-    theme: 'dark', founderClicks: 0, founderTimer: null,
-    workspace: null, workspaces: [], members: [],
-    memories: [{ id: uid(), memId: mid(), content: 'Interaction patterns stored', active: true }],
-    prompts: [], selectedModel: 'balanced',
-    models: [
-      { id: 'quick', name: 'Quick', desc: 'Fast responses' },
-      { id: 'balanced', name: 'Balanced', desc: 'Depth + speed' },
-      { id: 'deep', name: 'Deep', desc: 'Full reasoning' }
-    ],
-    apiKeys: {}, freeMsgCount: 0, freeMsgWindowStart: Date.now(),
-    adminAuth: false
-  };
+  const theme = localStorage.getItem('capitan_theme');
+  if (theme) S.theme = theme;
+  
+  if (!S.userId) {
+    document.getElementById('authModal').classList.add('open');
+  }
+  
+  applyTheme();
+  render();
 }
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem('capitan_elite_v3');
-    if (raw) {
-      const p = JSON.parse(raw);
-      if ((p.tier === 'pro' || p.tier === 'founder') && p.proExpiry && Date.now() > p.proExpiry) {
-        p.tier = 'free'; p.proExpiry = null;
-        p.workspace = null; p.workspaces = []; p.members = []; p.prompts = [];
-        p.adminAuth = false;
-      }
-      if (p.tier === 'free') {
-        p.workspace = null; p.workspaces = []; p.members = []; p.prompts = [];
-        p.adminAuth = false;
-      }
-      if (p.tier !== 'founder') {
-        p.adminAuth = false;
-      }
-      return { ...defaultState(), ...p };
-    }
-  } catch {}
-  return defaultState();
+function applyTheme() { document.documentElement.classList.toggle('light', S.theme === 'light'); }
+
+function toast(msg) {
+  const t = document.querySelector('.toast'); if (t) t.remove();
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 2800);
 }
 
-function saveState() {
-  try {
-    const d = {
-      tier: S.tier, proExpiry: S.proExpiry, theme: S.theme,
-      workspaces: S.tier === 'free' ? [] : S.workspaces,
-      workspace: S.tier === 'free' ? null : S.workspace,
-      members: S.tier === 'free' ? [] : S.members,
-      memories: S.memories, prompts: S.tier === 'free' ? [] : S.prompts,
-      apiKeys: S.apiKeys, freeMsgCount: S.freeMsgCount,
-      freeMsgWindowStart: S.freeMsgWindowStart,
-      adminAuth: S.tier === 'founder' ? S.adminAuth : false,
-      sidebarCollapsed: S.sidebarCollapsed, sections: S.sections
-    };
-    localStorage.setItem('capitan_elite_v3', JSON.stringify(d));
-  } catch {}
+function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function fmt(s) {
+  if (!s) return '';
+  return s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>');
 }
 
-const S = loadState();
-
-/* Helpers */
-const isPro = () => S.tier === 'pro' || S.tier === 'founder';
-const isFounder = () => S.tier === 'founder';
-const canMessage = () => {
-  if (isPro()) return true;
-  if (Date.now() - S.freeMsgWindowStart > CFG.FREE_WINDOW) { S.freeMsgCount = 0; S.freeMsgWindowStart = Date.now(); }
-  return S.freeMsgCount < CFG.FREE_LIMIT;
-};
-const remaining = () => isPro() ? Infinity : CFG.FREE_LIMIT - S.freeMsgCount;
-const limitPct = () => isPro() ? 100 : (S.freeMsgCount / CFG.FREE_LIMIT) * 100;
-const resetIn = () => {
-  const r = (S.freeMsgWindowStart + CFG.FREE_WINDOW) - Date.now();
-  if (r <= 0) return 'now';
-  return `${Math.floor(r / 3600000)}h ${Math.floor((r % 3600000) / 60000)}m`;
-};
 const greeting = () => {
   const h = new Date().getHours();
   if (h < 6) return 'Late night.';
@@ -1266,732 +243,204 @@ const greeting = () => {
   return 'Night session.';
 };
 
-function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
-function escAttr(s) { return s ? s.replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n').replace(/\\/g,'\\\\') : ''; }
-function fmt(s) {
-  return s ? s
-    .replace(/\n/g, '<br>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>') : '';
-}
-
-function toast(msg) {
-  document.querySelectorAll('.toast').forEach(t => t.remove());
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2900);
-}
-
-function applyTheme() {
-  document.documentElement.classList.toggle('light', S.theme === 'light');
-}
-
-function requirePro() {
-  if (!isPro()) { toast('Pro feature — $17/month'); openModal(); return false; }
-  return true;
-}
-
-function founderClick() {
-  S.founderClicks++;
-  if (S.founderTimer) clearTimeout(S.founderTimer);
-  if (S.founderClicks >= CFG.FOUNDER_CLICKS) {
-    S.tier = 'founder';
-    S.proExpiry = Date.now() + CFG.PRO_DAYS * 86400000;
-    S.founderClicks = 0;
-    S.adminAuth = false;
-    if (!S.workspaces.length) {
-      S.workspaces = [{ id: uid(), name: 'Founder', members: 1 }];
-      S.workspace = S.workspaces[0];
-      S.members = [{ id: 'm0', name: 'Founder', role: 'Admin', online: true, initials: 'FD' }];
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+async function register(email) {
+  try {
+    const r = await fetch(API + '/api/auth/register', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await r.json();
+    if (data.user_id) {
+      S.userId = data.user_id; S.email = email; S.tier = data.tier || 'free';
+      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+      document.getElementById('authModal').classList.remove('open');
+      toast(data.welcome_prompt || 'Welcome!');
+      render();
+      if (data.welcome_prompt) {
+        setTimeout(() => sendMessage(data.welcome_prompt), 500);
+      }
     }
-    if (!S.prompts.length) S.prompts = getPrompts();
-    saveState(); toast('Founder mode activated'); render(); return;
+  } catch (e) { toast('Connection error'); }
+}
+
+async function login(email) {
+  try {
+    const r = await fetch(API + '/api/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await r.json();
+    if (data.user_id) {
+      S.userId = data.user_id; S.email = email; S.tier = data.tier || 'free';
+      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+      document.getElementById('authModal').classList.remove('open');
+      render();
+    }
+  } catch (e) { toast('Connection error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════════
+async function sendMessage(content) {
+  const input = document.getElementById('chatInput');
+  const text = content || input?.value?.trim();
+  if (!text || S.streaming) return;
+
+  S.messages.push({ role: 'user', content: text });
+  const aiMsg = { role: 'assistant', content: '' };
+  S.messages.push(aiMsg);
+  S.streaming = true;
+  if (input) { input.value = ''; input.blur(); }
+  renderMessages();
+
+  try {
+    const r = await fetch(API + '/api/chat', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ messages: S.messages.filter(m => m.content).map(m => ({role:m.role,content:m.content})), user_id: S.userId || 'anonymous' })
+    });
+    const data = await r.json();
+    
+    if (data.error && !data.can_send) {
+      aiMsg.content = data.error;
+      toast('Limit reached');
+      document.getElementById('upgradeModal').classList.add('open');
+    } else {
+      aiMsg.content = data.content || 'No response.';
+      S.msgCount = (S.msgCount || 0) + 1;
+    }
+  } catch (e) {
+    aiMsg.content = 'Connection lost. Please try again.';
   }
-  S.founderTimer = setTimeout(() => { S.founderClicks = 0; }, 2000);
+
+  S.streaming = false;
+  renderMessages();
 }
 
-function getPrompts() {
-  return [
-    { id: 'p1', title: 'Quantum Algorithm', prompt: 'Explain {{CONCEPT}}. Design quantum circuit.', vars: ['CONCEPT'], cat: 'Quant' },
-    { id: 'p2', title: 'Code Architecture', prompt: 'Design {{LANGUAGE}} system for {{USE_CASE}}.', vars: ['LANGUAGE', 'USE_CASE'], cat: 'Coding' },
-    { id: 'p3', title: 'Mathematical Proof', prompt: 'Prove {{THEOREM}} with full rigor.', vars: ['THEOREM'], cat: 'Quant' },
-    { id: 'p4', title: 'Scientific Analysis', prompt: 'Analyze {{TOPIC}} from current literature.', vars: ['TOPIC'], cat: 'Science' },
-    { id: 'p5', title: 'Investment Memo', prompt: 'Generate memo for {{TICKER}}. DCF, comps, scenarios.', vars: ['TICKER'], cat: 'Finance' },
-    { id: 'p6', title: 'Market Research', prompt: 'Research {{SECTOR}}: sizing, trends, key players.', vars: ['SECTOR'], cat: 'Finance' }
-  ];
+// ═══════════════════════════════════════════════════════════════
+// UPGRADE
+// ═══════════════════════════════════════════════════════════════
+async function upgrade(tier) {
+  const txid = document.getElementById('txidInput')?.value?.trim();
+  const currency = document.getElementById('cryptoCurrency')?.value || 'USDC';
+  if (!txid) { toast('Enter TXID'); return; }
+
+  try {
+    const r = await fetch(API + '/api/upgrade', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id: S.userId, tier, txid, currency })
+    });
+    const data = await r.json();
+    if (data.verified) {
+      S.tier = tier;
+      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+      document.getElementById('upgradeModal').classList.remove('open');
+      toast(`Upgraded to ${tier.toUpperCase()}!`);
+      render();
+    } else {
+      toast(data.message || 'Failed');
+    }
+  } catch (e) { toast('Error'); }
 }
 
-/* SVGs */
-const LOGO_SVG = `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="1" y="1" width="26" height="26" rx="4" stroke="currentColor" stroke-width="1"/>
-  <path d="M7 14 L14 7 L21 14 L14 21 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
-  <circle cx="14" cy="14" r="2.5" fill="currentColor"/>
-</svg>`;
-
-const SIGIL_SVG = `<svg class="msg-ai-sigil" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0.5" y="0.5" width="19" height="19" rx="3" stroke="var(--edge)"/>
-  <path d="M5 10 L10 5 L15 10 L10 15 Z" stroke="var(--gold)" stroke-width="1" fill="none"/>
-  <circle cx="10" cy="10" r="1.5" fill="var(--gold)"/>
-</svg>`;
-
-const SEND_SVG = `<svg viewBox="0 0 14 14" fill="none">
-  <path d="M1 7L13 7M8 2.5L13 7L8 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`;
-
-/* ═══════════════════════════════════════
-   RENDER
-   ═══════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
 function render() {
   applyTheme();
-  const app = document.getElementById('app');
-  app.innerHTML = '';
+  const app = document.getElementById('app'); app.innerHTML = '';
 
-  const pro = isPro(), fnd = isFounder();
-  const isMobile = window.innerWidth <= 768;
-  const mem0 = S.memories[0];
-
-  /* --- SIDEBAR --- */
+  // Sidebar
   const sb = document.createElement('aside');
-  sb.className = `sidebar${S.sidebarCollapsed && !isMobile ? ' collapsed' : ''}${isMobile && S.sidebarOpen ? ' mobile-open' : ''}`;
-
-  const mkSection = (key, label, content) => {
-    const open = S.sections[key];
-    return `<div class="sb-section">
-      <div class="sb-section-label ${open ? 'open' : ''}" data-section="${key}">
-        ${label}<span class="arrow">▸</span>
-      </div>
-      <div class="sb-section-body" style="max-height:${open ? '600px' : '0'};overflow:hidden">
-        ${content}
-      </div>
-    </div>`;
-  };
-
-  const navItem = (id, icon, label, active, pro_req = false, capability = null) => {
-    const attrs = capability ? `data-cap="${capability}"` : `id="${id}"`;
-    return `<button class="sb-nav-item${active ? ' active' : ''}" ${attrs}>
-      <span class="nav-icon">${icon}</span>
-      <span class="nav-label">${label}</span>
-      ${pro_req && !pro ? '<span class="pro-chip">PRO</span>' : ''}
-    </button>`;
-  };
-
-  const mainNav = `
-    ${navItem('btnChat', iconChat, 'Chat', S.activeView === 'chat')}
-    ${navItem('', iconGlobe, 'General', false, false, 'general')}
-    ${navItem('', iconTrending, 'Finance', false, !pro, 'finance')}
-    ${navItem('', iconCode, 'Coding', false, !pro, 'coding')}
-    ${navItem('', iconAtom, 'Quant', false, !pro, 'quant')}
-    ${navItem('', iconFlask, 'Science', false, !pro, 'science')}
-  `;
-
-  const toolsNav = pro ? `
-    ${navItem('btnWorkspace', iconLayers, 'Workspace', false)}
-    ${navItem('btnMarket', iconTrending, 'Market Research', false)}
-    ${navItem('btnDeal', iconBrief, 'Deal Analysis', false)}
-    ${navItem('btnMemory', iconBrain, 'Memory', false)}
-    ${navItem('btnPromptLib', iconLib, 'Prompt Library', false)}
-    ${navItem('btnAPIKeys', iconKey, 'API Keys', false)}
-    ${navItem('btnExport', iconExport, 'Export', false)}
-  ` : '';
-
-  const settingsNav = `
-    ${navItem('btnTheme', iconSun, `Theme — ${S.theme === 'dark' ? 'Dark' : 'Light'}`, false)}
-    ${navItem('btnPrivacy', iconShield, 'Privacy', false)}
-    ${navItem('btnTerms', iconDoc, 'Terms', false)}
-    ${fnd ? navItem('btnAdmin', iconAdmin, `Admin${S.adminAuth ? ' ✓' : ''}`, false) : ''}
-  `;
-
-  const memIdDisplay = pro && mem0 ? `
-    <div style="padding:0 18px 8px">
-      <span style="font-family:var(--font-mono);font-size:8px;color:var(--ink-4);letter-spacing:0.08em;cursor:pointer" onclick="navigator.clipboard.writeText('${mem0.memId}');toast('Copied')">MEM ${mem0.memId}</span>
-    </div>
-  ` : '';
-
+  sb.className = `sidebar${S.sidebarOpen ? ' open' : ''}`;
   sb.innerHTML = `
     <div class="sb-top">
-      <div class="sb-brand">
-        <div class="sb-logo" id="founderSecret">
-          <div class="sb-logo-mark" style="color:var(--gold)">${LOGO_SVG}</div>
-          <span class="sb-logo-text">Capitan</span>
-        </div>
-        <button class="sb-collapse-btn" id="toggleCollapse" title="Toggle sidebar">
-          <svg viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6L8 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      <button class="btn-new-chat" id="btnNewChat">
-        <svg class="icon" viewBox="0 0 14 14" fill="none"><path d="M7 2V12M2 7H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <span class="btn-new-label">New Conversation</span>
-      </button>
+      <div class="sb-logo" id="logoToggle">👌</div>
+      <div class="sb-logo-text">CAPITAN AI</div>
+      <button class="btn-new-chat" id="btnNewChat">New conversation</button>
     </div>
-
-    <div class="sb-scroll">
-      ${!isPro() ? `
-        <div class="sb-limit">
-          <div class="sb-limit-row">
-            <span class="sb-limit-label">Messages</span>
-            <span class="sb-limit-count">${remaining()}/${CFG.FREE_LIMIT}</span>
-          </div>
-          <div class="sb-limit-track"><div class="sb-limit-fill" style="width:${100 - limitPct()}%"></div></div>
-          <div class="sb-limit-reset">Resets in ${resetIn()}</div>
-        </div>
-      ` : ''}
-
-      <div class="sb-section" style="padding:6px 10px 4px">
-        ${mainNav}
+    <div class="sb-nav">
+      <div class="sb-nav-item" id="btnTheme">${S.theme === 'dark' ? 'Light mode' : 'Dark mode'}</div>
+      <div class="sb-nav-item" id="btnUpgrade">
+        ${S.tier === 'free' ? 'Upgrade' : S.tier === 'plus' ? 'Upgrade to Pro' : 'Pro — Active'}
+        <span class="tier-badge ${S.tier}">${S.tier.toUpperCase()}</span>
       </div>
-
-      <div class="sb-divider"></div>
-
-      ${pro ? mkSection('tools', 'Tools', toolsNav) : ''}
-
-      <div class="sb-divider"></div>
-
-      ${mkSection('settings', 'Settings', settingsNav)}
-      ${memIdDisplay}
     </div>
-
     <div class="sb-bottom">
-      ${pro
-        ? `<div class="sb-tier-badge pro">${fnd ? 'FOUNDER' : 'PRO'} — ACTIVE</div>`
-        : `<button class="btn-upgrade" id="btnUpgrade"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1L9 5L7 5L7 9L3 9L3 5L1 5L5 1Z" stroke="currentColor" stroke-width="1" fill="none"/></svg><span class="upgrade-label">Upgrade — $17/month</span></button>`
-      }
-      <div class="sb-footer-links">
-        <a href="#" id="linkPrivacy">Privacy</a>
-        <a href="#" id="linkTerms">Terms</a>
-        <a href="#" id="linkTrust">Trust</a>
-        <a href="mailto:${CFG.EMAIL}">Support</a>
+      <div class="sb-user" id="btnAuth">
+        <div class="sb-user-avatar">👌</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name">${S.email || 'Sign in'}</div>
+          <div class="sb-user-tier">${S.tier.toUpperCase()}</div>
+        </div>
       </div>
-      <div class="sb-company">CLOSEAI Technologies</div>
-    </div>
-  `;
-
+    </div>`;
   app.appendChild(sb);
 
-  /* --- MAIN --- */
-  const main = document.createElement('main');
-  main.className = 'main';
-
-  const locked = !isPro() && !canMessage();
-
+  // Main
+  const main = document.createElement('main'); main.className = 'main';
   main.innerHTML = `
     <div class="chat-wrap">
       <div class="chat-messages" id="chatMessages"></div>
       <div class="input-area">
-        <div class="input-meta">
-          <div class="model-tabs" id="modelTabs">
-            ${S.models.map(m => `<button class="model-tab${S.selectedModel === m.id ? ' active' : ''}" data-model="${m.id}" title="${m.desc}">${m.name}</button>`).join('')}
-          </div>
-        </div>
         <div class="input-box">
-          <input
-            class="input-field"
-            type="text"
-            id="chatInput"
-            placeholder="${locked ? 'Message limit reached' : 'Ask anything...'}"
-            ${S.streaming || locked ? 'disabled' : ''}
-            autocomplete="off"
-            enterkeyhint="send"
-          >
-          <button class="send-btn" id="sendBtn" ${S.streaming || locked ? 'disabled' : ''}>${SEND_SVG}</button>
+          <input class="input-field" type="text" id="chatInput" placeholder="Message CAPITAN..." ${S.streaming?'disabled':''} autocomplete="off">
+          <button class="send-btn" id="sendBtn" ${S.streaming?'disabled':''}>↑</button>
         </div>
-        ${locked ? `<div class="input-hint">Limit reached · <span onclick="openModal()">Upgrade to continue →</span></div>` : `<div class="input-hint">Return to send · Capitan AI may make errors</div>`}
+        ${S.tier === 'free' ? `<div class="limit-bar">Limited messaging · <span id="upgradeLink">Upgrade →</span></div>` : ''}
       </div>
-    </div>
-  `;
-
+    </div>`;
   app.appendChild(main);
 
   bindEvents();
   renderMessages();
 }
 
-/* --- ICONS --- */
-const iconChat = `<svg viewBox="0 0 14 14" fill="none"><path d="M2 2h10v8H8l-3 2v-2H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>`;
-const iconGlobe = `<svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M7 1.5c-2 2-2 7 0 11M7 1.5c2 2 2 7 0 11M1.5 7h11" stroke="currentColor" stroke-width="1"/></svg>`;
-const iconTrending = `<svg viewBox="0 0 14 14" fill="none"><path d="M1 10L5 6L8 8.5L13 3" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 3h3v3" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const iconCode = `<svg viewBox="0 0 14 14" fill="none"><path d="M4 4.5L1 7l3 2.5M10 4.5L13 7l-3 2.5M8 2.5L6 11.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>`;
-const iconAtom = `<svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="1.5" fill="currentColor"/><ellipse cx="7" cy="7" rx="5.5" ry="2.5" stroke="currentColor" stroke-width="1"/><ellipse cx="7" cy="7" rx="5.5" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(60 7 7)"/><ellipse cx="7" cy="7" rx="5.5" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(120 7 7)"/></svg>`;
-const iconFlask = `<svg viewBox="0 0 14 14" fill="none"><path d="M5 2v4L2 11h10L9 6V2M4.5 2h5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const iconLayers = `<svg viewBox="0 0 14 14" fill="none"><path d="M7 1.5L13 5L7 8.5L1 5Z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><path d="M1 9L7 12.5L13 9" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>`;
-const iconBrief = `<svg viewBox="0 0 14 14" fill="none"><rect x="1" y="4" width="12" height="9" rx="1" stroke="currentColor" stroke-width="1"/><path d="M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1" stroke="currentColor" stroke-width="1"/></svg>`;
-const iconBrain = `<svg viewBox="0 0 14 14" fill="none"><path d="M7 2C4.5 2 2.5 4 2.5 6.5c0 1.5.7 2.8 1.8 3.6V12h5.4v-1.9c1.1-.8 1.8-2.1 1.8-3.6C11.5 4 9.5 2 7 2z" stroke="currentColor" stroke-width="1"/><path d="M7 2v10M4.5 6.5h5" stroke="currentColor" stroke-width="1"/></svg>`;
-const iconLib = `<svg viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="3" height="10" rx="1" stroke="currentColor" stroke-width="1"/><rect x="6.5" y="2" width="3" height="10" rx="1" stroke="currentColor" stroke-width="1"/><rect x="11" y="3" width="1.5" height="9" rx="0.75" stroke="currentColor" stroke-width="1"/></svg>`;
-const iconKey = `<svg viewBox="0 0 14 14" fill="none"><circle cx="5.5" cy="5.5" r="3" stroke="currentColor" stroke-width="1"/><path d="M7.5 7.5L12 12M10 10l1.5 1.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>`;
-const iconExport = `<svg viewBox="0 0 14 14" fill="none"><path d="M7 1.5V9M4 4.5L7 1.5L10 4.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10v2h10v-2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>`;
-const iconSun = `<svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M3 3l1 1M10 10l1 1M3 11l1-1M10 4l1-1" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>`;
-const iconShield = `<svg viewBox="0 0 14 14" fill="none"><path d="M7 1.5L2 4v4c0 3 2.5 4.5 5 5 2.5-.5 5-2 5-5V4L7 1.5z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>`;
-const iconDoc = `<svg viewBox="0 0 14 14" fill="none"><path d="M3 1.5h6L11 5v7.5H3v-11z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><path d="M9 1.5V5h2" stroke="currentColor" stroke-width="1"/><path d="M5 7h4M5 9h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>`;
-const iconAdmin = `<svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1"/><path d="M2 12.5c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>`;
-
-/* ═══════════════════════════════════════
-   RENDER MESSAGES
-   ═══════════════════════════════════════ */
 function renderMessages() {
-  const el = document.getElementById('chatMessages');
-  if (!el) return;
-
+  const el = document.getElementById('chatMessages'); if (!el) return;
   if (!S.messages.length) {
-    const pro = isPro();
-    el.innerHTML = `
-      <div class="welcome">
-        <div class="welcome-eyebrow">Institutional Intelligence</div>
-        <h1>${greeting()}</h1>
-        <p class="welcome-sub">What would you like to explore?</p>
-        <div class="welcome-pills">
-          <button class="welcome-pill" onclick="sendMessage('Analyze market trends and generate investment insights')">Finance</button>
-          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Explain quantitative methods and mathematical proofs')" : "toast('Pro feature — \$17/month');openModal()"}">Quant${pro ? '' : ' · Pro'}</button>
-          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Design system architecture and write optimized code')" : "toast('Pro feature — \$17/month');openModal()"}">Coding${pro ? '' : ' · Pro'}</button>
-          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Explore scientific concepts and current research')" : "toast('Pro feature — \$17/month');openModal()"}">Science${pro ? '' : ' · Pro'}</button>
-        </div>
-      </div>`;
+    el.innerHTML = `<div class="welcome"><div class="welcome-logo">👌</div><h1>${greeting()}</h1><p class="welcome-sub">Ask me anything — finance, coding, science, or just explore.</p></div>`;
     return;
   }
-
-  const model = S.models.find(m => m.id === S.selectedModel) || S.models[1];
-
   el.innerHTML = S.messages.map((m, i) => {
-    if (m.role === 'user') {
-      return `<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`;
-    }
-
-    const isLast = i === S.messages.length - 1;
-    const content = m.content || '';
-
-    return `<div class="msg ai">
-      <div class="msg-ai-meta">
-        ${SIGIL_SVG}
-        <span class="msg-ai-label">Capitan AI</span>
-        <span class="msg-model-chip">${model.name}</span>
-      </div>
-      ${isLast && !content
-        ? `<div class="thinking-wrap">
-            <div class="thinking-dots">
-              <div class="thinking-dot"></div>
-              <div class="thinking-dot"></div>
-              <div class="thinking-dot"></div>
-            </div>
-            <span class="thinking-text">Thinking</span>
-          </div>`
-        : `<div class="msg-ai-body">
-            <div class="msg-content">${fmt(content)}</div>
-            ${content ? `
-              <div class="msg-actions">
-                <button class="msg-action-btn" onclick="copyMsg('${escAttr(content)}')">Copy</button>
-                <button class="msg-action-btn" onclick="retryMsg()">Retry</button>
-                ${isPro() ? `<button class="msg-action-btn" onclick="showExport()">Export</button>` : ''}
-                <button class="msg-action-btn" onclick="saveToMemory('${escAttr(content.substring(0, 100))}')">Save</button>
-              </div>
-              <div class="msg-disclaimer">Capitan AI may produce errors. Verify important information.</div>
-            ` : ''}
-          </div>`
-      }
-    </div>`;
+    if (m.role === 'user') return `<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`;
+    const isLast = i === S.messages.length - 1, content = m.content || '';
+    return `<div class="msg ai"><div class="msg-ai-label">CAPITAN AI</div>${isLast && !content ? `<div class="thinking"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>` : `<div class="msg-ai-body">${fmt(content)}</div><div class="msg-actions"><button class="msg-action-btn" onclick="navigator.clipboard.writeText(\`${content.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`);toast('Copied')">Copy</button></div><div class="ai-note">CAPITAN AI can make mistakes.</div>`}</div>`;
   }).join('');
-
   el.scrollTop = el.scrollHeight;
 }
 
-/* ═══════════════════════════════════════
-   SEND — REAL API CALL TO RENDER
-   ═══════════════════════════════════════ */
-async function sendMessage(content) {
-  const input = document.getElementById('chatInput');
-  const text = content || input?.value?.trim();
-  if (!text || S.streaming) return;
-
-  if (!isPro() && !canMessage()) { toast('Limit reached'); openModal(); return; }
-
-  const proBlocked = /\b(quant|quantum|code|python|javascript|algorithm|function|api|architecture|prove|theorem|math|equation|calculus|crispr|dna|physics|chemistry|biology)\b/i.test(text);
-  if (!isPro() && proBlocked) { toast('Pro feature — $17/month'); openModal(); return; }
-
-  Memory.push({ type: 'query', query: text, userId: 'ANON' });
-  S.messages.push({ id: uid(), role: 'user', content: text });
-
-  const aiMsg = { id: uid(), role: 'assistant', content: '' };
-  S.messages.push(aiMsg);
-  S.streaming = true;
-  if (input) { input.value = ''; input.blur(); }
-  if (!isPro()) { S.freeMsgCount++; saveState(); }
-
-  render();
-
-  try {
-    const response = await fetch(API_BASE + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: S.messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })),
-        stream: true,
-        user_id: 'user_' + uid(),
-        model: S.selectedModel
-      })
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: 'API error' }));
-      throw new Error(err.detail || 'API error');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let accumulated = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.done) {
-              S.streaming = false;
-              render();
-              return;
-            }
-            if (data.content) {
-              accumulated = data.content;
-              aiMsg.content = accumulated;
-              renderMessages();
-            }
-          } catch (e) {}
-        }
-      }
-    }
-  } catch (e) {
-    aiMsg.content = 'Unable to connect to CAPITAN AI. Please try again. Support: ' + CFG.EMAIL;
-    toast('Connection error');
-  }
-
-  S.streaming = false;
-  render();
-}
-
-const copyMsg = t => navigator.clipboard.writeText(t).then(() => toast('Copied'));
-function retryMsg() {
-  if (S.messages.length < 2) return;
-  const lastUser = [...S.messages].reverse().find(m => m.role === 'user');
-  S.messages = S.messages.slice(0, -2);
-  if (lastUser) sendMessage(lastUser.content);
-}
-function saveToMemory(c) {
-  const id = mid();
-  S.memories.push({ id: uid(), memId: id, content: c, active: true });
-  Memory.push({ type: 'saved', content: c });
-  saveState();
-  toast('Saved · ' + id);
-}
-function showExport() {
-  if (!requirePro()) return;
-  openGenericModal('Export', `
-    <p class="modal-desc">Choose export format for this conversation.</p>
-    ${['PDF Report', 'Word Document', 'Markdown', 'JSON'].map(f =>
-      `<button class="modal-btn-secondary" style="width:100%;margin-bottom:8px;justify-content:flex-start" onclick="toast('Exported as ${f}');closeGenericModal()">${f}</button>`
-    ).join('')}
-    <button class="modal-btn-primary" style="width:100%" onclick="closeGenericModal()">Cancel</button>
-  `);
-}
-
-/* ═══════════════════════════════════════
-   BIND EVENTS
-   ═══════════════════════════════════════ */
 function bindEvents() {
-  const pro = isPro(), fnd = isFounder();
-
-  document.getElementById('toggleCollapse')?.addEventListener('click', () => {
-    S.sidebarCollapsed = !S.sidebarCollapsed;
-    saveState(); render();
+  document.getElementById('logoToggle')?.addEventListener('click', () => { S.sidebarOpen = !S.sidebarOpen; render(); });
+  document.getElementById('btnNewChat')?.addEventListener('click', () => { S.messages = []; render(); });
+  document.getElementById('btnTheme')?.addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('capitan_theme', S.theme); render(); });
+  document.getElementById('btnUpgrade')?.addEventListener('click', () => { if (S.tier === 'pro') { toast('You are on Pro'); return; } document.getElementById('upgradeModal').classList.add('open'); });
+  document.getElementById('btnAuth')?.addEventListener('click', () => { document.getElementById('authModal').classList.add('open'); });
+  document.getElementById('upgradeLink')?.addEventListener('click', () => { document.getElementById('upgradeModal').classList.add('open'); });
+  
+  document.getElementById('chatInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+  document.getElementById('sendBtn')?.addEventListener('click', () => sendMessage());
+  
+  document.getElementById('authBtn')?.addEventListener('click', () => {
+    const email = document.getElementById('authEmail')?.value?.trim();
+    if (email && email.includes('@')) { register(email); } else { toast('Enter valid email'); }
   });
-
-  document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
-    S.sidebarOpen = !S.sidebarOpen; render();
-  });
-
-  if (window.innerWidth <= 768 && S.sidebarOpen) {
-    document.querySelector('.main')?.addEventListener('click', () => {
-      S.sidebarOpen = false; render();
-    }, { once: true });
-  }
-
-  document.querySelectorAll('[data-section]').forEach(h => {
-    h.addEventListener('click', () => {
-      S.sections[h.dataset.section] = !S.sections[h.dataset.section];
-      saveState(); render();
-    });
-  });
-
-  document.getElementById('founderSecret')?.addEventListener('click', founderClick);
-
-  document.getElementById('btnNewChat')?.addEventListener('click', () => {
-    S.messages = []; render();
-  });
-
-  document.getElementById('btnChat')?.addEventListener('click', () => { render(); });
-  document.querySelectorAll('[data-cap]').forEach(b => {
-    b.addEventListener('click', () => {
-      const caps = {
-        general: 'Explore a topic across multiple domains and perspectives',
-        finance: 'Analyze market trends and generate investment insights',
-        coding: 'Design system architecture and write optimized code',
-        quant: 'Explain quantitative methods and mathematical proofs',
-        science: 'Explore scientific concepts and current research'
-      };
-      if (!isPro() && b.dataset.cap !== 'general') { toast('Pro feature — $17/month'); openModal(); return; }
-      render();
-      setTimeout(() => sendMessage(caps[b.dataset.cap]), 100);
-    });
-  });
-
-  document.querySelectorAll('.model-tab').forEach(t => {
-    t.addEventListener('click', () => {
-      S.selectedModel = t.dataset.model;
-      saveState();
-      document.querySelectorAll('.model-tab').forEach(x => x.classList.toggle('active', x === t));
-    });
-  });
-
-  const input = document.getElementById('chatInput');
-  const sendBtn = document.getElementById('sendBtn');
-  input?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  });
-  sendBtn?.addEventListener('click', () => sendMessage());
-
-  document.getElementById('btnTheme')?.addEventListener('click', () => {
-    S.theme = S.theme === 'dark' ? 'light' : 'dark';
-    saveState(); render();
-  });
-
-  document.getElementById('btnUpgrade')?.addEventListener('click', openModal);
-
-  if (pro) {
-    document.getElementById('btnWorkspace')?.addEventListener('click', () => {
-      openGenericModal('Workspace', `
-        <p class="modal-desc">${S.workspace ? `Active: ${S.workspace.name}` : 'No active workspace'}</p>
-        ${S.workspaces.map(w => `<div style="padding:10px;border:1px solid var(--edge);border-radius:var(--r-md);margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:var(--font-display);font-size:11px" onclick="S.workspace=S.workspaces.find(x=>x.id==='${w.id}');saveState();closeGenericModal();render()"><span>${w.name}</span><span style="color:var(--ink-3);font-size:9px">${w.members} member${w.members > 1 ? 's' : ''}${w.id === S.workspace?.id ? ' · active' : ''}</span></div>`).join('')}
-        <div class="modal-btn-row" style="margin-top:12px">
-          <button class="modal-btn-primary" onclick="const n=prompt('Workspace name:');if(n){const w={id:uid(),name:n,members:1};S.workspaces.push(w);S.workspace=w;saveState();closeGenericModal();render()}">New Workspace</button>
-          <button class="modal-btn-secondary" onclick="closeGenericModal()">Close</button>
-        </div>
-      `);
-    });
-
-    document.getElementById('btnMarket')?.addEventListener('click', () => {
-      render();
-      setTimeout(() => sendMessage('Deep market research: sector sizing, competitive landscape, growth projections, key risks.'), 100);
-    });
-    document.getElementById('btnDeal')?.addEventListener('click', () => {
-      render();
-      setTimeout(() => sendMessage('Deal analysis framework: DCF valuation, comparable transactions, risk-adjusted returns, recommendation.'), 100);
-    });
-
-    document.getElementById('btnMemory')?.addEventListener('click', () => {
-      openGenericModal('Memory', `
-        <p class="modal-desc">Stored insights and patterns from your sessions.</p>
-        <div style="max-height:280px;overflow-y:auto;margin-bottom:16px">
-          ${S.memories.map(m => `
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--edge);gap:10px">
-              <div style="min-width:0">
-                <div style="font-size:12px;color:var(--ink);margin-bottom:3px">${esc(m.content)}</div>
-                <div style="font-family:var(--font-mono);font-size:8px;color:var(--ink-3)">${m.memId}</div>
-              </div>
-              <button style="background:none;border:none;color:var(--ink-3);cursor:pointer;flex-shrink:0;font-size:11px" onclick="S.memories=S.memories.filter(x=>x.id!=='${m.id}');saveState();closeGenericModal();document.getElementById('btnMemory').click()">✕</button>
-            </div>
-          `).join('')}
-        </div>
-        <div class="modal-btn-row">
-          <button class="modal-btn-primary" onclick="const c=prompt('Add memory:');if(c){const id=mid();S.memories.push({id:uid(),memId:id,content:c,active:true});saveState();closeGenericModal();toast('Saved · '+id)}">Add</button>
-          <button class="modal-btn-secondary" onclick="closeGenericModal()">Close</button>
-        </div>
-      `);
-    });
-
-    document.getElementById('btnAPIKeys')?.addEventListener('click', () => {
-      if (!S.apiKeys.capitan) S.apiKeys.capitan = 'cap_' + uid() + uid().toLowerCase();
-      saveState();
-      openGenericModal('API Keys', `
-        <p class="modal-desc">Your personal API key for programmatic access.</p>
-        <div style="background:var(--surface);border:1px solid var(--edge);border-radius:var(--r-md);padding:12px;font-family:var(--font-mono);font-size:10px;color:var(--ink);word-break:break-all;margin-bottom:16px">${S.apiKeys.capitan}</div>
-        <div class="modal-btn-row">
-          <button class="modal-btn-primary" onclick="S.apiKeys.capitan='cap_'+uid()+uid().toLowerCase();saveState();closeGenericModal();document.getElementById('btnAPIKeys').click()">Rotate Key</button>
-          <button class="modal-btn-secondary" onclick="navigator.clipboard.writeText('${S.apiKeys.capitan}');toast('Copied')">Copy</button>
-        </div>
-      `);
-    });
-
-    document.getElementById('btnExport')?.addEventListener('click', showExport);
-
-    document.getElementById('btnPromptLib')?.addEventListener('click', () => {
-      if (!S.prompts.length) S.prompts = getPrompts();
-      const cats = [...new Set(S.prompts.map(p => p.cat))];
-      openGenericModal('Prompt Library', `
-        <p class="modal-desc">Battle-tested prompts for professional use cases.</p>
-        ${cats.map(cat => `
-          <div style="margin-bottom:14px">
-            <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--ink-3);text-transform:uppercase;margin-bottom:6px">${cat}</div>
-            ${S.prompts.filter(p => p.cat === cat).map(pt => `
-              <div style="padding:10px 12px;border:1px solid var(--edge);border-radius:var(--r-md);margin-bottom:6px;cursor:pointer;transition:border-color 0.15s" onmouseenter="this.style.borderColor='var(--mute)'" onmouseleave="this.style.borderColor='var(--edge)'" onclick="handlePrompt('${pt.id}')">
-                <div style="font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px">${pt.title}</div>
-                <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--font-body)">${pt.prompt.substring(0, 70)}…</div>
-              </div>
-            `).join('')}
-          </div>
-        `).join('')}
-        <button class="modal-btn-secondary" style="width:100%" onclick="closeGenericModal()">Close</button>
-      `);
-    });
-  }
-
-  // ADMIN — STRICTLY FOUNDER ONLY
-  if (fnd) {
-    document.getElementById('btnAdmin')?.addEventListener('click', () => {
-      if (S.tier !== 'founder') { toast('Access denied'); return; }
-      if (!S.adminAuth) {
-        const code = prompt('Admin access code:');
-        if (code === CFG.ADMIN_CODE) { S.adminAuth = true; saveState(); toast('Access granted'); }
-        else { toast('Invalid code'); return; }
-      }
-      const entries = Memory.recent(100);
-      openGenericModal('Admin Memory', `
-        <input type="text" placeholder="Search entries…" id="adminSearch" style="width:100%;margin-bottom:12px" oninput="filterAdmin(this.value)">
-        <div id="adminList" style="max-height:320px;overflow-y:auto">
-          ${renderAdminEntries(entries)}
-        </div>
-        <button class="modal-btn-secondary" style="width:100%;margin-top:12px" onclick="closeGenericModal()">Close</button>
-      `);
-    });
-  }
-
-  /* Policy links */
-  const policyModal = (title, body) => openGenericModal(title, `<p class="modal-desc" style="white-space:pre-line">${body}</p><button class="modal-btn-primary" style="width:100%" onclick="closeGenericModal()">Close</button>`);
-  document.getElementById('btnPrivacy')?.addEventListener('click', () => policyModal('Privacy', `Capitan AI by CLOSEAI Technologies.\n\nEnd-to-end encrypted. We never sell or share your data.\nYou own your inputs and outputs.\n\n${CFG.EMAIL}`));
-  document.getElementById('btnTerms')?.addEventListener('click', () => policyModal('Terms', `Pro tier: $17/month, billed monthly.\nFree tier: 20 messages per 7 hours.\n\nCLOSEAI Technologies · ${CFG.EMAIL}`));
-  document.getElementById('linkPrivacy')?.addEventListener('click', e => { e.preventDefault(); policyModal('Privacy', `Capitan AI · End-to-end encrypted.\n${CFG.EMAIL}`); });
-  document.getElementById('linkTerms')?.addEventListener('click', e => { e.preventDefault(); policyModal('Terms', `Pro: $17/mo · Free: 20 msg / 7hrs\n${CFG.EMAIL}`); });
-  document.getElementById('linkTrust')?.addEventListener('click', e => { e.preventDefault(); policyModal('Trust & Security', `SOC 2 Type II compliant.\nAll data encrypted at rest and in transit.\nRegular third-party security audits.\n${CFG.EMAIL}`); });
-
-  /* Payment modal tabs */
-  document.querySelectorAll('#paymentModal .modal-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('#paymentModal .modal-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById('tabCard').style.display = tab.dataset.tab === 'card' ? 'block' : 'none';
-      document.getElementById('tabCrypto').style.display = tab.dataset.tab === 'crypto' ? 'block' : 'none';
-    });
-  });
-
-  document.getElementById('payCard')?.addEventListener('click', activatePro);
-  document.getElementById('verifyCrypto')?.addEventListener('click', () => {
-    if (document.getElementById('txidInput')?.value?.trim()) activatePro();
-    else toast('Enter transaction hash');
-  });
-  document.getElementById('closeModal')?.addEventListener('click', closeModal);
-  document.getElementById('closeModal2')?.addEventListener('click', closeModal);
-  document.getElementById('paymentModal')?.addEventListener('click', e => { if (e.target.id === 'paymentModal') closeModal(); });
-
-  let touchStart = 0;
-  document.querySelector('.main')?.addEventListener('touchstart', e => { touchStart = e.touches[0].clientX; }, { passive: true });
-  document.querySelector('.main')?.addEventListener('touchend', e => {
-    if (e.changedTouches[0].clientX - touchStart > 70 && !S.sidebarOpen) { S.sidebarOpen = true; render(); }
-  }, { passive: true });
+  document.getElementById('authSkip')?.addEventListener('click', () => { document.getElementById('authModal').classList.remove('open'); S.userId = 'anonymous'; render(); });
+  document.getElementById('authEmail')?.addEventListener('keydown', e => { if (e.key === 'Enter') { const email = e.target.value?.trim(); if (email && email.includes('@')) register(email); } });
+  
+  document.getElementById('tierPlus')?.addEventListener('click', () => { S.selectedTier = 'plus'; document.getElementById('upgradePayment').style.display = 'block'; });
+  document.getElementById('tierPro')?.addEventListener('click', () => { S.selectedTier = 'pro'; document.getElementById('upgradePayment').style.display = 'block'; });
+  document.getElementById('verifyUpgrade')?.addEventListener('click', () => { if (S.selectedTier) upgrade(S.selectedTier); });
+  document.getElementById('closeUpgrade')?.addEventListener('click', () => { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('upgradePayment').style.display = 'none'; });
+  
+  document.getElementById('upgradeModal')?.addEventListener('click', e => { if (e.target.id === 'upgradeModal') { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('upgradePayment').style.display = 'none'; } });
+  document.getElementById('authModal')?.addEventListener('click', e => { if (e.target.id === 'authModal') document.getElementById('authModal').classList.remove('open'); });
 }
 
-function renderAdminEntries(entries) {
-  if (!entries.length) return '<div style="text-align:center;color:var(--ink-3);padding:20px;font-size:11px">No entries</div>';
-  return entries.map(m => `
-    <div style="padding:8px 0;border-bottom:1px solid var(--edge)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
-        <span style="font-family:var(--font-mono);font-size:9px;color:var(--gold)">${m.memId}</span>
-        <span style="font-family:var(--font-mono);font-size:8px;color:var(--ink-3)">${new Date(m.ts).toLocaleString()}</span>
-      </div>
-      <div style="font-size:11.5px;color:var(--ink-2);font-family:var(--font-body)">${esc(m.query || m.content || '—')}</div>
-    </div>
-  `).join('');
-}
-function filterAdmin(q) {
-  const list = document.getElementById('adminList');
-  if (!list) return;
-  const entries = q ? Memory.search(q) : Memory.recent(100);
-  list.innerHTML = renderAdminEntries(entries);
-}
-function handlePrompt(id) {
-  if (!S.prompts.length) S.prompts = getPrompts();
-  const pt = S.prompts.find(p => p.id === id);
-  if (!pt) return;
-  let p = pt.prompt;
-  for (const v of pt.vars) {
-    const val = prompt(`Enter ${v}:`);
-    if (val) p = p.replace(`{{${v}}}`, val);
-  }
-  closeGenericModal();
-  sendMessage(p);
-}
-
-function openModal() { document.getElementById('paymentModal').classList.add('open'); }
-function closeModal() { document.getElementById('paymentModal').classList.remove('open'); }
-
-function openGenericModal(title, content) {
-  closeGenericModal();
-  const o = document.createElement('div');
-  o.id = 'genericModal';
-  o.className = 'modal-overlay open';
-  o.innerHTML = `<div class="modal"><div class="modal-eyebrow">Capitan AI</div><h2>${title}</h2>${content}</div>`;
-  document.body.appendChild(o);
-  o.addEventListener('click', e => { if (e.target === o) closeGenericModal(); });
-}
-function closeGenericModal() {
-  document.getElementById('genericModal')?.remove();
-}
-
-function activatePro() {
-  const cardNumber = document.getElementById('cardNumber')?.value?.trim();
-  if (!cardNumber || cardNumber.length < 10) {
-    toast('Please enter valid card details');
-    return;
-  }
-  S.tier = 'pro';
-  S.proExpiry = Date.now() + CFG.PRO_DAYS * 86400000;
-  S.adminAuth = false;
-  if (!S.prompts.length) S.prompts = getPrompts();
-  closeModal();
-  saveState();
-  toast('Welcome to Capitan Pro');
-  render();
-}
-
-/* ═══════════════════════════════════════
-   INIT
-   ═══════════════════════════════════════ */
-applyTheme();
-render();
-
-window.sendMessage = sendMessage;
-window.toast = toast;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.closeGenericModal = closeGenericModal;
-window.copyMsg = copyMsg;
-window.retryMsg = retryMsg;
-window.saveToMemory = saveToMemory;
-window.showExport = showExport;
-window.handlePrompt = handlePrompt;
-window.filterAdmin = filterAdmin;
-window.S = S;
-window.uid = uid;
-window.mid = mid;
-window.saveState = saveState;
-window.requirePro = requirePro;
-window.isPro = isPro;
-
-console.log('%cCAPITAN AI — Elite Edition v2.0', 'font-family:monospace;font-weight:bold;font-size:14px;color:#c9a96e');
-console.log('%cConnected to: ' + API_BASE, 'font-family:monospace;font-size:10px;color:#8a7050');
-console.log('%cCLOSEAI Technologies — ' + CFG.EMAIL, 'font-family:monospace;font-size:10px;color:#8a7050');
+init();
 </script>
 </body>
 </html>
