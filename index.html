@@ -4,500 +4,443 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CAPITAN AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Newsreader:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
-  --void: #080808;
-  --abyss: #0c0c0c;
-  --surface: #111111;
-  --lift: #171717;
-  --edge: #222222;
-  --line: #2a2a2a;
-  --ink: #f2f0eb;
-  --ink-2: #9a9690;
-  --ink-3: #4a4845;
-  --ink-4: #2e2d1b;
-  --gold: #c9a96e;
-  --gold-dim: #8a7050;
-  --gold-glow: rgba(201,169,110,0.12);
-  --font-display: 'Syne', sans-serif;
-  --font-body: 'Newsreader', Georgia, serif;
-  --font-mono: 'DM Mono', monospace;
-  --r: 4px;
-  --r-md: 8px;
-  --r-lg: 12px;
+  --bg: #000000;
+  --bg2: #0a0a0a;
+  --bg3: #111111;
+  --bdr: #1a1a1a;
+  --bdr2: #252525;
+  --txt: #ffffff;
+  --txt2: #999999;
+  --txt3: #444444;
+  --emoji-filter: grayscale(1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font-xs: 10px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 18px;
+  --font-xl: 26px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 :root.light {
-  --void: #f5f4f0;
-  --abyss: #efede8;
-  --surface: #e8e6e0;
-  --lift: #e2e0d9;
-  --edge: #d4d2ca;
-  --line: #c8c6bd;
-  --ink: #1a1916;
-  --ink-2: #4a4845;
-  --ink-3: #8a8880;
-  --ink-4: #bab8b0;
-  --gold: #9a7040;
+  --bg: #ffffff;
+  --bg2: #f5f5f5;
+  --bg3: #eeeeee;
+  --bdr: #e0e0e0;
+  --bdr2: #cccccc;
+  --txt: #000000;
+  --txt2: #444444;
+  --txt3: #999999;
+  --emoji-filter: grayscale(1) brightness(0);
 }
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { font-size: 13px; }
+html { font-size: 14px; }
 body {
-  background: var(--void);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 1.65;
-  height: 100vh; height: 100dvh;
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
+  background: var(--bg); color: var(--txt);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: var(--font-sm); height: 100vh; height: 100dvh;
+  overflow: hidden; -webkit-font-smoothing: antialiased;
 }
 #app { display: flex; height: 100vh; height: 100dvh; }
-::-webkit-scrollbar { width: 2px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
 
-.sidebar {
-  width: 256px; min-width: 256px;
-  background: var(--abyss);
-  border-right: 1px solid var(--edge);
-  display: flex; flex-direction: column;
-  z-index: 60; transition: width 0.4s var(--ease);
-  overflow: hidden; height: 100%;
-}
-.sidebar.collapsed { width: 52px; min-width: 52px; }
-.sb-top { padding: 20px 18px 16px; border-bottom: 1px solid var(--edge); flex-shrink: 0; }
-.sb-brand { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.sb-logo { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; flex: 1; }
-.sb-logo-text {
-  font-family: var(--font-display);
-  font-size: 13px; font-weight: 700;
-  letter-spacing: 0.18em; color: var(--ink);
-  text-transform: uppercase;
-}
-.sb-collapse-btn {
-  width: 28px; height: 28px; background: none;
-  border: 1px solid var(--edge); color: var(--ink-3);
-  border-radius: var(--r); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s; flex-shrink: 0;
-}
-.sb-collapse-btn:hover { border-color: var(--line); color: var(--ink-2); background: var(--lift); }
+.sidebar { width: 240px; min-width: 240px; background: var(--bg2); border-right: 1px solid var(--bdr); display: flex; flex-direction: column; z-index: 60; transition: transform 0.3s var(--ease); }
+.sb-top { padding: 20px 16px; border-bottom: 1px solid var(--bdr); }
+.sb-logo { font-size: 28px; cursor: pointer; user-select: none; filter: var(--emoji-filter); display: inline-block; }
+.sb-logo-text { font-size: var(--font-xs); color: var(--txt3); margin-top: 4px; font-weight: 600; letter-spacing: 0.05em; }
+.btn-new-chat { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--font-xs); font-weight: 600; margin-top: 12px; transition: all 0.15s; }
+.btn-new-chat:hover { background: var(--bdr); }
+.sb-nav { flex: 1; overflow-y: auto; padding: 8px; }
+.sb-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--txt2); font-size: var(--font-xs); transition: all 0.15s; }
+.sb-nav-item:hover { background: var(--bg3); color: var(--txt); }
+.sb-nav-item .tier-badge { font-size: 8px; padding: 2px 6px; border-radius: 4px; background: var(--bg3); color: var(--txt2); }
+.sb-nav-item .tier-badge.plus { background: #1a1a1a; color: #ccc; }
+.sb-nav-item .tier-badge.pro { background: #000; color: #fff; border: 1px solid #333; }
+.sb-bottom { padding: 12px 16px; border-top: 1px solid var(--bdr); }
+.sb-user { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--radius-sm); cursor: pointer; }
+.sb-user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 12px; filter: var(--emoji-filter); }
+.sb-user-info { flex: 1; min-width: 0; }
+.sb-user-name { font-size: var(--font-xs); color: var(--txt); font-weight: 600; }
+.sb-user-tier { font-size: 9px; color: var(--txt3); }
 
-.btn-new-chat {
-  width: 100%; background: var(--surface);
-  border: 1px solid var(--edge); color: var(--ink);
-  padding: 9px 12px; border-radius: var(--r-md);
-  cursor: pointer; font-family: var(--font-display);
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  display: flex; align-items: center; gap: 8px;
-  transition: all 0.2s var(--ease);
-}
-.btn-new-chat:hover { background: var(--lift); border-color: var(--line); }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.chat-wrap { flex: 1; display: flex; flex-direction: column; max-width: 700px; margin: 0 auto; width: 100%; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 24px 20px; scroll-behavior: smooth; }
 
-.sb-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px 0 0; min-height: 0; }
-.sb-section { padding: 0 10px 6px; }
-.sb-section-label {
-  font-family: var(--font-display); font-size: 9px; font-weight: 700;
-  letter-spacing: 0.2em; color: var(--ink-3); text-transform: uppercase;
-  padding: 8px 8px 4px; display: flex; align-items: center;
-  justify-content: space-between; cursor: pointer;
-  border-radius: var(--r); transition: color 0.2s; user-select: none;
-}
-.sb-section-label:hover { color: var(--ink-2); }
-.sb-section-label .arrow { font-size: 7px; transition: transform 0.25s; opacity: 0.5; }
-.sb-section-label.open .arrow { transform: rotate(90deg); opacity: 0.8; }
-.sb-section-body { overflow: hidden; transition: max-height 0.3s var(--ease); }
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 55vh; text-align: center; padding: 20px; }
+.welcome-logo { font-size: 56px; filter: var(--emoji-filter); margin-bottom: 16px; }
+.welcome h1 { font-size: var(--font-xl); font-weight: 700; color: var(--txt); margin-bottom: 8px; letter-spacing: -0.02em; }
+.welcome-sub { font-size: var(--font-sm); color: var(--txt3); max-width: 360px; line-height: 1.5; }
 
-.sb-nav-item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 8px 8px; border-radius: var(--r-md);
-  cursor: pointer; background: none; border: none;
-  color: var(--ink-2); font-family: var(--font-display);
-  font-size: 11.5px; font-weight: 500;
-  width: 100%; text-align: left;
-  transition: all 0.18s; min-height: 34px;
-}
-.sb-nav-item:hover { background: var(--surface); color: var(--ink); }
-.sb-nav-item.active { background: var(--lift); color: var(--ink); }
-.sb-nav-item .pro-chip {
-  margin-left: auto; font-size: 7.5px; font-weight: 700;
-  letter-spacing: 0.1em; background: var(--gold-glow);
-  color: var(--gold); border: 1px solid var(--gold-dim);
-  padding: 2px 6px; border-radius: 3px;
-}
-
-.sb-bottom { border-top: 1px solid var(--edge); padding: 12px 10px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
-.btn-upgrade {
-  width: 100%; background: var(--gold-glow);
-  border: 1px solid var(--gold-dim); color: var(--gold);
-  padding: 10px 12px; border-radius: var(--r-md);
-  cursor: pointer; font-family: var(--font-display);
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-}
-.btn-upgrade:hover { background: rgba(201,169,110,0.2); border-color: var(--gold); }
-.sb-tier-badge { text-align: center; font-family: var(--font-display); font-size: 8.5px; font-weight: 700; letter-spacing: 0.15em; color: var(--ink-3); text-transform: uppercase; padding: 4px 0; }
-.sb-tier-badge.pro { color: var(--gold); }
-.sb-footer-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; padding: 2px 0; }
-.sb-footer-links a { font-family: var(--font-display); font-size: 8.5px; color: var(--ink-3); text-decoration: none; }
-.sb-footer-links a:hover { color: var(--ink-2); }
-.sb-company { text-align: center; font-family: var(--font-mono); font-size: 8px; color: var(--ink-4); letter-spacing: 0.15em; text-transform: uppercase; }
-
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--void); }
-.chat-wrap { flex: 1; display: flex; flex-direction: column; max-width: 760px; margin: 0 auto; width: 100%; }
-.chat-messages { flex: 1; overflow-y: auto; padding: 36px 32px; scroll-behavior: smooth; }
-
-.welcome { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-height: 62vh; padding: 0 4px; }
-.welcome-eyebrow { font-family: var(--font-mono); font-size: 9.5px; color: var(--gold); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 16px; }
-.welcome h1 { font-family: var(--font-display); font-size: clamp(32px, 5vw, 48px); font-weight: 700; color: var(--ink); letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 8px; }
-.welcome-sub { font-family: var(--font-body); font-style: italic; font-size: 15px; color: var(--ink-2); margin-bottom: 36px; font-weight: 300; }
-.welcome-pills { display: flex; gap: 8px; flex-wrap: wrap; }
-.welcome-pill {
-  font-family: var(--font-display); font-size: 10.5px; font-weight: 600;
-  letter-spacing: 0.08em; color: var(--ink-2);
-  background: transparent; border: 1px solid var(--edge);
-  padding: 8px 16px; border-radius: 2px; cursor: pointer;
-  transition: all 0.2s var(--ease); text-transform: uppercase;
-}
-.welcome-pill:hover { border-color: var(--gold-dim); color: var(--gold); }
-.welcome-pill.locked { opacity: 0.35; border-style: dashed; cursor: default; }
-
-.msg { margin-bottom: 24px; animation: fadeUp 0.3s var(--ease) both; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.msg { margin-bottom: 20px; animation: msgIn 0.25s ease; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .msg.user { display: flex; justify-content: flex-end; }
-.msg-user-bubble {
-  background: var(--surface); border: 1px solid var(--edge);
-  border-radius: var(--r-lg) var(--r-lg) var(--r) var(--r-lg);
-  padding: 12px 18px; max-width: 72%;
-  font-family: var(--font-body); font-size: 13.5px;
-  color: var(--ink); line-height: 1.7;
-}
-.msg-ai-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.msg-ai-label { font-family: var(--font-display); font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em; color: var(--ink-3); text-transform: uppercase; }
-.msg-model-chip { font-family: var(--font-mono); font-size: 8.5px; color: var(--ink-3); background: var(--surface); border: 1px solid var(--edge); padding: 2px 7px; border-radius: 2px; }
-.msg-ai-body { padding-left: 30px; }
-.msg-content { font-family: var(--font-body); font-size: 14px; color: var(--ink); line-height: 1.85; }
-.msg-content p { margin-bottom: 14px; }
-.msg-content strong { font-weight: 700; }
-.msg-content code { font-family: var(--font-mono); font-size: 11.5px; background: var(--surface); border: 1px solid var(--edge); padding: 1px 6px; border-radius: var(--r); }
-.msg-actions { display: flex; gap: 2px; margin-top: 10px; padding-left: 30px; opacity: 0; transition: opacity 0.2s; }
-.msg:hover .msg-actions { opacity: 1; }
-.msg-action-btn { background: none; border: none; color: var(--ink-3); font-family: var(--font-display); font-size: 9.5px; font-weight: 600; cursor: pointer; padding: 4px 10px; border-radius: var(--r); text-transform: uppercase; }
-.msg-action-btn:hover { background: var(--surface); color: var(--ink-2); }
-.msg-disclaimer { font-family: var(--font-mono); font-size: 8px; color: var(--ink-4); margin-top: 10px; padding-left: 30px; }
-.thinking-wrap { padding-left: 30px; display: flex; align-items: center; gap: 8px; }
-.thinking-text { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; }
-.thinking-dots { display: flex; gap: 4px; }
-.thinking-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); animation: pulse 1.4s ease-in-out infinite; opacity: 0.4; }
-.thinking-dot:nth-child(1) { animation-delay: 0s; }
+.msg-user-bubble { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 12px 16px; max-width: 78%; color: var(--txt); line-height: 1.6; font-size: var(--font-sm); }
+.msg.ai { padding-left: 4px; }
+.msg-ai-label { font-size: var(--font-xs); color: var(--txt3); margin-bottom: 6px; font-weight: 600; }
+.msg-ai-body { color: var(--txt); line-height: 1.7; font-size: var(--font-sm); }
+.msg-ai-body p { margin-bottom: 10px; }
+.msg-ai-body strong { color: var(--txt); font-weight: 700; }
+.msg-ai-body code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+.msg-ai-body pre { background: var(--bg2); border: 1px solid var(--bdr); padding: 12px; border-radius: var(--radius-sm); overflow-x: auto; margin: 8px 0; }
+.msg-actions { display: flex; gap: 8px; margin-top: 8px; opacity: 0; transition: opacity 0.2s; }
+.msg:hover .msg-actions { opacity: 0.6; }
+.msg-action-btn { background: none; border: none; color: var(--txt2); font-size: var(--font-xs); cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+.msg-action-btn:hover { color: var(--txt); background: var(--bg3); }
+.ai-note { font-size: 9px; color: var(--txt3); margin-top: 6px; }
+
+.thinking { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.thinking-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--txt3); animation: dotPulse 1.2s infinite; }
 .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
 .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes pulse { 0%,80%,100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+@keyframes dotPulse { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
 
-.input-area { padding: 0 32px 28px; flex-shrink: 0; }
-.input-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.model-tabs { display: flex; gap: 4px; }
-.model-tab {
-  font-family: var(--font-display); font-size: 9.5px; font-weight: 600;
-  letter-spacing: 0.1em; color: var(--ink-3);
-  background: none; border: 1px solid transparent;
-  padding: 5px 10px; border-radius: var(--r); cursor: pointer;
-  transition: all 0.15s; text-transform: uppercase;
-}
-.model-tab:hover { color: var(--ink-2); border-color: var(--edge); }
-.model-tab.active { color: var(--ink); background: var(--surface); border-color: var(--edge); }
-.input-box { display: flex; align-items: flex-end; gap: 10px; background: var(--abyss); border: 1px solid var(--edge); border-radius: var(--r-lg); padding: 12px 12px 12px 18px; transition: border-color 0.2s; }
-.input-box:focus-within { border-color: var(--line); box-shadow: 0 0 0 3px rgba(201,169,110,0.05); }
-.input-field { flex: 1; background: none; border: none; outline: none; color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.6; padding: 2px 0; }
-.input-field::placeholder { color: var(--ink-4); font-style: italic; }
-.input-field:disabled { opacity: 0.3; }
-.send-btn { width: 38px; height: 38px; background: var(--ink); border: none; border-radius: var(--r-md); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.send-btn:hover { background: var(--gold); }
-.send-btn:disabled { opacity: 0.15; cursor: not-allowed; }
-.input-hint { text-align: center; padding: 6px 0 0; font-family: var(--font-mono); font-size: 9px; color: var(--ink-4); }
+.input-area { padding: 12px 20px 20px; }
+.input-box { display: flex; gap: 8px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 6px 6px 6px 14px; transition: border-color 0.2s; align-items: center; }
+.input-box:focus-within { border-color: var(--bdr2); }
+.input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: var(--font-sm); padding: 8px 0; font-family: inherit; }
+.input-field::placeholder { color: var(--txt3); }
+.send-btn { width: 36px; height: 36px; background: var(--txt); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: opacity 0.15s; flex-shrink: 0; }
+.send-btn:hover { opacity: 0.8; }
+.send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+.limit-bar { text-align: center; padding: 4px; font-size: 9px; color: var(--txt3); }
+.limit-bar span { color: var(--txt2); cursor: pointer; text-decoration: underline; }
 
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(8,8,8,0.9); z-index: 200; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(12px); }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
 .modal-overlay.open { display: flex; }
-.modal { background: var(--abyss); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 36px; width: 460px; max-width: 92vw; box-shadow: 0 24px 64px rgba(0,0,0,0.8); }
-.modal h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
-.modal-desc { font-size: 13px; color: var(--ink-2); margin-bottom: 24px; }
-.modal-price { font-family: var(--font-display); font-size: 44px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
-.modal-price span { font-size: 15px; color: var(--ink-3); font-weight: 400; }
-.modal input { width: 100%; background: var(--surface); border: 1px solid var(--edge); color: var(--ink); padding: 11px 14px; border-radius: var(--r-md); font-family: var(--font-body); font-size: 13px; margin-bottom: 10px; outline: none; }
-.modal input:focus { border-color: var(--gold-dim); }
-.modal-btn-row { display: flex; gap: 8px; margin-top: 18px; }
-.modal-btn-primary { flex: 1; background: var(--ink); color: var(--void); border: none; padding: 12px; border-radius: var(--r-md); cursor: pointer; font-family: var(--font-display); font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; min-height: 44px; }
-.modal-btn-primary:hover { background: var(--gold); }
-.modal-btn-secondary { flex: 1; background: transparent; color: var(--ink-2); border: 1px solid var(--edge); padding: 12px; border-radius: var(--r-md); cursor: pointer; font-family: var(--font-display); font-size: 10.5px; font-weight: 600; text-transform: uppercase; min-height: 44px; }
-.modal-btn-secondary:hover { background: var(--surface); color: var(--ink); }
+.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 28px; width: 420px; max-width: 92vw; max-height: 85vh; overflow-y: auto; }
+.modal h2 { font-size: var(--font-lg); font-weight: 700; color: var(--txt); margin-bottom: 8px; }
+.modal p { font-size: var(--font-xs); color: var(--txt2); margin-bottom: 16px; line-height: 1.6; }
+.modal input { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 10px 12px; border-radius: var(--radius-sm); font-size: var(--font-xs); margin-bottom: 10px; outline: none; font-family: inherit; }
+.modal input:focus { border-color: var(--bdr2); }
+.modal-btn { width: 100%; background: var(--txt); color: var(--bg); border: none; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; font-size: var(--font-xs); margin-top: 8px; font-family: inherit; }
+.modal-btn.secondary { background: transparent; border: 1px solid var(--bdr); color: var(--txt); margin-top: 4px; }
+.modal-btn:hover { opacity: 0.85; }
 
-.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--void); padding: 9px 20px; border-radius: 3px; font-family: var(--font-display); font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; z-index: 300; animation: toastAnim 2.8s var(--ease) forwards; pointer-events: none; }
-@keyframes toastAnim { 0% { opacity: 0; transform: translateX(-50%) translateY(8px); } 12% { opacity: 1; transform: translateX(-50%) translateY(0); } 78% { opacity: 1; } 100% { opacity: 0; } }
+.tier-card { border: 1px solid var(--bdr); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+.tier-card:hover { border-color: var(--bdr2); }
+.tier-card h3 { font-size: var(--font-md); font-weight: 700; color: var(--txt); margin-bottom: 4px; }
+.tier-card .price { font-size: var(--font-lg); font-weight: 700; color: var(--txt); }
+.tier-card .price span { font-size: var(--font-xs); color: var(--txt2); font-weight: 400; }
+.tier-card ul { list-style: none; margin-top: 8px; }
+.tier-card li { font-size: var(--font-xs); color: var(--txt2); padding: 3px 0; }
+.tier-card li::before { content: '• '; color: var(--txt3); }
 
-.mobile-menu-btn { display: none; position: fixed; top: 18px; left: 14px; z-index: 70; background: var(--abyss); border: 1px solid var(--edge); color: var(--ink); width: 34px; height: 34px; border-radius: var(--r-md); cursor: pointer; align-items: center; justify-content: center; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--txt); color: var(--bg); padding: 8px 18px; border-radius: 20px; font-size: var(--font-xs); font-weight: 600; z-index: 300; animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards; pointer-events: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
 
 @media (max-width: 768px) {
-  .sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); width: 280px !important; min-width: 280px !important; box-shadow: 20px 0 60px rgba(0,0,0,0.8); z-index: 65; }
-  .sidebar.mobile-open { transform: translateX(0); }
-  .mobile-menu-btn { display: flex; }
-  .chat-messages { padding: 60px 18px 20px; }
-  .input-area { padding: 0 18px 24px; }
+  .sidebar { position: fixed; left: -250px; top: 0; bottom: 0; width: 250px; min-width: 250px; box-shadow: 10px 0 40px rgba(0,0,0,0.6); }
+  .sidebar.open { left: 0; }
+  .msg-user-bubble { max-width: 88%; }
+  .chat-messages { padding: 16px 12px; }
+  .input-area { padding: 8px 12px 16px; }
 }
 </style>
 </head>
 <body>
 
 <div id="app"></div>
-<button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
 
-<div id="paymentModal" class="modal-overlay">
+<div id="authModal" class="modal-overlay">
   <div class="modal">
-    <h2>Capitan Pro</h2>
-    <p class="modal-desc">Institutional intelligence. Unlimited access.</p>
-    <div class="modal-price">$17<span> / month</span></div>
-    <div style="margin-bottom:16px">
-      <select id="cryptoCurrency" style="width:100%;background:var(--surface);border:1px solid var(--edge);color:var(--ink);padding:8px;border-radius:var(--r-md);font-family:var(--font-body);font-size:13px;margin-bottom:8px">
-        <option value="BTC">BTC — 0.00028 BTC</option>
-        <option value="ETH">ETH — 0.005 ETH</option>
-        <option value="USDC">USDC — 17 USDC</option>
+    <h2>👋 Welcome to CAPITAN</h2>
+    <p>Enter your email to start. We'll send you a prompt.</p>
+    <input type="email" id="authEmail" placeholder="you@gmx.com" autocomplete="email">
+    <button class="modal-btn" id="authBtn">Continue</button>
+    <button class="modal-btn secondary" id="authSkip">Skip for now</button>
+  </div>
+</div>
+
+<div id="upgradeModal" class="modal-overlay">
+  <div class="modal">
+    <h2>Upgrade</h2>
+    <div class="tier-card" id="tierPlus">
+      <h3>Plus</h3>
+      <div class="price">$6<span>/month</span></div>
+      <ul>
+        <li>Limited daily messaging</li>
+        <li>Standard AI responses</li>
+        <li>Finance & general knowledge</li>
+        <li>Basic support</li>
+      </ul>
+    </div>
+    <div class="tier-card" id="tierPro">
+      <h3>Pro</h3>
+      <div class="price">$17<span>/month</span></div>
+      <ul>
+        <li>Unlimited messaging</li>
+        <li>Advanced AI models</li>
+        <li>Science & tech education</li>
+        <li>Networking features</li>
+        <li>Idea sharing community</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div id="upgradePayment" style="display:none">
+      <p style="margin-top:12px">Pay with crypto:</p>
+      <select id="cryptoCurrency" style="width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:8px;border-radius:var(--radius-sm);font-size:var(--font-xs);margin-bottom:8px;font-family:inherit">
+        <option value="BTC">BTC</option><option value="ETH">ETH</option><option value="USDC">USDC</option>
       </select>
-      <div style="background:var(--surface);border:1px solid var(--edge);padding:10px;border-radius:var(--r-md);font-family:var(--font-mono);font-size:9px;color:var(--ink-2);word-break:break-all;margin-bottom:8px" id="cryptoAddress">bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new</div>
-      <input type="text" placeholder="Transaction hash (TXID)" id="txidInput">
+      <input type="text" id="txidInput" placeholder="Transaction hash (TXID)">
+      <button class="modal-btn" id="verifyUpgrade">Verify Payment</button>
     </div>
-    <div class="modal-btn-row">
-      <button class="modal-btn-primary" id="verifyPaymentBtn">Verify & Activate</button>
-      <button class="modal-btn-secondary" id="closeModal">Cancel</button>
-    </div>
+    <button class="modal-btn secondary" id="closeUpgrade">Close</button>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════
-// CHANGE THIS TO YOUR WORKER URL
-// ═══════════════════════════════════════
-const API_BASE = 'https://capitan-api.YOURNAME.workers.dev';
+// ═══════════════════════════════════════════════════════════════
+// CAPITAN AI — Frontend v9.0
+// ═══════════════════════════════════════════════════════════════
 
-const CFG = {
-  FOUNDER_CLICKS: 5, FREE_LIMIT: 20, FREE_WINDOW: 7 * 60 * 60 * 1000,
-  PRO_DAYS: 30, EMAIL: 'closeaitechnologies@gmail.com', ADMIN_CODE: 'Osinachi@350'
-};
-
-const uid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
-const mid = () => 'mem_' + uid();
-
+const API = 'https://capitan-api.your-subdomain.workers.dev';
 const S = {
-  messages: [], streaming: false, tier: 'free', proExpiry: null,
-  sidebarOpen: false, sidebarCollapsed: false,
-  sections: { workflows: true, settings: false },
-  theme: 'dark', founderClicks: 0, founderTimer: null,
-  memories: [{ id: uid(), memId: mid(), content: 'Patterns stored', active: true }],
-  selectedModel: 'balanced',
-  models: [
-    { id: 'quick', name: 'Quick' },
-    { id: 'balanced', name: 'Balanced' },
-    { id: 'deep', name: 'Deep' }
-  ],
-  freeMsgCount: 0, freeMsgWindowStart: Date.now(), adminAuth: false
+  messages: [], streaming: false, userId: null, email: null,
+  tier: 'free', sidebarOpen: false, theme: 'dark',
+  msgCount: 0, msgLimit: 20, selectedTier: null
 };
 
-const isPro = () => S.tier === 'pro' || S.tier === 'founder';
-const isFounder = () => S.tier === 'founder';
-const canMessage = () => {
-  if (isPro()) return true;
-  if (Date.now() - S.freeMsgWindowStart > CFG.FREE_WINDOW) { S.freeMsgCount = 0; S.freeMsgWindowStart = Date.now(); }
-  return S.freeMsgCount < CFG.FREE_LIMIT;
-};
+function init() {
+  const saved = localStorage.getItem('capitan_user');
+  if (saved) {
+    const d = JSON.parse(saved);
+    S.userId = d.userId; S.email = d.email; S.tier = d.tier || 'free';
+  }
+  const theme = localStorage.getItem('capitan_theme');
+  if (theme) S.theme = theme;
+  
+  if (!S.userId) {
+    document.getElementById('authModal').classList.add('open');
+  }
+  
+  applyTheme();
+  render();
+}
+
+function applyTheme() { document.documentElement.classList.toggle('light', S.theme === 'light'); }
 
 function toast(msg) {
-  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.querySelector('.toast'); if (t) t.remove();
   const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
-  document.body.appendChild(el); setTimeout(() => el.remove(), 2900);
+  document.body.appendChild(el); setTimeout(() => el.remove(), 2800);
 }
+
 function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
-function fmt(s) { return s ? s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>') : ''; }
-function applyTheme() { document.documentElement.classList.toggle('light', S.theme === 'light'); }
+function fmt(s) {
+  if (!s) return '';
+  return s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>');
+}
 
 const greeting = () => {
   const h = new Date().getHours();
-  if (h < 6) return 'Late night.'; if (h < 12) return 'Good morning.';
-  if (h < 17) return 'Good afternoon.'; if (h < 21) return 'Good evening.';
+  if (h < 6) return 'Late night.';
+  if (h < 12) return 'Good morning.';
+  if (h < 17) return 'Good afternoon.';
+  if (h < 21) return 'Good evening.';
   return 'Night session.';
 };
 
-const SIGIL_SVG = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="0.5" y="0.5" width="19" height="19" rx="3" stroke="var(--edge)"/><path d="M5 10 L10 5 L15 10 L10 15 Z" stroke="var(--gold)" stroke-width="1" fill="none"/><circle cx="10" cy="10" r="1.5" fill="var(--gold)"/></svg>`;
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+async function register(email) {
+  try {
+    const r = await fetch(API + '/api/auth/register', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await r.json();
+    if (data.user_id) {
+      S.userId = data.user_id; S.email = email; S.tier = data.tier || 'free';
+      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+      document.getElementById('authModal').classList.remove('open');
+      toast(data.welcome_prompt || 'Welcome!');
+      render();
+      if (data.welcome_prompt) {
+        setTimeout(() => sendMessage(data.welcome_prompt), 500);
+      }
+    }
+  } catch (e) { toast('Connection error'); }
+}
 
+async function login(email) {
+  try {
+    const r = await fetch(API + '/api/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await r.json();
+    if (data.user_id) {
+      S.userId = data.user_id; S.email = email; S.tier = data.tier || 'free';
+      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+      document.getElementById('authModal').classList.remove('open');
+      render();
+    }
+  } catch (e) { toast('Connection error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════════
+async function sendMessage(content) {
+  const input = document.getElementById('chatInput');
+  const text = content || input?.value?.trim();
+  if (!text || S.streaming) return;
+
+  S.messages.push({ role: 'user', content: text });
+  const aiMsg = { role: 'assistant', content: '' };
+  S.messages.push(aiMsg);
+  S.streaming = true;
+  if (input) { input.value = ''; input.blur(); }
+  renderMessages();
+
+  try {
+    const r = await fetch(API + '/api/chat', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ messages: S.messages.filter(m => m.content).map(m => ({role:m.role,content:m.content})), user_id: S.userId || 'anonymous' })
+    });
+    const data = await r.json();
+    
+    if (data.error && !data.can_send) {
+      aiMsg.content = data.error;
+      toast('Limit reached');
+      document.getElementById('upgradeModal').classList.add('open');
+    } else {
+      aiMsg.content = data.content || 'No response.';
+      S.msgCount = (S.msgCount || 0) + 1;
+    }
+  } catch (e) {
+    aiMsg.content = 'Connection lost. Please try again.';
+  }
+
+  S.streaming = false;
+  renderMessages();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UPGRADE
+// ═══════════════════════════════════════════════════════════════
+async function upgrade(tier) {
+  const txid = document.getElementById('txidInput')?.value?.trim();
+  const currency = document.getElementById('cryptoCurrency')?.value || 'USDC';
+  if (!txid) { toast('Enter TXID'); return; }
+
+  try {
+    const r = await fetch(API + '/api/upgrade', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ user_id: S.userId, tier, txid, currency })
+    });
+    const data = await r.json();
+    if (data.verified) {
+      S.tier = tier;
+      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+      document.getElementById('upgradeModal').classList.remove('open');
+      toast(`Upgraded to ${tier.toUpperCase()}!`);
+      render();
+    } else {
+      toast(data.message || 'Failed');
+    }
+  } catch (e) { toast('Error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
 function render() {
   applyTheme();
   const app = document.getElementById('app'); app.innerHTML = '';
-  const pro = isPro(), fnd = isFounder();
-  const isMobile = window.innerWidth <= 768;
 
+  // Sidebar
   const sb = document.createElement('aside');
-  sb.className = `sidebar${S.sidebarCollapsed && !isMobile ? ' collapsed' : ''}${isMobile && S.sidebarOpen ? ' mobile-open' : ''}`;
-
-  if (S.sidebarOpen || !isMobile) {
-    sb.innerHTML = `
-      <div class="sb-top">
-        <div class="sb-brand">
-          <div class="sb-logo" id="founderSecret"><span class="sb-logo-text">Capitan</span></div>
-          <button class="sb-collapse-btn" id="toggleCollapse">◁</button>
-        </div>
-        <button class="btn-new-chat" id="btnNewChat">+ New Conversation</button>
+  sb.className = `sidebar${S.sidebarOpen ? ' open' : ''}`;
+  sb.innerHTML = `
+    <div class="sb-top">
+      <div class="sb-logo" id="logoToggle">👌</div>
+      <div class="sb-logo-text">CAPITAN AI</div>
+      <button class="btn-new-chat" id="btnNewChat">New conversation</button>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-nav-item" id="btnTheme">${S.theme === 'dark' ? 'Light mode' : 'Dark mode'}</div>
+      <div class="sb-nav-item" id="btnUpgrade">
+        ${S.tier === 'free' ? 'Upgrade' : S.tier === 'plus' ? 'Upgrade to Pro' : 'Pro — Active'}
+        <span class="tier-badge ${S.tier}">${S.tier.toUpperCase()}</span>
       </div>
-      <div class="sb-scroll">
-        <div class="sb-section" style="padding:6px 10px 4px">
-          <button class="sb-nav-item active" id="btnChat">Chat</button>
-          <button class="sb-nav-item" data-cap="general">General</button>
-          <button class="sb-nav-item" data-cap="finance">Finance${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
-          <button class="sb-nav-item" data-cap="coding">Coding${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
-          <button class="sb-nav-item" data-cap="quant">Quant${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
-          <button class="sb-nav-item" data-cap="science">Science${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
-        </div>
-        <div style="height:1px;background:var(--edge);margin:6px 18px"></div>
-        <div class="sb-section" style="padding:6px 10px 4px">
-          <button class="sb-nav-item" id="btnTheme">Theme — ${S.theme === 'dark' ? 'Dark' : 'Light'}</button>
-          <button class="sb-nav-item" id="btnPrivacy">Privacy</button>
-          <button class="sb-nav-item" id="btnTerms">Terms</button>
-          ${fnd ? `<button class="sb-nav-item" id="btnAdmin">Admin${S.adminAuth ? ' ✓' : ''}</button>` : ''}
+    </div>
+    <div class="sb-bottom">
+      <div class="sb-user" id="btnAuth">
+        <div class="sb-user-avatar">👌</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name">${S.email || 'Sign in'}</div>
+          <div class="sb-user-tier">${S.tier.toUpperCase()}</div>
         </div>
       </div>
-      <div class="sb-bottom">
-        ${pro ? `<div class="sb-tier-badge pro">${fnd ? 'FOUNDER' : 'PRO'} — ACTIVE</div>` : `<button class="btn-upgrade" id="btnUpgrade">UPGRADE — $17/MONTH</button>`}
-        <div class="sb-footer-links"><a href="#" id="linkPrivacy">Privacy</a><a href="#" id="linkTerms">Terms</a><a href="mailto:${CFG.EMAIL}">Support</a></div>
-        <div class="sb-company">CLOSEAI Technologies</div>
-      </div>`;
-  }
+    </div>`;
   app.appendChild(sb);
 
+  // Main
   const main = document.createElement('main'); main.className = 'main';
   main.innerHTML = `
     <div class="chat-wrap">
       <div class="chat-messages" id="chatMessages"></div>
       <div class="input-area">
-        <div class="input-meta">
-          <div class="model-tabs" id="modelTabs">
-            ${S.models.map(m => `<button class="model-tab${S.selectedModel === m.id ? ' active' : ''}" data-model="${m.id}">${m.name}</button>`).join('')}
-          </div>
-        </div>
         <div class="input-box">
-          <input class="input-field" type="text" id="chatInput" placeholder="Ask anything..." ${S.streaming ? 'disabled' : ''} autocomplete="off">
-          <button class="send-btn" id="sendBtn" ${S.streaming ? 'disabled' : ''}>
-            <svg viewBox="0 0 14 14" fill="none"><path d="M1 7L13 7M8 2.5L13 7L8 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+          <input class="input-field" type="text" id="chatInput" placeholder="Message CAPITAN..." ${S.streaming?'disabled':''} autocomplete="off">
+          <button class="send-btn" id="sendBtn" ${S.streaming?'disabled':''}>↑</button>
         </div>
-        <div class="input-hint">Return to send · Capitan AI may make errors</div>
+        ${S.tier === 'free' ? `<div class="limit-bar">Limited messaging · <span id="upgradeLink">Upgrade →</span></div>` : ''}
       </div>
     </div>`;
   app.appendChild(main);
 
-  bindEvents(); renderMessages();
+  bindEvents();
+  renderMessages();
 }
 
 function renderMessages() {
   const el = document.getElementById('chatMessages'); if (!el) return;
   if (!S.messages.length) {
-    el.innerHTML = `<div class="welcome"><div class="welcome-eyebrow">Institutional Intelligence</div><h1>${greeting()}</h1><p class="welcome-sub">What would you like to explore?</p><div class="welcome-pills"><button class="welcome-pill" onclick="sendMessage('Analyze market trends')">Finance</button><button class="welcome-pill${isPro() ? '' : ' locked'}" onclick="${isPro() ? "sendMessage('Explain quantitative methods')" : "toast('Pro feature');openModal()"}">Quant${isPro() ? '' : ' · Pro'}</button><button class="welcome-pill${isPro() ? '' : ' locked'}" onclick="${isPro() ? "sendMessage('Write optimized code')" : "toast('Pro feature');openModal()"}">Coding${isPro() ? '' : ' · Pro'}</button><button class="welcome-pill${isPro() ? '' : ' locked'}" onclick="${isPro() ? "sendMessage('Explore scientific concepts')" : "toast('Pro feature');openModal()"}">Science${isPro() ? '' : ' · Pro'}</button></div></div>`;
+    el.innerHTML = `<div class="welcome"><div class="welcome-logo">👌</div><h1>${greeting()}</h1><p class="welcome-sub">Ask me anything — finance, coding, science, or just explore.</p></div>`;
     return;
   }
   el.innerHTML = S.messages.map((m, i) => {
     if (m.role === 'user') return `<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`;
     const isLast = i === S.messages.length - 1, content = m.content || '';
-    return `<div class="msg ai"><div class="msg-ai-meta">${SIGIL_SVG}<span class="msg-ai-label">Capitan AI</span></div>${isLast && !content ? `<div class="thinking-wrap"><div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div><span class="thinking-text">Thinking</span></div>` : `<div class="msg-ai-body"><div class="msg-content">${fmt(content)}</div><div class="msg-actions"><button class="msg-action-btn" onclick="navigator.clipboard.writeText('${content.replace(/'/g,"\\'")}');toast('Copied')">Copy</button></div><div class="msg-disclaimer">Capitan AI may produce errors.</div></div>`}</div>`;
+    return `<div class="msg ai"><div class="msg-ai-label">CAPITAN AI</div>${isLast && !content ? `<div class="thinking"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>` : `<div class="msg-ai-body">${fmt(content)}</div><div class="msg-actions"><button class="msg-action-btn" onclick="navigator.clipboard.writeText(\`${content.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`);toast('Copied')">Copy</button></div><div class="ai-note">CAPITAN AI can make mistakes.</div>`}</div>`;
   }).join('');
   el.scrollTop = el.scrollHeight;
 }
 
-async function sendMessage(content) {
-  const input = document.getElementById('chatInput');
-  const text = content || input?.value?.trim();
-  if (!text || S.streaming) return;
-  if (!isPro() && !canMessage()) { toast('Limit reached'); openModal(); return; }
-
-  S.messages.push({ id: uid(), role: 'user', content: text });
-  const aiMsg = { id: uid(), role: 'assistant', content: '' };
-  S.messages.push(aiMsg); S.streaming = true;
-  if (input) { input.value = ''; input.blur(); }
-  if (!isPro()) S.freeMsgCount++;
-  render();
-
-  try {
-    const r = await fetch(API_BASE + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: S.messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })) })
-    });
-    const data = await r.json();
-    aiMsg.content = data.content || 'No response. Try again.';
-  } catch (e) {
-    aiMsg.content = 'Connection error. Please try again.';
-  }
-
-  S.streaming = false; render();
-}
-
 function bindEvents() {
-  document.getElementById('toggleCollapse')?.addEventListener('click', () => { S.sidebarCollapsed = !S.sidebarCollapsed; render(); });
-  document.getElementById('mobileMenuBtn')?.addEventListener('click', () => { S.sidebarOpen = !S.sidebarOpen; render(); });
-  document.getElementById('founderSecret')?.addEventListener('click', () => {
-    S.founderClicks++; if (S.founderTimer) clearTimeout(S.founderTimer);
-    if (S.founderClicks >= CFG.FOUNDER_CLICKS) { S.tier = 'founder'; S.founderClicks = 0; toast('Founder mode'); render(); }
-    S.founderTimer = setTimeout(() => { S.founderClicks = 0; }, 2000);
-  });
+  document.getElementById('logoToggle')?.addEventListener('click', () => { S.sidebarOpen = !S.sidebarOpen; render(); });
   document.getElementById('btnNewChat')?.addEventListener('click', () => { S.messages = []; render(); });
-  document.getElementById('btnChat')?.addEventListener('click', () => render());
-  document.querySelectorAll('[data-cap]').forEach(b => {
-    b.addEventListener('click', () => {
-      const caps = { general: 'Explore a topic', finance: 'Analyze markets', coding: 'Write code', quant: 'Quant methods', science: 'Science concepts' };
-      if (!isPro() && b.dataset.cap !== 'general') { toast('Pro feature'); openModal(); return; }
-      sendMessage(caps[b.dataset.cap]);
-    });
-  });
-  document.querySelectorAll('.model-tab').forEach(t => {
-    t.addEventListener('click', () => { S.selectedModel = t.dataset.model; document.querySelectorAll('.model-tab').forEach(x => x.classList.toggle('active', x === t)); });
-  });
+  document.getElementById('btnTheme')?.addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('capitan_theme', S.theme); render(); });
+  document.getElementById('btnUpgrade')?.addEventListener('click', () => { if (S.tier === 'pro') { toast('You are on Pro'); return; } document.getElementById('upgradeModal').classList.add('open'); });
+  document.getElementById('btnAuth')?.addEventListener('click', () => { document.getElementById('authModal').classList.add('open'); });
+  document.getElementById('upgradeLink')?.addEventListener('click', () => { document.getElementById('upgradeModal').classList.add('open'); });
+  
   document.getElementById('chatInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
   document.getElementById('sendBtn')?.addEventListener('click', () => sendMessage());
-  document.getElementById('btnTheme')?.addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; render(); });
-  document.getElementById('btnUpgrade')?.addEventListener('click', openModal);
-  document.getElementById('verifyPaymentBtn')?.addEventListener('click', async () => {
-    const txid = document.getElementById('txidInput')?.value?.trim();
-    const currency = document.getElementById('cryptoCurrency')?.value;
-    if (!txid) { toast('Enter TXID'); return; }
-    try {
-      const r = await fetch(API_BASE + '/api/verify-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txid, currency }) });
-      const data = await r.json();
-      if (data.verified) { S.tier = 'pro'; closeModal(); toast('Welcome to Pro!'); render(); }
-      else toast(data.message || 'Failed');
-    } catch (e) { toast('Error'); }
+  
+  document.getElementById('authBtn')?.addEventListener('click', () => {
+    const email = document.getElementById('authEmail')?.value?.trim();
+    if (email && email.includes('@')) { register(email); } else { toast('Enter valid email'); }
   });
-  document.getElementById('closeModal')?.addEventListener('click', closeModal);
-
-  if (isFounder()) {
-    document.getElementById('btnAdmin')?.addEventListener('click', () => {
-      if (!S.adminAuth) { const code = prompt('Admin code:'); if (code === CFG.ADMIN_CODE) { S.adminAuth = true; toast('Access granted'); } else { toast('Invalid'); return; } }
-      alert('Admin Memory — Access granted. Memories stored in browser localStorage.');
-    });
-  }
-
-  document.getElementById('btnPrivacy')?.addEventListener('click', () => alert('CAPITAN AI Privacy Policy\n\nEnd-to-end encrypted. No data sold.\n' + CFG.EMAIL));
-  document.getElementById('btnTerms')?.addEventListener('click', () => alert('Terms: Pro $17/month. Free: 20 msg/7hrs.\n' + CFG.EMAIL));
-  document.getElementById('linkPrivacy')?.addEventListener('click', e => { e.preventDefault(); alert('Privacy: ' + CFG.EMAIL); });
-  document.getElementById('linkTerms')?.addEventListener('click', e => { e.preventDefault(); alert('Terms: $17/mo. ' + CFG.EMAIL); });
-
-  let ts = 0;
-  document.querySelector('.main')?.addEventListener('touchstart', e => { ts = e.touches[0].clientX; }, { passive: true });
-  document.querySelector('.main')?.addEventListener('touchend', e => { if (e.changedTouches[0].clientX - ts > 70 && !S.sidebarOpen) { S.sidebarOpen = true; render(); } });
+  document.getElementById('authSkip')?.addEventListener('click', () => { document.getElementById('authModal').classList.remove('open'); S.userId = 'anonymous'; render(); });
+  document.getElementById('authEmail')?.addEventListener('keydown', e => { if (e.key === 'Enter') { const email = e.target.value?.trim(); if (email && email.includes('@')) register(email); } });
+  
+  document.getElementById('tierPlus')?.addEventListener('click', () => { S.selectedTier = 'plus'; document.getElementById('upgradePayment').style.display = 'block'; });
+  document.getElementById('tierPro')?.addEventListener('click', () => { S.selectedTier = 'pro'; document.getElementById('upgradePayment').style.display = 'block'; });
+  document.getElementById('verifyUpgrade')?.addEventListener('click', () => { if (S.selectedTier) upgrade(S.selectedTier); });
+  document.getElementById('closeUpgrade')?.addEventListener('click', () => { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('upgradePayment').style.display = 'none'; });
+  
+  document.getElementById('upgradeModal')?.addEventListener('click', e => { if (e.target.id === 'upgradeModal') { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('upgradePayment').style.display = 'none'; } });
+  document.getElementById('authModal')?.addEventListener('click', e => { if (e.target.id === 'authModal') document.getElementById('authModal').classList.remove('open'); });
 }
 
-function openModal() { document.getElementById('paymentModal').classList.add('open'); }
-function closeModal() { document.getElementById('paymentModal').classList.remove('open'); }
-
-applyTheme(); render();
+init();
 </script>
 </body>
 </html>
