@@ -1,12 +1,317 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CAPITAN AI</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAPITAN AI</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000; color: #fff; font-family: system-ui, sans-serif; height: 100vh; overflow: hidden; }
+#app { display: flex; height: 100vh; }
+
+/* Sidebar */
+.sidebar { width: 240px; background: #000; border-right: 1px solid #1c1c1c; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.logo { color: #00ff88; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.btn { background: none; border: 1px solid #1c1c1c; color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; width: 100%; text-align: left; }
+.btn:hover { border-color: #00ff88; color: #00ff88; }
+.btn.active { background: rgba(0,255,136,0.1); color: #00ff88; border-color: rgba(0,255,136,0.3); }
+.upgrade { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); color: #00ff88; font-weight: 600; }
+.footer { margin-top: auto; font-size: 10px; color: #333; text-align: center; }
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; max-width: 750px; margin: 0 auto; width: 100%; }
+.messages { flex: 1; overflow-y: auto; padding: 20px; }
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+.welcome h1 { font-size: 18px; font-weight: 400; margin-bottom: 8px; }
+.msg { padding: 12px 16px; margin: 6px 0; line-height: 1.6; font-size: 14px; }
+.msg.user { background: #111; border: 1px solid #1c1c1c; border-radius: 10px; margin-left: auto; max-width: 82%; }
+.msg.ai { border-left: 2px solid #00ff88; padding-left: 16px; max-width: 95%; }
+.msg.ai .hd { font-size: 11px; color: #888; margin-bottom: 6px; }
+.thinking { color: #888; font-size: 13px; }
+
+/* Input */
+.input-area { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #1c1c1c; }
+.input-area input { flex: 1; background: #080808; border: 1px solid #1c1c1c; color: #fff; padding: 12px 14px; border-radius: 8px; font-size: 13px; outline: none; }
+.input-area input:focus { border-color: #00ff88; }
+.input-area button { background: #00ff88; color: #000; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; }
+.input-area button:disabled { opacity: 0.3; }
+
+/* Status */
+.status { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px; font-size: 10px; color: #666; border-top: 1px solid #1c1c1c; }
+.status .dot { width: 5px; height: 5px; border-radius: 50%; background: #00ff88; }
+
+/* Terminal */
+.terminal { padding: 30px; max-width: 800px; overflow-y: auto; }
+.terminal h2 { font-size: 20px; margin-bottom: 8px; }
+.terminal p { color: #888; font-size: 12px; margin-bottom: 20px; }
+.reports { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.rpt-cat { background: #080808; border: 1px solid #1c1c1c; border-radius: 8px; padding: 14px; }
+.rpt-cat h3 { font-size: 11px; color: #00ff88; text-transform: uppercase; margin-bottom: 8px; }
+.rpt-btn { display: block; width: 100%; background: none; border: 1px solid #1c1c1c; color: #fff; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-bottom: 4px; text-align: left; }
+.rpt-btn:hover { border-color: #00ff88; color: #00ff88; }
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
+
+<div id="app"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CAPITAN AI v9.0 — Vanilla JavaScript
+// ═══════════════════════════════════════════════════════════
+
+const state = {
+  messages: [],
+  isStreaming: false,
+  activeView: 'chat',
+  isPro: false,
+};
+
+const API = '/api';
+let messagesEl, inputEl;
+
+function uid() {
+  return Math.random().toString(36).substring(2, 11);
+}
+
+// ── Render ─────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // Sidebar
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'sidebar';
+  sidebar.innerHTML = `
+    <div class="logo">⚓ CAPITAN AI</div>
+    <button class="btn ${state.activeView === 'chat' ? 'active' : ''}" data-view="chat">Chat</button>
+    <button class="btn ${state.activeView === 'terminal' ? 'active' : ''}" data-view="terminal">Research Terminal</button>
+    <div style="margin-top:16px;border-top:1px solid #1c1c1c;padding-top:12px">
+      ${state.isPro
+        ? '<div style="font-size:11px;color:#888">Pro Active</div>'
+        : '<button class="btn upgrade" id="upgradeBtn">Unlock Pro — $10/mo</button>'
+      }
+    </div>
+    <button class="btn" id="newChatBtn" style="margin-top:8px">+ New Chat</button>
+    <div class="footer">CLOSEAI TECHNOLOGIES</div>
+  `;
+  app.appendChild(sidebar);
+
+  // Main
+  const main = document.createElement('main');
+  main.className = 'main';
+
+  if (state.activeView === 'chat') {
+    main.innerHTML = `
+      <div class="messages" id="messagesEl"></div>
+      <div class="input-area">
+        <input type="text" id="inputEl" placeholder="Ask me anything..." ${state.isStreaming ? 'disabled' : ''}>
+        <button id="sendBtn" ${state.isStreaming ? 'disabled' : ''}>➤</button>
+      </div>
+    `;
+  } else {
+    main.innerHTML = `
+      <div class="terminal">
+        <h2>Research Terminal</h2>
+        <p>Generate professional research reports in under 60 seconds</p>
+        <div class="reports" id="reportsEl"></div>
+      </div>
+    `;
+  }
+
+  app.appendChild(main);
+
+  // Status
+  const status = document.createElement('div');
+  status.className = 'status';
+  status.innerHTML = `<div class="dot"></div> CAPITAN AI | ${state.isPro ? 'Pro' : 'Free'}`;
+  app.appendChild(status);
+
+  // Attach events
+  attachEvents();
+  renderMessages();
+}
+
+function renderMessages() {
+  if (!messagesEl) return;
+  messagesEl.innerHTML = '';
+
+  if (state.messages.length === 0) {
+    messagesEl.innerHTML = '<div class="welcome"><h1>How can I help today?</h1></div>';
+    return;
+  }
+
+  state.messages.forEach((msg, i) => {
+    const div = document.createElement('div');
+    div.className = `msg ${msg.role}`;
+    
+    if (msg.role === 'assistant') {
+      div.innerHTML = `<div class="hd">⚓ CAPITAN AI</div>`;
+      if (i === state.messages.length - 1 && !msg.content) {
+        div.innerHTML += '<div class="thinking">Analyzing...</div>';
+      } else {
+        div.innerHTML += msg.content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      }
+    } else {
+      div.textContent = msg.content;
+    }
+    
+    messagesEl.appendChild(div);
+  });
+
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function renderReports() {
+  const reportsEl = document.getElementById('reportsEl');
+  if (!reportsEl) return;
+
+  const reports = [
+    { cat: 'Investment Memos', items: [
+      { label: 'NVIDIA (NVDA)', prompt: 'Generate Investment Memo for NVIDIA.' },
+      { label: 'Ecobank (ETI)', prompt: 'Generate Investment Memo for Ecobank.' }
+    ]},
+    { cat: 'Market Research', items: [
+      { label: 'African Fintech', prompt: 'Generate African Fintech Report.' },
+      { label: 'Gold Thesis', prompt: 'Generate Gold Market Thesis.' }
+    ]},
+    { cat: 'Client Reports', items: [
+      { label: 'Competitive Intel', prompt: 'Generate Competitive Intelligence Report.' },
+      { label: 'Market Entry', prompt: 'Generate Market Entry Analysis.' }
+    ]}
+  ];
+
+  reportsEl.innerHTML = reports.map(cat => `
+    <div class="rpt-cat">
+      <h3>${cat.cat}</h3>
+      ${cat.items.map(item => `<button class="rpt-btn" data-prompt="${item.prompt}">${item.label}</button>`).join('')}
+    </div>
+  `).join('');
+
+  reportsEl.querySelectorAll('.rpt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const prompt = btn.dataset.prompt;
+      handleSend(prompt);
+    });
+  });
+}
+
+// ── API Call ────────────────────────────────────────────────
+async function streamChat(messages, onChunk, onDone) {
+  try {
+    const res = await fetch(API + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, stream: true }),
+    });
+    
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const text = decoder.decode(value);
+      const lines = text.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.done) { onDone(); return; }
+            if (data.content) onChunk(data.content);
+          } catch(e) {}
+        }
+      }
+    }
+  } catch(e) {
+    onChunk('Unable to connect. Please check your API configuration.');
+    onDone();
+  }
+}
+
+// ── Chat Handlers ───────────────────────────────────────────
+function handleSend(text) {
+  const content = text || inputEl?.value.trim();
+  if (!content || state.isStreaming) return;
+
+  state.messages.push({ id: uid(), role: 'user', content });
+  state.messages.push({ id: uid(), role: 'assistant', content: '' });
+  state.isStreaming = true;
+  
+  if (inputEl) inputEl.value = '';
+  render();
+
+  const allMsgs = state.messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content }));
+
+  streamChat(allMsgs,
+    (chunk) => {
+      const last = state.messages[state.messages.length - 1];
+      if (last) last.content = chunk;
+      renderMessages();
+    },
+    () => {
+      state.isStreaming = false;
+      render();
+    }
+  );
+}
+
+// ── Events ──────────────────────────────────────────────────
+function attachEvents() {
+  // Sidebar buttons
+  document.querySelectorAll('[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.activeView = btn.dataset.view;
+      render();
+    });
+  });
+
+  // New chat
+  const newChatBtn = document.getElementById('newChatBtn');
+  if (newChatBtn) {
+    newChatBtn.addEventListener('click', () => {
+      state.messages = [];
+      render();
+    });
+  }
+
+  // Upgrade
+  const upgradeBtn = document.getElementById('upgradeBtn');
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener('click', () => {
+      state.isPro = true;
+      render();
+    });
+  }
+
+  // Chat input
+  inputEl = document.getElementById('inputEl');
+  const sendBtn = document.getElementById('sendBtn');
+  
+  if (inputEl) {
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSend();
+    });
+    inputEl.focus();
+  }
+  
+  if (sendBtn) {
+    sendBtn.addEventListener('click', () => handleSend());
+  }
+
+  // Messages container
+  messagesEl = document.getElementById('messagesEl');
+  if (messagesEl) renderMessages();
+
+  // Reports
+  renderReports();
+}
+
+// ── Start ───────────────────────────────────────────────────
+render();
+</script>
+
 </body>
 </html>

@@ -1,1 +1,33 @@
-import {useEffect} from 'react';import {Sidebar} from './components/Sidebar/Sidebar';import {ChatInterface} from './components/Chat/ChatInterface';import {ResearchTerminal} from './components/ResearchTerminal/ResearchTerminal';import {useStore} from './store/useStore';import {fetchPrices} from './services/api';import './App.css';export default function App(){const{activeView,isPro,setLivePrices}=useStore();useEffect(()=>{if(isPro){fetchPrices().then(r=>r.data&&setLivePrices(r.data));const i=setInterval(()=>fetchPrices().then(r=>r.data&&setLivePrices(r.data)),30000);return()=>clearInterval(i)}},[isPro]);return(<div className='app'><Sidebar/><main className='main'>{activeView==='chat'&&<ChatInterface/>}{activeView==='terminal'&&<ResearchTerminal/>}</main></div>)}
+import { Sidebar } from "./components/Sidebar/Sidebar";
+import { ChatInterface } from "./components/Chat/ChatInterface";
+import { ResearchTerminal } from "./components/ResearchTerminal/ResearchTerminal";
+import { useStore } from "./store/useStore";
+import "./App.css";
+
+export default function App() {
+  const { activeView } = useStore();
+
+  const renderView = () => {
+    switch (activeView) {
+      case "chat":
+        return <ChatInterface />;
+      case "terminal":
+        return <ResearchTerminal />;
+      default:
+        return <ChatInterface />;
+    }
+  };
+
+  return (
+    <div className="app">
+      <Sidebar />
+      <main className="main">
+        {renderView()}
+      </main>
+      <div className="status-bar">
+        <span className="status-dot" />
+        <span>CAPITAN AI</span>
+      </div>
+    </div>
+  );
+}
