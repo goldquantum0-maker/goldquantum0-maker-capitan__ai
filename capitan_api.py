@@ -353,8 +353,8 @@ def get_user_location(ip: str = None) -> dict:
 # ═══════════════════════════════════════════════════════════════
 # DATABASE (SQLite + Supabase)
 # ═══════════════════════════════════════════════════════════════
-DB_PATH = os.environ.get("DATABASE_PATH", "/var/data/capitan.db")
-os.makedirs(os.path.dirname(DB_PATH) if os.path.dirname(DB_PATH) else "/var/data", exist_ok=True)
+# Use Render's temp directory or current directory
+DB_PATH = os.environ.get("DATABASE_PATH", os.path.join(os.getcwd(), "capitan.db"))
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
