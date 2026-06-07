@@ -1,1 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;overflow:hidden}#root{display:flex;height:100vh}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg-primary: #000000;
+  --bg-secondary: #080808;
+  --bg-card: #111111;
+  --bg-hover: #1a1a1a;
+  --border: #1c1c1c;
+  --border-light: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #888888;
+  --text-muted: #555555;
+  --accent: #00ff88;
+  --accent-dim: rgba(0, 255, 136, 0.08);
+  --accent-glow: rgba(0, 255, 136, 0.15);
+  --red: #ff3355;
+  --gold: #ffcc00;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font-xs: 0.65rem;
+  --font-sm: 0.75rem;
+  --font-md: 0.85rem;
+  --font-lg: 1rem;
+  --font-xl: 1.2rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  font-size: var(--font-sm);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
