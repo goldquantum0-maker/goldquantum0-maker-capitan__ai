@@ -6,7 +6,7 @@
 <title>CAPITAN AI — Institutional Intelligence</title>
 <style>
 /* ═══════════════════════════════════════════════════════════ */
-/* CAPITAN AI v16.1 — Clean Headlines. Deep Ash. Pure White */
+/* CAPITAN AI v16.3 — Clean. Smooth. Cute.                  */
 /* CLOSEAI TECHNOLOGIES — closeaitechnologies@gmail.com     */
 /* ═══════════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -22,9 +22,6 @@
   --txt: #ffffff;
   --txt2: #cccccc;
   --txt3: #888888;
-  --accent2: #4da3ff;
-  --accent3: #ff5555;
-  --accent4: #ffd93d;
   --emoji-opacity: 0.18;
   --emoji-filter: grayscale(1);
   --emoji-hover-opacity: 0.30;
@@ -36,13 +33,13 @@
   --radius: 16px;
   --radius-sm: 12px;
   --radius-xs: 8px;
-  --font-xs: 11px;
-  --font-sm: 13px;
-  --font-md: 15px;
-  --font-lg: 19px;
+  --font-xs: 10px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 18px;
   --font-xl: 24px;
   --shadow-lg: 0 30px 80px rgba(0,0,0,0.7);
-  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :root.light {
@@ -53,18 +50,17 @@
   --bdr: #c0c0c0;
   --bdr2: #b0b0b0;
   --bdr3: #9a9a9a;
-  --txt: #ffffff;
-  --txt2: #ffffff;
-  --txt3: #ffffff;
-  --shadow-lg: 0 30px 80px rgba(0,0,0,0.06);
+  --txt: #0a0a0a;
+  --txt2: #1a1a1a;
+  --txt3: #3a3a3a;
   --emoji-opacity: 0.18;
   --emoji-filter: grayscale(1) brightness(0);
   --emoji-hover-opacity: 0.30;
   --logo-opacity: 0.15;
   --logo-hover-opacity: 0.28;
-  --trans-icon: rgba(255,255,255,0.05);
-  --trans-hover: rgba(255,255,255,0.10);
-  --trans-border: rgba(255,255,255,0.04);
+  --trans-icon: rgba(0,0,0,0.05);
+  --trans-hover: rgba(0,0,0,0.10);
+  --trans-border: rgba(0,0,0,0.04);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -113,20 +109,19 @@ body {
   background: var(--bg3); border: 1px solid var(--bdr2);
   color: var(--txt); cursor: pointer;
   padding: 8px 12px; border-radius: var(--radius-xs);
-  font-size: 13px; opacity: 0.8; transition: all var(--transition);
+  font-size: var(--font-xs); opacity: 0.8; transition: all var(--transition);
   min-width: 36px; min-height: 36px;
   display: flex; align-items: center; justify-content: center; gap: 6px;
   font-weight: 600;
 }
 .sb-toggle:hover { opacity: 1; background: var(--bg4); border-color: var(--bdr3); }
-.sb-toggle .toggle-icon { font-size: 14px; }
 
 .sb-section { border-top: 1px solid var(--bdr); padding-top: 10px; margin-top: 6px; }
 .sb-section:first-of-type { border-top: none; }
 .sb-section-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; cursor: pointer; border-radius: var(--radius-sm);
-  font-size: 11px; color: var(--txt2); font-weight: 700;
+  font-size: var(--font-xs); color: var(--txt2); font-weight: 700;
   transition: all var(--transition); user-select: none;
   min-height: 42px; text-transform: uppercase; letter-spacing: 0.07em;
 }
@@ -147,24 +142,18 @@ body {
 .sb-item.active { background: var(--trans-icon); color: var(--txt); font-weight: 600; }
 .sb-item .emoji { opacity: var(--emoji-opacity); filter: var(--emoji-filter); font-size: 14px; width: 22px; text-align: center; flex-shrink: 0; transition: all var(--transition); }
 .sb-item:hover .emoji { opacity: var(--emoji-hover-opacity); }
-.sb-item .badge { margin-left: auto; font-size: 9px; background: var(--bg4); color: var(--txt2); padding: 3px 8px; border-radius: 12px; font-weight: 600; }
+.sb-item .badge { margin-left: auto; font-size: 8px; background: var(--bg4); color: var(--txt2); padding: 2px 7px; border-radius: 10px; font-weight: 600; }
 .sb-item .badge.pro { background: var(--trans-hover); color: var(--txt); }
-.sb-item .badge.live { background: rgba(77,163,255,0.15); color: var(--txt); animation: livePulse 2s infinite; }
-@keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
-.sb-item.locked { opacity: 0.35; cursor: not-allowed; }
-.sb-item.locked:hover { background: none; color: var(--txt2); }
-.sb-item .lock-icon { margin-left: auto; font-size: 10px; opacity: 0.3; color: var(--txt3); }
 
 .sb-market-section { border-top: 1px solid var(--bdr); padding-top: 8px; margin-top: 4px; }
 .sb-market-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; cursor: pointer; border-radius: var(--radius-sm);
-  font-size: 10px; color: var(--txt2); font-weight: 700;
+  font-size: var(--font-xs); color: var(--txt2); font-weight: 700;
   transition: all var(--transition); user-select: none;
   min-height: 40px; text-transform: uppercase; letter-spacing: 0.06em;
 }
 .sb-market-header:hover { background: var(--bg3); color: var(--txt); }
-.sb-market-header .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); animation: livePulse 2s infinite; margin-right: 4px; }
 .sb-market-header .mh-left { display: flex; align-items: center; gap: 6px; }
 .sb-market-header .arrow { font-size: 10px; transition: transform 0.2s; opacity: 0.4; color: var(--txt2); }
 .sb-market-header.open .arrow { transform: rotate(90deg); opacity: 0.7; }
@@ -174,22 +163,19 @@ body {
 .sb-market-item {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 12px; border-radius: var(--radius-xs); gap: 4px;
-  cursor: pointer; transition: all var(--transition); font-size: 10px;
+  cursor: pointer; transition: all var(--transition); font-size: var(--font-xs);
 }
 .sb-market-item:hover { background: var(--bg3); }
-.sb-market-item .sym { font-weight: 700; color: var(--txt); width: 38px; font-size: 10px; }
-.sb-market-item .price { font-weight: 600; color: var(--txt2); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-.sb-market-item .chg { font-size: 9px; font-weight: 700; min-width: 42px; text-align: right; }
-.sb-market-item .chg.up { color: var(--txt); }
-.sb-market-item .chg.down { color: var(--txt2); }
+.sb-market-item .sym { font-weight: 700; color: var(--txt); width: 38px; }
+.sb-market-item .price { font-weight: 600; color: var(--txt2); font-family: 'JetBrains Mono', monospace; }
+.sb-market-item .chg { font-size: 9px; font-weight: 700; min-width: 42px; text-align: right; color: var(--txt2); }
 
 .sb-news-item {
   padding: 9px 12px; border-radius: var(--radius-xs); cursor: pointer;
-  transition: all var(--transition); border-left: 2px solid transparent;
-  margin-bottom: 1px;
+  transition: all var(--transition); border-left: 2px solid transparent; margin-bottom: 1px;
 }
 .sb-news-item:hover { background: var(--bg3); border-left-color: var(--bdr2); }
-.sb-news-item .headline { font-size: 10px; color: var(--txt2); line-height: 1.4; font-weight: 500; }
+.sb-news-item .headline { font-size: var(--font-xs); color: var(--txt2); line-height: 1.4; font-weight: 500; }
 .sb-news-item .time { font-size: 8px; color: var(--txt3); margin-top: 3px; }
 
 .memory-id-badge {
@@ -227,7 +213,7 @@ body {
 }
 .btn-upgrade:hover { background: var(--trans-hover); border-color: var(--bdr2); }
 
-.tier-badge { text-align: center; padding: 8px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 800; letter-spacing: 0.08em; flex-shrink: 0; margin-top: 4px; color: var(--txt); }
+.tier-badge { text-align: center; padding: 8px; border-radius: var(--radius-sm); font-size: var(--font-xs); font-weight: 800; letter-spacing: 0.08em; flex-shrink: 0; margin-top: 4px; color: var(--txt); }
 .tier-free { background: var(--trans-icon); }
 .tier-pro { background: var(--trans-hover); }
 .tier-founder { background: var(--trans-hover); border: 1px solid var(--trans-border); }
@@ -236,16 +222,13 @@ body {
 .sb-footer-links { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
 .sb-footer-links a { color: var(--txt2); font-size: 9px; text-decoration: none; font-weight: 600; }
 .sb-footer-links a:hover { color: var(--txt); }
-.sb-footer-brand { text-align: center; font-size: 10px; color: var(--txt2); letter-spacing: 0.1em; opacity: 0.8; font-weight: 700; margin-top: 4px; }
+.sb-footer-brand { text-align: center; font-size: var(--font-xs); color: var(--txt2); letter-spacing: 0.1em; opacity: 0.8; font-weight: 700; margin-top: 4px; }
 .support-link { text-align: center; padding: 2px 0; font-size: 9px; color: var(--txt2); opacity: 0.7; }
 .support-link a { color: var(--txt); text-decoration: none; font-weight: 600; }
-.support-link a:hover { color: var(--txt); }
 
-.limit-indicator { text-align: center; padding: 8px 10px; font-size: 10px; color: var(--txt2); background: var(--bg2); border-radius: var(--radius-sm); margin: 6px 0; }
+.limit-indicator { text-align: center; padding: 8px 10px; font-size: var(--font-xs); color: var(--txt2); background: var(--bg2); border-radius: var(--radius-sm); margin: 6px 0; }
 .limit-indicator .limit-bar { height: 3px; background: var(--bdr); border-radius: 2px; margin-top: 6px; overflow: hidden; }
 .limit-indicator .limit-fill { height: 100%; background: var(--txt2); border-radius: 2px; transition: width 0.3s; }
-.limit-indicator.warning .limit-fill { background: var(--accent4); }
-.limit-indicator.critical .limit-fill { background: var(--accent3); }
 
 .workspace-switcher {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
@@ -266,16 +249,67 @@ body {
 .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 28px 24px; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
 
-.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 58vh; text-align: center; padding: 24px; }
-.welcome .logo-large { font-size: 56px; opacity: var(--logo-opacity); filter: var(--emoji-filter); margin-bottom: 20px; transition: all var(--transition); }
-.welcome h1 { font-size: clamp(24px, 5vw, 30px); font-weight: 600; color: var(--txt); margin-bottom: 8px; letter-spacing: -0.03em; line-height: 1.3; }
-.welcome .subtitle { font-size: var(--font-sm); color: var(--txt2); max-width: 400px; line-height: 1.6; }
+/* ═══════════════════════════════════════════════════════════ */
+/* WELCOME — Clean greeting + small category pills           */
+/* ═══════════════════════════════════════════════════════════ */
+.welcome {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 58vh; text-align: center; padding: 24px;
+}
+.welcome .logo-large {
+  font-size: 56px; opacity: var(--logo-opacity);
+  filter: var(--emoji-filter); margin-bottom: 20px;
+  transition: all var(--transition);
+}
+.welcome h1 {
+  font-size: clamp(24px, 5vw, 30px); font-weight: 600;
+  color: var(--txt); margin-bottom: 20px;
+  letter-spacing: -0.03em; line-height: 1.3;
+}
+.welcome .subtitle {
+  font-size: var(--font-sm); color: var(--txt2);
+  max-width: 400px; line-height: 1.6;
+}
 
-.suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 24px; max-width: 680px; padding: 0 12px; }
-.suggestion { background: transparent; border: 1px solid var(--bdr); color: var(--txt2); padding: 12px 18px; border-radius: 24px; cursor: pointer; font-size: var(--font-xs); font-family: inherit; transition: all var(--transition); white-space: nowrap; min-height: 40px; font-weight: 500; }
+/* Small cute category pills */
+.welcome-categories {
+  display: flex; gap: 10px; justify-content: center;
+  flex-wrap: wrap; margin-top: 2px;
+}
+.welcome-categories span {
+  font-size: var(--font-xs); font-weight: 500; color: var(--txt2);
+  cursor: pointer; transition: all var(--transition);
+  padding: 6px 14px; border-radius: 16px;
+  border: 1px solid var(--bdr);
+  letter-spacing: 0.02em;
+}
+.welcome-categories span:hover { border-color: var(--bdr2); color: var(--txt); background: var(--bg3); }
+.welcome-categories span.locked { opacity: 0.5; }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* SUGGESTIONS                                                 */
+/* ═══════════════════════════════════════════════════════════ */
+.suggestions {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin-top: 22px; max-width: 680px; padding: 0 12px;
+}
+.suggestion {
+  background: transparent; border: 1px solid var(--bdr);
+  color: var(--txt2); padding: 10px 16px; border-radius: 20px;
+  cursor: pointer; font-size: var(--font-xs); font-family: inherit;
+  transition: all var(--transition); white-space: nowrap;
+  min-height: 36px; font-weight: 500;
+}
 .suggestion:hover { border-color: var(--txt); color: var(--txt); background: var(--bg3); }
 
-.msg { padding: 18px 20px; margin: 8px 0; line-height: 1.75; font-size: var(--font-sm); animation: msgIn 0.3s ease; word-break: break-word; }
+/* ═══════════════════════════════════════════════════════════ */
+/* MESSAGES                                                    */
+/* ═══════════════════════════════════════════════════════════ */
+.msg {
+  padding: 18px 20px; margin: 8px 0; line-height: 1.75;
+  font-size: var(--font-sm); animation: msgIn 0.35s ease;
+  word-break: break-word;
+}
 @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .msg.user { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius); margin-left: auto; max-width: 80%; color: var(--txt); }
 .msg.ai { background: transparent; border-left: 2px solid var(--bdr2); padding-left: 18px; max-width: 95%; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
@@ -287,10 +321,7 @@ body {
 .msg-content p { margin-bottom: 10px; color: var(--txt); }
 .msg-content strong { color: var(--txt); font-weight: 700; }
 .msg-content code { background: var(--bg3); color: var(--txt); padding: 3px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-.confidence-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; padding: 4px 10px; border-radius: 10px; margin-left: 6px; font-weight: 700; color: var(--txt); }
-.conf-high { background: rgba(255,255,255,0.08); }
-.conf-medium { background: rgba(255,255,255,0.06); }
-.conf-low { background: rgba(255,255,255,0.04); }
+.confidence-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; padding: 4px 10px; border-radius: 10px; margin-left: 6px; font-weight: 700; color: var(--txt); background: var(--trans-icon); }
 .citation { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: var(--txt); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; opacity: 0.7; }
 .citation:hover { opacity: 1; }
 .source-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
@@ -298,9 +329,9 @@ body {
 .source-chip:hover { border-color: var(--bdr2); }
 .msg-actions { display: flex; gap: 12px; padding: 10px 0 0; opacity: 0; transition: opacity 0.2s; flex-wrap: wrap; }
 .msg.ai:hover .msg-actions { opacity: 0.6; }
-.msg-actions button { background: none; border: none; color: var(--txt); font-size: 10px; font-family: inherit; cursor: pointer; padding: 5px 10px; min-height: 30px; border-radius: 6px; transition: all var(--transition); display: flex; align-items: center; gap: 5px; font-weight: 600; opacity: 0.7; }
+.msg-actions button { background: none; border: none; color: var(--txt); font-size: var(--font-xs); font-family: inherit; cursor: pointer; padding: 5px 10px; min-height: 30px; border-radius: 6px; transition: all var(--transition); display: flex; align-items: center; gap: 5px; font-weight: 600; opacity: 0.7; }
 .msg-actions button:hover { opacity: 1; background: var(--bg3); }
-.ai-note { font-size: 10px; color: var(--txt2); margin-top: 10px; opacity: 0.6; font-weight: 500; }
+.ai-note { font-size: var(--font-xs); color: var(--txt2); margin-top: 10px; opacity: 0.6; font-weight: 500; }
 .thinking { display: flex; align-items: center; gap: 12px; color: var(--txt2); font-size: var(--font-xs); padding: 6px 0; }
 .thinking-dots { display: flex; gap: 6px; }
 .thinking-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--txt2); animation: dotPulse 1.4s infinite; }
@@ -309,24 +340,32 @@ body {
 @keyframes dotPulse { 0%,80%,100%{opacity:0.3} 40%{opacity:0.8} }
 
 .cot-panel { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px 18px; margin: 10px 0; font-size: var(--font-xs); color: var(--txt); }
-.cot-panel .cot-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-weight: 700; color: var(--txt); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; }
+.cot-panel .cot-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-weight: 700; color: var(--txt); text-transform: uppercase; letter-spacing: 0.06em; font-size: var(--font-xs); }
 .cot-panel .cot-step { padding: 7px 0; border-bottom: 1px solid var(--bdr); display: flex; gap: 10px; align-items: flex-start; }
 .cot-panel .cot-step:last-child { border-bottom: none; }
-.cot-step .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--bg4); color: var(--txt); font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; }
+.cot-step .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--bg4); color: var(--txt); font-size: var(--font-xs); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; }
 .cot-step .step-content { flex: 1; color: var(--txt); }
 
 .comparison-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: var(--font-xs); border-radius: var(--radius-sm); overflow: hidden; }
-.comparison-table th { text-align: left; padding: 10px 12px; background: var(--bg3); color: var(--txt); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--bdr); }
+.comparison-table th { text-align: left; padding: 10px 12px; background: var(--bg3); color: var(--txt); font-weight: 700; font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--bdr); }
 .comparison-table td { padding: 10px 12px; border-bottom: 1px solid var(--bdr); color: var(--txt); }
 .comparison-table tr:hover td { background: var(--bg3); }
 
 .scenario-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
 .scenario { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
-.scenario .sc-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 700; color: var(--txt); }
+.scenario .sc-label { font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 700; color: var(--txt); }
 .scenario .sc-value { font-size: var(--font-md); font-weight: 800; color: var(--txt); }
 
+/* ═══════════════════════════════════════════════════════════ */
+/* INPUT                                                       */
+/* ═══════════════════════════════════════════════════════════ */
 .chat-input-wrap { padding: 16px 24px 24px; }
-.chat-input-inner { display: flex; gap: 8px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 6px 6px 6px 18px; transition: all var(--transition); align-items: center; }
+.chat-input-inner {
+  display: flex; gap: 8px; background: var(--bg2);
+  border: 1px solid var(--bdr); border-radius: var(--radius);
+  padding: 6px 6px 6px 18px; transition: all var(--transition);
+  align-items: center;
+}
 .chat-input-inner:focus-within { border-color: var(--bdr2); box-shadow: 0 0 0 4px var(--trans-icon); }
 .chat-input-inner input { flex: 1; background: transparent; border: none; color: var(--txt); padding: 12px 0; font-size: var(--font-sm); font-family: inherit; outline: none; min-width: 0; }
 .chat-input-inner input::placeholder { color: var(--txt3); }
@@ -338,10 +377,13 @@ body {
 .send-btn:hover { opacity: 0.85; transform: scale(1.03); }
 .send-btn:disabled { opacity: 0.1; cursor: not-allowed; transform: none; }
 .model-selector { display: flex; gap: 6px; padding: 8px 0; }
-.model-option { background: none; border: 1px solid var(--bdr); color: var(--txt2); padding: 6px 12px; border-radius: 16px; cursor: pointer; font-size: 10px; font-family: inherit; font-weight: 600; transition: all var(--transition); opacity: 0.6; }
+.model-option { background: none; border: 1px solid var(--bdr); color: var(--txt2); padding: 6px 12px; border-radius: 16px; cursor: pointer; font-size: var(--font-xs); font-family: inherit; font-weight: 600; transition: all var(--transition); opacity: 0.6; }
 .model-option:hover { border-color: var(--txt); color: var(--txt); opacity: 1; }
 .model-option.active { border-color: var(--txt); color: var(--txt); background: var(--bg3); opacity: 1; }
 
+/* ═══════════════════════════════════════════════════════════ */
+/* MODALS                                                      */
+/* ═══════════════════════════════════════════════════════════ */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 120; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(6px); }
 .modal-overlay.open { display: flex; }
 .modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 32px; width: 500px; max-width: 94vw; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
@@ -375,15 +417,15 @@ body {
 .prompt-template { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; cursor: pointer; transition: all var(--transition); }
 .prompt-template:hover { border-color: var(--bdr2); }
 .prompt-template .pt-title { font-weight: 700; font-size: var(--font-xs); margin-bottom: 4px; color: var(--txt); }
-.prompt-template .pt-preview { font-size: 10px; color: var(--txt2); font-family: 'JetBrains Mono', monospace; }
+.prompt-template .pt-preview { font-size: var(--font-xs); color: var(--txt2); font-family: 'JetBrains Mono', monospace; }
 .prompt-template .pt-vars { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
-.pt-var { background: rgba(255,255,255,0.08); color: var(--txt); padding: 3px 9px; border-radius: 10px; font-size: 9px; font-weight: 600; }
+.pt-var { background: var(--trans-hover); color: var(--txt); padding: 3px 9px; border-radius: 10px; font-size: 9px; font-weight: 600; }
 
 .api-key-display { background: var(--bg3); border: 1px solid var(--bdr); padding: 14px; border-radius: var(--radius-sm); margin: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--txt); word-break: break-all; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 
 .admin-memory-panel { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px; margin: 10px 0; max-height: 280px; overflow-y: auto; }
 .admin-memory-item { padding: 10px 12px; border-bottom: 1px solid var(--bdr); font-size: var(--font-xs); }
-.admin-memory-item .am-user { font-weight: 700; color: var(--txt); font-size: 10px; }
+.admin-memory-item .am-user { font-weight: 700; color: var(--txt); font-size: var(--font-xs); }
 .admin-memory-item .am-content { color: var(--txt2); margin-top: 3px; }
 .admin-memory-item .am-id { font-size: 8px; color: var(--txt2); font-family: 'JetBrains Mono', monospace; }
 .admin-memory-item .am-time { font-size: 8px; color: var(--txt2); }
@@ -396,7 +438,7 @@ body {
 .theme-toggle:hover { background: var(--bg3); color: var(--txt); }
 .theme-toggle .theme-icon { opacity: var(--emoji-opacity); filter: var(--emoji-filter); font-size: 14px; width: 22px; text-align: center; }
 .theme-toggle:hover .theme-icon { opacity: var(--emoji-hover-opacity); }
-.theme-toggle .theme-indicator { font-size: 10px; color: var(--txt); background: var(--bg3); padding: 4px 12px; border-radius: 12px; font-weight: 600; }
+.theme-toggle .theme-indicator { font-size: var(--font-xs); color: var(--txt); background: var(--bg3); padding: 4px 12px; border-radius: 12px; font-weight: 600; }
 
 .mobile-toggle-hint {
   display: none; position: fixed; left: 0; top: 50%; transform: translateY(-50%);
@@ -422,9 +464,11 @@ body {
   .msg.user { max-width: 88%; }
   .msg.ai { max-width: 100%; }
   .suggestions { gap: 6px; }
-  .suggestion { padding: 10px 14px; font-size: 10px; border-radius: 20px; }
+  .suggestion { padding: 8px 12px; font-size: var(--font-xs); border-radius: 18px; }
   .scenario-box { grid-template-columns: 1fr; }
   .modal { padding: 22px; width: 100%; }
+  .welcome-categories { gap: 6px; }
+  .welcome-categories span { padding: 5px 10px; font-size: 9px; }
 }
 @media (max-width: 480px) {
   .sidebar { width: 100vw; min-width: 100vw; left: -100vw; }
@@ -459,30 +503,30 @@ body {
 <div id="paymentModal" class="modal-overlay">
   <div class="modal">
     <h2>⚓ Upgrade to Capitan Pro</h2>
-    <p>✨ All workflows. All tools. Unlimited access. Full intelligence spectrum.</p>
+    <p>All workflows. All tools. Unlimited access. Full intelligence spectrum.</p>
     <div class="price">$17<span>/month</span></div>
     <div class="tabs">
       <div class="tab active" data-tab="card">💳 Card</div>
       <div class="tab" data-tab="crypto">₿ Crypto</div>
     </div>
     <div id="tabCard">
-      <input type="text" placeholder="💳 Card number" id="cardNumber" inputmode="numeric" autocomplete="cc-number">
-      <div style="display:flex;gap:8px"><input type="text" placeholder="📅 MM/YY" style="flex:1" id="cardExpiry" inputmode="numeric" autocomplete="cc-exp"><input type="text" placeholder="🔐 CVC" style="flex:1" id="cardCvc" inputmode="numeric" autocomplete="cc-csc"></div>
-      <input type="text" placeholder="👤 Name on card" id="cardName" autocomplete="cc-name">
-      <div class="btn-row"><button class="btn-primary" id="payCard">💳 Pay $17</button><button class="btn-secondary" id="closeModal">✕ Cancel</button></div>
+      <input type="text" placeholder="Card number" id="cardNumber" inputmode="numeric" autocomplete="cc-number">
+      <div style="display:flex;gap:8px"><input type="text" placeholder="MM/YY" style="flex:1" id="cardExpiry" inputmode="numeric" autocomplete="cc-exp"><input type="text" placeholder="CVC" style="flex:1" id="cardCvc" inputmode="numeric" autocomplete="cc-csc"></div>
+      <input type="text" placeholder="Name on card" id="cardName" autocomplete="cc-name">
+      <div class="btn-row"><button class="btn-primary" id="payCard">Pay $17</button><button class="btn-secondary" id="closeModal">Cancel</button></div>
     </div>
     <div id="tabCrypto" style="display:none">
-      <div style="font-size:var(--font-xs);color:var(--txt2);margin-bottom:10px;line-height:1.7">₿ Send <strong>0.00028 BTC</strong> or <strong>0.005 ETH</strong> or <strong>17 USDC</strong> to:</div>
+      <div style="font-size:var(--font-xs);color:var(--txt2);margin-bottom:10px;line-height:1.7">Send <strong>0.00028 BTC</strong> or <strong>0.005 ETH</strong> or <strong>17 USDC</strong> to:</div>
       <input type="text" value="bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new" readonly style="font-size:10px;font-family:'JetBrains Mono',monospace">
-      <input type="text" placeholder="🔗 Transaction hash (TXID)" id="txidInput">
-      <div class="btn-row"><button class="btn-primary" id="verifyCrypto">✅ Verify & Activate</button><button class="btn-secondary" id="closeModal2">✕ Cancel</button></div>
+      <input type="text" placeholder="Transaction hash (TXID)" id="txidInput">
+      <div class="btn-row"><button class="btn-primary" id="verifyCrypto">Verify & Activate</button><button class="btn-secondary" id="closeModal2">Cancel</button></div>
     </div>
   </div>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// CAPITAN AI v16.1 — Clean Headlines Only
+// CAPITAN AI v16.3 — Clean. Smooth. Cute.
 // CLOSEAI Technologies — closeaitechnologies@gmail.com
 // ═══════════════════════════════════════════════════════════
 
@@ -509,7 +553,7 @@ const GlobalMemory = {
 
 function loadState() {
   try {
-    const s = localStorage.getItem('capitan_v6');
+    const s = localStorage.getItem('capitan_v7');
     if (s) {
       const p = JSON.parse(s);
       if ((p.tier==='pro'||p.tier==='founder') && p.proExpiry && Date.now()>p.proExpiry) {
@@ -526,10 +570,10 @@ function getDefaultState() {
   return {
     messages:[], streaming:false, activeView:'chat',
     tier:'free', proExpiry:null, sidebarOpen:false,
-    sections:{workflows:true, pro:false, markets:false, marketNews:false, settings:false},
+    sections:{workflows:true, settings:false},
     theme:'dark', founderClicks:0, founderTimer:null,
     currentWorkspace:null, workspaces:[], members:[],
-    memories:[{id:shortId(), memoryId:memId(), content:'🧠 Your interaction patterns are stored securely', active:true}],
+    memories:[{id:shortId(), memoryId:memId(), content:'Your interaction patterns are stored securely', active:true}],
     promptTemplates:[], selectedModel:'balanced',
     models:[
       {id:'quick', name:'Quick', desc:'Fast responses', icon:'⚡'},
@@ -551,7 +595,7 @@ function saveState() {
   try {
     const d = {tier:S.tier, proExpiry:S.proExpiry, theme:S.theme, workspaces:S.workspaces, currentWorkspace:S.currentWorkspace, members:S.members, memories:S.memories, promptTemplates:S.promptTemplates, apiKeys:S.apiKeys, freeMsgCount:S.freeMsgCount, freeMsgWindowStart:S.freeMsgWindowStart, adminAuth:S.adminAuth};
     if (S.tier==='free') { d.workspaces=[]; d.currentWorkspace=null; d.members=[]; d.promptTemplates=[]; }
-    localStorage.setItem('capitan_v6', JSON.stringify(d));
+    localStorage.setItem('capitan_v7', JSON.stringify(d));
   } catch(e) {}
 }
 
@@ -570,11 +614,11 @@ function generateMarketData() {
 
 function generateMarketNews() {
   return [
-    {headline:'💰 Markets rally on strong earnings data', time:'2 min ago'},
-    {headline:'💻 AI coding tools reshape developer workflow', time:'8 min ago'},
-    {headline:'🔬 New quantum computing milestone reached', time:'15 min ago'},
-    {headline:'🧪 Scientific breakthrough in gene therapy', time:'22 min ago'},
-    {headline:'📊 Global indices reach new highs this quarter', time:'30 min ago'},
+    {headline:'Markets rally on strong earnings data', time:'2 min ago'},
+    {headline:'AI coding tools reshape developer workflow', time:'8 min ago'},
+    {headline:'New quantum computing milestone reached', time:'15 min ago'},
+    {headline:'Scientific breakthrough in gene therapy', time:'22 min ago'},
+    {headline:'Global indices reach new highs this quarter', time:'30 min ago'},
   ];
 }
 
@@ -597,18 +641,18 @@ function getTimeUntilReset() {
 }
 
 function isPro() { return S.tier==='pro'||S.tier==='founder'; }
-function requirePro() { if(!isPro()){showToast('🔒 Pro feature · $17/month'); openPaymentModal(); return false;} return true; }
+function requirePro() { if(!isPro()){showToast('Pro feature — $17/month'); openPaymentModal(); return false;} return true; }
 
 const S = loadState();
 if (S.tier==='free') { S.freeMsgWindowStart=S.freeMsgWindowStart||Date.now(); S.freeMsgCount=S.freeMsgCount||0; }
 
 function getGreeting() {
   const h=new Date().getHours();
-  if (h<6) return '🌙 Late night thoughts?';
-  if (h<12) return '☀️ Good morning. How can we move today?';
-  if (h<17) return '🌤️ Good afternoon. What\'s on your mind?';
-  if (h<21) return '🌅 Good evening. Ready to explore?';
-  return '🌃 Night session. What shall we dive into?';
+  if (h<6) return 'Late night thoughts?';
+  if (h<12) return 'Good morning. How can we move today?';
+  if (h<17) return 'Good afternoon. What\'s on your mind?';
+  if (h<21) return 'Good evening. Ready to explore?';
+  return 'Night session. What shall we dive into?';
 }
 
 function showToast(msg) {
@@ -625,23 +669,20 @@ function founderClick() {
     S.tier='founder'; S.proExpiry=Date.now()+PRO_EXPIRY_DAYS*86400000; S.founderClicks=0;
     if(!S.workspaces.length){S.workspaces=[{id:shortId(),name:'Founder Workspace',members:1,color:'#ffffff'}]; S.currentWorkspace=S.workspaces[0]; S.members=[{id:'m0',name:'Founder',role:'Admin',online:true,initials:'FD',color:'#ffffff'}];}
     if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();
-    saveState(); showToast('🔐 Founder Mode Activated — Admin access available'); render(); return;
+    saveState(); showToast('Founder Mode Activated — Admin access available'); render(); return;
   }
   S.founderTimer=setTimeout(()=>{S.founderClicks=0;},2000);
 }
 
 function getDefaultPrompts() {
   return [
-    {id:'p1',title:'⚛️ Quantum Algorithm',prompt:'Explain {{CONCEPT}} in quantum computing. Design circuit with Qiskit.',vars:['CONCEPT'],category:'⚛️ Quantum Computing'},
-    {id:'p2',title:'💻 Code Architecture',prompt:'Design a {{LANGUAGE}} system for {{USE_CASE}} with architecture and error handling.',vars:['LANGUAGE','USE_CASE'],category:'💻 Coding'},
-    {id:'p3',title:'📐 Mathematical Proof',prompt:'Prove {{THEOREM}} with full rigor, lemmas, and applications.',vars:['THEOREM'],category:'📐 Mathematics'},
-    {id:'p4',title:'🧪 Scientific Analysis',prompt:'Analyze {{TOPIC}} from current literature. Methodology, findings, implications.',vars:['TOPIC'],category:'🧪 Science'},
-    {id:'p5',title:'💰 Investment Memo',prompt:'Generate institutional memo for {{TICKER}}. DCF, comps, bull/base/bear.',vars:['TICKER'],category:'💰 Finance'},
-    {id:'p6',title:'📊 Market Research',prompt:'Research {{SECTOR}}: sizing, growth, players, trends, outlook.',vars:['SECTOR'],category:'📊 Market Research'},
-    {id:'p7',title:'🏦 Deal Analysis',prompt:'Analyze {{DEAL}}: valuation, synergies, risks, recommendation.',vars:['DEAL'],category:'🏦 Deal Analysis'},
-    {id:'p8',title:'🧠 Philosophy Deep Dive',prompt:'Explore {{TOPIC}} through Kantian, utilitarian, existentialist frameworks.',vars:['TOPIC'],category:'🧠 Philosophy'},
-    {id:'p9',title:'🔌 API Integration',prompt:'Design API for {{SERVICE}}: endpoints, auth, rate limiting, error codes.',vars:['SERVICE'],category:'⚡ Engineering'},
-    {id:'p10',title:'📡 Data Pipeline',prompt:'Architect data pipeline for {{DATA_SOURCE}}: ingestion, transform, storage, serving.',vars:['DATA_SOURCE'],category:'⚡ Engineering'},
+    {id:'p1',title:'Quantum Algorithm',prompt:'Explain {{CONCEPT}} in quantum computing. Design circuit with Qiskit.',vars:['CONCEPT'],category:'Quant'},
+    {id:'p2',title:'Code Architecture',prompt:'Design a {{LANGUAGE}} system for {{USE_CASE}} with architecture and error handling.',vars:['LANGUAGE','USE_CASE'],category:'Coding'},
+    {id:'p3',title:'Mathematical Proof',prompt:'Prove {{THEOREM}} with full rigor, lemmas, and applications.',vars:['THEOREM'],category:'Quant'},
+    {id:'p4',title:'Scientific Analysis',prompt:'Analyze {{TOPIC}} from current literature. Methodology, findings, implications.',vars:['TOPIC'],category:'Science'},
+    {id:'p5',title:'Investment Memo',prompt:'Generate institutional memo for {{TICKER}}. DCF, comps, bull/base/bear.',vars:['TICKER'],category:'Finance'},
+    {id:'p6',title:'Market Research',prompt:'Research {{SECTOR}}: sizing, growth, players, trends, outlook.',vars:['SECTOR'],category:'Finance'},
+    {id:'p7',title:'Deal Analysis',prompt:'Analyze {{DEAL}}: valuation, synergies, risks, recommendation.',vars:['DEAL'],category:'Finance'},
   ];
 }
 
@@ -669,92 +710,76 @@ function render() {
         <button class="sb-toggle" id="toggleSidebar" aria-label="Toggle"><span class="toggle-icon">◁</span> Close</button>
       </div>
       <button class="btn-new" id="btnNewChat"><span class="emoji">✨</span> New Chat</button>
-      ${free?`<div class="limit-indicator ${remaining<=5?'critical':remaining<=10?'warning':''}"><span>💬 ${remaining}/${FREE_MSG_LIMIT} messages</span><div class="limit-bar"><div class="limit-fill" style="width:${limitPct}%"></div></div><span style="font-size:8px">⏱ Resets in ${getTimeUntilReset()}</span></div>`:''}
-      
-      ${pro?`<div class="memory-id-badge"><span>🧠 Memory ID:</span><code onclick="navigator.clipboard.writeText('${primaryMem?.memoryId||'N/A'}');showToast('📋 Memory ID copied')">${primaryMem?.memoryId||'N/A'}</code><span style="font-size:8px;margin-left:auto">📊 ${S.memories.length} entries</span></div>`:''}
+      ${free?`<div class="limit-indicator ${remaining<=5?'critical':remaining<=10?'warning':''}"><span>${remaining}/${FREE_MSG_LIMIT} messages</span><div class="limit-bar"><div class="limit-fill" style="width:${limitPct}%"></div></div><span style="font-size:8px">Resets in ${getTimeUntilReset()}</span></div>`:''}
 
       <div class="sb-section">
-        <div class="sb-section-header ${S.sections.workflows?'open':''}" data-section="workflows"><span>⚡ Workflows</span><span class="arrow">▸</span></div>
+        <div class="sb-section-header ${S.sections.workflows?'open':''}" data-section="workflows"><span>Workflows</span><span class="arrow">▸</span></div>
         <div class="sb-section-content ${S.sections.workflows?'open':''}">
-          ${hasWs?`<div class="workspace-switcher" id="workspaceSwitcher"><div class="ws-icon" style="background:${S.currentWorkspace.color}15;color:${S.currentWorkspace.color}">${S.currentWorkspace.name.charAt(0)}</div><div class="ws-info"><div class="ws-name">💼 ${S.currentWorkspace.name}</div><div class="ws-members">👥 ${S.currentWorkspace.members} member${S.currentWorkspace.members>1?'s':''}</div></div><span style="font-size:10px;opacity:0.2">▾</span></div><div class="workspace-guide">💡 Share chats, memory & files with your team</div>`:(pro?`<div class="workspace-guide" style="cursor:pointer" id="createFirstWs">💡 <span style="text-decoration:underline">Create workspace</span> — invite teammates & collaborate</div>`:'')}
+          ${hasWs?`<div class="workspace-switcher" id="workspaceSwitcher"><div class="ws-icon" style="background:${S.currentWorkspace.color}15;color:${S.currentWorkspace.color}">${S.currentWorkspace.name.charAt(0)}</div><div class="ws-info"><div class="ws-name">${S.currentWorkspace.name}</div><div class="ws-members">${S.currentWorkspace.members} member${S.currentWorkspace.members>1?'s':''}</div></div><span style="font-size:10px;opacity:0.2">▾</span></div><div class="workspace-guide">Share chats, memory & files with your team</div>`:(pro?`<div class="workspace-guide" style="cursor:pointer" id="createFirstWs"><span style="text-decoration:underline">Create workspace</span> — invite teammates & collaborate</div>`:'')}
           <button class="sb-item ${S.activeView==='chat'?'active':''}" data-view="chat"><span class="emoji">💬</span> Chat</button>
-          <button class="sb-item ${S.activeView==='research'?'active':''}" data-view="research"><span class="emoji">🔬</span> Research</button>
-          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="quantum"><span class="emoji">⚛️</span> Quantum Computing ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
-          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="coding"><span class="emoji">💻</span> Coding ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
-          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="mathematics"><span class="emoji">📐</span> Mathematics ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
-          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="science"><span class="emoji">🧪</span> Science ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
           <button class="sb-item" data-capability="general"><span class="emoji">🌌</span> General Knowledge</button>
-          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} id="btnPromptLib"><span class="emoji">📚</span> Prompt Library ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
+          ${pro?`
+            <button class="sb-item" data-capability="finance"><span class="emoji">💰</span> Finance <span class="badge pro">PRO</span></button>
+            <button class="sb-item" data-capability="quant"><span class="emoji">📐</span> Quant <span class="badge pro">PRO</span></button>
+            <button class="sb-item" data-capability="coding"><span class="emoji">💻</span> Coding <span class="badge pro">PRO</span></button>
+            <button class="sb-item" data-capability="science"><span class="emoji">🧪</span> Science <span class="badge pro">PRO</span></button>
+            <button class="sb-item" id="btnPromptLib"><span class="emoji">📚</span> Prompt Library <span class="badge pro">PRO</span></button>
+          `:''}
         </div>
       </div>
 
+      ${pro?`
       <div class="sb-section">
-        <div class="sb-section-header ${S.sections.pro?'open':''}" data-section="pro"><span>◆ Pro</span><span class="arrow">▸</span></div>
-        <div class="sb-section-content ${S.sections.pro?'open':''}">
-          ${pro?`
-            <button class="sb-item" id="btnWorkspace"><span class="emoji">💼</span> Workspace</button>
-            <button class="sb-item" id="btnMarketResearch"><span class="emoji">📊</span> Market Research</button>
-            <button class="sb-item" id="btnDealAnalysis"><span class="emoji">🏦</span> Deal Analysis</button>
-            <button class="sb-item" id="btnMemory"><span class="emoji">🧠</span> Memory Dashboard</button>
-            <button class="sb-item" id="btnAPIKeys"><span class="emoji">🔑</span> API Keys</button>
-            <button class="sb-item" id="btnExport"><span class="emoji">📤</span> Export</button>
-            ${founder?`<div style="padding:6px 10px;font-size:9px;color:var(--txt2)">📅 Pro until ${new Date(S.proExpiry).toLocaleDateString()}</div>`:''}
-          `:`
-            <div style="padding:8px 10px;font-size:10px;color:var(--txt2);line-height:1.6">💼 Workspaces · 📊 Research<br>🏦 Deal Analysis · 🧠 Memory<br>📚 Library · 🔑 API · 📤 Export</div>
-            <button class="btn-upgrade" id="btnUpgrade">⚡ Upgrade to Pro — $17/mo</button>
-          `}
+        <div class="sb-section-header ${S.sections.workspaceSection?'open':''}" data-section="workspaceSection"><span>Workspace</span><span class="arrow">▸</span></div>
+        <div class="sb-section-content ${S.sections.workspaceSection?'open':''}">
+          <button class="sb-item" id="btnWorkspace"><span class="emoji">💼</span> Manage Workspace</button>
+          <button class="sb-item" id="btnMarketResearch"><span class="emoji">📊</span> Market Research</button>
+          <button class="sb-item" id="btnDealAnalysis"><span class="emoji">🏦</span> Deal Analysis</button>
+          <button class="sb-item" id="btnMemory"><span class="emoji">🧠</span> Memory Dashboard</button>
+          <button class="sb-item" id="btnAPIKeys"><span class="emoji">🔑</span> API Keys</button>
+          <button class="sb-item" id="btnExport"><span class="emoji">📤</span> Export</button>
         </div>
       </div>
+      `:''}
+
+      ${pro?`<div class="memory-id-badge"><span>Memory ID:</span><code onclick="navigator.clipboard.writeText('${primaryMem?.memoryId||'N/A'}');showToast('Memory ID copied')">${primaryMem?.memoryId||'N/A'}</code><span style="font-size:8px;margin-left:auto">${S.memories.length} entries</span></div>`:''}
 
       ${pro?`
       <div class="sb-market-section">
         <div class="sb-market-header ${S.sections.markets?'open':''}" data-section="markets">
-          <span class="mh-left"><span class="live-dot"></span>📈 Market Prices</span>
-          <span class="arrow">▸</span>
+          <span class="mh-left">Market Prices</span><span class="arrow">▸</span>
         </div>
         <div class="sb-market-content ${S.sections.markets?'open':''}">
-          ${S.marketData.map(d=>`
-            <div class="sb-market-item" onclick="sendMessage('Show me details on ${d.name} (${d.symbol})')">
-              <span class="sym">${d.symbol}</span>
-              <span class="price">${typeof d.price==='number'&&d.price<10?d.price.toFixed(4):d.price.toLocaleString()}</span>
-              <span class="chg ${d.change>=0?'up':'down'}">${d.change>=0?'📈':'📉'} ${Math.abs(d.change).toFixed(2)}%</span>
-            </div>
-          `).join('')}
+          ${S.marketData.map(d=>`<div class="sb-market-item" onclick="sendMessage('Show me details on ${d.name} (${d.symbol})')"><span class="sym">${d.symbol}</span><span class="price">${typeof d.price==='number'&&d.price<10?d.price.toFixed(4):d.price.toLocaleString()}</span><span class="chg">${Math.abs(d.change).toFixed(2)}%</span></div>`).join('')}
         </div>
       </div>
-      `:''}
-
-      ${pro?`
       <div class="sb-market-section">
         <div class="sb-market-header ${S.sections.marketNews?'open':''}" data-section="marketNews">
-          <span class="mh-left">📰 Market News</span>
-          <span class="arrow">▸</span>
+          <span class="mh-left">Market News</span><span class="arrow">▸</span>
         </div>
         <div class="sb-market-content ${S.sections.marketNews?'open':''}">
-          ${S.marketNews.map(n=>`
-            <div class="sb-news-item" onclick="sendMessage('Tell me more about: ${n.headline}')">
-              <div class="headline">${n.headline}</div>
-              <div class="time">🕐 ${n.time}</div>
-            </div>
-          `).join('')}
+          ${S.marketNews.map(n=>`<div class="sb-news-item" onclick="sendMessage('Tell me more about: ${n.headline}')"><div class="headline">${n.headline}</div><div class="time">${n.time}</div></div>`).join('')}
         </div>
       </div>
       `:''}
 
       <div class="sb-section">
-        <div class="sb-section-header ${S.sections.settings?'open':''}" data-section="settings"><span>⚙️ Settings</span><span class="arrow">▸</span></div>
+        <div class="sb-section-header ${S.sections.settings?'open':''}" data-section="settings"><span>Settings</span><span class="arrow">▸</span></div>
         <div class="sb-section-content ${S.sections.settings?'open':''}">
           <button class="sb-item" id="btnPrivacy"><span class="emoji">🔒</span> Privacy Policy</button>
           <button class="sb-item" id="btnTerms"><span class="emoji">📋</span> Terms & Conditions</button>
-          <button class="theme-toggle" id="btnTheme"><span class="theme-icon">${S.theme==='dark'?'🌙':'☀️'}</span><span style="flex:1;text-align:left">Theme</span><span class="theme-indicator">${S.theme==='dark'?'🌙 Dark':'☀️ Light'}</span></button>
+          <button class="theme-toggle" id="btnTheme"><span class="theme-icon">${S.theme==='dark'?'🌙':'☀️'}</span><span style="flex:1;text-align:left">Theme</span><span class="theme-indicator">${S.theme==='dark'?'Dark':'Light'}</span></button>
           ${founder?`<button class="sb-item" id="btnAdminMemory"><span class="emoji">🗄️</span> Admin Memory ${S.adminAuth?'✅':''}</button>`:''}
         </div>
       </div>
 
-      <div class="tier-badge tier-${S.tier}">${founder?'⚓ FOUNDER':pro?'◆ PRO':'◌ FREE TIER'}</div>
+      ${pro?`<div class="tier-badge tier-${S.tier}">${founder?'FOUNDER':'PRO'}</div>`:`
+        <div class="tier-badge tier-free">FREE TIER</div>
+        <button class="btn-upgrade" id="btnUpgrade">Upgrade to Pro — $17/mo</button>
+      `}
       <div class="sb-footer">
-        <div class="sb-footer-links"><a href="#" id="linkPrivacy">🔒 Privacy</a><a href="#" id="linkTerms">📋 Terms</a><a href="#" id="linkTrust">🛡️ Trust</a><a href="mailto:${SUPPORT_EMAIL}">📧 Support</a></div>
-        <div class="support-link">📧 <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></div>
+        <div class="sb-footer-links"><a href="#" id="linkPrivacy">Privacy</a><a href="#" id="linkTerms">Terms</a><a href="#" id="linkTrust">Trust</a><a href="mailto:${SUPPORT_EMAIL}">Support</a></div>
+        <div class="support-link"><a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></div>
         <div class="sb-footer-brand">CLOSEAI TECHNOLOGIES</div>
       </div>
     `;
@@ -771,28 +796,16 @@ function render() {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
             <div class="model-selector" id="modelSelector">${S.models.map(m=>`<button class="model-option ${S.selectedModel===m.id?'active':''}" data-model="${m.id}" title="${m.desc}">${m.icon} ${m.name}</button>`).join('')}</div>
             <div style="flex:1"></div>
-            ${pro?'<button class="input-action-btn" id="btnVoiceInput" title="🎙️ Voice">🎙️</button>':''}
-            ${pro?'<button class="input-action-btn" id="btnUploadSource" title="📎 Upload">📎</button>':''}
+            ${pro?'<button class="input-action-btn" id="btnVoiceInput" title="Voice">🎙️</button>':''}
+            ${pro?'<button class="input-action-btn" id="btnUploadSource" title="Upload">📎</button>':''}
           </div>
           <div class="chat-input-inner">
-            <input type="text" id="chatInput" placeholder="${locked?'⏳ Limit reached — upgrade to Pro':'💭 Ask anything...'}" ${S.streaming||locked?'disabled':''} autocomplete="off" enterkeyhint="send">
+            <input type="text" id="chatInput" placeholder="${locked?'Limit reached — upgrade to Pro':'Ask anything...'}" ${S.streaming||locked?'disabled':''} autocomplete="off" enterkeyhint="send">
             <div class="input-actions"><button class="send-btn" id="sendBtn" ${S.streaming||locked?'disabled':''}>➤</button></div>
           </div>
-          ${locked?`<div style="text-align:center;padding:8px;font-size:10px;color:var(--txt2)">⏳ Limit reached · Resets in ${getTimeUntilReset()} · <span style="cursor:pointer;text-decoration:underline;color:var(--txt)" id="upgradeLink">Upgrade →</span></div>`:''}
+          ${locked?`<div style="text-align:center;padding:8px;font-size:var(--font-xs);color:var(--txt2)">Limit reached · Resets in ${getTimeUntilReset()} · <span style="cursor:pointer;text-decoration:underline;color:var(--txt)" id="upgradeLink">Upgrade</span></div>`:''}
         </div>
       </div>`;
-  } else if (S.activeView==='research') {
-    main.innerHTML=`<div style="padding:32px 24px;max-width:900px;margin:0 auto;overflow-y:auto;height:100%;-webkit-overflow-scrolling:touch"><h2 style="font-size:clamp(18px,4vw,20px);font-weight:800;margin-bottom:24px;letter-spacing:-0.02em;color:var(--txt)">🔬 Research</h2><div style="display:flex;flex-direction:column;gap:6px">${pro?`
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt);padding:12px 0;border-bottom:1px solid var(--bdr)">💰 Finance</div>
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt);padding:12px 0;border-bottom:1px solid var(--bdr)">💻 Coding</div>
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt);padding:12px 0;border-bottom:1px solid var(--bdr)">🔬 Research</div>
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt);padding:12px 0;border-bottom:1px solid var(--bdr)">🧪 Science</div>
-    `:`
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt);padding:12px 0;border-bottom:1px solid var(--bdr)">💰 Finance</div>
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt2);padding:12px 0;border-bottom:1px solid var(--bdr);opacity:0.5">💻 Coding 🔒</div>
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt2);padding:12px 0;border-bottom:1px solid var(--bdr);opacity:0.5">🔬 Research 🔒</div>
-      <div style="font-size:var(--font-md);font-weight:700;color:var(--txt2);padding:12px 0;border-bottom:1px solid var(--bdr);opacity:0.5">🧪 Science 🔒</div>
-    `}</div></div>`;
   }
   app.appendChild(main);
 
@@ -805,18 +818,32 @@ function render() {
 
 function renderMessages() {
   const el=document.getElementById('chatMessages'); if(!el)return;
-  if(!S.messages.length){el.innerHTML=`<div class="welcome"><div class="logo-large">⚓</div><h1>${getGreeting()}</h1>${isPro()?'<div class="subtitle">✨ All capabilities unlocked · Full access</div>':''}</div>`;return;}
+  if(!S.messages.length){
+    const pro=isPro();
+    el.innerHTML=`
+      <div class="welcome">
+        <div class="logo-large">⚓</div>
+        <h1>${getGreeting()}</h1>
+        <div class="welcome-categories">
+          <span onclick="sendMessage('Finance: Analyze markets, build models, generate memos')">finance</span>
+          <span class="${pro?'':'locked'}" onclick="${pro?"sendMessage('Quant: Mathematical proofs, algorithms, statistical models')":"showToast('Pro feature — \$17/month');openPaymentModal()"}">quant${pro?'':' · pro'}</span>
+          <span class="${pro?'':'locked'}" onclick="${pro?"sendMessage('Coding: Write, review, and architect code')":"showToast('Pro feature — \$17/month');openPaymentModal()"}">coding${pro?'':' · pro'}</span>
+          <span class="${pro?'':'locked'}" onclick="${pro?"sendMessage('Science: Explore physics, biology, chemistry, and more')":"showToast('Pro feature — \$17/month');openPaymentModal()"}">science${pro?'':' · pro'}</span>
+        </div>
+      </div>`;
+    return;
+  }
   el.innerHTML=S.messages.map((m,i)=>{
     if(m.role==='user')return`<div class="msg user">${esc(m.content)}</div>`;
     const isLast=i===S.messages.length-1,content=m.content||'',model=S.models.find(md=>md.id===S.selectedModel);
     let extras='';
-    if(content&&m.marketWidget)extras+=`<div class="market-widget">${m.marketWidget.map(x=>`<div class="market-item"><div class="m-symbol">${x.symbol}</div><div class="m-price">${typeof x.price==='number'&&x.price<10?x.price.toFixed(4):x.price.toLocaleString()}</div><div class="m-change ${x.change>=0?'up':'down'}">${x.change>=0?'📈':'📉'} ${Math.abs(x.change).toFixed(2)}%</div></div>`).join('')}</div>`;
-    if(content&&m.citations)extras+=`<div class="source-chips">${m.citations.map(c=>`<span class="source-chip" onclick="showToast('📎 Source: ${escAttr(c)}')">📎 ${esc(c)}</span>`).join('')}</div>`;
-    if(content&&m.confidence)extras+=`<span class="confidence-badge conf-${m.confidence}">${m.confidence==='high'?'🟢 High':m.confidence==='medium'?'🟡 Medium':'🔴 Low'} Confidence</span>`;
+    if(content&&m.marketWidget)extras+=`<div class="market-widget">${m.marketWidget.map(x=>`<div class="market-item"><div class="m-symbol">${x.symbol}</div><div class="m-price">${typeof x.price==='number'&&x.price<10?x.price.toFixed(4):x.price.toLocaleString()}</div><div class="m-change">${Math.abs(x.change).toFixed(2)}%</div></div>`).join('')}</div>`;
+    if(content&&m.citations)extras+=`<div class="source-chips">${m.citations.map(c=>`<span class="source-chip" onclick="showToast('Source: ${escAttr(c)}')">${esc(c)}</span>`).join('')}</div>`;
+    if(content&&m.confidence)extras+=`<span class="confidence-badge">${m.confidence==='high'?'High':m.confidence==='medium'?'Medium':'Low'} Confidence</span>`;
     if(content&&m.comparison)extras+=`<table class="comparison-table"><thead><tr>${m.comparison.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.comparison.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(String(c))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-    if(content&&m.scenarios)extras+=`<div class="scenario-box"><div class="scenario bull"><div class="sc-label">🐂 Bull</div><div class="sc-value">${esc(m.scenarios.bull||'—')}</div></div><div class="scenario base"><div class="sc-label">📊 Base</div><div class="sc-value">${esc(m.scenarios.base||'—')}</div></div><div class="scenario bear"><div class="sc-label">🐻 Bear</div><div class="sc-value">${esc(m.scenarios.bear||'—')}</div></div></div>`;
-    if(isLast&&m.cot&&!content)extras+=`<div class="cot-panel"><div class="cot-header"><span>🧠 Chain of Thought</span><button style="background:none;border:none;color:var(--txt);cursor:pointer;font-size:10px" onclick="this.closest('.cot-panel').remove()">✕</button></div>${m.cot.map((x,j)=>`<div class="cot-step"><div class="step-num">${j+1}</div><div class="step-content">${esc(x)}</div></div>`).join('')}</div>`;
-    return`<div class="msg ai"><div class="msg-ai-hd"><span class="logo">⚓</span> CAPITAN AI<span class="model-tag">${model?model.icon+' '+model.name:'◆ Balanced'}</span></div>${isLast&&!content?'<div class="thinking"><div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div> Thinking...</div>':`<div class="msg-content">${formatMsg(content)}${extras}</div>`}${content?`<div class="msg-actions"><button onclick="copyMsg('${escAttr(content)}')">📋 Copy</button><button onclick="retryMsg()">🔄 Retry</button>${isPro()?'<button onclick="showExportOptions()">📤 Export</button>':''}<button onclick="saveToMemory('${escAttr(content.substring(0,100))}')">🧠 Save</button></div>`:''}${content?'<div class="ai-note">⚓ CAPITAN AI can make mistakes · Verify important information</div>':''}</div>`;
+    if(content&&m.scenarios)extras+=`<div class="scenario-box"><div class="scenario bull"><div class="sc-label">Bull</div><div class="sc-value">${esc(m.scenarios.bull||'—')}</div></div><div class="scenario base"><div class="sc-label">Base</div><div class="sc-value">${esc(m.scenarios.base||'—')}</div></div><div class="scenario bear"><div class="sc-label">Bear</div><div class="sc-value">${esc(m.scenarios.bear||'—')}</div></div></div>`;
+    if(isLast&&m.cot&&!content)extras+=`<div class="cot-panel"><div class="cot-header"><span>Chain of Thought</span><button style="background:none;border:none;color:var(--txt);cursor:pointer;font-size:var(--font-xs)" onclick="this.closest('.cot-panel').remove()">✕</button></div>${m.cot.map((x,j)=>`<div class="cot-step"><div class="step-num">${j+1}</div><div class="step-content">${esc(x)}</div></div>`).join('')}</div>`;
+    return`<div class="msg ai"><div class="msg-ai-hd"><span class="logo">⚓</span> CAPITAN AI<span class="model-tag">${model?model.icon+' '+model.name:'◆ Balanced'}</span></div>${isLast&&!content?'<div class="thinking"><div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div> Thinking...</div>':`<div class="msg-content">${formatMsg(content)}${extras}</div>`}${content?`<div class="msg-actions"><button onclick="copyMsg('${escAttr(content)}')">Copy</button><button onclick="retryMsg()">Retry</button>${isPro()?'<button onclick="showExportOptions()">Export</button>':''}<button onclick="saveToMemory('${escAttr(content.substring(0,100))}')">Save</button></div>`:''}${content?'<div class="ai-note">CAPITAN AI can make mistakes. Verify important information.</div>':''}</div>`;
   }).join('');
   el.scrollTop=el.scrollHeight;
 }
@@ -824,53 +851,50 @@ function renderMessages() {
 function renderSuggestions() {
   const el=document.getElementById('chatMessages'); if(!el||S.messages.length>0)return;
   const div=document.createElement('div'); div.className='suggestions';
-  div.innerHTML=['💻 Write a Python algorithm','🔬 Explain CRISPR gene editing','📊 Analyze market trends','🧪 Quantum computing explained','💰 Build a DCF model','⚛️ What is dark matter?'].map(s=>`<button class="suggestion">${s}</button>`).join('');
+  div.innerHTML=['Write a Python algorithm','Explain CRISPR gene editing','Analyze market trends','Quantum computing explained','Build a DCF model','What is dark matter?'].map(s=>`<button class="suggestion">${s}</button>`).join('');
   el.querySelector('.welcome')?.appendChild(div);
 }
 
 function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
 function escAttr(s){return s?s.replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n').replace(/\\/g,'\\\\'):'';}
-function formatMsg(s){return s?s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/\[cite:(.*?)\]/g,'<span class="citation" onclick="showToast(\'📎 Source: $1\')">[$1]</span>'):'';}
-function copyMsg(t){navigator.clipboard.writeText(t).then(()=>showToast('📋 Copied')).catch(()=>{});}
+function formatMsg(s){return s?s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/\[cite:(.*?)\]/g,'<span class="citation" onclick="showToast(\'Source: $1\')">[$1]</span>'):'';}
+function copyMsg(t){navigator.clipboard.writeText(t).then(()=>showToast('Copied')).catch(()=>{});}
 function retryMsg(){if(S.messages.length<2)return;S.messages=S.messages.slice(0,-2);const u=[...S.messages].reverse().find(m=>m.role==='user');if(u)sendMessage(u.content);}
-function saveToMemory(c){const id=memId(); S.memories.push({id:shortId(),memoryId:id,content:c,active:true}); GlobalMemory.add({type:'saved',memoryId:id,content:c,query:S.messages[S.messages.length-2]?.content||''}); saveState(); showToast('🧠 Saved · '+id);}
-function showExportOptions(){if(!requirePro())return;const o=document.createElement('div');o.className='modal-overlay open';o.innerHTML=`<div class="modal"><h2>📤 Export</h2><p>Choose format</p>${S.exportFormats.map(f=>`<button class="btn-secondary" style="width:100%;margin-bottom:8px;display:flex;align-items:center;gap:8px" onclick="showToast('✅ Exported as ${f.name}'); this.closest('.modal-overlay').remove()"><span>${f.icon}</span> ${f.name}</button>`).join('')}<button class="btn-primary" style="width:100%" onclick="this.closest('.modal-overlay').remove()">Cancel</button></div>`;document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});}
+function saveToMemory(c){const id=memId(); S.memories.push({id:shortId(),memoryId:id,content:c,active:true}); GlobalMemory.add({type:'saved',memoryId:id,content:c,query:S.messages[S.messages.length-2]?.content||''}); saveState(); showToast('Saved · '+id);}
+function showExportOptions(){if(!requirePro())return;const o=document.createElement('div');o.className='modal-overlay open';o.innerHTML=`<div class="modal"><h2>Export</h2><p>Choose format</p>${S.exportFormats.map(f=>`<button class="btn-secondary" style="width:100%;margin-bottom:8px;display:flex;align-items:center;gap:8px" onclick="showToast('Exported as ${f.name}'); this.closest('.modal-overlay').remove()"><span>${f.icon}</span> ${f.name}</button>`).join('')}<button class="btn-primary" style="width:100%" onclick="this.closest('.modal-overlay').remove()">Cancel</button></div>`;document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});}
 
 async function sendMessage(content){
   const input=document.getElementById('chatInput'),text=content||input?.value?.trim();
   if(!text||S.streaming)return;
-  if(S.tier==='free'&&!checkFreeLimit()){showToast('⏳ Limit reached · Upgrade to Pro');openPaymentModal();return;}
-  const isQuantum=/\b(quantum|qubit|entanglement|superposition|qiskit)\b/i.test(text),isCode=/\b(code|python|javascript|algorithm|function|api|system.design|architecture)\b/i.test(text),isMath=/\b(prove|theorem|mathematical|math|equation|calculus|riemann|topology)\b/i.test(text),isScience=/\b(crispr|dna|physics|chemistry|biology|neuroscience|quantum.field)\b/i.test(text);
-  if(S.tier==='free'&&(isQuantum||isCode||isMath||isScience)){showToast('🔒 Pro feature · $17/month');openPaymentModal();return;}
-  const isCompare=/\b(compare|vs|versus|side.by.side)\b/i.test(text),isScenario=/\b(scenario|bull|bear|base.case)\b/i.test(text),isMarket=/\b(price|market|stock|spx|ndx|btc|eth|gold|oil|eur|yield|quote)\b/i.test(text);
-  if(isMarket&&S.tier==='free'){showToast('🔒 Market data requires Pro · $17/month');openPaymentModal();return;}
+  if(S.tier==='free'&&!checkFreeLimit()){showToast('Limit reached · Upgrade to Pro');openPaymentModal();return;}
+  const isProBlocked=/\b(quant|quantum|code|python|javascript|algorithm|function|api|system.design|architecture|prove|theorem|mathematical|math|equation|calculus|crispr|dna|physics|chemistry|biology|neuroscience)\b/i.test(text);
+  if(S.tier==='free'&&isProBlocked){showToast('Pro feature · $17/month');openPaymentModal();return;}
+  const isMarket=/\b(price|market|stock|spx|ndx|btc|eth|gold|oil|eur|yield|quote)\b/i.test(text);
+  if(isMarket&&S.tier==='free'){showToast('Market data requires Pro · $17/month');openPaymentModal();return;}
   
   GlobalMemory.add({type:'query',memoryId:memId(),query:text,userId:'user_'+(S.members[0]?.initials||'ANON')});
   S.messages.push({id:shortId(),role:'user',content:text}); const aiMsg={id:shortId(),role:'assistant',content:''};
-  if(S.selectedModel==='deep')aiMsg.cot=['🔍 Analyzing query across knowledge domains...','📚 Retrieving frameworks and context...','🏗️ Structuring comprehensive response...','✨ Generating analysis...'];
+  if(S.selectedModel==='deep')aiMsg.cot=['Analyzing query across knowledge domains...','Retrieving frameworks and context...','Structuring comprehensive response...','Generating analysis...'];
   S.messages.push(aiMsg); S.streaming=true; if(input)input.value='';
   if(S.tier==='free'){S.freeMsgCount++; saveState();}
-  render(); await simulateResponse(aiMsg,text,isCompare,isScenario,isMarket); S.streaming=false; render();
+  render(); await simulateResponse(aiMsg,text); S.streaming=false; render();
 }
 
-async function simulateResponse(aiMsg,query,isCompare,isScenario,isMarket){
+async function simulateResponse(aiMsg,query){
   const model=S.selectedModel,delays={quick:300,balanced:600,deep:1100},baseDelay=delays[model]||600;
   if(aiMsg.cot){await sleep(baseDelay*0.5); aiMsg.cot=null; renderMessages();}
   await sleep(baseDelay);
   let response='';
-  if(isMarket&&isPro()){refreshMarketData(); aiMsg.marketWidget=S.marketData.slice(0,4); response=`**📈 Live Market Data**\n\nCurrent prices across major assets. Markets ${Math.random()>0.5?'showing strength':'mixed'} today.\n\n• S&P 500: ${S.marketData[0].change>=0?'📈 Positive momentum':'📉 Under pressure'}\n• Bitcoin: ${S.marketData[2].change>=0?'📈 Recovering':'📉 Declining'}\n• Gold: ${S.marketData[4].change>=0?'📈 Safe haven demand':'📉 Consolidating'}\n\nQuotes below.`;aiMsg.confidence='high';aiMsg.citations=['📡 Real-time market data'];}
-  else if(query.toLowerCase().includes('quantum')){response=`**⚛️ Quantum Computing Analysis**\n\nQuantum computing harnesses superposition and entanglement.\n\n**🔮 Core Concepts:**\n• **Superposition:** Qubits exist in multiple states — |ψ⟩ = α|0⟩ + β|1⟩ where |α|² + |β|² = 1\n• **🔗 Entanglement:** Non-local correlations enable powerful computation\n• **🔐 Quantum Gates:** Hadamard, CNOT, Phase form universal sets\n\n**💡 Circuit Example:** H on |0⟩ → superposition, CNOT → Bell state.\n\n**📊 Current State:** Quantum supremacy shown. Error correction remains the frontier.`;aiMsg.confidence='high';aiMsg.citations=['📚 Nielsen & Chuang','🔬 Nature Physics 2025'];}
-  else if(isCompare){aiMsg.comparison={headers:['📊 Dimension','🅰️ Option A','🅱️ Option B','💡 Analysis'],rows:[['⚡ Performance','High throughput','Low latency','Trade-off by use case'],['📈 Scalability','Horizontal','Vertical','Architecture differs'],['💰 Cost','Usage-based','Fixed + variable','TCO varies'],['🌐 Ecosystem','Mature','Growing','Community key']]};response=`**⚖️ Comparative Analysis**\n\nStructured comparison below. Key differentiators highlighted.`;aiMsg.confidence='medium';}
-  else if(isScenario){aiMsg.scenarios={bull:'📈 +35% upside',base:'📊 +12% expected',bear:'📉 -18% downside'};response=`**📊 Scenario Analysis**\n\nThree scenarios modeled. Base case reflects most probable outcome.`;aiMsg.confidence='medium';}
-  else{const r=['**🔍 Analysis**\n\n• Context suggests interconnected factors\n• Clear patterns emerge from the data\n• These dynamics imply meaningful outcomes\n\n✨ What aspect should I explore deeper?','**💡 Exploration**\n\n1. Fundamentals are well-established\n2. Recent developments shift understanding\n3. Active research continues\n\n🎯 Where should we focus?','**🧠 Insights**\n\n• Holistic analysis reveals consistent patterns\n• Relationships robust across evidence\n• Some areas warrant further investigation\n\n💭 What angle interests you most?']; response=r[Math.floor(Math.random()*r.length)]; aiMsg.confidence=model==='deep'?'high':'medium';}
+  const q=query.toLowerCase();
+  if(/\b(price|market|stock|spx|ndx|btc|eth|gold|oil)\b/i.test(q)&&isPro()){refreshMarketData(); aiMsg.marketWidget=S.marketData.slice(0,4); response=`**Live Market Data**\n\nCurrent prices across major assets.\n\n• S&P 500: ${S.marketData[0].change>=0?'Positive':'Under pressure'}\n• Bitcoin: ${S.marketData[2].change>=0?'Recovering':'Declining'}\n• Gold: ${S.marketData[4].change>=0?'Safe haven':'Consolidating'}\n\nQuotes below.`;aiMsg.confidence='high';aiMsg.citations=['Real-time market data'];}
+  else if(q.includes('quantum')||q.includes('qubit')){response=`**Quantum Analysis**\n\nQuantum computing harnesses superposition and entanglement.\n\n• Superposition: |ψ⟩ = α|0⟩ + β|1⟩ where |α|² + |β|² = 1\n• Entanglement: Non-local correlations enable powerful computation\n• Gates: Hadamard, CNOT, Phase form universal sets\n\nQuantum supremacy shown. Error correction remains the frontier.`;aiMsg.confidence='high';aiMsg.citations=['Nielsen & Chuang','Nature Physics 2025'];}
+  else if(q.includes('code')||q.includes('python')||q.includes('algorithm')){response=`**Code Analysis**\n\n\`\`\`python\ndef solution(data):\n    return [x for x in data if x > 0]\n\`\`\`\n\nOptimized approach with O(n) complexity. Consider edge cases for empty input.`;aiMsg.confidence='high';}
+  else{const r=['**Analysis**\n\n• Context suggests interconnected factors\n• Clear patterns emerge from the data\n\nWhat aspect should I explore deeper?','**Exploration**\n\n1. Fundamentals are well-established\n2. Recent developments shift understanding\n\nWhere should we focus?','**Insights**\n\n• Holistic analysis reveals consistent patterns\n• Relationships robust across evidence\n\nWhat angle interests you most?']; response=r[Math.floor(Math.random()*r.length)]; aiMsg.confidence=model==='deep'?'high':'medium';}
   const words=response.split(' '); for(const w of words){aiMsg.content=(aiMsg.content||'')+w+' '; renderMessages(); await sleep(10+Math.random()*20);}
   aiMsg.content=response;
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-// ═══════════════════════════════════════════════════════════
-// EVENTS
-// ═══════════════════════════════════════════════════════════
 function bindEvents(){
   const pro=isPro(),founder=S.tier==='founder';
   document.getElementById('toggleSidebar')?.addEventListener('click',()=>{S.sidebarOpen=!S.sidebarOpen;render();});
@@ -878,10 +902,9 @@ function bindEvents(){
   document.getElementById('founderSecret')?.addEventListener('click',founderClick);
   document.querySelectorAll('.sb-section-header,.sb-market-header').forEach(h=>{h.addEventListener('click',()=>{S.sections[h.dataset.section]=!S.sections[h.dataset.section];render();});});
   document.querySelectorAll('[data-view]').forEach(b=>{b.addEventListener('click',()=>{S.activeView=b.dataset.view;render();});});
-  document.querySelectorAll('[data-capability]:not(.locked)').forEach(b=>{b.addEventListener('click',()=>{const p={quantum:'⚛️ Explain quantum computing fundamentals',coding:'💻 Design a scalable system architecture with code',mathematics:'📐 Explain a mathematical concept with proofs',science:'🧪 Explain a scientific discovery and implications',general:'🌌 Explore a topic connecting multiple fields'};S.activeView='chat';render();setTimeout(()=>sendMessage(p[b.dataset.capability]||'Explore'),100);});});
-  document.querySelectorAll('[data-capability].locked').forEach(b=>{b.addEventListener('click',()=>{showToast('🔒 Pro feature · $17/month');openPaymentModal();});});
+  document.querySelectorAll('[data-capability]').forEach(b=>{b.addEventListener('click',()=>{const p={finance:'Analyze market trends and generate investment insights',quant:'Explain quantitative methods and mathematical proofs',coding:'Design system architecture and write optimized code',science:'Explore scientific concepts and research',general:'Explore a topic connecting multiple fields'};S.activeView='chat';render();setTimeout(()=>sendMessage(p[b.dataset.capability]||'Explore'),100);});});
   document.getElementById('btnNewChat')?.addEventListener('click',()=>{S.messages=[];S.activeView='chat';render();});
-  document.getElementById('createFirstWs')?.addEventListener('click',()=>{if(!pro)return;const n=prompt('💼 Workspace name:');if(n){const w={id:shortId(),name:n,members:1,color:'#4da3ff'};S.workspaces.push(w);S.currentWorkspace=w;if(!S.members.length)S.members=[{id:'m1',name:'You',role:'Admin',online:true,initials:'YO',color:'#fff'}];if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();saveState();render();showToast(`✅ Workspace "${n}" created`);}});
+  document.getElementById('createFirstWs')?.addEventListener('click',()=>{if(!pro)return;const n=prompt('Workspace name:');if(n){const w={id:shortId(),name:n,members:1,color:'#4da3ff'};S.workspaces.push(w);S.currentWorkspace=w;if(!S.members.length)S.members=[{id:'m1',name:'You',role:'Admin',online:true,initials:'YO',color:'#fff'}];if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();saveState();render();showToast(`Workspace "${n}" created`);}});
   
   const input=document.getElementById('chatInput'),sendBtn=document.getElementById('sendBtn');
   input?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
@@ -889,60 +912,64 @@ function bindEvents(){
   document.querySelectorAll('.suggestion').forEach(b=>{b.addEventListener('click',()=>sendMessage(b.textContent));});
   document.querySelectorAll('.model-option').forEach(b=>{b.addEventListener('click',()=>{S.selectedModel=b.dataset.model;render();});});
   document.getElementById('upgradeLink')?.addEventListener('click',openPaymentModal);
-  document.getElementById('btnVoiceInput')?.addEventListener('click',()=>{if(!requirePro())return;showToast('🎙️ Voice activated');setTimeout(()=>sendMessage('Meeting discussion transcribed and summarized'),1500);});
-  document.getElementById('btnUploadSource')?.addEventListener('click',()=>{if(!requirePro())return;showToast('📎 Document ready for citation');});
+  document.getElementById('btnVoiceInput')?.addEventListener('click',()=>{if(!requirePro())return;showToast('Voice activated');setTimeout(()=>sendMessage('Meeting discussion transcribed and summarized'),1500);});
+  document.getElementById('btnUploadSource')?.addEventListener('click',()=>{if(!requirePro())return;showToast('Document ready for citation');});
   
-  document.getElementById('btnWorkspace')?.addEventListener('click',()=>{if(!requirePro())return;
-    const o=document.createElement('div');o.className='modal-overlay open';
-    o.innerHTML=`<div class="modal"><h2>💼 Workspace</h2><p>Create and manage team workspaces.</p>${S.currentWorkspace?`<p style="font-size:10px;color:var(--txt2)">Current: <strong>${S.currentWorkspace.name}</strong></p>`:''}${S.workspaces.map(w=>`<div class="prompt-template" data-ws="${w.id}"><div class="pt-title">💼 ${w.name}</div><div style="font-size:10px;color:var(--txt2)">👥 ${w.members} member${w.members>1?'s':''}${w.id===S.currentWorkspace?.id?' · ✅ Active':''}</div></div>`).join('')}<div class="btn-row"><button class="btn-primary" id="createWs">✨ New Workspace</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
-    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
-    o.querySelector('#createWs')?.addEventListener('click',()=>{const n=prompt('💼 Workspace name:');if(n){const w={id:shortId(),name:n,members:1,color:'#4da3ff'};S.workspaces.push(w);S.currentWorkspace=w;if(!S.members.length)S.members=[{id:'m1',name:'You',role:'Admin',online:true,initials:'YO',color:'#fff'}];if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();o.remove();saveState();render();showToast(`✅ "${n}" created`);}});
-    o.querySelectorAll('[data-ws]').forEach(el=>{el.addEventListener('click',()=>{const w=S.workspaces.find(x=>x.id===el.dataset.ws);if(w){S.currentWorkspace=w;o.remove();saveState();render();showToast(`🔄 Switched to ${w.name}`);}});});
-  });
-  document.getElementById('workspaceSwitcher')?.addEventListener('click',()=>{if(!requirePro()||S.workspaces.length<2)return;const i=S.workspaces.indexOf(S.currentWorkspace);S.currentWorkspace=S.workspaces[(i+1)%S.workspaces.length];saveState();showToast(`🔄 ${S.currentWorkspace.name}`);render();});
-  document.getElementById('btnMarketResearch')?.addEventListener('click',()=>{if(!requirePro())return;S.activeView='chat';render();setTimeout(()=>sendMessage('📊 Comprehensive market research: sizing, trends, landscape, projections.'),100);});
-  document.getElementById('btnDealAnalysis')?.addEventListener('click',()=>{if(!requirePro())return;S.activeView='chat';render();setTimeout(()=>sendMessage('🏦 Deal analysis: DCF, comps, precedents, risks, recommendation.'),100);});
-  document.getElementById('btnMemory')?.addEventListener('click',()=>{if(!requirePro())return;
-    const o=document.createElement('div');o.className='modal-overlay open';
-    o.innerHTML=`<div class="modal"><h2>🧠 Memory Dashboard</h2><p>Each entry has a unique Memory ID.</p><div class="memory-list">${S.memories.map(m=>`<div class="memory-item"><div><div class="mem-content">${esc(m.content)}</div><div class="mem-id">🆔 ${m.memoryId||'N/A'}</div></div><button class="mem-toggle ${m.active?'active':''}" data-mem="${m.id}"></button><button class="mem-delete" data-mem="${m.id}">✕</button></div>`).join('')}</div><div class="btn-row"><button class="btn-primary" id="addMem">➕ Add Memory</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
-    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
-    o.querySelector('#addMem')?.addEventListener('click',()=>{const c=prompt('🧠 Memory:');if(c){const id=memId();S.memories.push({id:shortId(),memoryId:id,content:c,active:true});GlobalMemory.add({type:'manual',memoryId:id,content:c});saveState();o.remove();showToast('✅ Added · '+id);}});
-    o.querySelectorAll('.mem-toggle').forEach(t=>{t.addEventListener('click',()=>{const m=S.memories.find(x=>x.id===t.dataset.mem);if(m){m.active=!m.active;t.classList.toggle('active');saveState();}});});
-    o.querySelectorAll('.mem-delete').forEach(d=>{d.addEventListener('click',()=>{S.memories=S.memories.filter(x=>x.id!==d.dataset.mem);saveState();d.closest('.memory-item').remove();});});
-  });
+  if(pro){
+    document.getElementById('btnWorkspace')?.addEventListener('click',()=>{
+      const o=document.createElement('div');o.className='modal-overlay open';
+      o.innerHTML=`<div class="modal"><h2>Workspace</h2><p>Create and manage team workspaces.</p>${S.currentWorkspace?`<p style="font-size:var(--font-xs);color:var(--txt2)">Current: <strong>${S.currentWorkspace.name}</strong></p>`:''}${S.workspaces.map(w=>`<div class="prompt-template" data-ws="${w.id}"><div class="pt-title">${w.name}</div><div style="font-size:var(--font-xs);color:var(--txt2)">${w.members} member${w.members>1?'s':''}${w.id===S.currentWorkspace?.id?' · Active':''}</div></div>`).join('')}<div class="btn-row"><button class="btn-primary" id="createWs">New Workspace</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+      document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+      o.querySelector('#createWs')?.addEventListener('click',()=>{const n=prompt('Workspace name:');if(n){const w={id:shortId(),name:n,members:1,color:'#4da3ff'};S.workspaces.push(w);S.currentWorkspace=w;if(!S.members.length)S.members=[{id:'m1',name:'You',role:'Admin',online:true,initials:'YO',color:'#fff'}];if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();o.remove();saveState();render();showToast(`"${n}" created`);}});
+      o.querySelectorAll('[data-ws]').forEach(el=>{el.addEventListener('click',()=>{const w=S.workspaces.find(x=>x.id===el.dataset.ws);if(w){S.currentWorkspace=w;o.remove();saveState();render();showToast(`Switched to ${w.name}`);}});});
+    });
+    document.getElementById('workspaceSwitcher')?.addEventListener('click',()=>{if(S.workspaces.length<2)return;const i=S.workspaces.indexOf(S.currentWorkspace);S.currentWorkspace=S.workspaces[(i+1)%S.workspaces.length];saveState();showToast(`${S.currentWorkspace.name}`);render();});
+    document.getElementById('btnMarketResearch')?.addEventListener('click',()=>{S.activeView='chat';render();setTimeout(()=>sendMessage('Comprehensive market research: sizing, trends, landscape, projections.'),100);});
+    document.getElementById('btnDealAnalysis')?.addEventListener('click',()=>{S.activeView='chat';render();setTimeout(()=>sendMessage('Deal analysis: DCF, comps, precedents, risks, recommendation.'),100);});
+    document.getElementById('btnMemory')?.addEventListener('click',()=>{
+      const o=document.createElement('div');o.className='modal-overlay open';
+      o.innerHTML=`<div class="modal"><h2>Memory Dashboard</h2><p>Each entry has a unique Memory ID.</p><div class="memory-list">${S.memories.map(m=>`<div class="memory-item"><div><div class="mem-content">${esc(m.content)}</div><div class="mem-id">${m.memoryId||'N/A'}</div></div><button class="mem-toggle ${m.active?'active':''}" data-mem="${m.id}"></button><button class="mem-delete" data-mem="${m.id}">✕</button></div>`).join('')}</div><div class="btn-row"><button class="btn-primary" id="addMem">Add Memory</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+      document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+      o.querySelector('#addMem')?.addEventListener('click',()=>{const c=prompt('Memory:');if(c){const id=memId();S.memories.push({id:shortId(),memoryId:id,content:c,active:true});GlobalMemory.add({type:'manual',memoryId:id,content:c});saveState();o.remove();showToast('Added · '+id);}});
+      o.querySelectorAll('.mem-toggle').forEach(t=>{t.addEventListener('click',()=>{const m=S.memories.find(x=>x.id===t.dataset.mem);if(m){m.active=!m.active;t.classList.toggle('active');saveState();}});});
+      o.querySelectorAll('.mem-delete').forEach(d=>{d.addEventListener('click',()=>{S.memories=S.memories.filter(x=>x.id!==d.dataset.mem);saveState();d.closest('.memory-item').remove();});});
+    });
+    document.getElementById('btnAPIKeys')?.addEventListener('click',()=>{
+      if(!S.apiKeys.capitan)S.apiKeys.capitan='cap_'+shortId()+shortId();
+      const o=document.createElement('div');o.className='modal-overlay open';
+      o.innerHTML=`<div class="modal"><h2>API Keys</h2><div class="api-key-display"><span style="flex:1">${S.apiKeys.capitan}</span><button class="btn-secondary" style="min-width:auto;padding:6px 12px;font-size:var(--font-xs)" onclick="navigator.clipboard.writeText('${S.apiKeys.capitan}');showToast('Copied')">Copy</button></div><p style="font-size:9px;color:var(--txt2)">Keep secure. Rotate regularly.</p><div class="btn-row"><button class="btn-primary" id="rotateKey">Rotate</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+      document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+      o.querySelector('#rotateKey')?.addEventListener('click',()=>{S.apiKeys.capitan='cap_'+shortId()+shortId();saveState();showToast('Rotated');o.remove();document.getElementById('btnAPIKeys')?.click();});
+    });
+    document.getElementById('btnExport')?.addEventListener('click',()=>showExportOptions());
+    document.getElementById('btnPromptLib')?.addEventListener('click',()=>{
+      if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();
+      const cats=[...new Set(S.promptTemplates.map(p=>p.category))],o=document.createElement('div');o.className='modal-overlay open';
+      o.innerHTML=`<div class="modal"><h2>Prompt Library</h2>${cats.map(c=>`<div style="margin-bottom:12px"><h3 style="font-size:var(--font-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--txt);margin-bottom:6px">${c}</h3>${S.promptTemplates.filter(p=>p.category===c).map(pt=>`<div class="prompt-template" data-pt="${pt.id}"><div class="pt-title">${pt.title}</div><div class="pt-preview">${pt.prompt.substring(0,65)}...</div><div class="pt-vars">${pt.vars.map(v=>`<span class="pt-var">{{${v}}}</span>`).join('')}</div></div>`).join('')}</div>`).join('')}<div class="btn-row"><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+      document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+      o.querySelectorAll('.prompt-template').forEach(pt=>{pt.addEventListener('click',()=>{const t=S.promptTemplates.find(x=>x.id===pt.dataset.pt);if(t){let p=t.prompt;t.vars.forEach(v=>{const val=prompt(`Enter {{${v}}}:`);if(val)p=p.replace(`{{${v}}}`,val);});o.remove();sendMessage(p);}});});
+    });
+  }
   
-  document.getElementById('btnAdminMemory')?.addEventListener('click',()=>{
-    if(!S.adminAuth){const code=prompt('🔐 Enter admin access code:');if(code===ADMIN_ACCESS_CODE){S.adminAuth=true;saveState();showToast('✅ Admin access granted');}else{showToast('❌ Invalid code');return;}}
-    const all=GlobalMemory.recent(100);
-    const o=document.createElement('div');o.className='modal-overlay open';
-    o.innerHTML=`<div class="modal" style="width:620px;max-width:95vw"><h2>🗄️ Admin Memory Panel</h2><p>All stored communications with Memory IDs.</p><div style="margin-bottom:8px"><input type="text" placeholder="🔍 Search by ID, user, or content..." id="adminMemSearch" style="width:100%"></div><div class="admin-memory-panel" id="adminMemList">${all.map(m=>`<div class="admin-memory-item"><div class="am-user">🆔 ${m.memoryId||'N/A'} · 👤 ${m.userId} · ${m.tier}</div><div class="am-content">${m.query||m.content||'(no content)'}</div><div class="am-time">🕐 ${new Date(m.timestamp).toLocaleString()}</div></div>`).join('')||'<div style="padding:20px;text-align:center;color:var(--txt2)">📭 No memories stored yet.</div>'}</div><div class="btn-row"><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
-    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
-    o.querySelector('#adminMemSearch')?.addEventListener('input',e=>{const r=GlobalMemory.search(e.target.value);const l=o.querySelector('#adminMemList');l.innerHTML=r.length?r.map(m=>`<div class="admin-memory-item"><div class="am-user">🆔 ${m.memoryId||'N/A'} · 👤 ${m.userId} · ${m.tier}</div><div class="am-content">${m.query||m.content||'(no content)'}</div><div class="am-time">🕐 ${new Date(m.timestamp).toLocaleString()}</div></div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--txt2)">🔍 No results.</div>';});
-  });
+  if(founder){
+    document.getElementById('btnAdminMemory')?.addEventListener('click',()=>{
+      if(!S.adminAuth){const code=prompt('Enter admin access code:');if(code===ADMIN_ACCESS_CODE){S.adminAuth=true;saveState();showToast('Admin access granted');}else{showToast('Invalid code');return;}}
+      const all=GlobalMemory.recent(100);
+      const o=document.createElement('div');o.className='modal-overlay open';
+      o.innerHTML=`<div class="modal" style="width:620px;max-width:95vw"><h2>Admin Memory Panel</h2><p>All stored communications with Memory IDs.</p><div style="margin-bottom:8px"><input type="text" placeholder="Search by ID, user, or content..." id="adminMemSearch" style="width:100%"></div><div class="admin-memory-panel" id="adminMemList">${all.map(m=>`<div class="admin-memory-item"><div class="am-user">${m.memoryId||'N/A'} · ${m.userId} · ${m.tier}</div><div class="am-content">${m.query||m.content||'(no content)'}</div><div class="am-time">${new Date(m.timestamp).toLocaleString()}</div></div>`).join('')||'<div style="padding:20px;text-align:center;color:var(--txt2)">No memories stored yet.</div>'}</div><div class="btn-row"><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+      document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+      o.querySelector('#adminMemSearch')?.addEventListener('input',e=>{const r=GlobalMemory.search(e.target.value);const l=o.querySelector('#adminMemList');l.innerHTML=r.length?r.map(m=>`<div class="admin-memory-item"><div class="am-user">${m.memoryId||'N/A'} · ${m.userId} · ${m.tier}</div><div class="am-content">${m.query||m.content||'(no content)'}</div><div class="am-time">${new Date(m.timestamp).toLocaleString()}</div></div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--txt2)">No results.</div>';});
+    });
+  }
   
-  document.getElementById('btnAPIKeys')?.addEventListener('click',()=>{if(!requirePro())return;
-    if(!S.apiKeys.capitan)S.apiKeys.capitan='cap_'+shortId()+shortId();
-    const o=document.createElement('div');o.className='modal-overlay open';
-    o.innerHTML=`<div class="modal"><h2>🔑 API Keys</h2><div class="api-key-display"><span style="flex:1">${S.apiKeys.capitan}</span><button class="btn-secondary" style="min-width:auto;padding:6px 12px;font-size:10px" onclick="navigator.clipboard.writeText('${S.apiKeys.capitan}');showToast('📋 Copied')">Copy</button></div><p style="font-size:9px;color:var(--txt2)">🔐 Keep secure. Rotate regularly.</p><div class="btn-row"><button class="btn-primary" id="rotateKey">🔄 Rotate</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
-    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
-    o.querySelector('#rotateKey')?.addEventListener('click',()=>{S.apiKeys.capitan='cap_'+shortId()+shortId();saveState();showToast('🔄 Rotated');o.remove();document.getElementById('btnAPIKeys')?.click();});
-  });
-  document.getElementById('btnExport')?.addEventListener('click',()=>showExportOptions());
-  document.getElementById('btnPromptLib')?.addEventListener('click',()=>{if(!requirePro())return;
-    if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();
-    const cats=[...new Set(S.promptTemplates.map(p=>p.category))],o=document.createElement('div');o.className='modal-overlay open';
-    o.innerHTML=`<div class="modal"><h2>📚 Prompt Library</h2>${cats.map(c=>`<div style="margin-bottom:12px"><h3 style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--txt);margin-bottom:6px">${c}</h3>${S.promptTemplates.filter(p=>p.category===c).map(pt=>`<div class="prompt-template" data-pt="${pt.id}"><div class="pt-title">${pt.title}</div><div class="pt-preview">${pt.prompt.substring(0,65)}...</div><div class="pt-vars">${pt.vars.map(v=>`<span class="pt-var">{{${v}}}</span>`).join('')}</div></div>`).join('')}</div>`).join('')}<div class="btn-row"><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
-    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
-    o.querySelectorAll('.prompt-template').forEach(pt=>{pt.addEventListener('click',()=>{const t=S.promptTemplates.find(x=>x.id===pt.dataset.pt);if(t){let p=t.prompt;t.vars.forEach(v=>{const val=prompt(`📝 Enter {{${v}}}:`);if(val)p=p.replace(`{{${v}}}`,val);});o.remove();sendMessage(p);}});});
-  });
   document.getElementById('btnTheme')?.addEventListener('click',()=>{S.theme=S.theme==='dark'?'light':'dark';saveState();render();});
   
   const showPolicy=(t,c)=>{const o=document.createElement('div');o.className='modal-overlay open';o.innerHTML=`<div class="modal"><h2>${t}</h2><p style="line-height:1.7;color:var(--txt)">${c}</p><button class="btn-primary" style="width:100%" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`;document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});};
-  document.getElementById('btnPrivacy')?.addEventListener('click',()=>showPolicy('🔒 Privacy Policy',`CAPITAN AI by CLOSEAI Technologies.\n\n🔐 End-to-end encrypted. We never sell or share your data. You own your inputs and outputs. SOC 2 Type II.\n\n📧 ${SUPPORT_EMAIL}`));
-  document.getElementById('btnTerms')?.addEventListener('click',()=>showPolicy('📋 Terms & Conditions',`✨ Pro: $17/month auto-renewing. Cancel anytime.\n💬 Free: 20 messages per 7 hours.\n\nCLOSEAI Technologies.\n\n📧 ${SUPPORT_EMAIL}`));
-  document.getElementById('linkPrivacy')?.addEventListener('click',e=>{e.preventDefault();showPolicy('🔒 Privacy Policy',`CAPITAN AI · End-to-end encrypted. Your data is yours.\n\n📧 ${SUPPORT_EMAIL}`);});
-  document.getElementById('linkTerms')?.addEventListener('click',e=>{e.preventDefault();showPolicy('📋 Terms',`Pro: $17/mo · Free: 20 msg/7hrs.\n\nCLOSEAI Technologies.\n\n📧 ${SUPPORT_EMAIL}`);});
-  document.getElementById('linkTrust')?.addEventListener('click',e=>{e.preventDefault();showPolicy('🛡️ Trust Center',`SOC 2 Type II. Encrypted at rest and in transit. Regular audits.\n\n📧 ${SUPPORT_EMAIL}`);});
+  document.getElementById('btnPrivacy')?.addEventListener('click',()=>showPolicy('Privacy Policy',`CAPITAN AI by CLOSEAI Technologies.\n\nEnd-to-end encrypted. We never sell or share your data. You own your inputs and outputs. SOC 2 Type II.\n\n${SUPPORT_EMAIL}`));
+  document.getElementById('btnTerms')?.addEventListener('click',()=>showPolicy('Terms & Conditions',`Pro: $17/month auto-renewing. Cancel anytime.\nFree: 20 messages per 7 hours.\n\nCLOSEAI Technologies.\n\n${SUPPORT_EMAIL}`));
+  document.getElementById('linkPrivacy')?.addEventListener('click',e=>{e.preventDefault();showPolicy('Privacy Policy',`CAPITAN AI · End-to-end encrypted. Your data is yours.\n\n${SUPPORT_EMAIL}`);});
+  document.getElementById('linkTerms')?.addEventListener('click',e=>{e.preventDefault();showPolicy('Terms',`Pro: $17/mo · Free: 20 msg/7hrs.\n\nCLOSEAI Technologies.\n\n${SUPPORT_EMAIL}`);});
+  document.getElementById('linkTrust')?.addEventListener('click',e=>{e.preventDefault();showPolicy('Trust Center',`SOC 2 Type II. Encrypted at rest and in transit. Regular audits.\n\n${SUPPORT_EMAIL}`);});
   document.getElementById('btnUpgrade')?.addEventListener('click',openPaymentModal);
   document.getElementById('closeModal')?.addEventListener('click',closePaymentModal);
   document.getElementById('closeModal2')?.addEventListener('click',closePaymentModal);
@@ -952,14 +979,14 @@ function bindEvents(){
   let ts=0;document.querySelector('.main')?.addEventListener('touchstart',e=>{ts=e.touches[0].clientX;},{passive:true});document.querySelector('.main')?.addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-ts>60&&!S.sidebarOpen){S.sidebarOpen=true;render();}});
 }
 
-function activatePro(){S.tier='pro';S.proExpiry=Date.now()+PRO_EXPIRY_DAYS*86400000;if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();closePaymentModal();saveState();showToast('🎉 Welcome to Capitan Pro · All tools unlocked');render();}
+function activatePro(){S.tier='pro';S.proExpiry=Date.now()+PRO_EXPIRY_DAYS*86400000;if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();closePaymentModal();saveState();showToast('Welcome to Capitan Pro · All tools unlocked');render();}
 function openPaymentModal(){document.getElementById('paymentModal').classList.add('open');}
 function closePaymentModal(){document.getElementById('paymentModal').classList.remove('open');}
 document.getElementById('paymentModal')?.addEventListener('click',function(e){if(e.target===this)closePaymentModal();});
 
 applyTheme();render();
 if(isPro())setInterval(()=>{refreshMarketData();},30000);
-console.log('⚓ CAPITAN AI v16.1 — Clean Headlines Only');
+console.log('⚓ CAPITAN AI v16.3 — Clean. Smooth. Cute.');
 console.log('CLOSEAI TECHNOLOGIES — ' + SUPPORT_EMAIL);
 </script>
 </body>
