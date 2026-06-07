@@ -1662,7 +1662,11 @@ async function sendMessage(content) {
   const aiMsg = { id: uid(), role: 'assistant', content: '' };
   S.messages.push(aiMsg);
   S.streaming = true;
-  if (input) input.value = '';
+  if (input) {
+    input.value = '';
+    // Dismiss mobile keyboard after send
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) input.blur();
+  }
   if (!isPro()) { S.freeMsgCount++; saveState(); }
 
   render();
@@ -1808,7 +1812,10 @@ function bindEvents() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
   sendBtn?.addEventListener('click', () => sendMessage());
-  setTimeout(() => input?.focus(), 80);
+  // Only auto-focus on desktop — never on mobile (prevents keyboard hijack)
+  if (window.innerWidth > 768 && !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    setTimeout(() => input?.focus(), 80);
+  }
 
   /* Theme */
   document.getElementById('btnTheme')?.addEventListener('click', () => {
