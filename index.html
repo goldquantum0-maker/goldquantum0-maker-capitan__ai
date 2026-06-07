@@ -130,11 +130,6 @@ body {
   padding: 2px 6px; border-radius: 3px;
 }
 
-.sb-limit { margin: 4px 10px 8px; padding: 10px; background: var(--surface); border: 1px solid var(--edge); border-radius: var(--r-md); }
-.sb-limit-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 9px; color: var(--ink-3); }
-.sb-limit-track { height: 2px; background: var(--edge); border-radius: 1px; overflow: hidden; }
-.sb-limit-fill { height: 100%; background: var(--gold-dim); border-radius: 1px; transition: width 0.5s; }
-
 .sb-bottom { border-top: 1px solid var(--edge); padding: 12px 10px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
 .btn-upgrade {
   width: 100%; background: var(--gold-glow);
@@ -147,9 +142,7 @@ body {
 }
 .btn-upgrade:hover { background: rgba(201,169,110,0.2); border-color: var(--gold); }
 .sb-tier-badge { text-align: center; font-family: var(--font-display); font-size: 8.5px; font-weight: 700; letter-spacing: 0.15em; color: var(--ink-3); text-transform: uppercase; padding: 4px 0; }
-.sb-tier-badge.plus { color: var(--gold-dim); }
 .sb-tier-badge.pro { color: var(--gold); }
-.sb-tier-badge.founder { color: var(--gold); }
 .sb-footer-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; padding: 2px 0; }
 .sb-footer-links a { font-family: var(--font-display); font-size: 8.5px; color: var(--ink-3); text-decoration: none; }
 .sb-footer-links a:hover { color: var(--ink-2); }
@@ -242,10 +235,6 @@ body {
 .modal-btn-primary:hover { background: var(--gold); }
 .modal-btn-secondary { flex: 1; background: transparent; color: var(--ink-2); border: 1px solid var(--edge); padding: 12px; border-radius: var(--r-md); cursor: pointer; font-family: var(--font-display); font-size: 10.5px; font-weight: 600; text-transform: uppercase; min-height: 44px; }
 .modal-btn-secondary:hover { background: var(--surface); color: var(--ink); }
-.modal-tier-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-.modal-tier-tab { flex: 1; text-align: center; padding: 10px; border: 1px solid var(--edge); border-radius: var(--r-md); cursor: pointer; font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--ink-2); transition: all 0.2s; }
-.modal-tier-tab:hover { border-color: var(--line); color: var(--ink); }
-.modal-tier-tab.active { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
 
 .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--void); padding: 9px 20px; border-radius: 3px; font-family: var(--font-display); font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; z-index: 300; animation: toastAnim 2.8s var(--ease) forwards; pointer-events: none; }
 @keyframes toastAnim { 0% { opacity: 0; transform: translateX(-50%) translateY(8px); } 12% { opacity: 1; transform: translateX(-50%) translateY(0); } 78% { opacity: 1; } 100% { opacity: 0; } }
@@ -268,20 +257,16 @@ body {
 
 <div id="paymentModal" class="modal-overlay">
   <div class="modal">
-    <h2 id="modalTitle">Capitan Pro</h2>
-    <p class="modal-desc" id="modalDesc">Unlimited messages. All domains. All tools.</p>
-    <div class="modal-price" id="modalPrice">$17<span> / month</span></div>
-    <div class="modal-tier-tabs">
-      <button class="modal-tier-tab" data-tier="plus" onclick="switchModalTier('plus')">Plus · $6</button>
-      <button class="modal-tier-tab active" data-tier="pro" onclick="switchModalTier('pro')">Pro · $17</button>
-    </div>
+    <h2>Capitan Pro</h2>
+    <p class="modal-desc">Institutional intelligence. Unlimited access.</p>
+    <div class="modal-price">$17<span> / month</span></div>
     <div style="margin-bottom:16px">
       <select id="cryptoCurrency" style="width:100%;background:var(--surface);border:1px solid var(--edge);color:var(--ink);padding:8px;border-radius:var(--r-md);font-family:var(--font-body);font-size:13px;margin-bottom:8px">
-        <option value="BTC">BTC</option>
-        <option value="ETH">ETH</option>
-        <option value="USDC">USDC</option>
+        <option value="BTC">BTC — 0.00028 BTC</option>
+        <option value="ETH">ETH — 0.005 ETH</option>
+        <option value="USDC">USDC — 17 USDC</option>
       </select>
-      <div style="background:var(--surface);border:1px solid var(--edge);padding:10px;border-radius:var(--r-md);font-family:var(--font-mono);font-size:9px;color:var(--ink-2);word-break:break-all;margin-bottom:8px">bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new</div>
+      <div style="background:var(--surface);border:1px solid var(--edge);padding:10px;border-radius:var(--r-md);font-family:var(--font-mono);font-size:9px;color:var(--ink-2);word-break:break-all;margin-bottom:8px" id="cryptoAddress">bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new</div>
       <input type="text" placeholder="Transaction hash (TXID)" id="txidInput">
     </div>
     <div class="modal-btn-row">
@@ -293,146 +278,69 @@ body {
 
 <script>
 // ═══════════════════════════════════════
-// CAPITAN AI — TIERS: Free | Plus $6 | Pro $17 | Founder
+// CHANGE THIS TO YOUR WORKER URL
 // ═══════════════════════════════════════
-const API_BASE = 'https://goldquantum0-capitan-ai-1.onrender.com';
-const CFG = { FOUNDER_CLICKS: 5, EMAIL: 'closeaitechnologies@gmail.com', ADMIN_CODE: 'Osinachi@350' };
+const API_BASE = 'https://capitan-api.YOURNAME.workers.dev';
 
-const TIERS = {
-  free:    { name:'Free',    price:0,  msgLimit:20,  msgWindow:7, domains:['general','finance'],                       tools:[],                  badge:'FREE' },
-  plus:    { name:'Plus',    price:6,  msgLimit:30,  msgWindow:7, domains:['general','finance','coding','math'],       tools:[],                  badge:'PLUS' },
-  pro:     { name:'Pro',     price:17, msgLimit:1/0, msgWindow:0, domains:['general','finance','coding','math','quant','science'], tools:['workspace','memory','apiKeys','export','promptLib'], badge:'PRO' },
-  founder: { name:'Founder', price:0,  msgLimit:1/0, msgWindow:0, domains:['general','finance','coding','math','quant','science'], tools:['workspace','memory','apiKeys','export','promptLib','admin'], badge:'FOUNDER' }
+const CFG = {
+  FOUNDER_CLICKS: 5, FREE_LIMIT: 20, FREE_WINDOW: 7 * 60 * 60 * 1000,
+  PRO_DAYS: 30, EMAIL: 'closeaitechnologies@gmail.com', ADMIN_CODE: 'Osinachi@350'
 };
 
-const uid = () => Math.random().toString(36).slice(2,8).toUpperCase();
-const mid = () => 'mem_'+uid();
+const uid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
+const mid = () => 'mem_' + uid();
 
-let S = loadState();
-
-function defaultState() {
-  return {
-    messages:[], streaming:false, tier:'free', proExpiry:null,
-    sidebarOpen:true, sidebarCollapsed:false,
-    sections:{workflows:true,settings:false}, theme:'dark',
-    founderClicks:0, founderTimer:null,
-    memories:[{id:uid(),memId:mid(),content:'Patterns stored',active:true}],
-    selectedModel:'balanced',
-    models:[{id:'quick',name:'Quick'},{id:'balanced',name:'Balanced'},{id:'deep',name:'Deep'}],
-    freeMsgCount:0, freeMsgWindowStart:Date.now(), adminAuth:false
-  };
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem('capitan_state');
-    if (raw) {
-      const p = JSON.parse(raw);
-      if (p.proExpiry && Date.now() > p.proExpiry) { p.tier = 'free'; p.proExpiry = null; }
-      if (p.tier === 'free') { p.adminAuth = false; }
-      if (p.tier !== 'founder') { p.adminAuth = false; }
-      return {...defaultState(),...p};
-    }
-  } catch(e) {}
-  return defaultState();
-}
-
-function saveState() {
-  try {
-    localStorage.setItem('capitan_state', JSON.stringify({
-      tier:S.tier, proExpiry:S.proExpiry, theme:S.theme,
-      freeMsgCount:S.freeMsgCount, freeMsgWindowStart:S.freeMsgWindowStart,
-      adminAuth:S.tier==='founder'?S.adminAuth:false,
-      sidebarCollapsed:S.sidebarCollapsed
-    }));
-  } catch(e) {}
-}
+const S = {
+  messages: [], streaming: false, tier: 'free', proExpiry: null,
+  sidebarOpen: false, sidebarCollapsed: false,
+  sections: { workflows: true, settings: false },
+  theme: 'dark', founderClicks: 0, founderTimer: null,
+  memories: [{ id: uid(), memId: mid(), content: 'Patterns stored', active: true }],
+  selectedModel: 'balanced',
+  models: [
+    { id: 'quick', name: 'Quick' },
+    { id: 'balanced', name: 'Balanced' },
+    { id: 'deep', name: 'Deep' }
+  ],
+  freeMsgCount: 0, freeMsgWindowStart: Date.now(), adminAuth: false
+};
 
 const isPro = () => S.tier === 'pro' || S.tier === 'founder';
 const isFounder = () => S.tier === 'founder';
-const getTier = () => TIERS[S.tier] || TIERS.free;
-const canDomain = (d) => getTier().domains.includes(d);
-const canTool = (t) => getTier().tools.includes(t);
-
-function canMessage() {
-  const t = getTier();
-  if (t.msgLimit === Infinity) return true;
-  if (Date.now() - S.freeMsgWindowStart > t.msgWindow * 3600000) {
-    S.freeMsgCount = 0; S.freeMsgWindowStart = Date.now(); saveState();
-  }
-  return S.freeMsgCount < t.msgLimit;
-}
-
-function remaining() {
-  const t = getTier();
-  if (t.msgLimit === Infinity) return '∞';
-  return Math.max(0, t.msgLimit - S.freeMsgCount);
-}
-
-function msgPct() {
-  const t = getTier();
-  if (t.msgLimit === Infinity) return 0;
-  return Math.min(100, (S.freeMsgCount / t.msgLimit) * 100);
-}
+const canMessage = () => {
+  if (isPro()) return true;
+  if (Date.now() - S.freeMsgWindowStart > CFG.FREE_WINDOW) { S.freeMsgCount = 0; S.freeMsgWindowStart = Date.now(); }
+  return S.freeMsgCount < CFG.FREE_LIMIT;
+};
 
 function toast(msg) {
-  document.querySelectorAll('.toast').forEach(t=>t.remove());
-  const el = document.createElement('div'); el.className='toast'; el.textContent=msg;
-  document.body.appendChild(el); setTimeout(()=>el.remove(),2900);
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 2900);
 }
-
-function esc(s) { return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''; }
-function escAttr(s) { return s?s.replace(/'/g,"\\'").replace(/"/g,'&quot;'):''; }
-function fmt(s) { return s?s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>'):''; }
-function applyTheme() { document.documentElement.classList.toggle('light', S.theme==='light'); }
+function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function fmt(s) { return s ? s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>') : ''; }
+function applyTheme() { document.documentElement.classList.toggle('light', S.theme === 'light'); }
 
 const greeting = () => {
   const h = new Date().getHours();
-  if (h<6) return 'Late night.'; if (h<12) return 'Good morning.';
-  if (h<17) return 'Good afternoon.'; if (h<21) return 'Good evening.';
+  if (h < 6) return 'Late night.'; if (h < 12) return 'Good morning.';
+  if (h < 17) return 'Good afternoon.'; if (h < 21) return 'Good evening.';
   return 'Night session.';
 };
 
-let modalTier = 'pro';
-
-function switchModalTier(tier) {
-  modalTier = tier;
-  const t = TIERS[tier];
-  document.getElementById('modalTitle').textContent = 'Capitan ' + t.name;
-  document.getElementById('modalDesc').textContent = t.msgLimit===Infinity?'Unlimited messages. All domains. All tools.':`${t.msgLimit} messages per ${t.msgWindow}hrs. ${t.domains.length} domains.`;
-  document.getElementById('modalPrice').innerHTML = '$'+t.price+'<span> / month</span>';
-  document.querySelectorAll('.modal-tier-tab').forEach(b=>b.classList.toggle('active',b.dataset.tier===tier));
-}
+const SIGIL_SVG = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="0.5" y="0.5" width="19" height="19" rx="3" stroke="var(--edge)"/><path d="M5 10 L10 5 L15 10 L10 15 Z" stroke="var(--gold)" stroke-width="1" fill="none"/><circle cx="10" cy="10" r="1.5" fill="var(--gold)"/></svg>`;
 
 function render() {
   applyTheme();
   const app = document.getElementById('app'); app.innerHTML = '';
-  const tier = getTier();
-  const fnd = isFounder();
+  const pro = isPro(), fnd = isFounder();
   const isMobile = window.innerWidth <= 768;
 
   const sb = document.createElement('aside');
-  sb.className = `sidebar${S.sidebarCollapsed&&!isMobile?' collapsed':''}${isMobile&&S.sidebarOpen?' mobile-open':''}`;
+  sb.className = `sidebar${S.sidebarCollapsed && !isMobile ? ' collapsed' : ''}${isMobile && S.sidebarOpen ? ' mobile-open' : ''}`;
 
   if (S.sidebarOpen || !isMobile) {
-    // Build domain nav
-    const domains = ['general','finance','coding','math','quant','science'];
-    let domainNav = '';
-    for (const d of domains) {
-      const ok = canDomain(d);
-      const needed = !ok ? Object.entries(TIERS).find(([,v])=>v.domains.includes(d))?.[0]?.toUpperCase() : '';
-      domainNav += `<button class="sb-nav-item${ok?'':' locked'}" ${ok?`data-cap="${d}"`:''} onclick="${ok?'':`toast('Requires ${needed}');openModal('${(needed||'PRO').toLowerCase()}')`}">${d.charAt(0).toUpperCase()+d.slice(1)}${!ok?`<span class="pro-chip">${needed}</span>`:''}</button>`;
-    }
-
-    // Build tools nav
-    let toolsNav = '';
-    if (canTool('workspace')) toolsNav += '<button class="sb-nav-item" id="btnWorkspace">Workspace</button>';
-    if (canTool('memory')) toolsNav += '<button class="sb-nav-item" id="btnMemory">Memory</button>';
-    if (canTool('apiKeys')) toolsNav += '<button class="sb-nav-item" id="btnAPIKeys">API Keys</button>';
-    if (canTool('export')) toolsNav += '<button class="sb-nav-item" id="btnExport">Export</button>';
-    if (canTool('promptLib')) toolsNav += '<button class="sb-nav-item" id="btnPromptLib">Prompt Library</button>';
-    if (canTool('admin')) toolsNav += `<button class="sb-nav-item" id="btnAdmin">Admin${S.adminAuth?' ✓':''}</button>`;
-
     sb.innerHTML = `
       <div class="sb-top">
         <div class="sb-brand">
@@ -442,22 +350,154 @@ function render() {
         <button class="btn-new-chat" id="btnNewChat">+ New Conversation</button>
       </div>
       <div class="sb-scroll">
-        ${tier.msgLimit!==Infinity?`
-        <div class="sb-limit">
-          <div class="sb-limit-row"><span>${tier.badge} TIER</span><span>${remaining()}/${tier.msgLimit}</span></div>
-          <div class="sb-limit-track"><div class="sb-limit-fill" style="width:${msgPct()}%"></div></div>
-        </div>`:''}
         <div class="sb-section" style="padding:6px 10px 4px">
           <button class="sb-nav-item active" id="btnChat">Chat</button>
-          ${domainNav}
+          <button class="sb-nav-item" data-cap="general">General</button>
+          <button class="sb-nav-item" data-cap="finance">Finance${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
+          <button class="sb-nav-item" data-cap="coding">Coding${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
+          <button class="sb-nav-item" data-cap="quant">Quant${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
+          <button class="sb-nav-item" data-cap="science">Science${!pro ? '<span class="pro-chip">PRO</span>' : ''}</button>
         </div>
-        ${toolsNav?`<div style="height:1px;background:var(--edge);margin:6px 18px"></div><div class="sb-section" style="padding:6px 10px 4px">${toolsNav}</div>`:''}
         <div style="height:1px;background:var(--edge);margin:6px 18px"></div>
         <div class="sb-section" style="padding:6px 10px 4px">
-          <button class="sb-nav-item" id="btnTheme">Theme — ${S.theme==='dark'?'Dark':'Light'}</button>
+          <button class="sb-nav-item" id="btnTheme">Theme — ${S.theme === 'dark' ? 'Dark' : 'Light'}</button>
           <button class="sb-nav-item" id="btnPrivacy">Privacy</button>
           <button class="sb-nav-item" id="btnTerms">Terms</button>
+          ${fnd ? `<button class="sb-nav-item" id="btnAdmin">Admin${S.adminAuth ? ' ✓' : ''}</button>` : ''}
         </div>
       </div>
       <div class="sb-bottom">
-        ${S.tier==='free'?`<button class="btn-upgrade" id="btnUpgrade">UPGRADE — $6/MO</button>`:S.tier==='plus'?`<div class="sb-tier-badge plus">PLUS</div><button class="btn-upgrade" id="btnUpgrade">GO
+        ${pro ? `<div class="sb-tier-badge pro">${fnd ? 'FOUNDER' : 'PRO'} — ACTIVE</div>` : `<button class="btn-upgrade" id="btnUpgrade">UPGRADE — $17/MONTH</button>`}
+        <div class="sb-footer-links"><a href="#" id="linkPrivacy">Privacy</a><a href="#" id="linkTerms">Terms</a><a href="mailto:${CFG.EMAIL}">Support</a></div>
+        <div class="sb-company">CLOSEAI Technologies</div>
+      </div>`;
+  }
+  app.appendChild(sb);
+
+  const main = document.createElement('main'); main.className = 'main';
+  main.innerHTML = `
+    <div class="chat-wrap">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="input-area">
+        <div class="input-meta">
+          <div class="model-tabs" id="modelTabs">
+            ${S.models.map(m => `<button class="model-tab${S.selectedModel === m.id ? ' active' : ''}" data-model="${m.id}">${m.name}</button>`).join('')}
+          </div>
+        </div>
+        <div class="input-box">
+          <input class="input-field" type="text" id="chatInput" placeholder="Ask anything..." ${S.streaming ? 'disabled' : ''} autocomplete="off">
+          <button class="send-btn" id="sendBtn" ${S.streaming ? 'disabled' : ''}>
+            <svg viewBox="0 0 14 14" fill="none"><path d="M1 7L13 7M8 2.5L13 7L8 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">Return to send · Capitan AI may make errors</div>
+      </div>
+    </div>`;
+  app.appendChild(main);
+
+  bindEvents(); renderMessages();
+}
+
+function renderMessages() {
+  const el = document.getElementById('chatMessages'); if (!el) return;
+  if (!S.messages.length) {
+    el.innerHTML = `<div class="welcome"><div class="welcome-eyebrow">Institutional Intelligence</div><h1>${greeting()}</h1><p class="welcome-sub">What would you like to explore?</p><div class="welcome-pills"><button class="welcome-pill" onclick="sendMessage('Analyze market trends')">Finance</button><button class="welcome-pill${isPro() ? '' : ' locked'}" onclick="${isPro() ? "sendMessage('Explain quantitative methods')" : "toast('Pro feature');openModal()"}">Quant${isPro() ? '' : ' · Pro'}</button><button class="welcome-pill${isPro() ? '' : ' locked'}" onclick="${isPro() ? "sendMessage('Write optimized code')" : "toast('Pro feature');openModal()"}">Coding${isPro() ? '' : ' · Pro'}</button><button class="welcome-pill${isPro() ? '' : ' locked'}" onclick="${isPro() ? "sendMessage('Explore scientific concepts')" : "toast('Pro feature');openModal()"}">Science${isPro() ? '' : ' · Pro'}</button></div></div>`;
+    return;
+  }
+  el.innerHTML = S.messages.map((m, i) => {
+    if (m.role === 'user') return `<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`;
+    const isLast = i === S.messages.length - 1, content = m.content || '';
+    return `<div class="msg ai"><div class="msg-ai-meta">${SIGIL_SVG}<span class="msg-ai-label">Capitan AI</span></div>${isLast && !content ? `<div class="thinking-wrap"><div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div><span class="thinking-text">Thinking</span></div>` : `<div class="msg-ai-body"><div class="msg-content">${fmt(content)}</div><div class="msg-actions"><button class="msg-action-btn" onclick="navigator.clipboard.writeText('${content.replace(/'/g,"\\'")}');toast('Copied')">Copy</button></div><div class="msg-disclaimer">Capitan AI may produce errors.</div></div>`}</div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendMessage(content) {
+  const input = document.getElementById('chatInput');
+  const text = content || input?.value?.trim();
+  if (!text || S.streaming) return;
+  if (!isPro() && !canMessage()) { toast('Limit reached'); openModal(); return; }
+
+  S.messages.push({ id: uid(), role: 'user', content: text });
+  const aiMsg = { id: uid(), role: 'assistant', content: '' };
+  S.messages.push(aiMsg); S.streaming = true;
+  if (input) { input.value = ''; input.blur(); }
+  if (!isPro()) S.freeMsgCount++;
+  render();
+
+  try {
+    const r = await fetch(API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: S.messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })) })
+    });
+    const data = await r.json();
+    aiMsg.content = data.content || 'No response. Try again.';
+  } catch (e) {
+    aiMsg.content = 'Connection error. Please try again.';
+  }
+
+  S.streaming = false; render();
+}
+
+function bindEvents() {
+  document.getElementById('toggleCollapse')?.addEventListener('click', () => { S.sidebarCollapsed = !S.sidebarCollapsed; render(); });
+  document.getElementById('mobileMenuBtn')?.addEventListener('click', () => { S.sidebarOpen = !S.sidebarOpen; render(); });
+  document.getElementById('founderSecret')?.addEventListener('click', () => {
+    S.founderClicks++; if (S.founderTimer) clearTimeout(S.founderTimer);
+    if (S.founderClicks >= CFG.FOUNDER_CLICKS) { S.tier = 'founder'; S.founderClicks = 0; toast('Founder mode'); render(); }
+    S.founderTimer = setTimeout(() => { S.founderClicks = 0; }, 2000);
+  });
+  document.getElementById('btnNewChat')?.addEventListener('click', () => { S.messages = []; render(); });
+  document.getElementById('btnChat')?.addEventListener('click', () => render());
+  document.querySelectorAll('[data-cap]').forEach(b => {
+    b.addEventListener('click', () => {
+      const caps = { general: 'Explore a topic', finance: 'Analyze markets', coding: 'Write code', quant: 'Quant methods', science: 'Science concepts' };
+      if (!isPro() && b.dataset.cap !== 'general') { toast('Pro feature'); openModal(); return; }
+      sendMessage(caps[b.dataset.cap]);
+    });
+  });
+  document.querySelectorAll('.model-tab').forEach(t => {
+    t.addEventListener('click', () => { S.selectedModel = t.dataset.model; document.querySelectorAll('.model-tab').forEach(x => x.classList.toggle('active', x === t)); });
+  });
+  document.getElementById('chatInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+  document.getElementById('sendBtn')?.addEventListener('click', () => sendMessage());
+  document.getElementById('btnTheme')?.addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; render(); });
+  document.getElementById('btnUpgrade')?.addEventListener('click', openModal);
+  document.getElementById('verifyPaymentBtn')?.addEventListener('click', async () => {
+    const txid = document.getElementById('txidInput')?.value?.trim();
+    const currency = document.getElementById('cryptoCurrency')?.value;
+    if (!txid) { toast('Enter TXID'); return; }
+    try {
+      const r = await fetch(API_BASE + '/api/verify-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txid, currency }) });
+      const data = await r.json();
+      if (data.verified) { S.tier = 'pro'; closeModal(); toast('Welcome to Pro!'); render(); }
+      else toast(data.message || 'Failed');
+    } catch (e) { toast('Error'); }
+  });
+  document.getElementById('closeModal')?.addEventListener('click', closeModal);
+
+  if (isFounder()) {
+    document.getElementById('btnAdmin')?.addEventListener('click', () => {
+      if (!S.adminAuth) { const code = prompt('Admin code:'); if (code === CFG.ADMIN_CODE) { S.adminAuth = true; toast('Access granted'); } else { toast('Invalid'); return; } }
+      alert('Admin Memory — Access granted. Memories stored in browser localStorage.');
+    });
+  }
+
+  document.getElementById('btnPrivacy')?.addEventListener('click', () => alert('CAPITAN AI Privacy Policy\n\nEnd-to-end encrypted. No data sold.\n' + CFG.EMAIL));
+  document.getElementById('btnTerms')?.addEventListener('click', () => alert('Terms: Pro $17/month. Free: 20 msg/7hrs.\n' + CFG.EMAIL));
+  document.getElementById('linkPrivacy')?.addEventListener('click', e => { e.preventDefault(); alert('Privacy: ' + CFG.EMAIL); });
+  document.getElementById('linkTerms')?.addEventListener('click', e => { e.preventDefault(); alert('Terms: $17/mo. ' + CFG.EMAIL); });
+
+  let ts = 0;
+  document.querySelector('.main')?.addEventListener('touchstart', e => { ts = e.touches[0].clientX; }, { passive: true });
+  document.querySelector('.main')?.addEventListener('touchend', e => { if (e.changedTouches[0].clientX - ts > 70 && !S.sidebarOpen) { S.sidebarOpen = true; render(); } });
+}
+
+function openModal() { document.getElementById('paymentModal').classList.add('open'); }
+function closeModal() { document.getElementById('paymentModal').classList.remove('open'); }
+
+applyTheme(); render();
+</script>
+</body>
+</html>
