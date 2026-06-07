@@ -1,12 +1,959 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CAPITAN AI</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CAPITAN AI — Institutional Intelligence</title>
+<style>
+/* ═══════════════════════════════════════════════════════════ */
+/* CAPITAN AI v15.1 — Emoji-Infused Sidebar                  */
+/* Memory IDs. Collapsible Markets. Admin Code.              */
+/* Cloudflare Optimized. Black/White Themes.                */
+/* CLOSEAI TECHNOLOGIES — closeaitechnologies@gmail.com     */
+/* ═══════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #000000;
+  --bg2: #050505;
+  --bg3: #0c0c0c;
+  --bg4: #141414;
+  --bdr: #181818;
+  --bdr2: #222222;
+  --bdr3: #2e2e2e;
+  --txt: #ffffff;
+  --txt2: #a0a0a0;
+  --txt3: #484848;
+  --accent: #ffffff;
+  --accent2: #4da3ff;
+  --accent3: #ff5555;
+  --accent4: #ffd93d;
+  --emoji-opacity: 0.06;
+  --emoji-filter: grayscale(1);
+  --emoji-hover-opacity: 0.15;
+  --logo-opacity: 0.05;
+  --logo-hover-opacity: 0.16;
+  --trans-icon: rgba(255,255,255,0.04);
+  --trans-hover: rgba(255,255,255,0.1);
+  --trans-border: rgba(255,255,255,0.04);
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --font-xs: 11px;
+  --font-sm: 13px;
+  --font-md: 15px;
+  --font-lg: 19px;
+  --font-xl: 24px;
+  --shadow-lg: 0 30px 80px rgba(0,0,0,0.7);
+  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root.light {
+  --bg: #fafafa;
+  --bg2: #f0f0f0;
+  --bg3: #e8e8e8;
+  --bg4: #dedede;
+  --bdr: #d6d6d6;
+  --bdr2: #c8c8c8;
+  --bdr3: #b4b4b4;
+  --txt: #080808;
+  --txt2: #4a4a4a;
+  --txt3: #999999;
+  --shadow-lg: 0 30px 80px rgba(0,0,0,0.06);
+  --emoji-opacity: 0.05;
+  --emoji-filter: grayscale(1) brightness(0);
+  --emoji-hover-opacity: 0.12;
+  --logo-opacity: 0.04;
+  --logo-hover-opacity: 0.12;
+  --trans-icon: rgba(0,0,0,0.03);
+  --trans-hover: rgba(0,0,0,0.07);
+  --trans-border: rgba(0,0,0,0.03);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Inter', 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  font-size: var(--font-sm);
+  overflow: hidden;
+  height: 100vh; height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app { display: flex; height: 100vh; height: 100dvh; width: 100vw; width: 100dvw; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bdr2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--bdr3); }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* SIDEBAR — Emoji-Infused                                    */
+/* ═══════════════════════════════════════════════════════════ */
+.sidebar {
+  width: 290px; min-width: 290px; background: var(--bg);
+  border-right: 1px solid var(--bdr); display: flex;
+  flex-direction: column; padding: 18px 14px; gap: 2px;
+  z-index: 60; transition: all var(--transition);
+  font-size: var(--font-xs); overflow-y: auto; overflow-x: hidden;
+}
+.sidebar.collapsed { width: 56px; min-width: 56px; padding: 18px 10px; }
+
+.sb-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6px 16px; border-bottom: 1px solid var(--bdr);
+  margin-bottom: 8px; flex-shrink: 0;
+}
+.sb-logo { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.sb-logo .icon { font-size: 20px; opacity: var(--logo-opacity); filter: var(--emoji-filter); transition: all var(--transition); }
+.sb-logo:hover .icon { opacity: var(--logo-hover-opacity); }
+.sb-logo .name { font-weight: 800; font-size: 16px; letter-spacing: -0.04em; color: var(--txt); }
+.sb-toggle { background: none; border: none; color: var(--txt2); cursor: pointer; padding: 8px; border-radius: var(--radius-xs); font-size: 14px; opacity: 0.22; transition: all var(--transition); min-width: 34px; min-height: 34px; display: flex; align-items: center; justify-content: center; }
+.sb-toggle:hover { opacity: 0.7; background: var(--bg3); }
+
+.sb-section { border-top: 1px solid var(--bdr); padding-top: 10px; margin-top: 6px; }
+.sb-section:first-of-type { border-top: none; }
+.sb-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; cursor: pointer; border-radius: var(--radius-sm);
+  font-size: 11px; color: var(--txt2); font-weight: 700;
+  transition: all var(--transition); user-select: none;
+  min-height: 42px; text-transform: uppercase; letter-spacing: 0.07em;
+}
+.sb-section-header:hover { background: var(--bg3); color: var(--txt); }
+.sb-section-header .arrow { font-size: 10px; transition: transform 0.2s; opacity: 0.2; }
+.sb-section-header.open .arrow { transform: rotate(90deg); opacity: 0.5; }
+.sb-section-content { display: none; padding: 4px 0 6px; }
+.sb-section-content.open { display: block; }
+
+.sb-item {
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: none; color: var(--txt2);
+  padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  font-size: var(--font-xs); font-family: inherit; width: 100%; text-align: left;
+  transition: all var(--transition); min-height: 42px; position: relative;
+}
+.sb-item:hover { background: var(--bg3); color: var(--txt); }
+.sb-item.active { background: var(--trans-icon); color: var(--txt); font-weight: 600; }
+.sb-item .emoji { opacity: var(--emoji-opacity); filter: var(--emoji-filter); font-size: 14px; width: 22px; text-align: center; flex-shrink: 0; transition: all var(--transition); }
+.sb-item:hover .emoji { opacity: var(--emoji-hover-opacity); }
+.sb-item .badge { margin-left: auto; font-size: 9px; background: var(--bg4); color: var(--txt2); padding: 3px 8px; border-radius: 12px; font-weight: 600; }
+.sb-item .badge.pro { background: var(--trans-hover); color: var(--txt); }
+.sb-item .badge.live { background: rgba(77,163,255,0.1); color: var(--accent2); animation: livePulse 2s infinite; }
+@keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+.sb-item.locked { opacity: 0.35; cursor: not-allowed; }
+.sb-item.locked:hover { background: none; color: var(--txt2); }
+.sb-item .lock-icon { margin-left: auto; font-size: 10px; opacity: 0.25; }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* COLLAPSIBLE MARKET DATA IN SIDEBAR                          */
+/* ═══════════════════════════════════════════════════════════ */
+.sb-market-section { border-top: 1px solid var(--bdr); padding-top: 8px; margin-top: 4px; }
+.sb-market-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; cursor: pointer; border-radius: var(--radius-sm);
+  font-size: 10px; color: var(--txt2); font-weight: 700;
+  transition: all var(--transition); user-select: none;
+  min-height: 40px; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.sb-market-header:hover { background: var(--bg3); color: var(--txt); }
+.sb-market-header .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); animation: livePulse 2s infinite; margin-right: 4px; }
+.sb-market-header .mh-left { display: flex; align-items: center; gap: 6px; }
+.sb-market-header .arrow { font-size: 10px; transition: transform 0.2s; opacity: 0.2; }
+.sb-market-header.open .arrow { transform: rotate(90deg); opacity: 0.5; }
+.sb-market-content { display: none; padding: 4px 0; }
+.sb-market-content.open { display: block; }
+
+.sb-market-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: var(--radius-xs); gap: 4px;
+  cursor: pointer; transition: all var(--transition); font-size: 10px;
+}
+.sb-market-item:hover { background: var(--bg3); }
+.sb-market-item .sym { font-weight: 700; color: var(--txt); width: 38px; font-size: 10px; }
+.sb-market-item .price { font-weight: 600; color: var(--txt2); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.sb-market-item .chg { font-size: 9px; font-weight: 700; min-width: 42px; text-align: right; }
+.sb-market-item .chg.up { color: #4caf50; }
+.sb-market-item .chg.down { color: var(--accent3); }
+
+/* Market News in Sidebar */
+.sb-news-item {
+  padding: 9px 12px; border-radius: var(--radius-xs); cursor: pointer;
+  transition: all var(--transition); border-left: 2px solid transparent;
+  margin-bottom: 1px;
+}
+.sb-news-item:hover { background: var(--bg3); border-left-color: var(--bdr2); }
+.sb-news-item .headline { font-size: 10px; color: var(--txt2); line-height: 1.4; font-weight: 500; }
+.sb-news-item .time { font-size: 8px; color: var(--txt3); margin-top: 3px; }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* MEMORY ID DISPLAY                                           */
+/* ═══════════════════════════════════════════════════════════ */
+.memory-id-badge {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  background: var(--bg3); border-radius: var(--radius-xs); margin: 6px 0;
+  font-size: 9px; color: var(--txt3);
+}
+.memory-id-badge span { opacity: 0.6; flex-shrink: 0; }
+.memory-id-badge code {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--txt2); background: var(--bg4); padding: 3px 8px;
+  border-radius: 6px; cursor: pointer; transition: all var(--transition);
+}
+.memory-id-badge code:hover { color: var(--txt); background: var(--bdr2); }
+
+.btn-new {
+  display: flex; align-items: center; gap: 10px;
+  background: transparent; border: 1px solid var(--bdr2);
+  color: var(--txt); padding: 12px 14px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: var(--font-xs); font-family: inherit; width: 100%;
+  transition: all var(--transition); margin: 6px 0; min-height: 46px;
+  font-weight: 600; flex-shrink: 0;
+}
+.btn-new:hover { border-color: var(--txt3); background: var(--bg3); }
+.btn-new .emoji { opacity: var(--emoji-opacity); filter: var(--emoji-filter); transition: all var(--transition); }
+.btn-new:hover .emoji { opacity: var(--emoji-hover-opacity); }
+
+.btn-upgrade {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--trans-icon); border: 1px solid var(--trans-border);
+  color: var(--txt); padding: 12px 14px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: var(--font-xs); font-family: inherit; width: 100%;
+  font-weight: 700; transition: all var(--transition); min-height: 46px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.btn-upgrade:hover { background: var(--trans-hover); border-color: var(--bdr2); }
+
+.tier-badge { text-align: center; padding: 8px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 800; letter-spacing: 0.08em; flex-shrink: 0; margin-top: 4px; }
+.tier-free { background: var(--trans-icon); color: var(--txt2); }
+.tier-pro { background: var(--trans-hover); color: var(--txt); }
+.tier-founder { background: var(--trans-hover); color: var(--txt); border: 1px solid var(--trans-border); }
+
+.sb-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--bdr); flex-shrink: 0; }
+.sb-footer-links { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+.sb-footer-links a { color: var(--txt3); font-size: 9px; text-decoration: none; font-weight: 600; }
+.sb-footer-links a:hover { color: var(--txt2); }
+.sb-footer-brand { text-align: center; font-size: 10px; color: var(--txt2); letter-spacing: 0.1em; opacity: 0.6; font-weight: 700; margin-top: 4px; }
+.support-link { text-align: center; padding: 2px 0; font-size: 9px; color: var(--txt3); opacity: 0.5; }
+.support-link a { color: var(--txt2); text-decoration: none; font-weight: 600; }
+.support-link a:hover { color: var(--txt); }
+
+.limit-indicator { text-align: center; padding: 8px 10px; font-size: 10px; color: var(--txt3); background: var(--bg2); border-radius: var(--radius-sm); margin: 6px 0; }
+.limit-indicator .limit-bar { height: 3px; background: var(--bdr); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.limit-indicator .limit-fill { height: 100%; background: var(--txt2); border-radius: 2px; transition: width 0.3s; }
+.limit-indicator.warning .limit-fill { background: var(--accent4); }
+.limit-indicator.critical .limit-fill { background: var(--accent3); }
+
+.workspace-switcher {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  margin: 6px 0; border-radius: var(--radius-sm); cursor: pointer;
+  transition: all var(--transition); border: 1px dashed var(--bdr);
+}
+.workspace-switcher:hover { background: var(--bg3); border-color: var(--bdr2); }
+.workspace-switcher .ws-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.workspace-switcher .ws-info { flex: 1; min-width: 0; }
+.workspace-switcher .ws-name { font-weight: 700; font-size: var(--font-xs); color: var(--txt); }
+.workspace-switcher .ws-members { font-size: 9px; color: var(--txt3); }
+.workspace-guide { font-size: 9px; color: var(--txt3); padding: 6px 10px; line-height: 1.5; opacity: 0.5; }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* MAIN CONTENT                                                */
+/* ═══════════════════════════════════════════════════════════ */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.chat-container { flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 28px 24px; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+
+.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 58vh; text-align: center; padding: 24px; }
+.welcome .logo-large { font-size: 56px; opacity: var(--logo-opacity); filter: var(--emoji-filter); margin-bottom: 20px; transition: all var(--transition); }
+.welcome h1 { font-size: clamp(24px, 5vw, 30px); font-weight: 600; color: var(--txt); margin-bottom: 8px; letter-spacing: -0.03em; line-height: 1.3; }
+.welcome .subtitle { font-size: var(--font-sm); color: var(--txt3); max-width: 400px; line-height: 1.6; }
+
+.suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 24px; max-width: 680px; padding: 0 12px; }
+.suggestion { background: transparent; border: 1px solid var(--bdr); color: var(--txt2); padding: 12px 18px; border-radius: 24px; cursor: pointer; font-size: var(--font-xs); font-family: inherit; transition: all var(--transition); white-space: nowrap; min-height: 40px; font-weight: 500; }
+.suggestion:hover { border-color: var(--txt3); color: var(--txt); background: var(--bg3); }
+
+.msg { padding: 18px 20px; margin: 8px 0; line-height: 1.75; font-size: var(--font-sm); animation: msgIn 0.3s ease; word-break: break-word; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg.user { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius); margin-left: auto; max-width: 80%; color: var(--txt); }
+.msg.ai { background: transparent; border-left: 2px solid var(--bdr2); padding-left: 18px; max-width: 95%; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.msg-ai-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; opacity: 0.5; font-size: var(--font-xs); font-weight: 600; }
+.msg-ai-hd .logo { opacity: var(--logo-opacity); filter: var(--emoji-filter); font-size: 14px; }
+.msg-ai-hd .model-tag { font-size: 9px; background: var(--bg3); color: var(--txt3); padding: 3px 8px; border-radius: 10px; font-weight: 600; }
+.msg-content h2, .msg-content h3 { color: var(--txt); margin: 16px 0 8px; font-weight: 700; }
+.msg-content p { margin-bottom: 10px; }
+.msg-content strong { color: var(--txt); font-weight: 700; }
+.msg-content code { background: var(--bg3); color: var(--txt2); padding: 3px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.confidence-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; padding: 4px 10px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
+.conf-high { background: rgba(77,163,255,0.12); color: var(--accent2); }
+.conf-medium { background: rgba(255,217,61,0.12); color: var(--accent4); }
+.conf-low { background: rgba(255,107,107,0.12); color: var(--accent3); }
+.citation { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: var(--accent2); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+.citation:hover { color: var(--txt); }
+.source-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.source-chip { display: flex; align-items: center; gap: 4px; background: var(--bg3); border: 1px solid var(--bdr); padding: 5px 12px; border-radius: 14px; font-size: 9px; color: var(--txt2); cursor: pointer; transition: all var(--transition); font-weight: 500; }
+.source-chip:hover { border-color: var(--bdr2); color: var(--txt); }
+.msg-actions { display: flex; gap: 12px; padding: 10px 0 0; opacity: 0; transition: opacity 0.2s; flex-wrap: wrap; }
+.msg.ai:hover .msg-actions { opacity: 0.5; }
+.msg-actions button { background: none; border: none; color: var(--txt2); font-size: 10px; font-family: inherit; cursor: pointer; padding: 5px 10px; min-height: 30px; border-radius: 6px; transition: all var(--transition); display: flex; align-items: center; gap: 5px; font-weight: 600; }
+.msg-actions button:hover { color: var(--txt); background: var(--bg3); }
+.ai-note { font-size: 10px; color: var(--txt3); margin-top: 10px; opacity: 0.5; font-weight: 500; }
+.thinking { display: flex; align-items: center; gap: 12px; color: var(--txt3); font-size: var(--font-xs); padding: 6px 0; }
+.thinking-dots { display: flex; gap: 6px; }
+.thinking-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--txt3); animation: dotPulse 1.4s infinite; }
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse { 0%,80%,100%{opacity:0.12} 40%{opacity:1} }
+
+.cot-panel { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px 18px; margin: 10px 0; font-size: var(--font-xs); color: var(--txt2); }
+.cot-panel .cot-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-weight: 700; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; }
+.cot-panel .cot-step { padding: 7px 0; border-bottom: 1px solid var(--bdr); display: flex; gap: 10px; align-items: flex-start; }
+.cot-panel .cot-step:last-child { border-bottom: none; }
+.cot-step .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--bg4); color: var(--txt2); font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; }
+.cot-step .step-content { flex: 1; }
+
+.comparison-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: var(--font-xs); border-radius: var(--radius-sm); overflow: hidden; }
+.comparison-table th { text-align: left; padding: 10px 12px; background: var(--bg3); color: var(--txt2); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--bdr); }
+.comparison-table td { padding: 10px 12px; border-bottom: 1px solid var(--bdr); color: var(--txt); }
+.comparison-table tr:hover td { background: var(--bg3); }
+
+.scenario-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
+.scenario { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+.scenario .sc-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 700; }
+.scenario .sc-value { font-size: var(--font-md); font-weight: 800; color: var(--txt); }
+.scenario.bull .sc-label { color: var(--accent2); }
+.scenario.base .sc-label { color: var(--txt2); }
+.scenario.bear .sc-label { color: var(--accent3); }
+
+.chat-input-wrap { padding: 16px 24px 24px; }
+.chat-input-inner { display: flex; gap: 8px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 6px 6px 6px 18px; transition: all var(--transition); align-items: center; }
+.chat-input-inner:focus-within { border-color: var(--bdr2); box-shadow: 0 0 0 4px var(--trans-icon); }
+.chat-input-inner input { flex: 1; background: transparent; border: none; color: var(--txt); padding: 12px 0; font-size: var(--font-sm); font-family: inherit; outline: none; min-width: 0; }
+.chat-input-inner input::placeholder { color: var(--txt3); }
+.chat-input-inner input:disabled { opacity: 0.3; }
+.input-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.input-action-btn { background: none; border: none; color: var(--txt3); cursor: pointer; padding: 10px; border-radius: var(--radius-xs); font-size: 15px; transition: all var(--transition); min-width: 40px; min-height: 40px; display: flex; align-items: center; justify-content: center; opacity: 0.4; }
+.input-action-btn:hover { color: var(--txt); background: var(--bg3); opacity: 1; }
+.send-btn { background: var(--txt); color: var(--bg); border: none; padding: 12px 18px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: var(--font-sm); font-family: inherit; transition: all var(--transition); min-width: 48px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+.send-btn:hover { opacity: 0.85; transform: scale(1.03); }
+.send-btn:disabled { opacity: 0.08; cursor: not-allowed; transform: none; }
+.model-selector { display: flex; gap: 6px; padding: 8px 0; }
+.model-option { background: none; border: 1px solid var(--bdr); color: var(--txt3); padding: 6px 12px; border-radius: 16px; cursor: pointer; font-size: 10px; font-family: inherit; font-weight: 600; transition: all var(--transition); opacity: 0.5; }
+.model-option:hover { border-color: var(--bdr2); color: var(--txt2); opacity: 1; }
+.model-option.active { border-color: var(--txt); color: var(--txt); background: var(--bg3); opacity: 1; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 120; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(6px); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 32px; width: 500px; max-width: 94vw; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.modal h2 { font-size: var(--font-lg); font-weight: 800; margin-bottom: 8px; letter-spacing: -0.03em; color: var(--txt); }
+.modal p { color: var(--txt2); font-size: var(--font-xs); margin-bottom: 20px; line-height: 1.7; }
+.modal .price { font-size: 36px; font-weight: 900; margin-bottom: 18px; letter-spacing: -0.04em; color: var(--txt); }
+.modal .price span { font-size: 15px; color: var(--txt2); font-weight: 500; }
+.modal input, .modal textarea, .modal select { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 14px; border-radius: var(--radius-sm); font-size: var(--font-xs); font-family: inherit; margin-bottom: 12px; outline: none; resize: vertical; }
+.modal input:focus, .modal textarea:focus, .modal select:focus { border-color: var(--bdr2); }
+.modal .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.modal .btn-primary { flex: 1; min-width: 110px; background: var(--txt); color: var(--bg); border: none; padding: 14px 22px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 800; font-family: inherit; font-size: var(--font-xs); min-height: 48px; transition: all var(--transition); }
+.modal .btn-primary:hover { opacity: 0.88; }
+.modal .btn-secondary { flex: 1; min-width: 110px; background: transparent; border: 1px solid var(--bdr); color: var(--txt); padding: 14px 22px; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; font-size: var(--font-xs); min-height: 48px; font-weight: 600; }
+.modal .btn-secondary:hover { background: var(--bg3); }
+.modal .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid var(--bdr); }
+.modal .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; font-size: var(--font-xs); color: var(--txt2); border-bottom: 2px solid transparent; transition: all var(--transition); min-height: 44px; font-weight: 700; }
+.modal .tab.active { color: var(--txt); border-bottom-color: var(--txt); }
+
+.memory-list { max-height: 320px; overflow-y: auto; }
+.memory-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--bdr); gap: 10px; }
+.memory-item .mem-content { flex: 1; font-size: var(--font-xs); color: var(--txt2); }
+.memory-item .mem-id { font-size: 8px; color: var(--txt3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+.memory-item .mem-toggle { width: 38px; height: 22px; border-radius: 12px; background: var(--bdr2); cursor: pointer; position: relative; transition: all var(--transition); border: none; flex-shrink: 0; }
+.memory-item .mem-toggle.active { background: var(--accent2); }
+.memory-item .mem-toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--txt); top: 3px; left: 3px; transition: all var(--transition); }
+.memory-item .mem-toggle.active::after { left: 19px; }
+.memory-item .mem-delete { background: none; border: none; color: var(--txt3); cursor: pointer; font-size: 14px; padding: 4px; opacity: 0.35; transition: all var(--transition); }
+.memory-item .mem-delete:hover { opacity: 1; color: var(--accent3); }
+
+.prompt-template { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; cursor: pointer; transition: all var(--transition); }
+.prompt-template:hover { border-color: var(--bdr2); }
+.prompt-template .pt-title { font-weight: 700; font-size: var(--font-xs); margin-bottom: 4px; color: var(--txt); }
+.prompt-template .pt-preview { font-size: 10px; color: var(--txt3); font-family: 'JetBrains Mono', monospace; }
+.prompt-template .pt-vars { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.pt-var { background: rgba(77,163,255,0.08); color: var(--accent2); padding: 3px 9px; border-radius: 10px; font-size: 9px; font-weight: 600; }
+
+.api-key-display { background: var(--bg3); border: 1px solid var(--bdr); padding: 14px; border-radius: var(--radius-sm); margin: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--txt2); word-break: break-all; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.admin-memory-panel { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius-sm); padding: 14px; margin: 10px 0; max-height: 280px; overflow-y: auto; }
+.admin-memory-item { padding: 10px 12px; border-bottom: 1px solid var(--bdr); font-size: var(--font-xs); }
+.admin-memory-item .am-user { font-weight: 700; color: var(--txt); font-size: 10px; }
+.admin-memory-item .am-content { color: var(--txt2); margin-top: 3px; }
+.admin-memory-item .am-id { font-size: 8px; color: var(--txt3); font-family: 'JetBrains Mono', monospace; }
+.admin-memory-item .am-time { font-size: 8px; color: var(--txt3); }
+
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--txt); color: var(--bg); padding: 12px 24px; border-radius: 24px; font-size: var(--font-xs); font-weight: 700; z-index: 200; animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards; pointer-events: none; white-space: nowrap; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(14px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+.theme-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; cursor: pointer; border-radius: var(--radius-sm); font-size: var(--font-xs); color: var(--txt2); width: 100%; transition: all var(--transition); border: none; background: none; font-family: inherit; min-height: 42px; gap: 10px; }
+.theme-toggle:hover { background: var(--bg3); color: var(--txt); }
+.theme-toggle .theme-icon { opacity: var(--emoji-opacity); filter: var(--emoji-filter); font-size: 14px; width: 22px; text-align: center; }
+.theme-toggle:hover .theme-icon { opacity: var(--emoji-hover-opacity); }
+.theme-toggle .theme-indicator { font-size: 10px; color: var(--txt3); background: var(--bg3); padding: 4px 12px; border-radius: 12px; font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════ */
+/* RESPONSIVE                                                  */
+/* ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 60; width: 300px; min-width: 300px; box-shadow: 10px 0 40px rgba(0,0,0,0.6); max-height: 100vh; max-height: 100dvh; }
+  .sidebar.collapsed { width: 0; min-width: 0; padding: 0; overflow: hidden; box-shadow: none; }
+  .chat-container { max-width: 100%; }
+  .chat-messages { padding: 18px 14px; }
+  .chat-input-wrap { padding: 12px 14px 18px; }
+  .msg.user { max-width: 88%; }
+  .msg.ai { max-width: 100%; }
+  .suggestions { gap: 6px; }
+  .suggestion { padding: 10px 14px; font-size: 10px; border-radius: 20px; }
+  .scenario-box { grid-template-columns: 1fr; }
+  .modal { padding: 22px; width: 100%; }
+}
+@media (max-width: 480px) {
+  .sidebar { width: 100vw; min-width: 100vw; }
+  .sb-item { padding: 12px 12px; min-height: 46px; }
+  .btn-new { min-height: 48px; }
+  .btn-upgrade { min-height: 48px; }
+  .chat-input-inner input { font-size: 16px; }
+  .msg { padding: 14px 16px; }
+  .welcome h1 { font-size: 21px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .welcome { min-height: auto; padding: 10px; }
+  .welcome h1 { font-size: 17px; }
+  .welcome .logo-large { font-size: 36px; margin-bottom: 10px; }
+  .suggestions { margin-top: 10px; }
+}
+@media print {
+  .sidebar, .chat-input-wrap, .msg-actions, .ai-note { display: none !important; }
+  .main { overflow: visible; }
+  .chat-messages { overflow: visible; }
+  .msg { break-inside: avoid; }
+}
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
+
+<div id="app"></div>
+
+<div id="paymentModal" class="modal-overlay">
+  <div class="modal">
+    <h2>⚓ Upgrade to Capitan Pro</h2>
+    <p>✨ All workflows. All tools. Unlimited access. Full intelligence spectrum.</p>
+    <div class="price">$17<span>/month</span></div>
+    <div class="tabs">
+      <div class="tab active" data-tab="card">💳 Card</div>
+      <div class="tab" data-tab="crypto">₿ Crypto</div>
+    </div>
+    <div id="tabCard">
+      <input type="text" placeholder="💳 Card number" id="cardNumber" inputmode="numeric" autocomplete="cc-number">
+      <div style="display:flex;gap:8px"><input type="text" placeholder="📅 MM/YY" style="flex:1" id="cardExpiry" inputmode="numeric" autocomplete="cc-exp"><input type="text" placeholder="🔐 CVC" style="flex:1" id="cardCvc" inputmode="numeric" autocomplete="cc-csc"></div>
+      <input type="text" placeholder="👤 Name on card" id="cardName" autocomplete="cc-name">
+      <div class="btn-row"><button class="btn-primary" id="payCard">💳 Pay $17</button><button class="btn-secondary" id="closeModal">✕ Cancel</button></div>
+    </div>
+    <div id="tabCrypto" style="display:none">
+      <div style="font-size:var(--font-xs);color:var(--txt2);margin-bottom:10px;line-height:1.7">₿ Send <strong>0.00028 BTC</strong> or <strong>0.005 ETH</strong> or <strong>17 USDC</strong> to:</div>
+      <input type="text" value="bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new" readonly style="font-size:10px;font-family:'JetBrains Mono',monospace">
+      <input type="text" placeholder="🔗 Transaction hash (TXID)" id="txidInput">
+      <div class="btn-row"><button class="btn-primary" id="verifyCrypto">✅ Verify & Activate</button><button class="btn-secondary" id="closeModal2">✕ Cancel</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CAPITAN AI v15.1 — Emoji-Infused Sidebar
+// CLOSEAI Technologies — closeaitechnologies@gmail.com
+// ═══════════════════════════════════════════════════════════
+
+const FOUNDER_CLICKS = 5;
+const FREE_MSG_LIMIT = 20;
+const FREE_MSG_WINDOW = 7 * 60 * 60 * 1000;
+const PRO_EXPIRY_DAYS = 30;
+const SUPPORT_EMAIL = 'closeaitechnologies@gmail.com';
+const ADMIN_ACCESS_CODE = 'CAPITAN-ADMIN-2026';
+
+function shortId() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
+function memId() { return 'mem_' + shortId(); }
+
+const GlobalMemory = {
+  getAll() { try { return JSON.parse(localStorage.getItem('cap_global_mem') || '[]'); } catch(e) { return []; } },
+  add(entry) {
+    const all = this.getAll();
+    all.push({ id: shortId(), memoryId: memId(), timestamp: Date.now(), userId: entry.userId || 'ANON', tier: S.tier, ...entry });
+    localStorage.setItem('cap_global_mem', JSON.stringify(all.slice(-500)));
+  },
+  recent(n=50) { return this.getAll().slice(-n).reverse(); },
+  search(q) { const ql=q.toLowerCase(); return this.getAll().filter(m=>(m.content||'').toLowerCase().includes(ql)||(m.query||'').toLowerCase().includes(ql)||(m.memoryId||'').toLowerCase().includes(ql)||(m.userId||'').toLowerCase().includes(ql)).reverse(); }
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('capitan_v5');
+    if (s) {
+      const p = JSON.parse(s);
+      if ((p.tier==='pro'||p.tier==='founder') && p.proExpiry && Date.now()>p.proExpiry) {
+        p.tier='free'; p.proExpiry=null; p.currentWorkspace=null; p.workspaces=[]; p.members=[]; p.promptTemplates=[];
+      }
+      if (p.tier==='free') { p.currentWorkspace=null; p.workspaces=[]; p.members=[]; p.promptTemplates=[]; }
+      return {...getDefaultState(), ...p};
+    }
+  } catch(e) {}
+  return getDefaultState();
+}
+
+function getDefaultState() {
+  return {
+    messages:[], streaming:false, activeView:'chat',
+    tier:'free', proExpiry:null, sidebarOpen:true,
+    sections:{workflows:true, pro:false, markets:false, marketNews:false, settings:false},
+    theme:'dark', founderClicks:0, founderTimer:null,
+    currentWorkspace:null, workspaces:[], members:[],
+    memories:[{id:shortId(), memoryId:memId(), content:'🧠 Your interaction patterns are stored securely', active:true}],
+    promptTemplates:[], selectedModel:'balanced',
+    models:[
+      {id:'quick', name:'Quick', desc:'Fast responses', icon:'⚡'},
+      {id:'balanced', name:'Balanced', desc:'Depth + Speed', icon:'◆'},
+      {id:'deep', name:'Deep', desc:'Full Research', icon:'🔬'},
+    ],
+    exportFormats:[
+      {id:'pdf', name:'PDF Report', icon:'📄'},
+      {id:'word', name:'Word Document', icon:'📝'},
+      {id:'markdown', name:'Markdown', icon:'📋'},
+    ],
+    apiKeys:{}, freeMsgCount:0, freeMsgWindowStart:Date.now(),
+    marketData:generateMarketData(), marketNews:generateMarketNews(),
+    adminAuth:false,
+  };
+}
+
+function saveState() {
+  try {
+    const d = {tier:S.tier, proExpiry:S.proExpiry, theme:S.theme, workspaces:S.workspaces, currentWorkspace:S.currentWorkspace, members:S.members, memories:S.memories, promptTemplates:S.promptTemplates, apiKeys:S.apiKeys, freeMsgCount:S.freeMsgCount, freeMsgWindowStart:S.freeMsgWindowStart, adminAuth:S.adminAuth};
+    if (S.tier==='free') { d.workspaces=[]; d.currentWorkspace=null; d.members=[]; d.promptTemplates=[]; }
+    localStorage.setItem('capitan_v5', JSON.stringify(d));
+  } catch(e) {}
+}
+
+function generateMarketData() {
+  return [
+    {symbol:'SPX', name:'S&P 500', price:5872.34, change:0.62},
+    {symbol:'NDX', name:'NASDAQ 100', price:20451.78, change:1.15},
+    {symbol:'BTC', name:'Bitcoin', price:89342.50, change:-2.31},
+    {symbol:'ETH', name:'Ethereum', price:4125.60, change:-1.87},
+    {symbol:'GLD', name:'Gold', price:2341.20, change:0.45},
+    {symbol:'CL', name:'Crude Oil', price:78.93, change:-0.82},
+    {symbol:'EUR/USD', name:'Euro', price:1.0845, change:0.12},
+    {symbol:'US10Y', name:'10Y Yield', price:4.28, change:-0.03},
+  ];
+}
+
+function generateMarketNews() {
+  return [
+    {headline:'🏛️ Fed signals cautious approach on rate cuts', time:'2 min ago'},
+    {headline:'₿ Bitcoin volatility spikes as ETF flows surge', time:'8 min ago'},
+    {headline:'🛢️ Oil prices steady amid supply concerns', time:'15 min ago'},
+    {headline:'📊 Tech earnings beat expectations this quarter', time:'22 min ago'},
+    {headline:'🥇 Gold reaches new highs on safe-haven demand', time:'30 min ago'},
+  ];
+}
+
+function refreshMarketData() {
+  S.marketData = S.marketData.map(a=>({...a, price:a.price*(1+(Math.random()-0.5)*0.015), change:a.change+(Math.random()-0.5)*0.3}));
+  S.marketNews = generateMarketNews();
+}
+
+function checkFreeLimit() {
+  if (S.tier!=='free') return true;
+  if (Date.now()-S.freeMsgWindowStart>FREE_MSG_WINDOW) { S.freeMsgCount=0; S.freeMsgWindowStart=Date.now(); saveState(); }
+  return S.freeMsgCount<FREE_MSG_LIMIT;
+}
+function getRemaining() { return S.tier!=='free'?Infinity:FREE_MSG_LIMIT-S.freeMsgCount; }
+function getLimitPct() { return S.tier!=='free'?100:((FREE_MSG_LIMIT-S.freeMsgCount)/FREE_MSG_LIMIT)*100; }
+function getTimeUntilReset() {
+  const r=(S.freeMsgWindowStart+FREE_MSG_WINDOW)-Date.now();
+  if (r<=0) return 'now';
+  return `${Math.floor(r/3600000)}h ${Math.floor((r%3600000)/60000)}m`;
+}
+
+function isPro() { return S.tier==='pro'||S.tier==='founder'; }
+function requirePro() { if(!isPro()){showToast('🔒 Pro feature · $17/month'); openPaymentModal(); return false;} return true; }
+
+const S = loadState();
+if (S.tier==='free') { S.freeMsgWindowStart=S.freeMsgWindowStart||Date.now(); S.freeMsgCount=S.freeMsgCount||0; }
+
+function getGreeting() {
+  const h=new Date().getHours();
+  if (h<6) return '🌙 Late night thoughts?';
+  if (h<12) return '☀️ Good morning. How can we move today?';
+  if (h<17) return '🌤️ Good afternoon. What\'s on your mind?';
+  if (h<21) return '🌅 Good evening. Ready to explore?';
+  return '🌃 Night session. What shall we dive into?';
+}
+
+function showToast(msg) {
+  const t=document.querySelector('.toast'); if(t)t.remove();
+  const toast=Object.assign(document.createElement('div'),{className:'toast',textContent:msg});
+  document.body.appendChild(toast); setTimeout(()=>toast.remove(),2800);
+}
+
+function applyTheme() { document.documentElement.classList.toggle('light', S.theme==='light'); }
+
+function founderClick() {
+  S.founderClicks++; if(S.founderTimer)clearTimeout(S.founderTimer);
+  if(S.founderClicks>=FOUNDER_CLICKS) {
+    S.tier='founder'; S.proExpiry=Date.now()+PRO_EXPIRY_DAYS*86400000; S.founderClicks=0;
+    if(!S.workspaces.length){S.workspaces=[{id:shortId(),name:'Founder Workspace',members:1,color:'#ffffff'}]; S.currentWorkspace=S.workspaces[0]; S.members=[{id:'m0',name:'Founder',role:'Admin',online:true,initials:'FD',color:'#ffffff'}];}
+    if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();
+    saveState(); showToast('🔐 Founder Mode Activated — Admin access available'); render(); return;
+  }
+  S.founderTimer=setTimeout(()=>{S.founderClicks=0;},2000);
+}
+
+function getDefaultPrompts() {
+  return [
+    {id:'p1',title:'⚛️ Quantum Algorithm',prompt:'Explain {{CONCEPT}} in quantum computing. Design circuit with Qiskit.',vars:['CONCEPT'],category:'⚛️ Quantum Computing'},
+    {id:'p2',title:'💻 Code Architecture',prompt:'Design a {{LANGUAGE}} system for {{USE_CASE}} with architecture and error handling.',vars:['LANGUAGE','USE_CASE'],category:'💻 Coding'},
+    {id:'p3',title:'📐 Mathematical Proof',prompt:'Prove {{THEOREM}} with full rigor, lemmas, and applications.',vars:['THEOREM'],category:'📐 Mathematics'},
+    {id:'p4',title:'🧪 Scientific Analysis',prompt:'Analyze {{TOPIC}} from current literature. Methodology, findings, implications.',vars:['TOPIC'],category:'🧪 Science'},
+    {id:'p5',title:'📊 Investment Memo',prompt:'Generate institutional memo for {{TICKER}}. DCF, comps, bull/base/bear.',vars:['TICKER'],category:'💼 Finance'},
+    {id:'p6',title:'🔍 Market Research',prompt:'Research {{SECTOR}}: sizing, growth, players, trends, outlook.',vars:['SECTOR'],category:'📈 Market Research'},
+    {id:'p7',title:'🏦 Deal Analysis',prompt:'Analyze {{DEAL}}: valuation, synergies, risks, recommendation.',vars:['DEAL'],category:'🏦 Deal Analysis'},
+    {id:'p8',title:'🧠 Philosophy Deep Dive',prompt:'Explore {{TOPIC}} through Kantian, utilitarian, existentialist frameworks.',vars:['TOPIC'],category:'🧠 Philosophy'},
+    {id:'p9',title:'🔌 API Integration',prompt:'Design API for {{SERVICE}}: endpoints, auth, rate limiting, error codes.',vars:['SERVICE'],category:'⚡ Engineering'},
+    {id:'p10',title:'📡 Data Pipeline',prompt:'Architect data pipeline for {{DATA_SOURCE}}: ingestion, transform, storage, serving.',vars:['DATA_SOURCE'],category:'⚡ Engineering'},
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+function render() {
+  applyTheme();
+  const app=document.getElementById('app'); app.innerHTML='';
+  const pro=isPro(), free=S.tier==='free', founder=S.tier==='founder';
+  const remaining=getRemaining(), limitPct=getLimitPct();
+
+  const sb=document.createElement('aside');
+  sb.className=`sidebar ${S.sidebarOpen?'':'collapsed'}`;
+
+  if (S.sidebarOpen) {
+    const hasWs=pro&&S.currentWorkspace;
+    const primaryMem=S.memories[0];
+
+    sb.innerHTML=`
+      <div class="sb-header">
+        <div class="sb-logo" id="founderSecret"><span class="icon">⚓</span><span class="name">CAPITAN AI</span></div>
+        <button class="sb-toggle" id="toggleSidebar" aria-label="Toggle">◁</button>
+      </div>
+      <button class="btn-new" id="btnNewChat"><span class="emoji">✨</span> New Chat</button>
+      ${free?`<div class="limit-indicator ${remaining<=5?'critical':remaining<=10?'warning':''}"><span>💬 ${remaining}/${FREE_MSG_LIMIT} messages</span><div class="limit-bar"><div class="limit-fill" style="width:${limitPct}%"></div></div><span style="font-size:8px">⏱ Resets in ${getTimeUntilReset()}</span></div>`:''}
+      
+      <!-- Memory ID -->
+      ${pro?`<div class="memory-id-badge"><span>🧠 Memory ID:</span><code onclick="navigator.clipboard.writeText('${primaryMem?.memoryId||'N/A'}');showToast('📋 Memory ID copied')">${primaryMem?.memoryId||'N/A'}</code><span style="font-size:8px;margin-left:auto">📊 ${S.memories.length} entries</span></div>`:''}
+
+      <!-- ⚡ Workflows -->
+      <div class="sb-section">
+        <div class="sb-section-header ${S.sections.workflows?'open':''}" data-section="workflows"><span>⚡ Workflows</span><span class="arrow">▸</span></div>
+        <div class="sb-section-content ${S.sections.workflows?'open':''}">
+          ${hasWs?`<div class="workspace-switcher" id="workspaceSwitcher"><div class="ws-icon" style="background:${S.currentWorkspace.color}15;color:${S.currentWorkspace.color}">${S.currentWorkspace.name.charAt(0)}</div><div class="ws-info"><div class="ws-name">💼 ${S.currentWorkspace.name}</div><div class="ws-members">👥 ${S.currentWorkspace.members} member${S.currentWorkspace.members>1?'s':''}</div></div><span style="font-size:10px;opacity:0.2">▾</span></div><div class="workspace-guide">💡 Share chats, memory & files with your team</div>`:(pro?`<div class="workspace-guide" style="cursor:pointer" id="createFirstWs">💡 <span style="text-decoration:underline">Create workspace</span> — invite teammates & collaborate</div>`:'')}
+          <button class="sb-item ${S.activeView==='chat'?'active':''}" data-view="chat"><span class="emoji">💬</span> Chat</button>
+          <button class="sb-item ${S.activeView==='research'?'active':''}" data-view="research"><span class="emoji">🔬</span> Research</button>
+          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="quantum"><span class="emoji">⚛️</span> Quantum Computing ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
+          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="coding"><span class="emoji">💻</span> Coding ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
+          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="mathematics"><span class="emoji">📐</span> Mathematics ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
+          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} data-capability="science"><span class="emoji">🧪</span> Science ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
+          <button class="sb-item" data-capability="general"><span class="emoji">🌌</span> General Knowledge</button>
+          <button class="sb-item ${!pro?'locked':''}" ${!pro?'disabled':''} id="btnPromptLib"><span class="emoji">📚</span> Prompt Library ${!pro?'<span class="lock-icon">🔒</span>':'<span class="badge pro">PRO</span>'}</button>
+        </div>
+      </div>
+
+      <!-- ◆ Pro -->
+      <div class="sb-section">
+        <div class="sb-section-header ${S.sections.pro?'open':''}" data-section="pro"><span>◆ Pro</span><span class="arrow">▸</span></div>
+        <div class="sb-section-content ${S.sections.pro?'open':''}">
+          ${pro?`
+            <button class="sb-item" id="btnWorkspace"><span class="emoji">💼</span> Workspace</button>
+            <button class="sb-item" id="btnMarketResearch"><span class="emoji">📊</span> Market Research</button>
+            <button class="sb-item" id="btnDealAnalysis"><span class="emoji">🏦</span> Deal Analysis</button>
+            <button class="sb-item" id="btnMemory"><span class="emoji">🧠</span> Memory Dashboard</button>
+            <button class="sb-item" id="btnAPIKeys"><span class="emoji">🔑</span> API Keys</button>
+            <button class="sb-item" id="btnExport"><span class="emoji">📤</span> Export</button>
+            ${founder?`<div style="padding:6px 10px;font-size:9px;color:var(--txt3)">📅 Pro until ${new Date(S.proExpiry).toLocaleDateString()}</div>`:''}
+          `:`
+            <div style="padding:8px 10px;font-size:10px;color:var(--txt3);line-height:1.6">💼 Workspaces · 📊 Research<br>🏦 Deal Analysis · 🧠 Memory<br>📚 Library · 🔑 API · 📤 Export</div>
+            <button class="btn-upgrade" id="btnUpgrade">⚡ Upgrade to Pro — $17/mo</button>
+          `}
+        </div>
+      </div>
+
+      <!-- 📈 Market Prices — Collapsible -->
+      ${pro?`
+      <div class="sb-market-section">
+        <div class="sb-market-header ${S.sections.markets?'open':''}" data-section="markets">
+          <span class="mh-left"><span class="live-dot"></span>📈 Market Prices</span>
+          <span class="arrow">▸</span>
+        </div>
+        <div class="sb-market-content ${S.sections.markets?'open':''}">
+          ${S.marketData.map(d=>`
+            <div class="sb-market-item" onclick="sendMessage('Show me details on ${d.name} (${d.symbol})')">
+              <span class="sym">${d.symbol}</span>
+              <span class="price">${typeof d.price==='number'&&d.price<10?d.price.toFixed(4):d.price.toLocaleString()}</span>
+              <span class="chg ${d.change>=0?'up':'down'}">${d.change>=0?'📈':'📉'} ${Math.abs(d.change).toFixed(2)}%</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      `:''}
+
+      <!-- 📰 Market News — Collapsible -->
+      ${pro?`
+      <div class="sb-market-section">
+        <div class="sb-market-header ${S.sections.marketNews?'open':''}" data-section="marketNews">
+          <span class="mh-left">📰 Market News</span>
+          <span class="arrow">▸</span>
+        </div>
+        <div class="sb-market-content ${S.sections.marketNews?'open':''}">
+          ${S.marketNews.map(n=>`
+            <div class="sb-news-item" onclick="sendMessage('Tell me more about: ${n.headline}')">
+              <div class="headline">${n.headline}</div>
+              <div class="time">🕐 ${n.time}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      `:''}
+
+      <!-- ⚙️ Settings -->
+      <div class="sb-section">
+        <div class="sb-section-header ${S.sections.settings?'open':''}" data-section="settings"><span>⚙️ Settings</span><span class="arrow">▸</span></div>
+        <div class="sb-section-content ${S.sections.settings?'open':''}">
+          <button class="sb-item" id="btnPrivacy"><span class="emoji">🔒</span> Privacy Policy</button>
+          <button class="sb-item" id="btnTerms"><span class="emoji">📋</span> Terms & Conditions</button>
+          <button class="theme-toggle" id="btnTheme"><span class="theme-icon">${S.theme==='dark'?'🌙':'☀️'}</span><span style="flex:1;text-align:left">Theme</span><span class="theme-indicator">${S.theme==='dark'?'🌙 Dark':'☀️ Light'}</span></button>
+          ${founder?`<button class="sb-item" id="btnAdminMemory"><span class="emoji">🗄️</span> Admin Memory ${S.adminAuth?'✅':''}</button>`:''}
+        </div>
+      </div>
+
+      <div class="tier-badge tier-${S.tier}">${founder?'⚓ FOUNDER':pro?'◆ PRO':'◌ FREE TIER'}</div>
+      <div class="sb-footer">
+        <div class="sb-footer-links"><a href="#" id="linkPrivacy">🔒 Privacy</a><a href="#" id="linkTerms">📋 Terms</a><a href="#" id="linkTrust">🛡️ Trust</a><a href="mailto:${SUPPORT_EMAIL}">📧 Support</a></div>
+        <div class="support-link">📧 <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></div>
+        <div class="sb-footer-brand">CLOSEAI TECHNOLOGIES</div>
+      </div>
+    `;
+  } else {
+    sb.innerHTML=`<button class="sb-toggle" id="toggleSidebar" style="margin:8px auto" aria-label="Open">▷</button>`;
+  }
+  app.appendChild(sb);
+
+  const main=document.createElement('main'); main.className='main';
+  if (S.activeView==='chat') {
+    const locked=free&&!checkFreeLimit();
+    main.innerHTML=`
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-wrap">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div class="model-selector" id="modelSelector">${S.models.map(m=>`<button class="model-option ${S.selectedModel===m.id?'active':''}" data-model="${m.id}" title="${m.desc}">${m.icon} ${m.name}</button>`).join('')}</div>
+            <div style="flex:1"></div>
+            ${pro?'<button class="input-action-btn" id="btnVoiceInput" title="🎙️ Voice">🎙️</button>':''}
+            ${pro?'<button class="input-action-btn" id="btnUploadSource" title="📎 Upload">📎</button>':''}
+          </div>
+          <div class="chat-input-inner">
+            <input type="text" id="chatInput" placeholder="${locked?'⏳ Limit reached — upgrade to Pro':'💭 Ask anything...'}" ${S.streaming||locked?'disabled':''} autocomplete="off" enterkeyhint="send">
+            <div class="input-actions"><button class="send-btn" id="sendBtn" ${S.streaming||locked?'disabled':''}>➤</button></div>
+          </div>
+          ${locked?`<div style="text-align:center;padding:8px;font-size:10px;color:var(--accent3)">⏳ Limit reached · Resets in ${getTimeUntilReset()} · <span style="cursor:pointer;text-decoration:underline;color:var(--txt)" id="upgradeLink">Upgrade →</span></div>`:''}
+        </div>
+      </div>`;
+  } else if (S.activeView==='research') {
+    main.innerHTML=`<div style="padding:24px 20px;max-width:900px;margin:0 auto;overflow-y:auto;height:100%;-webkit-overflow-scrolling:touch"><h2 style="font-size:clamp(18px,4vw,20px);font-weight:800;margin-bottom:4px;letter-spacing:-0.02em">🔬 Research</h2><p style="color:var(--txt3);font-size:12px;margin-bottom:24px">${pro?'✨ Full spectrum research · All domains unlocked':'🔒 Upgrade to Pro for Quantum, Coding, Math, Science & more'}</p><div id="reportsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px"></div></div>`;
+  }
+  app.appendChild(main);
+
+  bindEvents(); renderMessages(); renderSuggestions(); renderReports();
+}
+
+function renderMessages() {
+  const el=document.getElementById('chatMessages'); if(!el)return;
+  if(!S.messages.length){el.innerHTML=`<div class="welcome"><div class="logo-large">⚓</div><h1>${getGreeting()}</h1>${isPro()?'<div class="subtitle">✨ All capabilities unlocked · Full access</div>':''}</div>`;return;}
+  el.innerHTML=S.messages.map((m,i)=>{
+    if(m.role==='user')return`<div class="msg user">${esc(m.content)}</div>`;
+    const isLast=i===S.messages.length-1,content=m.content||'',model=S.models.find(md=>md.id===S.selectedModel);
+    let extras='';
+    if(content&&m.marketWidget)extras+=`<div class="market-widget">${m.marketWidget.map(x=>`<div class="market-item"><div class="m-symbol">${x.symbol}</div><div class="m-price">${typeof x.price==='number'&&x.price<10?x.price.toFixed(4):x.price.toLocaleString()}</div><div class="m-change ${x.change>=0?'up':'down'}">${x.change>=0?'📈':'📉'} ${Math.abs(x.change).toFixed(2)}%</div></div>`).join('')}</div>`;
+    if(content&&m.citations)extras+=`<div class="source-chips">${m.citations.map(c=>`<span class="source-chip" onclick="showToast('📎 Source: ${escAttr(c)}')">📎 ${esc(c)}</span>`).join('')}</div>`;
+    if(content&&m.confidence)extras+=`<span class="confidence-badge conf-${m.confidence}">${m.confidence==='high'?'🟢 High':m.confidence==='medium'?'🟡 Medium':'🔴 Low'} Confidence</span>`;
+    if(content&&m.comparison)extras+=`<table class="comparison-table"><thead><tr>${m.comparison.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.comparison.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(String(c))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    if(content&&m.scenarios)extras+=`<div class="scenario-box"><div class="scenario bull"><div class="sc-label">🐂 Bull</div><div class="sc-value">${esc(m.scenarios.bull||'—')}</div></div><div class="scenario base"><div class="sc-label">📊 Base</div><div class="sc-value">${esc(m.scenarios.base||'—')}</div></div><div class="scenario bear"><div class="sc-label">🐻 Bear</div><div class="sc-value">${esc(m.scenarios.bear||'—')}</div></div></div>`;
+    if(isLast&&m.cot&&!content)extras+=`<div class="cot-panel"><div class="cot-header"><span>🧠 Chain of Thought</span><button style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:10px" onclick="this.closest('.cot-panel').remove()">✕</button></div>${m.cot.map((x,j)=>`<div class="cot-step"><div class="step-num">${j+1}</div><div class="step-content">${esc(x)}</div></div>`).join('')}</div>`;
+    return`<div class="msg ai"><div class="msg-ai-hd"><span class="logo">⚓</span> CAPITAN AI<span class="model-tag">${model?model.icon+' '+model.name:'◆ Balanced'}</span></div>${isLast&&!content?'<div class="thinking"><div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div> 🤔 Thinking...</div>':`<div class="msg-content">${formatMsg(content)}${extras}</div>`}${content?`<div class="msg-actions"><button onclick="copyMsg('${escAttr(content)}')">📋 Copy</button><button onclick="retryMsg()">🔄 Retry</button>${isPro()?'<button onclick="showExportOptions()">📤 Export</button>':''}<button onclick="saveToMemory('${escAttr(content.substring(0,100))}')">🧠 Save</button></div>`:''}${content?'<div class="ai-note">⚓ CAPITAN AI can make mistakes · Verify important information</div>':''}</div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+function renderSuggestions() {
+  const el=document.getElementById('chatMessages'); if(!el||S.messages.length>0)return;
+  const div=document.createElement('div'); div.className='suggestions';
+  div.innerHTML=['⚛️ Explain quantum entanglement','💻 Write a Python algorithm','📐 Prove a mathematical theorem','🧪 Analyze CRISPR technology','🌌 Explain black hole physics','🏗️ Design a system architecture','🌠 What is dark matter?','📊 Compare economic theories'].map(s=>`<button class="suggestion">${s}</button>`).join('');
+  el.querySelector('.welcome')?.appendChild(div);
+}
+
+function renderReports() {
+  const el=document.getElementById('reportsGrid'); if(!el)return;
+  const pro=isPro();
+  const cats=[
+    {cat:'🌌 General Knowledge',locked:false,items:[{l:'🧠 Philosophy of Mind',p:'Explore theories of consciousness.'},{l:'📜 World History',p:'Analyze major civilizational shifts.'},{l:'💰 Economic Systems',p:'Compare economic systems and outcomes.'}]},
+    {cat:'⚛️ Quantum Computing',locked:!pro,items:[{l:'🔮 Quantum Gates',p:'Explain quantum gates and circuits.'},{l:'🔐 Shor\'s Algorithm',p:'Explain Shor\'s algorithm step by step.'},{l:'🛡️ Error Correction',p:'Explain quantum error correction.'}]},
+    {cat:'💻 Coding & Engineering',locked:!pro,items:[{l:'🏗️ System Design',p:'Design a distributed system architecture.'},{l:'⚡ Algorithm Optimization',p:'Analyze and optimize algorithms.'},{l:'🔌 API Architecture',p:'Design RESTful API with best practices.'}]},
+    {cat:'📐 Mathematics',locked:!pro,items:[{l:'🔢 Riemann Hypothesis',p:'Explain the Riemann Hypothesis.'},{l:'🔗 Topology',p:'Explain fundamental topology concepts.'},{l:'🔑 Number Theory',p:'Explore number theory in cryptography.'}]},
+    {cat:'🧪 Science',locked:!pro,items:[{l:'🧬 CRISPR',p:'Explain CRISPR-Cas9 mechanism.'},{l:'⚡ Quantum Field Theory',p:'Explain QFT and Standard Model.'},{l:'🧠 Neuroscience',p:'Explore memory formation in the brain.'}]},
+  ];
+  el.innerHTML=cats.map(c=>`<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--radius);padding:16px;${c.locked?'opacity:0.5':''}"><h3 style="font-size:10px;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--txt2);display:flex;align-items:center;gap:6px">${c.cat} ${c.locked?'<span style="font-size:8px;background:var(--bg3);padding:2px 6px;border-radius:6px">🔒 PRO</span>':''}</h3>${c.items.map(i=>`<button class="rpt-btn" data-prompt="${escAttr(i.p)}" ${c.locked?'disabled style="opacity:0.4;cursor:not-allowed"':''}>${i.l} ${c.locked?'🔒':''}</button>`).join('')}</div>`).join('');
+  el.querySelectorAll('.rpt-btn:not([disabled])').forEach(b=>{b.addEventListener('click',()=>{S.activeView='chat';render();setTimeout(()=>sendMessage(b.dataset.prompt),100);});});
+}
+
+function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+function escAttr(s){return s?s.replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n').replace(/\\/g,'\\\\'):'';}
+function formatMsg(s){return s?s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/\[cite:(.*?)\]/g,'<span class="citation" onclick="showToast(\'📎 Source: $1\')">[$1]</span>'):'';}
+function copyMsg(t){navigator.clipboard.writeText(t).then(()=>showToast('📋 Copied')).catch(()=>{});}
+function retryMsg(){if(S.messages.length<2)return;S.messages=S.messages.slice(0,-2);const u=[...S.messages].reverse().find(m=>m.role==='user');if(u)sendMessage(u.content);}
+function saveToMemory(c){const id=memId(); S.memories.push({id:shortId(),memoryId:id,content:c,active:true}); GlobalMemory.add({type:'saved',memoryId:id,content:c,query:S.messages[S.messages.length-2]?.content||''}); saveState(); showToast('🧠 Saved · '+id);}
+function showExportOptions(){if(!requirePro())return;const o=document.createElement('div');o.className='modal-overlay open';o.innerHTML=`<div class="modal"><h2>📤 Export</h2><p>Choose format</p>${S.exportFormats.map(f=>`<button class="btn-secondary" style="width:100%;margin-bottom:8px;display:flex;align-items:center;gap:8px" onclick="showToast('✅ Exported as ${f.name}'); this.closest('.modal-overlay').remove()"><span>${f.icon}</span> ${f.name}</button>`).join('')}<button class="btn-primary" style="width:100%" onclick="this.closest('.modal-overlay').remove()">Cancel</button></div>`;document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});}
+
+async function sendMessage(content){
+  const input=document.getElementById('chatInput'),text=content||input?.value?.trim();
+  if(!text||S.streaming)return;
+  if(S.tier==='free'&&!checkFreeLimit()){showToast('⏳ Limit reached · Upgrade to Pro');openPaymentModal();return;}
+  const isQuantum=/\b(quantum|qubit|entanglement|superposition|qiskit)\b/i.test(text),isCode=/\b(code|python|javascript|algorithm|function|api|system.design|architecture)\b/i.test(text),isMath=/\b(prove|theorem|mathematical|math|equation|calculus|riemann|topology)\b/i.test(text),isScience=/\b(crispr|dna|physics|chemistry|biology|neuroscience|quantum.field)\b/i.test(text);
+  if(S.tier==='free'&&(isQuantum||isCode||isMath||isScience)){showToast('🔒 Pro feature · $17/month');openPaymentModal();return;}
+  const isCompare=/\b(compare|vs|versus|side.by.side)\b/i.test(text),isScenario=/\b(scenario|bull|bear|base.case)\b/i.test(text),isMarket=/\b(price|market|stock|spx|ndx|btc|eth|gold|oil|eur|yield|quote)\b/i.test(text);
+  if(isMarket&&S.tier==='free'){showToast('🔒 Market data requires Pro · $17/month');openPaymentModal();return;}
+  
+  GlobalMemory.add({type:'query',memoryId:memId(),query:text,userId:'user_'+(S.members[0]?.initials||'ANON')});
+  S.messages.push({id:shortId(),role:'user',content:text}); const aiMsg={id:shortId(),role:'assistant',content:''};
+  if(S.selectedModel==='deep')aiMsg.cot=['🔍 Analyzing query across knowledge domains...','📚 Retrieving frameworks and context...','🏗️ Structuring comprehensive response...','✨ Generating analysis...'];
+  S.messages.push(aiMsg); S.streaming=true; if(input)input.value='';
+  if(S.tier==='free'){S.freeMsgCount++; saveState();}
+  render(); await simulateResponse(aiMsg,text,isCompare,isScenario,isMarket); S.streaming=false; render();
+}
+
+async function simulateResponse(aiMsg,query,isCompare,isScenario,isMarket){
+  const model=S.selectedModel,delays={quick:300,balanced:600,deep:1100},baseDelay=delays[model]||600;
+  if(aiMsg.cot){await sleep(baseDelay*0.5); aiMsg.cot=null; renderMessages();}
+  await sleep(baseDelay);
+  let response='';
+  if(isMarket&&isPro()){refreshMarketData(); aiMsg.marketWidget=S.marketData.slice(0,4); response=`**📈 Live Market Data**\n\nCurrent prices across major assets. Markets ${Math.random()>0.5?'showing strength':'mixed'} today.\n\n• S&P 500: ${S.marketData[0].change>=0?'📈 Positive momentum':'📉 Under pressure'}\n• Bitcoin: ${S.marketData[2].change>=0?'📈 Recovering':'📉 Declining'}\n• Gold: ${S.marketData[4].change>=0?'📈 Safe haven demand':'📉 Consolidating'}\n\nQuotes below.`;aiMsg.confidence='high';aiMsg.citations=['📡 Real-time market data'];}
+  else if(query.toLowerCase().includes('quantum')){response=`**⚛️ Quantum Computing Analysis**\n\nQuantum computing harnesses superposition and entanglement.\n\n**🔮 Core Concepts:**\n• **Superposition:** Qubits exist in multiple states — |ψ⟩ = α|0⟩ + β|1⟩ where |α|² + |β|² = 1\n• **🔗 Entanglement:** Non-local correlations enable powerful computation\n• **🔐 Quantum Gates:** Hadamard, CNOT, Phase form universal sets\n\n**💡 Circuit Example:** H on |0⟩ → superposition, CNOT → Bell state.\n\n**📊 Current State:** Quantum supremacy shown. Error correction remains the frontier.`;aiMsg.confidence='high';aiMsg.citations=['📚 Nielsen & Chuang','🔬 Nature Physics 2025'];}
+  else if(isCompare){aiMsg.comparison={headers:['📊 Dimension','🅰️ Option A','🅱️ Option B','💡 Analysis'],rows:[['⚡ Performance','High throughput','Low latency','Trade-off by use case'],['📈 Scalability','Horizontal','Vertical','Architecture differs'],['💰 Cost','Usage-based','Fixed + variable','TCO varies'],['🌐 Ecosystem','Mature','Growing','Community key']]};response=`**⚖️ Comparative Analysis**\n\nStructured comparison below. Key differentiators highlighted.`;aiMsg.confidence='medium';}
+  else if(isScenario){aiMsg.scenarios={bull:'📈 +35% upside',base:'📊 +12% expected',bear:'📉 -18% downside'};response=`**📊 Scenario Analysis**\n\nThree scenarios modeled. Base case reflects most probable outcome.`;aiMsg.confidence='medium';}
+  else{const r=['**🔍 Analysis**\n\n• Context suggests interconnected factors\n• Clear patterns emerge from the data\n• These dynamics imply meaningful outcomes\n\n✨ What aspect should I explore deeper?','**💡 Exploration**\n\n1. Fundamentals are well-established\n2. Recent developments shift understanding\n3. Active research continues\n\n🎯 Where should we focus?','**🧠 Insights**\n\n• Holistic analysis reveals consistent patterns\n• Relationships robust across evidence\n• Some areas warrant further investigation\n\n💭 What angle interests you most?']; response=r[Math.floor(Math.random()*r.length)]; aiMsg.confidence=model==='deep'?'high':'medium';}
+  const words=response.split(' '); for(const w of words){aiMsg.content=(aiMsg.content||'')+w+' '; renderMessages(); await sleep(10+Math.random()*20);}
+  aiMsg.content=response;
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ═══════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════
+function bindEvents(){
+  const pro=isPro(),founder=S.tier==='founder';
+  document.getElementById('toggleSidebar')?.addEventListener('click',()=>{S.sidebarOpen=!S.sidebarOpen;render();});
+  document.getElementById('founderSecret')?.addEventListener('click',founderClick);
+  document.querySelectorAll('.sb-section-header,.sb-market-header').forEach(h=>{h.addEventListener('click',()=>{S.sections[h.dataset.section]=!S.sections[h.dataset.section];render();});});
+  document.querySelectorAll('[data-view]').forEach(b=>{b.addEventListener('click',()=>{S.activeView=b.dataset.view;render();});});
+  document.querySelectorAll('[data-capability]:not(.locked)').forEach(b=>{b.addEventListener('click',()=>{const p={quantum:'⚛️ Explain quantum computing fundamentals',coding:'💻 Design a scalable system architecture with code',mathematics:'📐 Explain a mathematical concept with proofs',science:'🧪 Explain a scientific discovery and implications',general:'🌌 Explore a topic connecting multiple fields'};S.activeView='chat';render();setTimeout(()=>sendMessage(p[b.dataset.capability]||'Explore'),100);});});
+  document.querySelectorAll('[data-capability].locked').forEach(b=>{b.addEventListener('click',()=>{showToast('🔒 Pro feature · $17/month');openPaymentModal();});});
+  document.getElementById('btnNewChat')?.addEventListener('click',()=>{S.messages=[];S.activeView='chat';render();});
+  document.getElementById('createFirstWs')?.addEventListener('click',()=>{if(!pro)return;const n=prompt('💼 Workspace name:');if(n){const w={id:shortId(),name:n,members:1,color:'#4da3ff'};S.workspaces.push(w);S.currentWorkspace=w;if(!S.members.length)S.members=[{id:'m1',name:'You',role:'Admin',online:true,initials:'YO',color:'#fff'}];if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();saveState();render();showToast(`✅ Workspace "${n}" created`);}});
+  
+  const input=document.getElementById('chatInput'),sendBtn=document.getElementById('sendBtn');
+  input?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+  sendBtn?.addEventListener('click',()=>sendMessage());setTimeout(()=>input?.focus(),100);
+  document.querySelectorAll('.suggestion').forEach(b=>{b.addEventListener('click',()=>sendMessage(b.textContent));});
+  document.querySelectorAll('.model-option').forEach(b=>{b.addEventListener('click',()=>{S.selectedModel=b.dataset.model;render();});});
+  document.getElementById('upgradeLink')?.addEventListener('click',openPaymentModal);
+  document.getElementById('btnVoiceInput')?.addEventListener('click',()=>{if(!requirePro())return;showToast('🎙️ Voice activated');setTimeout(()=>sendMessage('Meeting discussion transcribed and summarized'),1500);});
+  document.getElementById('btnUploadSource')?.addEventListener('click',()=>{if(!requirePro())return;showToast('📎 Document ready for citation');});
+  
+  document.getElementById('btnWorkspace')?.addEventListener('click',()=>{if(!requirePro())return;
+    const o=document.createElement('div');o.className='modal-overlay open';
+    o.innerHTML=`<div class="modal"><h2>💼 Workspace</h2><p>Create and manage team workspaces.</p>${S.currentWorkspace?`<p style="font-size:10px;color:var(--txt3)">Current: <strong>${S.currentWorkspace.name}</strong></p>`:''}${S.workspaces.map(w=>`<div class="prompt-template" data-ws="${w.id}"><div class="pt-title">💼 ${w.name}</div><div style="font-size:10px;color:var(--txt3)">👥 ${w.members} member${w.members>1?'s':''}${w.id===S.currentWorkspace?.id?' · ✅ Active':''}</div></div>`).join('')}<div class="btn-row"><button class="btn-primary" id="createWs">✨ New Workspace</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+    o.querySelector('#createWs')?.addEventListener('click',()=>{const n=prompt('💼 Workspace name:');if(n){const w={id:shortId(),name:n,members:1,color:'#4da3ff'};S.workspaces.push(w);S.currentWorkspace=w;if(!S.members.length)S.members=[{id:'m1',name:'You',role:'Admin',online:true,initials:'YO',color:'#fff'}];if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();o.remove();saveState();render();showToast(`✅ "${n}" created`);}});
+    o.querySelectorAll('[data-ws]').forEach(el=>{el.addEventListener('click',()=>{const w=S.workspaces.find(x=>x.id===el.dataset.ws);if(w){S.currentWorkspace=w;o.remove();saveState();render();showToast(`🔄 Switched to ${w.name}`);}});});
+  });
+  document.getElementById('workspaceSwitcher')?.addEventListener('click',()=>{if(!requirePro()||S.workspaces.length<2)return;const i=S.workspaces.indexOf(S.currentWorkspace);S.currentWorkspace=S.workspaces[(i+1)%S.workspaces.length];saveState();showToast(`🔄 ${S.currentWorkspace.name}`);render();});
+  document.getElementById('btnMarketResearch')?.addEventListener('click',()=>{if(!requirePro())return;S.activeView='chat';render();setTimeout(()=>sendMessage('📊 Comprehensive market research: sizing, trends, landscape, projections.'),100);});
+  document.getElementById('btnDealAnalysis')?.addEventListener('click',()=>{if(!requirePro())return;S.activeView='chat';render();setTimeout(()=>sendMessage('🏦 Deal analysis: DCF, comps, precedents, risks, recommendation.'),100);});
+  document.getElementById('btnMemory')?.addEventListener('click',()=>{if(!requirePro())return;
+    const o=document.createElement('div');o.className='modal-overlay open';
+    o.innerHTML=`<div class="modal"><h2>🧠 Memory Dashboard</h2><p>Each entry has a unique Memory ID.</p><div class="memory-list">${S.memories.map(m=>`<div class="memory-item"><div><div class="mem-content">${esc(m.content)}</div><div class="mem-id">🆔 ${m.memoryId||'N/A'}</div></div><button class="mem-toggle ${m.active?'active':''}" data-mem="${m.id}"></button><button class="mem-delete" data-mem="${m.id}">✕</button></div>`).join('')}</div><div class="btn-row"><button class="btn-primary" id="addMem">➕ Add Memory</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+    o.querySelector('#addMem')?.addEventListener('click',()=>{const c=prompt('🧠 Memory:');if(c){const id=memId();S.memories.push({id:shortId(),memoryId:id,content:c,active:true});GlobalMemory.add({type:'manual',memoryId:id,content:c});saveState();o.remove();showToast('✅ Added · '+id);}});
+    o.querySelectorAll('.mem-toggle').forEach(t=>{t.addEventListener('click',()=>{const m=S.memories.find(x=>x.id===t.dataset.mem);if(m){m.active=!m.active;t.classList.toggle('active');saveState();}});});
+    o.querySelectorAll('.mem-delete').forEach(d=>{d.addEventListener('click',()=>{S.memories=S.memories.filter(x=>x.id!==d.dataset.mem);saveState();d.closest('.memory-item').remove();});});
+  });
+  
+  // Admin Memory
+  document.getElementById('btnAdminMemory')?.addEventListener('click',()=>{
+    if(!S.adminAuth){const code=prompt('🔐 Enter admin access code:');if(code===ADMIN_ACCESS_CODE){S.adminAuth=true;saveState();showToast('✅ Admin access granted');}else{showToast('❌ Invalid code');return;}}
+    const all=GlobalMemory.recent(100);
+    const o=document.createElement('div');o.className='modal-overlay open';
+    o.innerHTML=`<div class="modal" style="width:620px;max-width:95vw"><h2>🗄️ Admin Memory Panel</h2><p>All stored communications with Memory IDs.</p><div style="margin-bottom:8px"><input type="text" placeholder="🔍 Search by ID, user, or content..." id="adminMemSearch" style="width:100%"></div><div class="admin-memory-panel" id="adminMemList">${all.map(m=>`<div class="admin-memory-item"><div class="am-user">🆔 ${m.memoryId||'N/A'} · 👤 ${m.userId} · ${m.tier}</div><div class="am-content">${m.query||m.content||'(no content)'}</div><div class="am-time">🕐 ${new Date(m.timestamp).toLocaleString()}</div></div>`).join('')||'<div style="padding:20px;text-align:center;color:var(--txt3)">📭 No memories stored yet.</div>'}</div><div class="btn-row"><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+    o.querySelector('#adminMemSearch')?.addEventListener('input',e=>{const r=GlobalMemory.search(e.target.value);const l=o.querySelector('#adminMemList');l.innerHTML=r.length?r.map(m=>`<div class="admin-memory-item"><div class="am-user">🆔 ${m.memoryId||'N/A'} · 👤 ${m.userId} · ${m.tier}</div><div class="am-content">${m.query||m.content||'(no content)'}</div><div class="am-time">🕐 ${new Date(m.timestamp).toLocaleString()}</div></div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--txt3)">🔍 No results.</div>';});
+  });
+  
+  document.getElementById('btnAPIKeys')?.addEventListener('click',()=>{if(!requirePro())return;
+    if(!S.apiKeys.capitan)S.apiKeys.capitan='cap_'+shortId()+shortId();
+    const o=document.createElement('div');o.className='modal-overlay open';
+    o.innerHTML=`<div class="modal"><h2>🔑 API Keys</h2><div class="api-key-display"><span style="flex:1">${S.apiKeys.capitan}</span><button class="btn-secondary" style="min-width:auto;padding:6px 12px;font-size:10px" onclick="navigator.clipboard.writeText('${S.apiKeys.capitan}');showToast('📋 Copied')">Copy</button></div><p style="font-size:9px;color:var(--txt3)">🔐 Keep secure. Rotate regularly.</p><div class="btn-row"><button class="btn-primary" id="rotateKey">🔄 Rotate</button><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+    o.querySelector('#rotateKey')?.addEventListener('click',()=>{S.apiKeys.capitan='cap_'+shortId()+shortId();saveState();showToast('🔄 Rotated');o.remove();document.getElementById('btnAPIKeys')?.click();});
+  });
+  document.getElementById('btnExport')?.addEventListener('click',()=>showExportOptions());
+  document.getElementById('btnPromptLib')?.addEventListener('click',()=>{if(!requirePro())return;
+    if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();
+    const cats=[...new Set(S.promptTemplates.map(p=>p.category))],o=document.createElement('div');o.className='modal-overlay open';
+    o.innerHTML=`<div class="modal"><h2>📚 Prompt Library</h2>${cats.map(c=>`<div style="margin-bottom:12px"><h3 style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--txt3);margin-bottom:6px">${c}</h3>${S.promptTemplates.filter(p=>p.category===c).map(pt=>`<div class="prompt-template" data-pt="${pt.id}"><div class="pt-title">${pt.title}</div><div class="pt-preview">${pt.prompt.substring(0,65)}...</div><div class="pt-vars">${pt.vars.map(v=>`<span class="pt-var">{{${v}}}</span>`).join('')}</div></div>`).join('')}</div>`).join('')}<div class="btn-row"><button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button></div></div>`;
+    document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+    o.querySelectorAll('.prompt-template').forEach(pt=>{pt.addEventListener('click',()=>{const t=S.promptTemplates.find(x=>x.id===pt.dataset.pt);if(t){let p=t.prompt;t.vars.forEach(v=>{const val=prompt(`📝 Enter {{${v}}}:`);if(val)p=p.replace(`{{${v}}}`,val);});o.remove();sendMessage(p);}});});
+  });
+  document.getElementById('btnTheme')?.addEventListener('click',()=>{S.theme=S.theme==='dark'?'light':'dark';saveState();render();});
+  
+  const showPolicy=(t,c)=>{const o=document.createElement('div');o.className='modal-overlay open';o.innerHTML=`<div class="modal"><h2>${t}</h2><p style="line-height:1.7">${c}</p><button class="btn-primary" style="width:100%" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`;document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});};
+  document.getElementById('btnPrivacy')?.addEventListener('click',()=>showPolicy('🔒 Privacy Policy',`CAPITAN AI by CLOSEAI Technologies.\n\n🔐 End-to-end encrypted. We never sell or share your data. You own your inputs and outputs. SOC 2 Type II.\n\n📧 ${SUPPORT_EMAIL}`));
+  document.getElementById('btnTerms')?.addEventListener('click',()=>showPolicy('📋 Terms & Conditions',`✨ Pro: $17/month auto-renewing. Cancel anytime.\n💬 Free: 20 messages per 7 hours.\n\nCLOSEAI Technologies.\n\n📧 ${SUPPORT_EMAIL}`));
+  document.getElementById('linkPrivacy')?.addEventListener('click',e=>{e.preventDefault();showPolicy('🔒 Privacy Policy',`CAPITAN AI · End-to-end encrypted. Your data is yours.\n\n📧 ${SUPPORT_EMAIL}`);});
+  document.getElementById('linkTerms')?.addEventListener('click',e=>{e.preventDefault();showPolicy('📋 Terms',`Pro: $17/mo · Free: 20 msg/7hrs.\n\nCLOSEAI Technologies.\n\n📧 ${SUPPORT_EMAIL}`);});
+  document.getElementById('linkTrust')?.addEventListener('click',e=>{e.preventDefault();showPolicy('🛡️ Trust Center',`SOC 2 Type II. Encrypted at rest and in transit. Regular audits.\n\n📧 ${SUPPORT_EMAIL}`);});
+  document.getElementById('btnUpgrade')?.addEventListener('click',openPaymentModal);
+  document.getElementById('closeModal')?.addEventListener('click',closePaymentModal);
+  document.getElementById('closeModal2')?.addEventListener('click',closePaymentModal);
+  document.querySelectorAll('#paymentModal .tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('#paymentModal .tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.getElementById('tabCard').style.display=tab.dataset.tab==='card'?'block':'none';document.getElementById('tabCrypto').style.display=tab.dataset.tab==='crypto'?'block':'none';});});
+  document.getElementById('payCard')?.addEventListener('click',()=>activatePro());
+  document.getElementById('verifyCrypto')?.addEventListener('click',()=>{if(document.getElementById('txidInput')?.value?.trim())activatePro();else showToast('Enter transaction hash');});
+  let ts=0;document.querySelector('.main')?.addEventListener('touchstart',e=>{ts=e.touches[0].clientX;},{passive:true});document.querySelector('.main')?.addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-ts>60&&!S.sidebarOpen){S.sidebarOpen=true;render();}});
+}
+
+function activatePro(){S.tier='pro';S.proExpiry=Date.now()+PRO_EXPIRY_DAYS*86400000;if(!S.promptTemplates.length)S.promptTemplates=getDefaultPrompts();closePaymentModal();saveState();showToast('🎉 Welcome to Capitan Pro · All tools unlocked');render();}
+function openPaymentModal(){document.getElementById('paymentModal').classList.add('open');}
+function closePaymentModal(){document.getElementById('paymentModal').classList.remove('open');}
+document.getElementById('paymentModal')?.addEventListener('click',function(e){if(e.target===this)closePaymentModal();});
+
+applyTheme();render();
+if(isPro())setInterval(()=>{refreshMarketData();},30000);
+console.log('⚓ CAPITAN AI v15.1 — Emoji-Infused Sidebar');
+console.log('CLOSEAI TECHNOLOGIES — ' + SUPPORT_EMAIL);
+</script>
 </body>
 </html>
