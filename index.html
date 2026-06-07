@@ -1664,8 +1664,7 @@ async function sendMessage(content) {
   S.streaming = true;
   if (input) {
     input.value = '';
-    // Dismiss mobile keyboard after send
-    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) input.blur();
+    input.blur();
   }
   if (!isPro()) { S.freeMsgCount++; saveState(); }
 
@@ -1812,10 +1811,6 @@ function bindEvents() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
   sendBtn?.addEventListener('click', () => sendMessage());
-  // Only auto-focus on desktop — never on mobile (prevents keyboard hijack)
-  if (window.innerWidth > 768 && !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    setTimeout(() => input?.focus(), 80);
-  }
 
   /* Theme */
   document.getElementById('btnTheme')?.addEventListener('click', () => {
