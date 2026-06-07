@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Newsreader:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════
-   CAPITAN AI — ELITE EDITION
+   CAPITAN AI — ELITE EDITION v2.0
    Institutional. Precise. Commanding.
    ═══════════════════════════════════════ */
 
@@ -25,7 +25,7 @@
   --ink: #f2f0eb;
   --ink-2: #9a9690;
   --ink-3: #4a4845;
-  --ink-4: #2e2d2b;
+  --ink-4: #2e2d1b;
 
   --gold: #c9a96e;
   --gold-dim: #8a7050;
@@ -83,13 +83,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Allow scrolling on small/zoomed screens */
 @media (max-height: 500px), (max-width: 360px) {
   body { overflow: auto; height: auto; min-height: 100vh; }
   #app { height: auto; min-height: 100vh; }
 }
 
-/* Grain overlay */
 body::before {
   content: '';
   position: fixed;
@@ -212,7 +210,6 @@ body::before {
 .btn-new-chat .icon { width: 14px; height: 14px; flex-shrink: 0; }
 .collapsed .btn-new-chat .btn-new-label { opacity: 0; overflow: hidden; max-width: 0; }
 
-/* Sidebar scroll area */
 .sb-scroll {
   flex: 1;
   overflow-y: auto;
@@ -302,7 +299,6 @@ body::before {
   margin: 6px 18px;
 }
 
-/* Limit bar */
 .sb-limit {
   margin: 4px 10px 8px;
   padding: 10px 10px;
@@ -319,7 +315,6 @@ body::before {
 .sb-limit-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 1px; transition: width 0.5s var(--ease); }
 .sb-limit-reset { font-size: 8px; color: var(--ink-3); margin-top: 4px; font-family: var(--font-mono); }
 
-/* Market tickers */
 .sb-market-item {
   display: flex;
   align-items: center;
@@ -336,7 +331,6 @@ body::before {
 .sb-market-chg.pos { color: #6dbb8a; }
 .sb-market-chg.neg { color: #c97070; }
 
-/* Bottom of sidebar */
 .sb-bottom {
   border-top: 1px solid var(--edge);
   padding: 12px 10px;
@@ -415,7 +409,6 @@ body::before {
   min-height: 0;
 }
 
-/* Subtle radial vignette top center */
 .main::before {
   content: '';
   position: absolute;
@@ -702,7 +695,6 @@ body::before {
   letter-spacing: 0.04em;
 }
 
-/* Thinking state */
 .thinking-wrap {
   padding-left: 30px;
   display: flex;
@@ -729,7 +721,6 @@ body::before {
 .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes pulse { 0%,80%,100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
 
-/* Market widget */
 .market-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1150,8 +1141,9 @@ body::before {
 
 <script>
 /* ═══════════════════════════════════════
-   CAPITAN AI — ELITE EDITION
+   CAPITAN AI — ELITE EDITION v2.0
    CLOSEAI Technologies
+   closeaitechnologies@gmail.com
    ═══════════════════════════════════════ */
 
 const CFG = {
@@ -1160,7 +1152,7 @@ const CFG = {
   FREE_WINDOW: 7 * 60 * 60 * 1000,
   PRO_DAYS: 30,
   EMAIL: 'closeaitechnologies@gmail.com',
-  ADMIN_CODE: 'CAPITAN-ADMIN-2026'
+  ADMIN_CODE: 'Osinachi@350'
 };
 
 const uid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -1206,14 +1198,24 @@ function defaultState() {
 
 function loadState() {
   try {
-    const raw = localStorage.getItem('capitan_elite');
+    const raw = localStorage.getItem('capitan_elite_v3');
     if (raw) {
       const p = JSON.parse(raw);
+      // STRICT PRO EXPIRY CHECK
       if ((p.tier === 'pro' || p.tier === 'founder') && p.proExpiry && Date.now() > p.proExpiry) {
         p.tier = 'free'; p.proExpiry = null;
         p.workspace = null; p.workspaces = []; p.members = []; p.prompts = [];
+        p.adminAuth = false;
       }
-      if (p.tier === 'free') { p.workspace = null; p.workspaces = []; p.members = []; p.prompts = []; }
+      // NEVER allow pro features for free tier
+      if (p.tier === 'free') {
+        p.workspace = null; p.workspaces = []; p.members = []; p.prompts = [];
+        p.adminAuth = false;
+      }
+      // NEVER allow admin for non-founder
+      if (p.tier !== 'founder') {
+        p.adminAuth = false;
+      }
       return { ...defaultState(), ...p };
     }
   } catch {}
@@ -1229,10 +1231,11 @@ function saveState() {
       members: S.tier === 'free' ? [] : S.members,
       memories: S.memories, prompts: S.tier === 'free' ? [] : S.prompts,
       apiKeys: S.apiKeys, freeMsgCount: S.freeMsgCount,
-      freeMsgWindowStart: S.freeMsgWindowStart, adminAuth: S.adminAuth,
+      freeMsgWindowStart: S.freeMsgWindowStart,
+      adminAuth: S.tier === 'founder' ? S.adminAuth : false,
       sidebarCollapsed: S.sidebarCollapsed, sections: S.sections
     };
-    localStorage.setItem('capitan_elite', JSON.stringify(d));
+    localStorage.setItem('capitan_elite_v3', JSON.stringify(d));
   } catch {}
 }
 
@@ -1317,7 +1320,7 @@ function requirePro() {
   return true;
 }
 
-/* Founder easter egg */
+/* Founder easter egg — ONLY way to get Pro without payment */
 function founderClick() {
   S.founderClicks++;
   if (S.founderTimer) clearTimeout(S.founderTimer);
@@ -1325,6 +1328,7 @@ function founderClick() {
     S.tier = 'founder';
     S.proExpiry = Date.now() + CFG.PRO_DAYS * 86400000;
     S.founderClicks = 0;
+    S.adminAuth = false;
     if (!S.workspaces.length) {
       S.workspaces = [{ id: uid(), name: 'Founder', members: 1 }];
       S.workspace = S.workspaces[0];
@@ -1543,7 +1547,7 @@ function render() {
   renderMessages();
 }
 
-/* --- ICONS (minimal inline SVG) --- */
+/* --- ICONS --- */
 const iconChat = `<svg viewBox="0 0 14 14" fill="none"><path d="M2 2h10v8H8l-3 2v-2H2z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>`;
 const iconGlobe = `<svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M7 1.5c-2 2-2 7 0 11M7 1.5c2 2 2 7 0 11M1.5 7h11" stroke="currentColor" stroke-width="1"/></svg>`;
 const iconTrending = `<svg viewBox="0 0 14 14" fill="none"><path d="M1 10L5 6L8 8.5L13 3" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 3h3v3" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -1577,9 +1581,9 @@ function renderMessages() {
         <p class="welcome-sub">What would you like to explore?</p>
         <div class="welcome-pills">
           <button class="welcome-pill" onclick="sendMessage('Analyze market trends and generate investment insights')">Finance</button>
-          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Explain quantitative methods and mathematical proofs')" : "toast('Pro feature');openModal()"}">Quant${pro ? '' : ' · Pro'}</button>
-          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Design system architecture and write optimized code')" : "toast('Pro feature');openModal()"}">Coding${pro ? '' : ' · Pro'}</button>
-          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Explore scientific concepts and current research')" : "toast('Pro feature');openModal()"}">Science${pro ? '' : ' · Pro'}</button>
+          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Explain quantitative methods and mathematical proofs')" : "toast('Pro feature — \$17/month');openModal()"}">Quant${pro ? '' : ' · Pro'}</button>
+          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Design system architecture and write optimized code')" : "toast('Pro feature — \$17/month');openModal()"}">Coding${pro ? '' : ' · Pro'}</button>
+          <button class="welcome-pill${pro ? '' : ' locked'}" onclick="${pro ? "sendMessage('Explore scientific concepts and current research')" : "toast('Pro feature — \$17/month');openModal()"}">Science${pro ? '' : ' · Pro'}</button>
         </div>
       </div>`;
     return;
@@ -1745,7 +1749,6 @@ function showExport() {
 function bindEvents() {
   const pro = isPro(), fnd = isFounder();
 
-  /* Sidebar */
   document.getElementById('toggleCollapse')?.addEventListener('click', () => {
     S.sidebarCollapsed = !S.sidebarCollapsed;
     saveState(); render();
@@ -1755,14 +1758,12 @@ function bindEvents() {
     S.sidebarOpen = !S.sidebarOpen; render();
   });
 
-  /* Overlay close on mobile */
   if (window.innerWidth <= 768 && S.sidebarOpen) {
     document.querySelector('.main')?.addEventListener('click', () => {
       S.sidebarOpen = false; render();
     }, { once: true });
   }
 
-  /* Sidebar sections */
   document.querySelectorAll('[data-section]').forEach(h => {
     h.addEventListener('click', () => {
       S.sections[h.dataset.section] = !S.sections[h.dataset.section];
@@ -1770,15 +1771,12 @@ function bindEvents() {
     });
   });
 
-  /* Founder */
   document.getElementById('founderSecret')?.addEventListener('click', founderClick);
 
-  /* New chat */
   document.getElementById('btnNewChat')?.addEventListener('click', () => {
     S.messages = []; render();
   });
 
-  /* View / capability buttons */
   document.getElementById('btnChat')?.addEventListener('click', () => { render(); });
   document.querySelectorAll('[data-cap]').forEach(b => {
     b.addEventListener('click', () => {
@@ -1789,13 +1787,12 @@ function bindEvents() {
         quant: 'Explain quantitative methods and mathematical proofs',
         science: 'Explore scientific concepts and current research'
       };
-      if (!isPro() && b.dataset.cap !== 'general') { toast('Pro feature'); openModal(); return; }
+      if (!isPro() && b.dataset.cap !== 'general') { toast('Pro feature — $17/month'); openModal(); return; }
       render();
       setTimeout(() => sendMessage(caps[b.dataset.cap]), 100);
     });
   });
 
-  /* Model tabs */
   document.querySelectorAll('.model-tab').forEach(t => {
     t.addEventListener('click', () => {
       S.selectedModel = t.dataset.model;
@@ -1804,7 +1801,6 @@ function bindEvents() {
     });
   });
 
-  /* Chat input */
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
   input?.addEventListener('keydown', e => {
@@ -1812,16 +1808,13 @@ function bindEvents() {
   });
   sendBtn?.addEventListener('click', () => sendMessage());
 
-  /* Theme */
   document.getElementById('btnTheme')?.addEventListener('click', () => {
     S.theme = S.theme === 'dark' ? 'light' : 'dark';
     saveState(); render();
   });
 
-  /* Upgrade */
   document.getElementById('btnUpgrade')?.addEventListener('click', openModal);
 
-  /* Pro tools */
   if (pro) {
     document.getElementById('btnWorkspace')?.addEventListener('click', () => {
       openGenericModal('Workspace', `
@@ -1900,8 +1893,10 @@ function bindEvents() {
     });
   }
 
+  // ADMIN — STRICTLY FOUNDER ONLY — CODE: Osinachi@350
   if (fnd) {
     document.getElementById('btnAdmin')?.addEventListener('click', () => {
+      if (S.tier !== 'founder') { toast('Access denied'); return; }
       if (!S.adminAuth) {
         const code = prompt('Admin access code:');
         if (code === CFG.ADMIN_CODE) { S.adminAuth = true; saveState(); toast('Access granted'); }
@@ -1945,7 +1940,6 @@ function bindEvents() {
   document.getElementById('closeModal2')?.addEventListener('click', closeModal);
   document.getElementById('paymentModal')?.addEventListener('click', e => { if (e.target.id === 'paymentModal') closeModal(); });
 
-  /* Swipe to open sidebar on mobile */
   let touchStart = 0;
   document.querySelector('.main')?.addEventListener('touchstart', e => { touchStart = e.touches[0].clientX; }, { passive: true });
   document.querySelector('.main')?.addEventListener('touchend', e => {
@@ -1984,9 +1978,6 @@ function handlePrompt(id) {
   sendMessage(p);
 }
 
-/* ═══════════════════════════════════════
-   MODALS
-   ═══════════════════════════════════════ */
 function openModal() { document.getElementById('paymentModal').classList.add('open'); }
 function closeModal() { document.getElementById('paymentModal').classList.remove('open'); }
 
@@ -2003,9 +1994,16 @@ function closeGenericModal() {
   document.getElementById('genericModal')?.remove();
 }
 
+// ONLY PAYMENT OR FOUNDER EASTER EGG CAN ACTIVATE PRO
 function activatePro() {
+  const cardNumber = document.getElementById('cardNumber')?.value?.trim();
+  if (!cardNumber || cardNumber.length < 10) {
+    toast('Please enter valid card details');
+    return;
+  }
   S.tier = 'pro';
   S.proExpiry = Date.now() + CFG.PRO_DAYS * 86400000;
+  S.adminAuth = false;
   if (!S.prompts.length) S.prompts = getPrompts();
   closeModal();
   saveState();
@@ -2039,7 +2037,8 @@ window.saveState = saveState;
 window.requirePro = requirePro;
 window.isPro = isPro;
 
-console.log('%cCAPITAN AI — Elite Edition', 'font-family:monospace;font-weight:bold;font-size:14px;color:#c9a96e');
+console.log('%cCAPITAN AI — Elite Edition v2.0', 'font-family:monospace;font-weight:bold;font-size:14px;color:#c9a96e');
+console.log('%cCLOSEAI Technologies — ' + CFG.EMAIL, 'font-family:monospace;font-size:10px;color:#8a7050');
 </script>
 </body>
 </html>
