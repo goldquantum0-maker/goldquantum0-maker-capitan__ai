@@ -277,9 +277,9 @@ body {
     </div>
     <div style="margin-bottom:16px">
       <select id="cryptoCurrency" style="width:100%;background:var(--surface);border:1px solid var(--edge);color:var(--ink);padding:8px;border-radius:var(--r-md);font-family:var(--font-body);font-size:13px;margin-bottom:8px">
-        <option value="BTC">BTC — 0.00028 BTC</option>
-        <option value="ETH">ETH — 0.005 ETH</option>
-        <option value="USDC">USDC — 17 USDC</option>
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
+        <option value="USDC">USDC</option>
       </select>
       <div style="background:var(--surface);border:1px solid var(--edge);padding:10px;border-radius:var(--r-md);font-family:var(--font-mono);font-size:9px;color:var(--ink-2);word-break:break-all;margin-bottom:8px">bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new</div>
       <input type="text" placeholder="Transaction hash (TXID)" id="txidInput">
@@ -292,29 +292,23 @@ body {
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CAPITAN AI — COMPLETE SYSTEM
-// Tiers: Free (20msg) | Plus $6 (30msg) | Pro $17 (Unlimited) | Founder (Secret)
-// Founder Entry: 5 clicks on "Capitan" logo
-// Admin Code: Osinachi@350
-// ═══════════════════════════════════════════════════════════════
-
+// ═══════════════════════════════════════
+// CAPITAN AI — TIERS: Free | Plus $6 | Pro $17 | Founder
+// ═══════════════════════════════════════
 const API_BASE = 'https://goldquantum0-capitan-ai-1.onrender.com';
-const CFG = {
-  FOUNDER_CLICKS: 5,
-  EMAIL: 'closeaitechnologies@gmail.com',
-  ADMIN_CODE: 'Osinachi@350'
-};
+const CFG = { FOUNDER_CLICKS: 5, EMAIL: 'closeaitechnologies@gmail.com', ADMIN_CODE: 'Osinachi@350' };
 
 const TIERS = {
-  free:    { name:'Free',    price:0,  msgLimit:20,  msgWindow:7, domains:['general','finance'],                       tools:[],                                      badge:'FREE',    css:'tier-free' },
-  plus:    { name:'Plus',    price:6,  msgLimit:30,  msgWindow:7, domains:['general','finance','coding','math'],       tools:[],                                      badge:'PLUS',    css:'tier-plus' },
-  pro:     { name:'Pro',     price:17, msgLimit:1/0, msgWindow:0, domains:['general','finance','coding','math','quant','science'], tools:['workspace','memory','apiKeys','export','promptLib'], badge:'PRO', css:'tier-pro' },
-  founder: { name:'Founder', price:0,  msgLimit:1/0, msgWindow:0, domains:['general','finance','coding','math','quant','science'], tools:['workspace','memory','apiKeys','export','promptLib','admin'], badge:'FOUNDER', css:'tier-founder' }
+  free:    { name:'Free',    price:0,  msgLimit:20,  msgWindow:7, domains:['general','finance'],                       tools:[],                  badge:'FREE' },
+  plus:    { name:'Plus',    price:6,  msgLimit:30,  msgWindow:7, domains:['general','finance','coding','math'],       tools:[],                  badge:'PLUS' },
+  pro:     { name:'Pro',     price:17, msgLimit:1/0, msgWindow:0, domains:['general','finance','coding','math','quant','science'], tools:['workspace','memory','apiKeys','export','promptLib'], badge:'PRO' },
+  founder: { name:'Founder', price:0,  msgLimit:1/0, msgWindow:0, domains:['general','finance','coding','math','quant','science'], tools:['workspace','memory','apiKeys','export','promptLib','admin'], badge:'FOUNDER' }
 };
 
 const uid = () => Math.random().toString(36).slice(2,8).toUpperCase();
 const mid = () => 'mem_'+uid();
+
+let S = loadState();
 
 function defaultState() {
   return {
@@ -325,19 +319,17 @@ function defaultState() {
     memories:[{id:uid(),memId:mid(),content:'Patterns stored',active:true}],
     selectedModel:'balanced',
     models:[{id:'quick',name:'Quick'},{id:'balanced',name:'Balanced'},{id:'deep',name:'Deep'}],
-    apiKeys:{}, freeMsgCount:0, freeMsgWindowStart:Date.now(), adminAuth:false,
-    userId:'user_'+uid()
+    freeMsgCount:0, freeMsgWindowStart:Date.now(), adminAuth:false
   };
 }
 
-let S = loadState();
-
 function loadState() {
   try {
-    const raw = localStorage.getItem('capitan_state_v1');
+    const raw = localStorage.getItem('capitan_state');
     if (raw) {
       const p = JSON.parse(raw);
-      if (p.proExpiry && Date.now() > p.proExpiry) { p.tier = 'free'; p.proExpiry = null; p.adminAuth = false; }
+      if (p.proExpiry && Date.now() > p.proExpiry) { p.tier = 'free'; p.proExpiry = null; }
+      if (p.tier === 'free') { p.adminAuth = false; }
       if (p.tier !== 'founder') { p.adminAuth = false; }
       return {...defaultState(),...p};
     }
@@ -347,48 +339,40 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem('capitan_state_v1', JSON.stringify({
+    localStorage.setItem('capitan_state', JSON.stringify({
       tier:S.tier, proExpiry:S.proExpiry, theme:S.theme,
-      apiKeys:S.apiKeys, freeMsgCount:S.freeMsgCount,
-      freeMsgWindowStart:S.freeMsgWindowStart,
+      freeMsgCount:S.freeMsgCount, freeMsgWindowStart:S.freeMsgWindowStart,
       adminAuth:S.tier==='founder'?S.adminAuth:false,
-      sidebarCollapsed:S.sidebarCollapsed, userId:S.userId
+      sidebarCollapsed:S.sidebarCollapsed
     }));
   } catch(e) {}
 }
 
+const isPro = () => S.tier === 'pro' || S.tier === 'founder';
+const isFounder = () => S.tier === 'founder';
 const getTier = () => TIERS[S.tier] || TIERS.free;
-const isPro = () => S.tier==='pro'||S.tier==='founder';
-const isFounder = () => S.tier==='founder';
 const canDomain = (d) => getTier().domains.includes(d);
 const canTool = (t) => getTier().tools.includes(t);
 
 function canMessage() {
   const t = getTier();
-  if (t.msgLimit===Infinity) return true;
-  if (Date.now()-S.freeMsgWindowStart>t.msgWindow*3600000) {
-    S.freeMsgCount=0; S.freeMsgWindowStart=Date.now(); saveState();
+  if (t.msgLimit === Infinity) return true;
+  if (Date.now() - S.freeMsgWindowStart > t.msgWindow * 3600000) {
+    S.freeMsgCount = 0; S.freeMsgWindowStart = Date.now(); saveState();
   }
-  return S.freeMsgCount<t.msgLimit;
+  return S.freeMsgCount < t.msgLimit;
 }
 
 function remaining() {
   const t = getTier();
-  if (t.msgLimit===Infinity) return '∞';
-  return Math.max(0,t.msgLimit-S.freeMsgCount);
+  if (t.msgLimit === Infinity) return '∞';
+  return Math.max(0, t.msgLimit - S.freeMsgCount);
 }
 
 function msgPct() {
   const t = getTier();
-  if (t.msgLimit===Infinity) return 0;
-  return Math.min(100,(S.freeMsgCount/t.msgLimit)*100);
-}
-
-function getUpgradeTier(domain) {
-  for (const [k,v] of Object.entries(TIERS)) {
-    if (v.domains.includes(domain)) return k;
-  }
-  return 'pro';
+  if (t.msgLimit === Infinity) return 0;
+  return Math.min(100, (S.freeMsgCount / t.msgLimit) * 100);
 }
 
 function toast(msg) {
@@ -409,28 +393,6 @@ const greeting = () => {
   return 'Night session.';
 };
 
-// ═══════════════════════════════════════════════════════════════
-// FOUNDER SECRET ENTRY — 5 clicks on "Capitan" logo
-// ═══════════════════════════════════════════════════════════════
-function founderClick() {
-  S.founderClicks++;
-  if (S.founderTimer) clearTimeout(S.founderTimer);
-  if (S.founderClicks >= CFG.FOUNDER_CLICKS) {
-    S.tier = 'founder';
-    S.proExpiry = Date.now() + 365 * 86400000;
-    S.founderClicks = 0;
-    S.adminAuth = false;
-    saveState();
-    toast('⚓ FOUNDER MODE ACTIVATED');
-    render();
-    return;
-  }
-  S.founderTimer = setTimeout(() => { S.founderClicks = 0; }, 2000);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// PAYMENT MODAL
-// ═══════════════════════════════════════════════════════════════
 let modalTier = 'pro';
 
 function switchModalTier(tier) {
@@ -442,44 +404,6 @@ function switchModalTier(tier) {
   document.querySelectorAll('.modal-tier-tab').forEach(b=>b.classList.toggle('active',b.dataset.tier===tier));
 }
 
-async function verifyPayment() {
-  const txid = document.getElementById('txidInput')?.value?.trim();
-  const currency = document.getElementById('cryptoCurrency')?.value;
-  if (!txid) { toast('Enter TXID'); return; }
-
-  const btn = document.getElementById('verifyPaymentBtn');
-  btn.disabled = true;
-  btn.textContent = 'Verifying...';
-
-  try {
-    const r = await fetch(API_BASE + '/api/verify-payment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ txid, currency, user_id: S.userId })
-    });
-    const data = await r.json();
-    if (data.verified) {
-      S.tier = modalTier;
-      S.proExpiry = Date.now() + 30 * 86400000;
-      S.freeMsgCount = 0;
-      saveState();
-      closeModal();
-      toast('Welcome to Capitan ' + TIERS[modalTier].name + '!');
-      render();
-    } else {
-      toast(data.message || 'Verification failed');
-    }
-  } catch (e) {
-    toast('Connection error — try again');
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Verify & Activate';
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RENDER
-// ═══════════════════════════════════════════════════════════════
 function render() {
   applyTheme();
   const app = document.getElementById('app'); app.innerHTML = '';
@@ -487,19 +411,20 @@ function render() {
   const fnd = isFounder();
   const isMobile = window.innerWidth <= 768;
 
-  // Sidebar
   const sb = document.createElement('aside');
   sb.className = `sidebar${S.sidebarCollapsed&&!isMobile?' collapsed':''}${isMobile&&S.sidebarOpen?' mobile-open':''}`;
 
   if (S.sidebarOpen || !isMobile) {
+    // Build domain nav
     const domains = ['general','finance','coding','math','quant','science'];
     let domainNav = '';
     for (const d of domains) {
       const ok = canDomain(d);
-      const needed = ok ? '' : getUpgradeTier(d).toUpperCase();
-      domainNav += `<button class="sb-nav-item${ok?'':' locked'}" ${ok?`data-cap="${d}"`:''} onclick="${ok?'':`toast('Requires ${needed}');openModal('${needed.toLowerCase()}')`}">${d.charAt(0).toUpperCase()+d.slice(1)}${!ok?`<span class="pro-chip">${needed}</span>`:''}</button>`;
+      const needed = !ok ? Object.entries(TIERS).find(([,v])=>v.domains.includes(d))?.[0]?.toUpperCase() : '';
+      domainNav += `<button class="sb-nav-item${ok?'':' locked'}" ${ok?`data-cap="${d}"`:''} onclick="${ok?'':`toast('Requires ${needed}');openModal('${(needed||'PRO').toLowerCase()}')`}">${d.charAt(0).toUpperCase()+d.slice(1)}${!ok?`<span class="pro-chip">${needed}</span>`:''}</button>`;
     }
 
+    // Build tools nav
     let toolsNav = '';
     if (canTool('workspace')) toolsNav += '<button class="sb-nav-item" id="btnWorkspace">Workspace</button>';
     if (canTool('memory')) toolsNav += '<button class="sb-nav-item" id="btnMemory">Memory</button>';
@@ -519,7 +444,7 @@ function render() {
       <div class="sb-scroll">
         ${tier.msgLimit!==Infinity?`
         <div class="sb-limit">
-          <div class="sb-limit-row"><span>${tier.badge} TIER</span><span>${remaining()}/${tier.msgLimit} msgs</span></div>
+          <div class="sb-limit-row"><span>${tier.badge} TIER</span><span>${remaining()}/${tier.msgLimit}</span></div>
           <div class="sb-limit-track"><div class="sb-limit-fill" style="width:${msgPct()}%"></div></div>
         </div>`:''}
         <div class="sb-section" style="padding:6px 10px 4px">
@@ -532,285 +457,7 @@ function render() {
           <button class="sb-nav-item" id="btnTheme">Theme — ${S.theme==='dark'?'Dark':'Light'}</button>
           <button class="sb-nav-item" id="btnPrivacy">Privacy</button>
           <button class="sb-nav-item" id="btnTerms">Terms</button>
-          <button class="sb-nav-item" id="btnTrust">Trust Center</button>
         </div>
       </div>
       <div class="sb-bottom">
-        ${S.tier==='free'?`<button class="btn-upgrade" id="btnUpgrade">UPGRADE — $6/MO</button>`:S.tier==='plus'?`<div class="sb-tier-badge plus">PLUS · ${remaining()} left</div><button class="btn-upgrade" id="btnUpgradePro">GO PRO — $17/MO</button>`:`<div class="sb-tier-badge ${tier.css}">${tier.badge}${fnd?' · ADMIN':''}</div>`}
-        <div class="sb-footer-links"><a href="#" id="linkPrivacy">Privacy</a><a href="#" id="linkTerms">Terms</a><a href="mailto:${CFG.EMAIL}">Support</a></div>
-        <div class="sb-company">CLOSEAI Technologies</div>
-      </div>`;
-  }
-  app.appendChild(sb);
-
-  // Main
-  const main = document.createElement('main'); main.className = 'main';
-  const locked = !canMessage();
-  main.innerHTML = `
-    <div class="chat-wrap">
-      <div class="chat-messages" id="chatMessages"></div>
-      <div class="input-area">
-        <div class="input-meta">
-          <div class="model-tabs" id="modelTabs">
-            ${S.models.map(m=>`<button class="model-tab${S.selectedModel===m.id?' active':''}" data-model="${m.id}">${m.name}</button>`).join('')}
-          </div>
-        </div>
-        <div class="input-box">
-          <input class="input-field" type="text" id="chatInput" placeholder="${locked?'Limit reached — upgrade to continue':'Ask anything...'}" ${S.streaming||locked?'disabled':''} autocomplete="off">
-          <button class="send-btn" id="sendBtn" ${S.streaming||locked?'disabled':''}>
-            <svg viewBox="0 0 14 14" fill="none"><path d="M1 7L13 7M8 2.5L13 7L8 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-        <div class="input-hint">${locked?'<span onclick="openModal(\'plus\')">Upgrade to continue →</span>':'Return to send · Capitan AI may make errors'}</div>
-      </div>
-    </div>`;
-  app.appendChild(main);
-
-  bindEvents(); renderMessages();
-}
-
-function renderMessages() {
-  const el = document.getElementById('chatMessages'); if (!el) return;
-  const tier = getTier();
-
-  if (!S.messages.length) {
-    const pro = isPro();
-    const plus = S.tier==='plus';
-    el.innerHTML = `<div class="welcome">
-      <div class="welcome-eyebrow">${tier.badge} TIER · Institutional Intelligence</div>
-      <h1>${greeting()}</h1>
-      <p class="welcome-sub">${tier.msgLimit===Infinity?'Unlimited access. All tools unlocked.':`${remaining()} messages remaining this session.`}</p>
-      <div class="welcome-pills">
-        <button class="welcome-pill" onclick="sendMessage('Analyze market trends and generate insights')">Finance</button>
-        <button class="welcome-pill${canDomain('coding')?'':' locked'}" onclick="${canDomain('coding')?"sendMessage('Write production code with tests and documentation')":`toast('Requires PLUS');openModal('plus')`}">Coding${canDomain('coding')?'':' · Plus'}</button>
-        <button class="welcome-pill${canDomain('math')?'':' locked'}" onclick="${canDomain('math')?"sendMessage('Prove a mathematical theorem with full rigor')":`toast('Requires PLUS');openModal('plus')`}">Math${canDomain('math')?'':' · Plus'}</button>
-        <button class="welcome-pill${canDomain('quant')?'':' locked'}" onclick="${canDomain('quant')?"sendMessage('Build a Monte Carlo simulation for portfolio risk')":`toast('Requires PRO');openModal('pro')`}">Quant${canDomain('quant')?'':' · Pro'}</button>
-        <button class="welcome-pill${canDomain('science')?'':' locked'}" onclick="${canDomain('science')?"sendMessage('Explain CRISPR mechanism from first principles')":`toast('Requires PRO');openModal('pro')`}">Science${canDomain('science')?'':' · Pro'}</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  el.innerHTML = S.messages.map((m,i) => {
-    if (m.role==='user') return `<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`;
-    const isLast = i===S.messages.length-1, content=m.content||'';
-    return `<div class="msg ai">
-      <div class="msg-ai-meta"><span class="msg-ai-label">CAPITAN AI</span><span class="msg-model-chip">${S.models.find(x=>x.id===S.selectedModel)?.name||'Balanced'}</span></div>
-      ${isLast&&!content?`<div class="thinking-wrap"><div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div><span class="thinking-text">Thinking</span></div>`:`<div class="msg-ai-body"><div class="msg-content">${fmt(content)}</div><div class="msg-actions"><button class="msg-action-btn" onclick="copyMsg('${escAttr(content)}')">Copy</button><button class="msg-action-btn" onclick="retryMsg()">Retry</button>${isPro()?'<button class="msg-action-btn" onclick="exportMsg()">Export</button>':''}<button class="msg-action-btn" onclick="saveMsg('${escAttr(content.substring(0,100))}')">Save</button></div><div class="msg-disclaimer">CAPITAN AI may produce errors. Verify important information.</div></div>`}
-    </div>`;
-  }).join('');
-  el.scrollTop = el.scrollHeight;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// API CALLS
-// ═══════════════════════════════════════════════════════════════
-async function callAPI(messages) {
-  try {
-    const r = await fetch(API_BASE + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, user_id: S.userId, model: S.selectedModel })
-    });
-    if (r.ok) {
-      const data = await r.json();
-      return data.content;
-    }
-  } catch(e) {}
-
-  // Retry after 3s (Render wake-up)
-  await new Promise(r=>setTimeout(r,3000));
-  try {
-    const r = await fetch(API_BASE + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, user_id: S.userId, model: S.selectedModel })
-    });
-    if (r.ok) {
-      const data = await r.json();
-      return data.content;
-    }
-  } catch(e) {}
-
-  return null;
-}
-
-async function sendMessage(content) {
-  const input = document.getElementById('chatInput');
-  const text = content || input?.value?.trim();
-  if (!text || S.streaming) return;
-
-  if (!canMessage()) { toast('Limit reached — upgrade to continue'); openModal(S.tier==='free'?'plus':'pro'); return; }
-
-  // Block Pro domains for lower tiers
-  const domainChecks = {
-    coding: /\b(code|python|javascript|algorithm|function|api|program|software|app|website|debug|refactor)\b/i,
-    math: /\b(prove|proof|theorem|math|equation|calculus|algebra|geometry|derivative|integral)\b/i,
-    quant: /\b(quant|monte carlo|stochastic|option pricing|black.scholes|var|cvar|sharpe|backtest)\b/i,
-    science: /\b(crispr|dna|physics|chemistry|biology|neuroscience|gene|molecule|particle)\b/i
-  };
-
-  for (const [domain, pattern] of Object.entries(domainChecks)) {
-    if (!canDomain(domain) && pattern.test(text)) {
-      const needed = getUpgradeTier(domain);
-      toast(`'${domain}' requires ${needed.toUpperCase()} tier`);
-      openModal(needed);
-      return;
-    }
-  }
-
-  S.messages.push({ id:uid(), role:'user', content:text });
-  const aiMsg = { id:uid(), role:'assistant', content:'' };
-  S.messages.push(aiMsg);
-  S.streaming = true;
-  if (input) { input.value = ''; input.blur(); }
-  S.freeMsgCount++;
-  saveState();
-  render();
-
-  const msgs = S.messages.filter(m=>m.content).map(m=>({role:m.role,content:m.content}));
-  const result = await callAPI(msgs);
-  aiMsg.content = result || 'Server waking up — please try again. Support: ' + CFG.EMAIL;
-  S.streaming = false;
-  render();
-}
-
-function copyMsg(t) { navigator.clipboard.writeText(t).then(()=>toast('Copied')); }
-function retryMsg() {
-  if (S.messages.length<2) return;
-  const last = [...S.messages].reverse().find(m=>m.role==='user');
-  S.messages = S.messages.slice(0,-2);
-  if (last) sendMessage(last.content);
-}
-function saveMsg(c) {
-  const id = mid();
-  S.memories.push({id:uid(),memId:id,content:c,active:true});
-  saveState();
-  toast('Saved · '+id);
-}
-function exportMsg() {
-  const text = S.messages.map(m=>`**${m.role==='user'?'You':'CAPITAN AI'}:**\n${m.content}\n`).join('\n');
-  navigator.clipboard.writeText(text).then(()=>toast('Exported to clipboard'));
-}
-
-// ═══════════════════════════════════════════════════════════════
-// EVENTS
-// ═══════════════════════════════════════════════════════════════
-function bindEvents() {
-  const pro = isPro(), fnd = isFounder();
-
-  document.getElementById('toggleCollapse')?.addEventListener('click',()=>{S.sidebarCollapsed=!S.sidebarCollapsed;render();});
-  document.getElementById('mobileMenuBtn')?.addEventListener('click',()=>{S.sidebarOpen=!S.sidebarOpen;render();});
-
-  // FOUNDER SECRET ENTRY
-  document.getElementById('founderSecret')?.addEventListener('click', founderClick);
-
-  document.getElementById('btnNewChat')?.addEventListener('click',()=>{S.messages=[];render();});
-  document.getElementById('btnChat')?.addEventListener('click',()=>render());
-
-  document.querySelectorAll('[data-cap]').forEach(b=>{
-    b.addEventListener('click',()=>{
-      const caps = {
-        general:'Explore a topic across multiple domains',
-        finance:'Analyze market trends and generate investment insights',
-        coding:'Write production code with tests and documentation',
-        math:'Prove a mathematical theorem with full rigor',
-        quant:'Build a Monte Carlo simulation',
-        science:'Explain from first principles'
-      };
-      sendMessage(caps[b.dataset.cap]||'Explore');
-    });
-  });
-
-  document.querySelectorAll('.model-tab').forEach(t=>{
-    t.addEventListener('click',()=>{
-      S.selectedModel=t.dataset.model;
-      document.querySelectorAll('.model-tab').forEach(x=>x.classList.toggle('active',x===t));
-    });
-  });
-
-  document.getElementById('chatInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
-  document.getElementById('sendBtn')?.addEventListener('click',()=>sendMessage());
-
-  document.getElementById('btnTheme')?.addEventListener('click',()=>{S.theme=S.theme==='dark'?'light':'dark';saveState();render();});
-  document.getElementById('btnUpgrade')?.addEventListener('click',()=>openModal('plus'));
-  document.getElementById('btnUpgradePro')?.addEventListener('click',()=>openModal('pro'));
-
-  document.getElementById('verifyPaymentBtn')?.addEventListener('click',verifyPayment);
-  document.getElementById('closeModal')?.addEventListener('click',closeModal);
-
-  // Pro tools
-  if (pro) {
-    document.getElementById('btnWorkspace')?.addEventListener('click',()=>{
-      const name = prompt('Workspace name:');
-      if (name) toast('Workspace "'+name+'" created');
-    });
-    document.getElementById('btnMemory')?.addEventListener('click',()=>{
-      const list = S.memories.map(m=>`${m.memId}: ${(m.content||'').substring(0,50)}...`).join('\n');
-      const add = prompt(`Memories:\n${list}\n\nAdd new memory:`);
-      if (add) { const id=mid(); S.memories.push({id:uid(),memId:id,content:add,active:true}); saveState(); toast('Saved · '+id); }
-    });
-    document.getElementById('btnAPIKeys')?.addEventListener('click',()=>{
-      if (!S.apiKeys.capitan) S.apiKeys.capitan = 'cap_'+uid()+uid().toLowerCase();
-      saveState();
-      prompt('Your API Key (copy it):', S.apiKeys.capitan);
-      if (confirm('Rotate API key?')) { S.apiKeys.capitan='cap_'+uid()+uid().toLowerCase(); saveState(); toast('Key rotated'); }
-    });
-    document.getElementById('btnExport')?.addEventListener('click',exportMsg);
-    document.getElementById('btnPromptLib')?.addEventListener('click',()=>{
-      const prompts = [
-        {title:'Investment Memo',text:'Generate investment memo for {{TICKER}}'},
-        {title:'Code Review',text:'Review this {{LANGUAGE}} code:\n```\n{{CODE}}\n```'},
-        {title:'Market Research',text:'Research {{SECTOR}} market'},
-      ];
-      const list = prompts.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
-      const choice = parseInt(prompt(`Prompt Library:\n${list}\n\nSelect number:`));
-      if (choice && prompts[choice-1]) {
-        let p = prompts[choice-1].text;
-        const vars = p.match(/\{\{(\w+)\}\}/g)||[];
-        for (const v of vars) {
-          const val = prompt(`Enter ${v.replace(/[{}]/g,'')}:`);
-          if (val) p = p.replace(v,val);
-        }
-        sendMessage(p);
-      }
-    });
-  }
-
-  // Admin (Founder only)
-  if (fnd) {
-    document.getElementById('btnAdmin')?.addEventListener('click',()=>{
-      if (!S.adminAuth) {
-        const code = prompt('Admin access code:');
-        if (code===CFG.ADMIN_CODE) { S.adminAuth=true; saveState(); toast('Admin access granted'); render(); }
-        else { toast('Invalid code'); return; }
-      }
-      const mems = S.memories.map(m=>`${m.memId}: ${m.content}`).join('\n');
-      alert('ADMIN MEMORY PANEL\n\n'+mems+'\n\nTotal: '+S.memories.length+' entries\nTier: '+S.tier.toUpperCase());
-    });
-  }
-
-  // Policy modals
-  const policy = (t,c) => alert(t+'\n\n'+c+'\n\n'+CFG.EMAIL);
-  document.getElementById('btnPrivacy')?.addEventListener('click',()=>policy('Privacy Policy','End-to-end encrypted. No data sold. You own your inputs and outputs.'));
-  document.getElementById('btnTerms')?.addEventListener('click',()=>policy('Terms & Conditions','Free: 20 msg/7hrs. Plus $6: 30 msg/7hrs. Pro $17: Unlimited.'));
-  document.getElementById('btnTrust')?.addEventListener('click',()=>policy('Trust Center','SOC 2 Type II. Encrypted at rest and in transit. Regular audits.'));
-  document.getElementById('linkPrivacy')?.addEventListener('click',e=>{e.preventDefault();policy('Privacy','End-to-end encrypted.');});
-  document.getElementById('linkTerms')?.addEventListener('click',e=>{e.preventDefault();policy('Terms','Free/Plus/Pro tiers.');});
-
-  // Mobile swipe
-  let ts=0;
-  document.querySelector('.main')?.addEventListener('touchstart',e=>{ts=e.touches[0].clientX;},{passive:true});
-  document.querySelector('.main')?.addEventListener('touchend',e=>{if(e.changedTouches[0].clientX-ts>70&&!S.sidebarOpen){S.sidebarOpen=true;render();}});
-}
-
-function openModal(tier='pro') {
-  switchModalTier(tier);
-  document.getElementById('paymentModal').classList.add('open');
-}
-function closeModal() { document.getElementById('paymentModal').classList.remove('open'); }
-
-applyTheme(); render();
-</script>
-</body>
-</html>
+        ${S.tier==='free'?`<button class="btn-upgrade" id="btnUpgrade">UPGRADE — $6/MO</button>`:S.tier==='plus'?`<div class="sb-tier-badge plus">PLUS</div><button class="btn-upgrade" id="btnUpgrade">GO
