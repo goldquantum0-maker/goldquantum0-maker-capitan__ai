@@ -1155,6 +1155,10 @@ const CFG = {
   ADMIN_CODE: 'Osinachi@350'
 };
 
+// ═══════════════════════ CONNECTED TO RENDER API ═══════════════════════
+const API_BASE = 'https://goldquantum0-capitan-ai-1.onrender.com';
+// ═══════════════════════════════════════════════════════════════════════
+
 const uid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const mid = () => 'mem_' + uid();
 
@@ -1192,7 +1196,7 @@ function defaultState() {
       { id: 'deep', name: 'Deep', desc: 'Full reasoning' }
     ],
     apiKeys: {}, freeMsgCount: 0, freeMsgWindowStart: Date.now(),
-    marketData: genMarket(), marketNews: genNews(), adminAuth: false
+    adminAuth: false
   };
 }
 
@@ -1201,18 +1205,15 @@ function loadState() {
     const raw = localStorage.getItem('capitan_elite_v3');
     if (raw) {
       const p = JSON.parse(raw);
-      // STRICT PRO EXPIRY CHECK
       if ((p.tier === 'pro' || p.tier === 'founder') && p.proExpiry && Date.now() > p.proExpiry) {
         p.tier = 'free'; p.proExpiry = null;
         p.workspace = null; p.workspaces = []; p.members = []; p.prompts = [];
         p.adminAuth = false;
       }
-      // NEVER allow pro features for free tier
       if (p.tier === 'free') {
         p.workspace = null; p.workspaces = []; p.members = []; p.prompts = [];
         p.adminAuth = false;
       }
-      // NEVER allow admin for non-founder
       if (p.tier !== 'founder') {
         p.adminAuth = false;
       }
@@ -1237,33 +1238,6 @@ function saveState() {
     };
     localStorage.setItem('capitan_elite_v3', JSON.stringify(d));
   } catch {}
-}
-
-function genMarket() {
-  return [
-    { sym: 'SPX', name: 'S&P 500', price: 5872.34, chg: 0.62 },
-    { sym: 'NDX', name: 'NASDAQ', price: 20451.78, chg: 1.15 },
-    { sym: 'BTC', name: 'Bitcoin', price: 89342.50, chg: -2.31 },
-    { sym: 'ETH', name: 'Ethereum', price: 4125.60, chg: -1.87 },
-    { sym: 'GLD', name: 'Gold', price: 2341.20, chg: 0.45 },
-    { sym: 'CL1', name: 'Crude Oil', price: 78.93, chg: -0.82 }
-  ];
-}
-function genNews() {
-  return [
-    { hl: 'Equities rally on earnings beat', time: '2m' },
-    { hl: 'AI infrastructure spend accelerates', time: '9m' },
-    { hl: 'Fed signals measured rate path', time: '17m' },
-    { hl: 'Quantum error correction milestone', time: '24m' },
-    { hl: 'Biotech M&A activity intensifies', time: '31m' }
-  ];
-}
-function refreshMarket() {
-  S.marketData = S.marketData.map(d => ({
-    ...d,
-    price: d.price * (1 + (Math.random() - 0.5) * 0.012),
-    chg: d.chg + (Math.random() - 0.5) * 0.25
-  }));
 }
 
 const S = loadState();
@@ -1320,7 +1294,6 @@ function requirePro() {
   return true;
 }
 
-/* Founder easter egg — ONLY way to get Pro without payment */
 function founderClick() {
   S.founderClicks++;
   if (S.founderTimer) clearTimeout(S.founderTimer);
@@ -1431,14 +1404,6 @@ function render() {
     ${fnd ? navItem('btnAdmin', iconAdmin, `Admin${S.adminAuth ? ' ✓' : ''}`, false) : ''}
   `;
 
-  const marketTickers = pro ? S.marketData.map(d => `
-    <div class="sb-market-item" onclick="sendMessage('${d.name} ${d.sym}')">
-      <span class="sb-market-sym">${d.sym}</span>
-      <span class="sb-market-price">${d.price < 10 ? d.price.toFixed(4) : d.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
-      <span class="sb-market-chg ${d.chg >= 0 ? 'pos' : 'neg'}">${d.chg >= 0 ? '+' : ''}${d.chg.toFixed(2)}%</span>
-    </div>
-  `).join('') : '';
-
   const memIdDisplay = pro && mem0 ? `
     <div style="padding:0 18px 8px">
       <span style="font-family:var(--font-mono);font-size:8px;color:var(--ink-4);letter-spacing:0.08em;cursor:pointer" onclick="navigator.clipboard.writeText('${mem0.memId}');toast('Copied')">MEM ${mem0.memId}</span>
@@ -1481,10 +1446,6 @@ function render() {
       <div class="sb-divider"></div>
 
       ${pro ? mkSection('tools', 'Tools', toolsNav) : ''}
-      ${pro ? mkSection('markets', 'Markets', `<div style="padding:0 0 4px">${marketTickers}</div>`) : ''}
-      ${pro ? mkSection('news', 'News', `<div style="padding:0 0 4px">${S.marketNews.map(n => `
-        <div style="padding:7px 8px;font-size:11px;color:var(--ink-2);cursor:pointer;border-bottom:1px solid var(--edge);line-height:1.5;font-family:var(--font-body)" onclick="sendMessage('${esc(n.hl)}')">${n.hl}<span style="display:block;font-family:var(--font-mono);font-size:8px;color:var(--ink-3);margin-top:2px">${n.time} ago</span></div>
-      `).join('')}</div>`) : ''}
 
       <div class="sb-divider"></div>
 
@@ -1598,26 +1559,12 @@ function renderMessages() {
 
     const isLast = i === S.messages.length - 1;
     const content = m.content || '';
-    let extra = '';
-
-    if (m.marketWidget) {
-      extra += `<div class="market-grid">${m.marketWidget.map(d => `
-        <div class="market-card">
-          <div class="market-card-sym">${d.sym}</div>
-          <div class="market-card-price">${d.price < 10 ? d.price.toFixed(4) : d.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
-          <div class="market-card-chg ${d.chg >= 0 ? 'pos' : 'neg'}">${d.chg >= 0 ? '+' : ''}${d.chg.toFixed(2)}%</div>
-        </div>`).join('')}</div>`;
-    }
-    if (m.citations) {
-      extra += `<div class="source-chips">${m.citations.map(c => `<span class="source-chip">${esc(c)}</span>`).join('')}</div>`;
-    }
 
     return `<div class="msg ai">
       <div class="msg-ai-meta">
         ${SIGIL_SVG}
         <span class="msg-ai-label">Capitan AI</span>
         <span class="msg-model-chip">${model.name}</span>
-        ${m.confidence ? `<span class="msg-confidence">${m.confidence.toUpperCase()}</span>` : ''}
       </div>
       ${isLast && !content
         ? `<div class="thinking-wrap">
@@ -1629,7 +1576,7 @@ function renderMessages() {
             <span class="thinking-text">Thinking</span>
           </div>`
         : `<div class="msg-ai-body">
-            <div class="msg-content">${fmt(content)}${extra}</div>
+            <div class="msg-content">${fmt(content)}</div>
             ${content ? `
               <div class="msg-actions">
                 <button class="msg-action-btn" onclick="copyMsg('${escAttr(content)}')">Copy</button>
@@ -1648,7 +1595,7 @@ function renderMessages() {
 }
 
 /* ═══════════════════════════════════════
-   SEND / SIMULATE
+   SEND — REAL API CALL TO RENDER
    ═══════════════════════════════════════ */
 async function sendMessage(content) {
   const input = document.getElementById('chatInput');
@@ -1666,58 +1613,66 @@ async function sendMessage(content) {
   const aiMsg = { id: uid(), role: 'assistant', content: '' };
   S.messages.push(aiMsg);
   S.streaming = true;
-  if (input) {
-    input.value = '';
-    input.blur();
-  }
+  if (input) { input.value = ''; input.blur(); }
   if (!isPro()) { S.freeMsgCount++; saveState(); }
 
   render();
-  await simulate(aiMsg, text);
+
+  try {
+    const response = await fetch(API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: S.messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })),
+        stream: true,
+        user_id: 'user_' + uid(),
+        model: S.selectedModel
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'API error' }));
+      throw new Error(err.detail || 'API error');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulated = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.done) {
+              S.streaming = false;
+              render();
+              return;
+            }
+            if (data.content) {
+              accumulated = data.content;
+              aiMsg.content = accumulated;
+              renderMessages();
+            }
+          } catch (e) {}
+        }
+      }
+    }
+  } catch (e) {
+    aiMsg.content = 'Unable to connect to CAPITAN AI. Please try again. Support: ' + CFG.EMAIL;
+    toast('Connection error');
+  }
+
   S.streaming = false;
   render();
 }
 
-async function simulate(aiMsg, query) {
-  const delays = { quick: 200, balanced: 450, deep: 800 };
-  await sleep(delays[S.selectedModel] || 450);
-
-  const q = query.toLowerCase();
-  let response = '';
-
-  if (/\b(price|market|stock|spx|ndx|btc|eth|gold|oil)\b/i.test(q) && isPro()) {
-    refreshMarket();
-    aiMsg.marketWidget = S.marketData.slice(0, 4);
-    const trend = S.marketData[0].chg >= 0;
-    response = `**Market Overview**\n\nEquities are ${trend ? 'advancing on solid volume' : 'under moderate selling pressure'} heading into the session. Risk assets are ${S.marketData[2].chg >= 0 ? 'recovering' : 'correcting'}, consistent with recent positioning data.\n\nKey levels to watch remain the 50- and 200-day moving averages. Macro catalysts remain the primary driver near term.`;
-    aiMsg.confidence = 'high';
-    aiMsg.citations = ['Bloomberg Terminal', 'Reuters Markets'];
-  } else if (q.includes('quantum') || q.includes('qubit')) {
-    response = `**Quantum Mechanics Primer**\n\nSuperposition: |ψ⟩ = α|0⟩ + β|1⟩ where |α|² + |β|² = 1\n\nEntanglement creates non-local correlations that enable exponential parallelism. Universal gate sets require Hadamard, CNOT, and T-gates. Fault-tolerant thresholds now exceed 99.9% fidelity on leading hardware.\n\nPractical advantage remains ~5 years out for most commercial applications.`;
-    aiMsg.confidence = 'high';
-  } else if (q.includes('code') || q.includes('python') || q.includes('algorithm')) {
-    response = `**Implementation**\n\n\`\`\`python\ndef solve(data: list) -> list:\n    return [x for x in data if x > threshold]\n\`\`\`\n\nTime complexity O(n), space O(k) where k is result size. Handle edge cases: empty input returns \`[]\`. Consider generator for streaming large datasets.`;
-    aiMsg.confidence = 'high';
-  } else {
-    const responses = [
-      `**Analysis**\n\nThe fundamental structure here reveals several interconnected patterns worth examining. The primary driver appears to be a combination of structural and cyclical forces—distinguishing between them is key to forming a durable thesis.\n\nI'd suggest starting with first principles before layering in the empirical evidence. What aspect would you like to go deeper on?`,
-      `**Synthesis**\n\nAcross the relevant literature and current data, a coherent picture emerges. The core tension is between short-term friction and long-term structural tailwinds—a dynamic that tends to resolve within 12–18 months in analogous historical cases.\n\nThe edge here lies in identifying the inflection point. What's your current angle on this?`,
-      `**Exploration**\n\nThis is a well-framed question with meaningful depth beneath it. The conventional wisdom holds, but there are important second-order effects that tend to be underweighted.\n\nLet me know if you want a formal breakdown, a literature review angle, or a more tactical framing.`
-    ];
-    response = responses[Math.floor(Math.random() * responses.length)];
-    aiMsg.confidence = S.selectedModel === 'deep' ? 'high' : 'medium';
-  }
-
-  const words = response.split(' ');
-  for (const w of words) {
-    aiMsg.content = (aiMsg.content || '') + w + ' ';
-    renderMessages();
-    await sleep(6 + Math.random() * 14);
-  }
-  aiMsg.content = response;
-}
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 const copyMsg = t => navigator.clipboard.writeText(t).then(() => toast('Copied'));
 function retryMsg() {
   if (S.messages.length < 2) return;
@@ -1893,7 +1848,7 @@ function bindEvents() {
     });
   }
 
-  // ADMIN — STRICTLY FOUNDER ONLY — CODE: Osinachi@350
+  // ADMIN — STRICTLY FOUNDER ONLY
   if (fnd) {
     document.getElementById('btnAdmin')?.addEventListener('click', () => {
       if (S.tier !== 'founder') { toast('Access denied'); return; }
@@ -1994,7 +1949,6 @@ function closeGenericModal() {
   document.getElementById('genericModal')?.remove();
 }
 
-// ONLY PAYMENT OR FOUNDER EASTER EGG CAN ACTIVATE PRO
 function activatePro() {
   const cardNumber = document.getElementById('cardNumber')?.value?.trim();
   if (!cardNumber || cardNumber.length < 10) {
@@ -2017,8 +1971,6 @@ function activatePro() {
 applyTheme();
 render();
 
-if (isPro()) setInterval(() => { refreshMarket(); }, 30000);
-
 window.sendMessage = sendMessage;
 window.toast = toast;
 window.openModal = openModal;
@@ -2038,6 +1990,7 @@ window.requirePro = requirePro;
 window.isPro = isPro;
 
 console.log('%cCAPITAN AI — Elite Edition v2.0', 'font-family:monospace;font-weight:bold;font-size:14px;color:#c9a96e');
+console.log('%cConnected to: ' + API_BASE, 'font-family:monospace;font-size:10px;color:#8a7050');
 console.log('%cCLOSEAI Technologies — ' + CFG.EMAIL, 'font-family:monospace;font-size:10px;color:#8a7050');
 </script>
 </body>
