@@ -1,915 +1,1217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CLOSEAI — Institutional Workspace</title>
-<style>
-/* ═══════════════════════════════════════════════════════════ */
-/* CLOSEAI UI ENGINE v24.0 — Ultra-Compact High-Density Design   */
-/* optimized for cloudflare pages & edge execution            */
-/* ═══════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700;800&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CAPITAN AI — Premium Workspace</title>
+    
+    <!-- Premium Geometric & Editorial Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 1. ARCHITECTURAL DESIGN SYSTEM VARIABLES --- */
+        :root {
+            /* Organic Warm Dark Canvas */
+            --bg-void: #0b0c0e;
+            --bg-canvas: #111317;
+            --bg-surface: #181b22;
+            --bg-surface-raised: #21252e;
+            --border-warm: #262b37;
+            --border-focus: #3f4659;
+            
+            /* High-Fidelity Soft Text Hierarchy */
+            --text-pure: #ffffff;
+            --text-primary: #f2f4f7;
+            --text-secondary: #9da4b2;
+            --text-muted: #565f73;
+            
+            /* High-Fidelity Accents */
+            --accent-indigo: #6366f1;   /* Soft Sapphire Indigo */
+            --accent-emerald: #10b981;  /* Sage Mint Green */
+            --accent-coral: #ef4444;    /* Warm Coral Red */
+            
+            /* Layout Scaling Metrics */
+            --radius-interactive: 12px;
+            --radius-card: 16px;
+            --radius-pill: 30px;
+            --sidebar-width: 260px;
+            --context-width: 350px;
+            --transition-fluid: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
 
-:root {
-  --bg-main: #0a0a0a;
-  --bg-surface: #121212;
-  --bg-surface-elevated: #1a1a1a;
-  --bg-action: #222222;
-  --border-subtle: #1c1c1c;
-  --border-muted: #262626;
-  --border-active: #3a3a3a;
-  
-  --text-primary: #f5f5f5;
-  --text-secondary: #a3a3a3;
-  --text-muted: #666666;
-  --accent-gold: #d4af37;
-  --accent-blue: #2f80ed;
-  
-  --font-sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'Geist Mono', monospace;
-  
-  --radius-lg: 10px;
-  --radius-md: 6px;
-  --radius-sm: 4px;
-  
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --sidebar-width: 260px;
-}
+        /* Organic Warm Paper Light Mode Overrides */
+        [data-theme="light"] {
+            --bg-void: #e3e5e9;
+            --bg-canvas: #ebecee;
+            --bg-surface: #ffffff;
+            --bg-surface-raised: #f3f4f7;
+            --border-warm: #d5d8e0;
+            --border-focus: #a8afbe;
+            
+            --text-pure: #000000;
+            --text-primary: #181a1e;
+            --text-secondary: #585f6d;
+            --text-muted: #919aa9;
+            
+            --accent-indigo: #4f46e5;
+        }
 
-:root.light {
-  --bg-main: #fcfcfc;
-  --bg-surface: #f4f4f5;
-  --bg-surface-elevated: #e4e4e7;
-  --bg-action: #dbdbdb;
-  --border-subtle: #e4e4e7;
-  --border-muted: #d4d4d8;
-  --border-active: #a1a1aa;
-  
-  --text-primary: #09090b;
-  --text-secondary: #52525b;
-  --text-muted: #a1a1aa;
-}
+        /* --- 2. GLOBAL RESET AND OVERRIDES --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-void);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
 
-body {
-  background: var(--bg-main);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  line-height: 1.5;
-  letter-spacing: -0.01em;
-  overflow: hidden;
-  height: 100vh; height: 100dvh;
-  -webkit-font-smoothing: antialiased;
-}
+        /* Clean Customized Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-warm);
+            border-radius: var(--radius-pill);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-focus);
+        }
 
-#app { display: flex; height: 100vh; height: 100dvh; width: 100vw; }
+        /* --- 3. MAIN APP SHELL GRID LAYOUT --- */
+        .app-shell {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr var(--context-width);
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-canvas);
+            overflow: hidden;
+            position: relative;
+        }
 
-/* Scrollbar System */
-::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-muted); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+        /* --- 4. PERSISTENT NAVIGATION SIDEBAR --- */
+        .sidebar {
+            background-color: var(--bg-void);
+            border-right: 1px solid var(--border-warm);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            justify-content: space-between;
+            z-index: 20;
+        }
 
-/* ═══════════════════════════════════════════════════════════ */
-/* SIDEBAR ARCHITECTURE                                        */
-/* ═══════════════════════════════════════════════════════════ */
-.sidebar {
-  width: var(--sidebar-width);
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  padding: 12px;
-  gap: 8px;
-  z-index: 100;
-  transition: transform var(--transition-fast);
-  overflow-y: auto;
-}
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
 
-.sb-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 4px 8px;
-  border-bottom: 1px solid var(--border-subtle);
-}
+        .brand-logo {
+            font-size: 20px;
+            filter: grayscale(1);
+            opacity: 0.5;
+            transition: var(--transition-fluid);
+        }
 
-.sb-logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
-  cursor: pointer;
-}
+        .brand-header:hover .brand-logo {
+            filter: grayscale(0);
+            opacity: 1;
+            transform: scale(1.05);
+        }
 
-.sb-toggle-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-}
-.sb-toggle-btn:hover { background: var(--bg-surface-elevated); color: var(--text-primary); }
+        .brand-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            color: var(--text-pure);
+        }
 
-/* Identity & Authentication Block */
-.auth-block {
-  background: var(--bg-main);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+        .nav-group {
+            margin-top: 36px;
+            flex-grow: 1;
+        }
 
-.auth-user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+        .nav-label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding-left: 8px;
+            display: block;
+        }
 
-.auth-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--border-active);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 10px;
-}
+        .workspace-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm);
+            border-radius: var(--radius-interactive);
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: var(--transition-fluid);
+            margin-bottom: 8px;
+        }
 
-.auth-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.auth-name { font-weight: 600; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.auth-status { font-size: 9px; color: var(--text-muted); font-family: var(--font-mono); }
+        .workspace-card:hover, .workspace-card.active {
+            border-color: var(--border-focus);
+            background-color: var(--bg-surface-raised);
+        }
 
-.auth-action-btn {
-  width: 100%;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-muted);
-  color: var(--text-primary);
-  padding: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all var(--transition-fast);
-}
-.auth-action-btn:hover { border-color: var(--border-active); background: var(--bg-action); }
-.auth-action-btn.google-btn { background: #ffffff; color: #000000; border: 1px solid #e4e4e7; }
-.auth-action-btn.google-btn:hover { background: #f4f4f5; }
+        .workspace-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background-color: var(--bg-void);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--accent-indigo);
+            border: 1px solid var(--border-warm);
+        }
 
-/* Navigation & Sub-menus */
-.menu-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
+        .workspace-info {
+            display: flex;
+            flex-direction: column;
+        }
 
-.menu-label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 6px 8px;
-  letter-spacing: 0.05em;
-}
+        .workspace-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
 
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-  font-size: 11px;
-  transition: all var(--transition-fast);
-}
-.menu-item:hover { background: var(--bg-surface-elevated); color: var(--text-primary); }
-.menu-item.active { background: var(--bg-action); color: var(--text-primary); font-weight: 500; }
-.menu-item .icon { font-size: 12px; width: 16px; text-align: center; opacity: 0.7; }
-.menu-item .badge { margin-left: auto; font-size: 8px; font-family: var(--font-mono); background: var(--bg-surface-elevated); padding: 1px 4px; border-radius: 3px; border: 1px solid var(--border-muted); }
+        .workspace-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
 
-/* Quick Markets Streamer */
-.market-ticker-wrap {
-  margin-top: auto;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 8px;
-}
-.market-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 6px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-.market-row:hover { background: var(--bg-surface-elevated); }
-.market-row .sym { color: var(--text-primary); font-weight: 500; }
-.market-row .val { color: var(--text-secondary); }
-.market-row .chg { font-weight: 600; }
-.market-row .chg.up { color: #22c55e; }
-.market-row .chg.down { color: #ef4444; }
+        .sidebar-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-top: 1px solid var(--border-warm);
+            padding-top: 16px;
+        }
 
-/* ═══════════════════════════════════════════════════════════ */
-/* MAIN CONTENT ENGINE                                         */
-/* ═══════════════════════════════════════════════════════════ */
-.main-view {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-main);
-  position: relative;
-  overflow: hidden;
-}
+        .tier-control-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm);
+            border-radius: var(--radius-interactive);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.workspace-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  max-width: 760px;
-  width: 100%;
-  margin: 0 auto;
-  height: 100%;
-}
+        .user-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 8px;
+        }
 
-.content-feed {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+        .user-details {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-/* Onboarding Canvas */
-.onboarding {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  text-align: center;
-  padding: 40px 20px;
-}
-.onboarding h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
-.onboarding p { color: var(--text-secondary); max-width: 36px; max-width: 380px; margin-bottom: 20px; font-size: 11px; }
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-pill);
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-emerald));
+        }
 
-.onboarding-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  max-width: 480px;
-  width: 100%;
-}
-.onboarding-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  padding: 10px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  text-align: left;
-  transition: all var(--transition-fast);
-}
-.onboarding-card:hover { border-color: var(--border-active); background: var(--bg-surface-elevated); }
-.onboarding-card .title { font-weight: 600; font-size: 11px; margin-bottom: 2px; }
-.onboarding-card .desc { color: var(--text-muted); font-size: 10px; }
+        .user-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
 
-/* Micro Message Styling */
-.bubble {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 85%;
-  animation: slideIn var(--transition-fast) ease-out;
-}
-@keyframes slideIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .tier-badge {
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: var(--transition-fluid);
+        }
 
-.bubble.user {
-  margin-left: auto;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-muted);
-  padding: 8px 12px;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 var(--radius-lg);
-}
+        /* --- 5. CENTRAL CANVAS WORKSPACE --- */
+        .main-canvas {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
 
-.bubble.ai {
-  margin-right: auto;
-  width: 100%;
-  max-width: 100%;
-  border-left: 2px solid var(--border-active);
-  padding-left: 12px;
-}
+        .canvas-header {
+            height: 64px;
+            border-bottom: 1px solid var(--border-warm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background-color: rgba(17, 19, 23, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+        }
 
-.bubble-meta {
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+        .view-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
 
-.bubble-text {
-  font-size: 12px;
-  color: var(--text-primary);
-  word-break: break-word;
-}
-.bubble-text p { margin-bottom: 6px; }
-.bubble-text p:last-child { margin-bottom: 0; }
-.bubble-text strong { font-weight: 600; color: #ffffff; }
-.bubble-text code { font-family: var(--font-mono); background: var(--bg-surface); padding: 2px 4px; border-radius: 3px; font-size: 11px; border: 1px solid var(--border-subtle); }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-/* Institutional Meta Layouts */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 8px 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-.data-table th { text-align: left; padding: 6px; background: var(--bg-surface); border-bottom: 1px solid var(--border-muted); color: var(--text-secondary); font-weight: 500; }
-.data-table td { padding: 6px; border-bottom: 1px solid var(--border-subtle); }
-.data-table tr:hover td { background: var(--bg-surface); }
+        /* Message Streaming Area */
+        .interaction-stream {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
 
-/* Console Input Engine */
-.input-bar-container {
-  padding: 12px 16px 16px;
-}
+        /* Smooth Welcoming Void Empty State */
+        .welcome-void {
+            max-width: 580px;
+            margin: auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
 
-.input-bar-inner {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 4px 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.input-bar-inner:focus-within { border-color: var(--border-active); }
+        .void-icon {
+            font-size: 32px;
+            margin-bottom: 24px;
+            filter: grayscale(1);
+            opacity: 0.3;
+            animation: pulse-slow 3s infinite ease-in-out;
+        }
 
-.input-field-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.08); opacity: 0.6; }
+        }
 
-.input-field-row input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  padding: 8px 4px;
-  outline: none;
-}
-.input-field-row input::placeholder { color: var(--text-muted); }
+        .void-heading {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-pure);
+            margin-bottom: 12px;
+            letter-spacing: -0.4px;
+        }
 
-.action-btn-group {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 4px;
-}
+        .void-subtext {
+            font-size: 14.5px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
 
-.ctrl-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-family: var(--font-mono);
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.ctrl-btn:hover { background: var(--bg-surface-elevated); color: var(--text-primary); }
+        /* Bento-Inspired Prompt Cards */
+        .suggestion-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
 
-.submit-btn {
-  background: var(--text-primary);
-  color: var(--bg-main);
-  border: none;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-}
-.submit-btn:hover { opacity: 0.9; }
+        .suggestion-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm);
+            border-radius: var(--radius-card);
+            padding: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: var(--transition-fluid);
+        }
 
-/* ═══════════════════════════════════════════════════════════ */
-/* AUTH & IDENTITY DIALOGUES                                   */
-/* ═══════════════════════════════════════════════════════════ */
-.overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(2px);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.overlay.active { display: flex; }
+        .suggestion-card:hover {
+            border-color: var(--border-focus);
+            background-color: var(--bg-surface-raised);
+            transform: translateY(-2px);
+        }
 
-.dialog {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-muted);
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 320px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.dialog h2 { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; }
-.dialog p { color: var(--text-secondary); font-size: 11px; }
+        .suggestion-meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-indigo);
+            margin-bottom: 6px;
+            display: block;
+        }
 
-.dialog input {
-  width: 100%;
-  background: var(--bg-main);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  font-size: 12px;
-  outline: none;
-}
-.dialog input:focus { border-color: var(--border-active); }
+        .suggestion-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
 
-.dialog-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 4px;
-}
-.dialog-actions button { flex: 1; padding: 8px; font-size: 11px; font-weight: 500; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid transparent; }
-.dialog-actions .primary { background: var(--text-primary); color: var(--bg-main); }
-.dialog-actions .secondary { background: transparent; border-color: var(--border-subtle); color: var(--text-secondary); }
-.dialog-actions .secondary:hover { background: var(--bg-surface-elevated); }
+        /* Fluid Conversation UI Output Blocks */
+        .message-block {
+            display: flex;
+            gap: 16px;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            animation: blockFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
-/* Global Utilities */
-.toast { position: fixed; bottom: 20px; right: 20px; background: var(--bg-surface-elevated); border: 1px solid var(--border-active); color: var(--text-primary); font-family: var(--font-mono); font-size: 10px; padding: 8px 12px; border-radius: var(--radius-md); z-index: 300; pointer-events: none; animation: fadeIn 0.2s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes blockFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-.mobile-menu-trigger {
-  display: none;
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  z-index: 90;
-}
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+            flex-shrink: 0;
+            border: 1px solid var(--border-warm);
+        }
 
-@media(max-width: 768px) {
-  .sidebar { position: fixed; left: -100%; top: 0; bottom: 0; width: 280px; box-shadow: 20px 0 60px rgba(0,0,0,0.5); }
-  .sidebar.mobile-open { left: 0; transform: translateX(0); }
-  .mobile-menu-trigger { display: block; }
-  .content-feed { padding-top: 50px; }
-}
-</style>
+        .message-avatar.assistant {
+            background-color: var(--bg-surface-raised);
+            color: var(--accent-indigo);
+        }
+
+        .message-avatar.user {
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-emerald));
+            color: var(--text-pure);
+            border: none;
+        }
+
+        .message-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message-bubble {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm);
+            border-radius: var(--radius-card);
+            padding: 16px;
+            color: var(--text-primary);
+            font-size: 14.5px;
+        }
+
+        /* Structural Technical Formatting Cards */
+        .code-container {
+            background-color: var(--bg-void);
+            border: 1px solid var(--border-warm);
+            border-radius: var(--radius-interactive);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .code-header {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-warm);
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .code-body {
+            padding: 16px;
+            overflow-x: auto;
+            color: var(--accent-emerald);
+            white-space: pre;
+        }
+
+        .math-block {
+            background-color: rgba(99, 102, 241, 0.03);
+            border-left: 3px solid var(--accent-indigo);
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            border-radius: 0 var(--radius-interactive) var(--radius-interactive) 0;
+            margin: 8px 0;
+            color: var(--text-primary);
+        }
+
+        /* --- 6. ERGONOMIC INTERACTION INPUT DOCK --- */
+        .input-dock-container {
+            padding: 0 24px 24px 24px;
+            background: linear-gradient(to top, var(--bg-canvas) 85%, transparent);
+            position: relative;
+            z-index: 10;
+        }
+
+        .input-dock {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm);
+            border-radius: var(--radius-card);
+            padding: 8px 12px;
+            transition: var(--transition-fluid);
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-dock:focus-within {
+            border-color: var(--border-focus);
+            background-color: var(--bg-surface-raised);
+        }
+
+        .textarea-wrapper {
+            width: 100%;
+        }
+
+        .main-textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 14.5px;
+            resize: none;
+            min-height: 40px;
+            max-height: 200px;
+            padding: 8px 4px;
+            line-height: 1.5;
+        }
+
+        .main-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .dock-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 6px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-warm);
+        }
+
+        .control-group-left {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dock-btn {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: var(--radius-interactive);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: var(--transition-fluid);
+        }
+
+        .dock-btn:hover {
+            background-color: var(--bg-surface-raised);
+            color: var(--text-primary);
+        }
+
+        .dock-btn.active {
+            background-color: var(--border-warm);
+            color: var(--accent-indigo);
+            font-weight: 600;
+        }
+
+        .send-btn {
+            background-color: var(--text-pure);
+            color: var(--bg-void);
+            border: none;
+            outline: none;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-interactive);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fluid);
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        .send-icon {
+            width: 14 height: 14px;
+            fill: currentColor;
+        }
+
+        /* --- 7. RIGHT ANALYTICAL METRICS PANEL --- */
+        .right-context-panel {
+            background-color: var(--bg-void);
+            border-left: 1px solid var(--border-warm);
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            z-index: 15;
+        }
+
+        .panel-section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .telemetry-bento {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-warm);
+            border-radius: var(--radius-card);
+            padding: 16px;
+        }
+
+        .asset-ticker-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-warm);
+        }
+
+        .asset-ticker-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .asset-ticker-row:first-child {
+            padding-top: 0;
+        }
+
+        .asset-identity {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .asset-symbol {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .asset-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .asset-valuation {
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .asset-change {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .change-up { color: var(--accent-emerald); }
+        .change-down { color: var(--accent-coral); }
+
+        /* Dynamic Glass Curtain for News Lockout */
+        .news-wire-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+            position: relative;
+        }
+
+        .news-lock-curtain {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 12, 14, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: var(--radius-card);
+            z-index: 5;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            border: 1px dashed var(--border-warm);
+        }
+
+        .news-lock-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-pure);
+            margin: 6px 0 2px 0;
+        }
+
+        .news-lock-text {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            max-width: 200px;
+        }
+
+        .news-stream-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            font-size: 13px;
+        }
+
+        .news-item {
+            border-left: 2px solid var(--accent-indigo);
+            padding-left: 10px;
+            animation: itemFadeIn 0.5s ease-out;
+        }
+
+        @keyframes itemFadeIn {
+            from { opacity: 0; transform: translateX(-4px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* --- 8. MOBILE DEVICE OPTIMIZATIONS (S20 CORE BREAKPOINTS) --- */
+        .mobile-nav-trigger {
+            display: none;
+        }
+
+        @media (max-width: 1200px) {
+            .app-shell {
+                grid-template-columns: var(--sidebar-width) 1fr;
+            }
+            .right-context-panel {
+                display: none; /* Accessible via overlay triggers if needed */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-shell {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: absolute;
+                left: -100%;
+                top: 0;
+                height: 100%;
+                width: 280px;
+                transition: var(--transition-fluid);
+            }
+            .sidebar.drawer-open {
+                left: 0;
+                box-shadow: 20px 0 60px rgba(0, 0, 0, 0.6);
+            }
+            .mobile-nav-trigger {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .interaction-stream {
+                padding: 20px 16px;
+            }
+            .suggestion-grid {
+                grid-template-columns: 1fr;
+            }
+            .input-dock-container {
+                padding: 0 16px 16px 16px;
+            }
+            .input-dock {
+                border-radius: var(--radius-interactive);
+                padding: 10px;
+            }
+        }
+
+        /* Structural Global Button Utilities */
+        .utility-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fluid);
+        }
+
+        .utility-btn:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-surface);
+        }
+    </style>
 </head>
 <body>
 
-<div id="app">
-  <aside class="sidebar" id="sidebar">
-    <div class="sb-header">
-      <div class="sb-logo" onclick="window.location.reload()">
-        <span>⚓</span> CLOSEAI INTERACTIVE
-      </div>
-      <button class="sb-toggle-btn" id="hideSidebarBtn">◁</button>
-    </div>
-
-    <div class="auth-block" id="authBlock">
-      </div>
-
-    <div class="menu-group">
-      <div class="menu-label">Intelligence Channels</div>
-      <button class="menu-item active" data-channel="chat">
-        <span class="icon">💬</span> System Terminal
-      </button>
-      <button class="menu-item" data-channel="research">
-        <span class="icon">🔬</span> Quantitative Analysis
-      </button>
-      <button class="menu-item" data-channel="quantum">
-        <span class="icon">⚛️</span> Quantum Subroutines <span class="badge">PRO</span>
-      </button>
-      <button class="menu-item" data-channel="blocks">
-        <span class="icon">💻</span> Order Block Engine <span class="badge">PRO</span>
-      </button>
-    </div>
-
-    <div class="menu-group">
-      <div class="menu-label">System Control</div>
-      <button class="menu-item" id="themeToggleBtn">
-        <span class="icon">🌓</span> Toggle Aesthetic
-      </button>
-      <button class="menu-item" id="clearConsoleBtn">
-        <span class="icon">🗑️</span> Flush Session Data
-      </button>
-    </div>
-
-    <div class="market-ticker-wrap" id="tickerWrap">
-      <div class="menu-label">Institutional Feeds</div>
-      </div>
-  </aside>
-
-  <button class="mobile-menu-trigger" id="mobileTrigger">☰ CONSOLE MENU</button>
-
-  <section class="main-view">
-    <div class="workspace-container">
-      <div class="content-feed" id="contentFeed">
-        </div>
-
-      <div class="input-bar-container">
-        <div class="input-bar-inner">
-          <div class="input-field-row">
-            <input type="text" id="consoleInput" placeholder="Enter algorithmic prompt or system command..." autocomplete="off">
-          </div>
-          <div class="action-btn-group">
-            <div style="display: flex; gap: 4px;">
-              <button class="ctrl-btn" id="modelSelector">🤖 model: balanced</button>
-              <button class="ctrl-btn" id="riskRuleIndicator">⚡ risk: 1% rule</button>
+    <div class="app-shell">
+        
+        <!-- --- MODULE 1: PERSISTENT SIDEBAR NAVIGATION --- -->
+        <aside class="sidebar" id="appSidebar">
+            <div class="sidebar-top">
+                <div class="brand-header">
+                    <span class="brand-logo">⚓</span>
+                    <span class="brand-title">CAPITAN AI</span>
+                </div>
+                
+                <nav class="nav-group">
+                    <span class="nav-label">Workspaces</span>
+                    <div class="workspace-card active">
+                        <div class="workspace-icon">Ω</div>
+                        <div class="workspace-info">
+                            <span class="workspace-name">Core Strategy</span>
+                            <span class="workspace-meta">SMC / Quant</span>
+                        </div>
+                    </div>
+                    <div class="workspace-card">
+                        <div class="workspace-icon">λ</div>
+                        <div class="workspace-info">
+                            <span class="workspace-name">Research Lab</span>
+                            <span class="workspace-meta">Math / Code</span>
+                        </div>
+                    </div>
+                </nav>
             </div>
-            <button class="submit-btn" id="consoleSubmitBtn">EXECUTE</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-</div>
 
-<div class="overlay" id="authOverlay">
-  <div class="dialog">
-    <h2 id="authTitle">Workspace Registry</h2>
-    <p id="authDesc">Access secure terminal sync routes via credentials.</p>
-    <input type="email" id="authEmail" placeholder="Institutional Email Address">
-    <input type="password" id="authPassword" placeholder="Security Token Access String">
-    <div class="dialog-actions">
-      <button class="secondary" id="authCancel">Dismiss</button>
-      <button class="primary" id="authSubmit">Initialize Connect</button>
-    </div>
-  </div>
-</div>
+            <div class="sidebar-footer">
+                <!-- Administrative Tier Architecture Control Trigger -->
+                <div class="tier-control-panel">
+                    <span style="font-size: 11px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">Tier Mode:</span>
+                    <button id="tierSwitchBtn" style="background: var(--bg-surface-raised); border: 1px solid var(--border-warm); color: var(--accent-indigo); font-size: 10px; font-family: 'JetBrains Mono', monospace; padding: 3px 8px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;">PRO ENG</button>
+                </div>
 
-<script>
-// ═══════════════════════════════════════════════════════════
-// TERMINAL APPLICATION ARCHITECTURE — ARCHITECTED FOR SPEED
-// ═══════════════════════════════════════════════════════════
-
-const APP_STATE_KEY = 'closeai_core_nexus_v1';
-
-let State = {
-  user: null, // Format: { email: string, provider: 'email' | 'google', tier: 'free' | 'pro' }
-  messages: [],
-  theme: 'dark',
-  model: 'balanced',
-  currentChannel: 'chat'
-};
-
-const MarketFeed = [
-  { id: 'xau', name: 'XAUUSD', basePrice: 2341.20, precision: 2 },
-  { id: 'xaut', name: 'XAUTUSD', basePrice: 2341.80, precision: 2 },
-  { id: 'dxy', name: 'DXY', basePrice: 104.50, precision: 3 },
-  { id: 'us10y', name: 'US10Y', basePrice: 4.280, precision: 3 }
-];
-
-// Local Matrix Initializer
-function bootstrap() {
-  const cached = localStorage.getItem(APP_STATE_KEY);
-  if (cached) {
-    try { State = { ...State, ...JSON.parse(cached) }; } catch(e) { console.error("Cache purge required."); }
-  }
-  applyTheme();
-  renderAuthBlock();
-  renderMarketData();
-  switchChannel(State.currentChannel);
-  
-  // High speed tick loops
-  setInterval(tickMarkets, 4000);
-}
-
-function sync() {
-  localStorage.setItem(APP_STATE_KEY, JSON.stringify(State));
-}
-
-function notify(text) {
-  const t = Object.assign(document.createElement('div'), { className: 'toast', textContent: text });
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
-
-function applyTheme() {
-  document.documentElement.classList.toggle('light', State.theme === 'light');
-}
-
-// ═══════════════════════════════════════════════════════════
-// UI RENDER ENGINES
-// ═══════════════════════════════════════════════════════════
-function renderAuthBlock() {
-  const container = document.getElementById('authBlock');
-  if (!container) return;
-
-  if (State.user) {
-    const initials = State.user.email.substring(0, 2).toUpperCase();
-    container.innerHTML = `
-      <div class="auth-user-info">
-        <div class="auth-avatar">${initials}</div>
-        <div class="auth-meta">
-          <div class="auth-name">${State.user.email}</div>
-          <div class="auth-status">${State.user.tier.toUpperCase()} CLIENT NODE</div>
-        </div>
-      </div>
-      <button class="auth-action-btn" id="logoutBtn">🛡️ Disconnect Session</button>
-    `;
-    document.getElementById('logoutBtn').onclick = () => {
-      State.user = null;
-      sync();
-      renderAuthBlock();
-      notify("Session disconnected.");
-    };
-  } else {
-    container.innerHTML = `
-      <button class="auth-action-btn google-btn" id="googleAuthBtn">
-        <svg width="12" height="12" viewBox="0 0 24 24" style="margin-right:2px;"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.61c-.3 1.52-1.15 2.8-2.42 3.66v3.04h3.89c2.28-2.1 3.66-5.17 3.66-8.55z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.89-3.04c-1.08.72-2.45 1.16-4.04 1.16-3.11 0-5.74-2.11-6.68-4.96H1.21v3.15C3.18 21.88 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.32 14.25c-.24-.73-.38-1.5-.38-2.3 0-.8.14-1.57.38-2.3V6.5H1.21C.44 8.04 0 9.77 0 11.62c0 1.85.44 3.58 1.21 5.12l4.11-2.49z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.18 2.12 1.21 5.62l4.11 2.49c.94-2.85 3.57-4.96 6.68-4.96z"/></svg>
-        Continue with Google
-      </button>
-      <button class="auth-action-btn" id="emailAuthBtn">✉️ Institutional Login</button>
-    `;
-    
-    document.getElementById('googleAuthBtn').onclick = () => {
-      // Direct federation simulation
-      State.user = { email: 'billionaire.trades@gmail.com', provider: 'google', tier: 'pro' };
-      sync();
-      renderAuthBlock();
-      notify("Authenticated via Google Engine.");
-    };
-
-    document.getElementById('emailAuthBtn').onclick = () => {
-      openAuthModal();
-    };
-  }
-}
-
-function renderMarketData() {
-  const container = document.getElementById('tickerWrap');
-  if (!container) return;
-  
-  // Retain the label header
-  container.innerHTML = `<div class="menu-label">Institutional Feeds</div>`;
-  
-  MarketFeed.forEach(asset => {
-    const change = (Math.random() * 0.4) - 0.18;
-    const isUp = change >= 0;
-    
-    const row = Object.assign(document.createElement('div'), { className: 'market-row' });
-    row.innerHTML = `
-      <span class="sym">${asset.name}</span>
-      <span class="val">${asset.basePrice.toFixed(asset.precision)}</span>
-      <span class="chg ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}%</span>
-    `;
-    row.onclick = () => {
-      insertConsoleCommand(`Analyze market context structure for ${asset.name}`);
-    };
-    container.appendChild(row);
-  });
-}
-
-function tickMarkets() {
-  MarketFeed.forEach(a => {
-    a.basePrice += (Math.random() - 0.5) * (a.basePrice * 0.002);
-  });
-  renderMarketData();
-}
-
-// ═══════════════════════════════════════════════════════════
-// CHANNELS & FEEDS DISPATCHER
-// ═══════════════════════════════════════════════════════════
-function switchChannel(channelId) {
-  State.currentChannel = channelId;
-  sync();
-  
-  document.querySelectorAll('[data-channel]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.channel === channelId);
-  });
-  
-  const feed = document.getElementById('contentFeed');
-  if (!feed) return;
-  feed.innerHTML = ''; // Reset frame layout
-
-  if (channelId === 'chat') {
-    if (State.messages.length === 0) {
-      feed.innerHTML = `
-        <div class="onboarding">
-          <h1>CLOSEAI Terminal Framework</h1>
-          <p>Execution layer configured for low-latency macro and institutional volume matching workflows.</p>
-          <div class="onboarding-grid">
-            <div class="onboarding-card" onclick="insertConsoleCommand('Analyze recent order blocks inside XAUUSD 4H frame')">
-              <div class="title">Gold (XAUUSD) Blocks</div>
-              <div class="desc">Scans multi-timeframe liquidity structures.</div>
+                <div class="user-panel">
+                    <div class="user-details">
+                        <div class="user-avatar"></div>
+                        <span class="user-name">Billionaire</span>
+                    </div>
+                    <span class="tier-badge" id="tierDisplayBadge">PRO</span>
+                </div>
             </div>
-            <div class="onboarding-card" onclick="insertConsoleCommand('Correlate DXY trends with current 10Y yields macro behavior')">
-              <div class="title">Macro Matrix Sync</div>
-              <div class="desc">Calculates directional vector matrices.</div>
+        </aside>
+
+        <!-- --- MODULE 2: CENTRAL INTERACTION CANVAS --- -->
+        <main class="main-canvas">
+            <header class="canvas-header">
+                <div class="header-actions">
+                    <button class="utility-btn mobile-nav-trigger" id="menuToggle" title="Open Workspace Drawer">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    <span class="view-title" id="canvasSessionTitle">New Workspace Session</span>
+                </div>
+                <div class="header-actions">
+                    <button class="utility-btn" id="surfaceThemeToggle" title="Toggle Visual Interface Theme">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.22" x2="5.64" y2="17.78"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Active Output Interaction Stream -->
+            <div class="interaction-stream" id="canvasStream">
+                <!-- Warm Empty State Void Viewport -->
+                <div class="welcome-void" id="emptyStateVoid">
+                    <div class="void-icon">✦</div>
+                    <h1 class="void-heading">Welcome back</h1>
+                    <p class="void-subtext">What are we exploring today? Let's check over structural trends, verify quantitative proofs, or draft clear architectural scripts.</p>
+                    
+                    <div class="suggestion-grid">
+                        <div class="suggestion-card" onclick="prepopulatePrompt('Model a macro correlation index between XAUUSD and yields')">
+                            <span class="suggestion-meta">Quantitative</span>
+                            <span class="suggestion-title">Model a macro correlation index between XAUUSD and yields</span>
+                        </div>
+                        <div class="suggestion-card" onclick="prepopulatePrompt('Optimize local runtime performance configurations')">
+                            <span class="suggestion-meta">Software</span>
+                            <span class="suggestion-title">Optimize local runtime performance configurations</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      `;
-    } else {
-      State.messages.forEach(renderMsgBubble);
-    }
-  } else if (channelId === 'research') {
-    feed.innerHTML = `
-      <div class="onboarding">
-        <h1>Quantitative Research Canvas</h1>
-        <p>Enterprise data tracking matrices and comparative analytics.</p>
-        <table class="data-table">
-          <thead>
-            <tr><th>Metric Matrix</th><th>Current Node</th><th>Deviation</th><th>Vector Status</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Alpha Index Alpha</td><td>0.892</td><td>+0.02</td><td>Stable Execution</td></tr>
-            <tr><td>DXY Flow Matching</td><td>104.42</td><td>-0.05</td><td>Optimal Compression</td></tr>
-            <tr><td>SMC Order Depth</td><td>$4.2M/sec</td><td>+1.2M</td><td>High Liquidity Spike</td></tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-  } else {
-    feed.innerHTML = `
-      <div class="onboarding">
-        <h1>Premium Channel Endpoint [${channelId.toUpperCase()}]</h1>
-        <p>This localized access matrix requires elevated security or premium node verification profiles.</p>
-      </div>
-    `;
-  }
-}
 
-function renderMsgBubble(msg) {
-  const feed = document.getElementById('contentFeed');
-  if (!feed) return;
-  
-  const onboarding = feed.querySelector('.onboarding');
-  if (onboarding) onboarding.remove();
+            <!-- Ergonomic Control Prompt Input Area -->
+            <div class="input-dock-container">
+                <div class="input-dock">
+                    <div class="textarea-wrapper">
+                        <textarea class="main-textarea" id="promptTextarea" rows="1" placeholder="Inquire softly or propose an architectural design..."></textarea>
+                    </div>
+                    <div class="dock-controls">
+                        <div class="control-group-left">
+                            <button class="dock-btn active">⚡ Quick</button>
+                            <button class="dock-btn">◆ Balanced</button>
+                            <button class="dock-btn" id="deepInferenceBtn">🔬 Deep <span style="font-size: 9px; opacity: 0.5; margin-left: 2px;">✦</span></button>
+                        </div>
+                        <button class="send-btn" id="submitPromptBtn">
+                            <svg class="send-icon" viewBox="0 0 24 24" width="14" height="14">
+                                <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
 
-  const bubble = Object.assign(document.createElement('div'), { className: `bubble ${msg.role}` });
-  
-  let formattedText = msg.content;
-  // Compact styling rules matching strict formatting paradigms
-  formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  formattedText = formattedText.replace(/`(.*?)`/g, '<code>$1</code>');
+        <!-- --- MODULE 3: MACRO PULSE & NEWS WIRE CONTEXT PANEL --- -->
+        <aside class="right-context-panel">
+            <div>
+                <h3 class="panel-section-title">Macro Pulse</h3>
+                <div class="telemetry-bento" id="marketTickerBlock">
+                    <div class="asset-ticker-row" id="tick-XAUUSD">
+                        <div class="asset-identity">
+                            <span class="asset-symbol">XAUUSD</span>
+                            <span class="asset-label">Gold Spot</span>
+                        </div>
+                        <div class="asset-valuation">
+                            <div class="price-val">$2,342.50</div>
+                            <span class="asset-change change-up">+1.24%</span>
+                        </div>
+                    </div>
+                    <div class="asset-ticker-row" id="tick-DXY">
+                        <div class="asset-identity">
+                            <span class="asset-symbol">DXY</span>
+                            <span class="asset-label">Dollar Index</span>
+                        </div>
+                        <div class="asset-valuation">
+                            <div class="price-val">104.12</div>
+                            <span class="asset-change change-down">-0.32%</span>
+                        </div>
+                    </div>
+                    <div class="asset-ticker-row" id="tick-US10Y">
+                        <div class="asset-identity">
+                            <span class="asset-symbol">US10Y</span>
+                            <span class="asset-label">10Y Yield</span>
+                        </div>
+                        <div class="asset-valuation">
+                            <div class="price-val">4.432%</div>
+                            <span class="asset-change change-down">-0.85%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-  bubble.innerHTML = `
-    <div class="bubble-meta">
-      <span>${msg.role === 'user' ? 'CLIENT ENGINE' : 'CLOSEAI APEX'}</span>
-      <span>•</span>
-      <span>${new Date(msg.timestamp).toLocaleTimeString()}</span>
+            <!-- Dynamic News Wire with Structural Pro Overlay Curtain -->
+            <div class="news-wire-wrapper">
+                <h3 class="panel-section-title">Live News Wire</h3>
+                <div style="position: relative; flex-grow: 1; display: flex; flex-direction: column; min-height: 0;">
+                    
+                    <!-- Glass Locked Overlay Curtain -->
+                    <div class="news-lock-curtain" id="newsCurtainOverlay">
+                        <span style="font-size: 18px; color: var(--accent-indigo);">✦</span>
+                        <h4 class="news-lock-title">News Stream Locked</h4>
+                        <p class="news-lock-text">Real-time macroeconomic news wire updates require a Pro workspace asset environment.</p>
+                    </div>
+
+                    <div class="telemetry-bento news-stream-box" id="newsWireStream">
+                        <div class="news-item">
+                            <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); display: block;">JUST NOW</span>
+                            <p style="color: var(--text-primary); font-weight: 500; line-height: 1.4;">Fed officials signal sustained data-dependent approach toward macro interest rate curves.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="panel-section-title">Studio Status</h3>
+                <div class="telemetry-bento" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary);">
+                    <div id="inferenceLinkStatus">Inference Link: Active (Groq)</div>
+                    <div style="margin-top: 4px;" id="dataPulseStatusText">Data Feed: Syncing...</div>
+                </div>
+            </div>
+        </aside>
+
     </div>
-    <div class="bubble-text">${formattedText}</div>
-  `;
-  
-  feed.appendChild(bubble);
-  feed.scrollTop = feed.scrollHeight;
-}
 
-// ═══════════════════════════════════════════════════════════
-// LOGIC SYSTEMS & CONTROLS
-// ═══════════════════════════════════════════════════════════
-function insertConsoleCommand(text) {
-  const input = document.getElementById('consoleInput');
-  if (input) {
-    input.value = text;
-    input.focus();
-  }
-}
+    <!-- --- MODULE 4: ARCHITECTURAL APP CONTROLLER ENGINE --- -->
+    <script>
+        // --- APPLICATION GLOBAL CONFIGURATIONS ---
+        let globalSystemTier = "PRO"; // Operating Modes: "FREE" or "PRO"
 
-function executeConsoleRoute() {
-  const input = document.getElementById('consoleInput');
-  if (!input || !input.value.trim()) return;
+        // --- CORE UI INTERACTIVE SELECTORS ---
+        const promptArea = document.getElementById('promptTextarea');
+        const submitPromptBtn = document.getElementById('submitPromptBtn');
+        const canvasStream = document.getElementById('canvasStream');
+        const emptyStateVoid = document.getElementById('emptyStateVoid');
+        const surfaceThemeToggle = document.getElementById('surfaceThemeToggle');
+        const tierSwitchBtn = document.getElementById('tierSwitchBtn');
+        const tierDisplayBadge = document.getElementById('tierDisplayBadge');
+        const newsCurtainOverlay = document.getElementById('newsCurtainOverlay');
+        const inferenceLinkStatus = document.getElementById('inferenceLinkStatus');
+        const dataPulseStatusText = document.getElementById('dataPulseStatusText');
+        const deepInferenceBtn = document.getElementById('deepInferenceBtn');
+        const appSidebar = document.getElementById('appSidebar');
+        const menuToggle = document.getElementById('menuToggle');
 
-  const rawText = input.value.trim();
-  input.value = '';
+        // Textarea Layout Adjustment Calculations
+        promptArea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight - 16) + 'px';
+        });
 
-  if (State.currentChannel !== 'chat') {
-    switchChannel('chat');
-  }
+        // Surface Aesthetic Palette Switcher
+        surfaceThemeToggle.addEventListener('click', () => {
+            const activePalette = document.documentElement.getAttribute('data-theme');
+            const targetPalette = activePalette === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', targetPalette);
+        });
 
-  const userMsg = { role: 'user', content: rawText, timestamp: Date.now() };
-  State.messages.push(userMsg);
-  renderMsgBubble(userMsg);
-  sync();
+        // Mobile Off-Canvas Navigation Sidebar Controls
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            appSidebar.classList.toggle('drawer-open');
+        });
 
-  // Synthetic low latency responses mirroring edge computation matrices
-  setTimeout(() => {
-    let aiReplyText = `System terminal route handled with active parameters. Analysis complete for your input matrix.`;
-    
-    if (rawText.toLowerCase().includes('gold') || rawText.toLowerCase().includes('xau')) {
-      aiReplyText = `**XAUUSD Order Block Diagnostics:**\nSMC parameters tracking significant buying blocks at \`2338.50\` across the 4H timeframe. Support layers remain protected under the current **1% risk parameters**. Structural shift validated by DXY stabilization matrices.`;
-    } else if (rawText.toLowerCase().includes('dxy') || rawText.toLowerCase().includes('macro')) {
-      aiReplyText = `**Macro Integration Synthesis Engine:**\nDXY current index structure holds steady at \`104.50\`. Inverse correlation with 10-Year Treasury Yields indicates imminent variance. Order matrices show heavy institutional accumulation blocks.`;
-    }
+        document.addEventListener('click', (e) => {
+            if (appSidebar.classList.contains('drawer-open') && !appSidebar.contains(e.target)) {
+                appSidebar.classList.remove('drawer-open');
+            }
+        });
 
-    const aiMsg = { role: 'ai', content: aiReplyText, timestamp: Date.now() };
-    State.messages.push(aiMsg);
-    renderMsgBubble(aiMsg);
-    sync();
-  }, 450);
-}
+        // Inference Control Mode Interaction Toggles
+        const dockBtns = document.querySelectorAll('.dock-btn');
+        dockBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.id === 'deepInferenceBtn' && globalSystemTier === "FREE") {
+                    alert("Deep multi-step inference compute targets require a active Pro workspace layout.");
+                    return;
+                }
+                dockBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
 
-// ═══════════════════════════════════════════════════════════
-// MODAL & SECURITY INTERACTIVITY WINDOWS
-// ═══════════════════════════════════════════════════════════
-function openAuthModal() { document.getElementById('authOverlay').classList.add('active'); }
-function closeAuthModal() { document.getElementById('authOverlay').classList.remove('active'); }
+        // --- BRAND ACCOUNT TIER LOGIC ARCHITECTURE ---
+        tierSwitchBtn.addEventListener('click', () => {
+            if (globalSystemTier === "PRO") {
+                globalSystemTier = "FREE";
+                tierSwitchBtn.textContent = "FREE tier";
+                tierDisplayBadge.textContent = "FREE";
+                tierDisplayBadge.style.backgroundColor = "var(--border-warm)";
+                tierDisplayBadge.style.color = "var(--text-secondary)";
+                newsCurtainOverlay.style.display = "flex"; // Project security curtain
+                inferenceLinkStatus.textContent = "Inference Link: Standard Mode";
+                
+                if (deepInferenceBtn.classList.contains('active')) {
+                    deepInferenceBtn.classList.remove('active');
+                    dockBtns[0].classList.add('active'); // Safely fall back to Quick
+                }
+                deepInferenceBtn.style.opacity = "0.35";
+            } else {
+                globalSystemTier = "PRO";
+                tierSwitchBtn.textContent = "PRO tier";
+                tierDisplayBadge.textContent = "PRO";
+                tierDisplayBadge.style.backgroundColor = "rgba(99, 102, 241, 0.15)";
+                tierDisplayBadge.style.color = "var(--accent-indigo)";
+                newsCurtainOverlay.style.display = "none"; // Evaporate curtain
+                inferenceLinkStatus.textContent = "Inference Link: Active (Groq)";
+                deepInferenceBtn.style.opacity = "1";
+            }
+            refreshTelemetryStatus();
+        });
 
-// ═══════════════════════════════════════════════════════════
-// EVENT BINDINGS INTERFACES
-// ═══════════════════════════════════════════════════════════
-document.getElementById('consoleSubmitBtn')?.addEventListener('click', executeConsoleRoute);
-document.getElementById('consoleInput')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') executeConsoleRoute();
-});
+        // --- SIMULATED INLINE RENDERING INJECTION PROCESS ---
+        function prepopulatePrompt(text) {
+            promptArea.value = text;
+            promptArea.style.height = 'auto';
+            promptArea.style.height = (promptArea.scrollHeight - 16) + 'px';
+            promptArea.focus();
+        }
 
-document.querySelectorAll('[data-channel]').forEach(btn => {
-  btn.addEventListener('click', () => switchChannel(btn.dataset.channel));
-});
+        submitPromptBtn.addEventListener('click', executeMessageSequence);
+        promptArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                executeMessageSequence();
+            }
+        });
 
-document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
-  State.theme = State.theme === 'dark' ? 'light' : 'dark';
-  sync();
-  applyTheme();
-});
+        function executeMessageSequence() {
+            const requestText = promptArea.value.trim();
+            if (!requestText) return;
 
-document.getElementById('clearConsoleBtn')?.addEventListener('click', () => {
-  State.messages = [];
-  sync();
-  switchChannel(State.currentChannel);
-  notify("Session space clean.");
-});
+            // Clear empty state illustration on primary data execution
+            if (emptyStateVoid) {
+                emptyStateVoid.style.display = 'none';
+            }
 
-// Mobile layout responders
-document.getElementById('mobileTrigger')?.addEventListener('click', () => {
-  document.getElementById('sidebar').classList.add('mobile-open');
-});
-document.getElementById('hideSidebarBtn')?.addEventListener('click', () => {
-  document.getElementById('sidebar').classList.remove('mobile-open');
-});
+            // Append User Prompt Card
+            appendContentCard("user", "You", requestText);
+            promptArea.value = '';
+            promptArea.style.height = '40px';
 
-// Authentication submission sequence logic
-document.getElementById('authCancel')?.addEventListener('click', closeAuthModal);
-document.getElementById('authSubmit')?.addEventListener('click', () => {
-  const email = document.getElementById('authEmail').value.trim();
-  if (email && email.includes('@')) {
-    State.user = { email: email, provider: 'email', tier: 'pro' };
-    sync();
-    renderAuthBlock();
-    closeAuthModal();
-    notify("Connected to network nodes.");
-  } else {
-    alert("Invalid entry vector formatting.");
-  }
-});
+            // Simulate sophisticated, soft-spoken structural response template processing
+            setTimeout(() => {
+                let diagnosticResponseBlock = `Analysis verified. Here is the operational framework configuration model requested:`;
+                
+                // Check string context parameters to match professional coding or math requirements
+                if (requestText.toLowerCase().includes('macro') || requestText.toLowerCase().includes('xauusd')) {
+                    diagnosticResponseBlock += `
+                    <div class="math-block">
+                        \\Delta \\Phi_{Spread} = \\alpha \\cdot \\left[ XAUt_{price} - XAU_{spot} \\right] + \\beta \\cdot \\int_{0}^{t} Y_{10Y}(t) \\, dt
+                    </div>
+                    Adjust parameters dynamically to map systemic correlation scales securely.`;
+                } else {
+                    diagnosticResponseBlock += `
+                    <div class="code-container">
+                        <div class="code-header"><span>javascript // runtimes</span><span>Copy</span></div>
+                        <div class="code-body">function initializeStudioWorkspace() {\n    const inferenceNode = "Groq-Llama3";\n    console.log(\`System connection linked via \${inferenceNode}.\`);\n    return true;\n}</div>
+                    </div>`;
+                }
 
-// Structural initialization initialization
-bootstrap();
-</script>
+                appendContentCard("assistant", "Capitan AI", diagnosticResponseBlock);
+            }, 750);
+        }
+
+        function appendContentCard(role, identityLabel, coreBodyText) {
+            const blockElement = document.createElement('div');
+            blockElement.className = `message-block`;
+            
+            const avatarChar = role === "user" ? "B" : "⚓";
+            
+            blockElement.innerHTML = `
+                <div class="message-avatar ${role}">${avatarChar}</div>
+                <div class="message-content">
+                    <div class="message-bubble">${coreBodyText}</div>
+                </div>
+            `;
+            canvasStream.appendChild(blockElement);
+            canvasStream.scrollTop = canvasStream.scrollHeight;
+        }
+
+        // --- REAL-TIME LIVE TELEMETRY SIMULATION ARCHITECTURE ---
+        const localMarketAssets = {
+            XAUUSD: { val: 2342.50, delta: 1.24, sign: '$', precision: 2 },
+            DXY: { val: 104.12, delta: -0.32, sign: '', precision: 2 },
+            US10Y: { val: 4.432, delta: -0.85, sign: '', precision: 3 }
+        };
+
+        const macroWireHeadlines = [
+            "US Treasury liquidity premiums shift slightly ahead of regional manufacturing data releases.",
+            "Spot Gold (XAUUSD) experiences light order block volume interaction near institutional key zones.",
+            "Global equity index futures map minor consolidation metrics amid quiet macroeconomic windows.",
+            "Currency cross spreads remain locked within established weekly average true range (ATR) bands.",
+            "Yield curve differentials narrow subtly as institutional debt auction allocations stabilize."
+        ];
+
+        function runMarketTelemetryTick() {
+            for (const key in localMarketAssets) {
+                const instrument = localMarketAssets[key];
+                const organicVariance = (Math.random() - 0.5) * (instrument.val * 0.0005);
+                instrument.val += organicVariance;
+                
+                const elementRow = document.getElementById(`tick-${key}`);
+                if (elementRow) {
+                    const priceNode = elementRow.querySelector('.price-val');
+                    const changeNode = elementRow.querySelector('.asset-change');
+                    
+                    priceNode.textContent = `${instrument.sign}${instrument.val.toFixed(instrument.precision)}`;
+                    
+                    if (organicVariance > 0) {
+                        changeNode.className = "asset-change change-up";
+                        changeNode.textContent = `+${instrument.delta.toFixed(2)}%`;
+                    }
+                }
+            }
+        }
+
+        function pushWireUpdate() {
+            if (globalSystemTier === "FREE") return; // Keep wire static under Free mode restrictions
+
+            const container = document.getElementById('newsWireStream');
+            if (!container) return;
+            
+            const selection = macroWireHeadlines[Math.floor(Math.random() * macroWireHeadlines.length)];
+            const updateBlock = document.createElement('div');
+            updateBlock.className = "news-item";
+            updateBlock.innerHTML = `
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent-indigo); display: block; font-weight: 500;">FLASH</span>
+                <p style="color: var(--text-primary); font-weight: 500; line-height: 1.4;">${selection}</p>
+            `;
+            
+            if (container.children.length > 0) {
+                container.children[0].style.borderLeft = "2px solid var(--border-warm)";
+                container.children[0].style.opacity = "0.7";
+                const stamp = container.children[0].querySelector('span');
+                if (stamp) { stamp.textContent = "RECENT"; stamp.style.color = "var(--text-muted)"; }
+            }
+            
+            container.insertBefore(updateBlock, container.firstChild);
+            if (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function refreshTelemetryStatus() {
+            dataPulseStatusText.textContent = globalSystemTier === "PRO" ? "Data Feed: Connected (Live)" : "Data Feed: Delayed (15m)";
+        }
+
+        // Initialize Runtime Execution Rates
+        setInterval(runMarketTelemetryTick, 3000);
+        setInterval(pushWireUpdate, 12000);
+        refreshTelemetryStatus();
+    </script>
 </body>
 </html>
