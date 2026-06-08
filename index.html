@@ -47,7 +47,6 @@ body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSys
 .mkt-price{font-family:monospace;font-size:10px;min-width:55px;text-align:right}
 .mkt-chg{font-size:9px;min-width:45px;text-align:right;font-weight:600}.mkt-chg.up{color:var(--up)}.mkt-chg.down{color:var(--down)}
 .mkt-label{font-size:8px;color:var(--txt4);text-transform:uppercase;letter-spacing:.1em;padding:4px 10px 2px;font-weight:700}
-
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;opacity:0;transition:opacity .3s}.sb-overlay.visible{display:block;opacity:1}
 
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0;position:relative}
@@ -97,8 +96,7 @@ body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSys
 .tier-card{border:1px solid var(--bdr);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .15s;margin-bottom:10px}.tier-card:hover{border-color:var(--txt)}
 .tier-card.selected{border-color:var(--txt);background:rgba(255,255,255,.03)}
 .tier-card h3{font-size:var(--font-md);font-weight:700;color:var(--txt)}.tier-card .price{font-size:22px;font-weight:700;color:var(--txt);margin:6px 0}.tier-card .price span{font-size:12px;color:var(--txt2);font-weight:400}
-.tier-card ul{list-style:none;margin-top:8px}.tier-card li{font-size:12px;color:var(--txt2);padding:3px 0;display:flex;align-items:center;gap:8px}
-.tier-card li .dot{width:5px;height:5px;border-radius:50%;background:var(--txt3);flex-shrink:0}
+.tier-card ul{list-style:none;margin-top:8px}.tier-card li{font-size:12px;color:var(--txt2);padding:3px 0;display:flex;align-items:center;gap:8px}.tier-card li .dot{width:5px;height:5px;border-radius:50%;background:var(--txt3);flex-shrink:0}
 .tier-card.popular{border-color:rgba(255,255,255,.3)}.tier-card .badge{display:inline-block;font-size:9px;padding:3px 8px;border-radius:4px;background:var(--txt);color:var(--bg);font-weight:700;margin-bottom:8px}
 
 .payment-section{padding:14px;border:1px solid var(--bdr);border-radius:var(--radius);background:var(--bg2);display:none}.payment-section.open{display:block}
@@ -148,11 +146,10 @@ body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSys
 <div id="authModal" class="modal-overlay"><div class="modal"><h2>✨ Welcome</h2><p>Enter your email to sign in or create an account.</p><input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email"><button class="modal-btn" id="authBtn">Continue →</button><button class="modal-btn sec" id="authSkip">Skip for now</button></div></div>
 
 <div id="otpModal" class="modal-overlay"><div class="modal"><h2>📧 Verify Email</h2><p>Enter the 6-digit code sent to <strong id="otpEmailDisplay"></strong></p><input type="text" id="otpInput" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code"><button class="modal-btn" id="otpVerifyBtn">Verify</button><button class="modal-btn sec" id="otpCancel">Cancel</button></div></div>
-
 <div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Choose Your Plan</h2>
 <div class="tier-card" id="tierFree"><h3>🔹 Free</h3><div class="price">$0</div><ul><li><span class="dot"></span>10 messages/day</li><li><span class="dot"></span>Core chat</li></ul></div>
-<div class="tier-card popular" id="tierPlus"><div class="badge">⭐ POPULAR</div><h3>🔶 Plus</h3><div class="price" id="plusPrice">$8<span>/mo</span></div><ul><li><span class="dot"></span>30 messages/day</li><li><span class="dot"></span>Coding &amp; Quant</li><li><span class="dot"></span>African Finance</li><li><span class="dot"></span>Workspace (3 people)</li></ul></div>
-<div class="tier-card" id="tierPro"><div class="badge">🚀 PRO</div><h3>💎 Pro</h3><div class="price" id="proPrice">$17<span>/mo</span></div><ul><li><span class="dot"></span>Unlimited messages</li><li><span class="dot"></span>Live market data &amp; news</li><li><span class="dot"></span>PDF/Code uploads</li><li><span class="dot"></span>Workspace (10 people)</li><li><span class="dot"></span>Business mode</li></ul></div>
+<div class="tier-card popular" id="tierPlus"><div class="badge">⭐ POPULAR</div><h3>🔶 Plus</h3><div class="price" id="plusPrice">$8<span>/mo</span></div><ul><li><span class="dot"></span>30 messages/day</li><li><span class="dot"></span>Coding & Quant</li><li><span class="dot"></span>African Finance</li><li><span class="dot"></span>Workspace (3 people)</li></ul></div>
+<div class="tier-card" id="tierPro"><div class="badge">🚀 PRO</div><h3>💎 Pro</h3><div class="price" id="proPrice">$17<span>/mo</span></div><ul><li><span class="dot"></span>Unlimited messages</li><li><span class="dot"></span>Live market data & news</li><li><span class="dot"></span>PDF/Code uploads</li><li><span class="dot"></span>Workspace (10 people)</li><li><span class="dot"></span>Business mode</li></ul></div>
 <div class="payment-section" id="paymentSection">
 <div class="crypto-tabs"><button class="crypto-tab active" data-coin="USDC">USDC</button><button class="crypto-tab" data-coin="BTC">BTC</button><button class="crypto-tab" data-coin="ETH">ETH</button></div>
 <div class="wallet-display"><span id="walletAddr">Loading...</span><button class="copy-addr" id="copyWalletBtn">Copy</button></div>
@@ -197,12 +194,11 @@ function init(){
 // Fix 1: Wallets from backend
 async function fetchPaymentConfig(){
   try{var r=await fetch(API+'/api/payment-config');if(r.ok){var d=await r.json();S.wallets=d.wallets||{};S.paymentConfig=d;updateWalletDisplay()}}catch(e){}
-}
-function updateWalletDisplay(){var addr=S.wallets[S.selectedCoin];if(addr)document.getElementById('walletAddr').textContent=addr}
+}function updateWalletDisplay(){var addr=S.wallets[S.selectedCoin];if(addr)document.getElementById('walletAddr').textContent=addr}
 
 function applyTheme(){document.documentElement.classList.toggle('light',S.theme==='light')}
 function toast(msg,dur){var t=document.querySelector('.toast');if(t)t.remove();var e=document.createElement('div');e.className='toast';e.textContent=msg;document.body.appendChild(e);setTimeout(function(){e.remove()},dur||2600)}
-function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'):''}
+function esc(s){return s?s.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,'''):''}
 function fmt(s){if(!s)return'';s=esc(s);s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){return'<pre><code>'+code.trim()+'</code></pre>'});s=s.replace(/\n/g,'<br>');s=s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');s=s.replace(/`(.*?)`/g,'<code>$1</code>');return s}
 function greet(){var h=new Date().getHours(),n=S.email?' '+S.email.split('@')[0]:'';if(h<12)return'Good morning'+n+'. ☀️';if(h<17)return'Good afternoon'+n+'. 🌤️';if(h<21)return'Good evening'+n+'. 🌆';return'Night session'+n+'. 🌃'}
 
@@ -247,8 +243,7 @@ async function sendMessage(content){
   if(input){input.value='';input.blur()}renderMessages();
   var d=await api('/api/chat','POST',{messages:S.messages.filter(function(m){return m.content}).map(function(m){return{role:m.role,content:m.content}}),user_id:S.userId});
   if(d.error&&d.error.includes('limit')){ai.content=d.error;document.getElementById('upgradeModal').classList.add('open')}else if(d.error&&d.error.includes('Rate')){ai.content='⏳ Taking a quick break. Try again in a moment.'}else{ai.content=d.content||'No response. Retry?'}
-  S.streaming=!1;saveMessages();renderMessages();
-}
+  S.streaming=!1;saveMessages();renderMessages();}
 
 function selectTier(tier){S.selectedTier=tier;document.querySelectorAll('.tier-card').forEach(function(c){c.classList.toggle('selected',c.id==='tier'+tier.charAt(0).toUpperCase()+tier.slice(1))});if(tier==='free'){document.getElementById('paymentSection').classList.remove('open');return}updateWalletDisplay();document.getElementById('paymentSection').classList.add('open')}
 function switchCoin(coin){S.selectedCoin=coin;updateWalletDisplay();document.querySelectorAll('.crypto-tab').forEach(function(t){t.classList.toggle('active',t.dataset.coin===coin)})}
@@ -297,12 +292,15 @@ async function joinRoom(){
   var d=await api('/api/workspace/join','POST',{user_id:S.userId,room_code:code});
   if(d.joined){S.workspace.roomId=d.room_id;S.workspace.roomCode=code;S.workspace.members=d.members||[];S.workspace.messages=d.messages||[];saveWorkspace();toast('Joined! 🚀');wsShowTab('chat');pollWs()}else toast(d.error||'Room not found')}
 
-async function postWsMessage(){
-  var input=document.getElementById('wsMessageInput'),text=input?input.value.trim():'';if(!text||!S.workspace.roomCode)return;
-  var d=await api('/api/workspace/message','POST',{user_id:S.userId,room_code:S.workspace.roomCode,message:text});if(d.sent){S.workspace.messages=d.messages||[];saveWorkspace();if(input)input.value='';renderWsMessages()}}
+async function postWsMessage(){  var input=document.getElementById('wsMessageInput'),text=input?input.value.trim():'';if(!text||!S.workspace.roomCode)return;
+  var d=await api('/api/workspace/message','POST',{user_id:S.userId,room_code:S.workspace.roomCode,message:text});
+  if(d.sent){S.workspace.messages=d.messages||[];saveWorkspace();if(input){input.value='';input.blur()}renderWsMessages()}}
 
 var wsPollTimer=null;
 function pollWs(){if(wsPollTimer)clearInterval(wsPollTimer);wsPollTimer=setInterval(async function(){if(!S.workspace.roomCode)return;var d=await api('/api/workspace/messages?room_code='+S.workspace.roomCode);if(d.messages){S.workspace.messages=d.messages;S.workspace.members=d.members||[];saveWorkspace();renderWsMessages()}},3000)}
+
+// ✅ FIX 2: Stop workspace polling to prevent memory leaks
+function stopWsPolling(){if(wsPollTimer){clearInterval(wsPollTimer);wsPollTimer=null}}
 
 function renderWsMessages(){
   var el=document.getElementById('wsMessages');if(!el)return;if(!S.workspace.messages.length){el.innerHTML='<p style="font-size:12px;color:var(--txt3);text-align:center;padding-top:40px">Say hello! 👋</p>';return}
@@ -323,7 +321,7 @@ function render(){
   var h='<div class="sb-section"><div class="sb-logo" id="logoClick">👌</div><div class="sb-logo-text">CAPITAN AI</div><button class="btn-new" id="btnNewChat">✨ New conversation</button></div>';
   h+='<div class="sb-section"><div class="sb-label open" data-section="menu">Menu <span class="arrow">▶</span></div><div class="sb-body" id="menuBody" style="max-height:600px">';
   h+='<div class="sb-item" id="btnChat">💬 Chat</div>';
-  if(isPlus){h+='<div class="sb-item" id="btnWorkspace">🗂️ Workspace <span class="tag-plus">'+(isPro?'10':'3')+' ppl</span></div>';h+='<div class="sb-item" id="btnCodeQuant">💻 Coding &amp; Quant</div>';h+='<div class="sb-item" id="btnAfricanFinance">🌍 African Finance</div>'}
+  if(isPlus){h+='<div class="sb-item" id="btnWorkspace">🗂️ Workspace <span class="tag-plus">'+(isPro?'10':'3')+' ppl</span></div>';h+='<div class="sb-item" id="btnCodeQuant">💻 Coding & Quant</div>';h+='<div class="sb-item" id="btnAfricanFinance">🌍 African Finance</div>'}
   if(isPro){h+='<div class="sb-item" id="btnUpload">📁 Upload Files <span class="tag-pro">PRO</span></div>';h+='<div class="sb-item" id="btnBusiness">🤝 Business Mode <span class="tag-pro">PRO</span></div>'}
   h+='</div></div>';
   if(isPro){h+='<div class="sb-section"><div class="sb-label open" data-section="markets">📈 Live Markets <span class="arrow">▶</span></div><div class="sb-body" id="marketsBody" style="max-height:400px"></div></div>'}
@@ -343,8 +341,7 @@ function render(){
 }
 
 // Fix 10: Smart scroll — only auto-scroll if near bottom
-function renderMessages(){
-  var el=document.getElementById('chatMsgs');if(!el)return;
+function renderMessages(){  var el=document.getElementById('chatMsgs');if(!el)return;
   if(!S.messages.length){el.innerHTML='<div class="welcome"><div class="welcome-logo">👌</div><h1>'+greet()+'</h1><p>Ask me anything — local knowledge, finance, coding, or just explore. ✨</p></div>';return}
   var nearBottom=el.scrollHeight-el.scrollTop-el.clientHeight<120;
   var h='';for(var i=0;i<S.messages.length;i++){var m=S.messages[i];
@@ -393,8 +390,7 @@ function bindEvents(){
   document.querySelectorAll('.crypto-tab').forEach(function(tab){tab.addEventListener('click',function(){switchCoin(tab.dataset.coin)})});
   el=document.getElementById('copyWalletBtn');if(el)el.addEventListener('click',function(){navigator.clipboard.writeText(document.getElementById('walletAddr').textContent).then(function(){toast('Address copied 📋')}).catch(function(){})});
   el=document.getElementById('verifyUpgrade');if(el)el.addEventListener('click',upgradeTier);
-  el=document.getElementById('closeUpgrade');if(el)el.addEventListener('click',function(){document.getElementById('upgradeModal').classList.remove('open');document.getElementById('paymentSection').classList.remove('open');var s=document.getElementById('paymentStatus');if(s)s.innerHTML=''});
-  el=document.getElementById('verifyFounder');if(el)el.addEventListener('click',activateFounder);
+  el=document.getElementById('closeUpgrade');if(el)el.addEventListener('click',function(){document.getElementById('upgradeModal').classList.remove('open');document.getElementById('paymentSection').classList.remove('open');var s=document.getElementById('paymentStatus');if(s)s.innerHTML=''});  el=document.getElementById('verifyFounder');if(el)el.addEventListener('click',activateFounder);
   el=document.getElementById('closeFounder');if(el)el.addEventListener('click',function(){document.getElementById('founderModal').classList.remove('open')});
   el=document.getElementById('closeAdmin');if(el)el.addEventListener('click',function(){document.getElementById('adminModal').classList.remove('open')});
   el=document.getElementById('wsTabCreate');if(el)el.addEventListener('click',function(){wsShowTab('create')});el=document.getElementById('wsTabJoin');if(el)el.addEventListener('click',function(){wsShowTab('join')});el=document.getElementById('wsTabChat');if(el)el.addEventListener('click',function(){wsShowTab('chat')});
@@ -403,15 +399,16 @@ function bindEvents(){
   el=document.getElementById('wsJoinBtn');if(el)el.addEventListener('click',joinRoom);
   el=document.getElementById('wsSendBtn');if(el)el.addEventListener('click',postWsMessage);
   el=document.getElementById('wsMessageInput');if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')postWsMessage()});
-  el=document.getElementById('closeWorkspace');if(el)el.addEventListener('click',function(){document.getElementById('workspaceModal').classList.remove('open')});
+  // ✅ FIX 2: Stop polling when workspace modal closes
+  el=document.getElementById('closeWorkspace');if(el)el.addEventListener('click',function(){document.getElementById('workspaceModal').classList.remove('open');stopWsPolling()});
   document.querySelectorAll('.sb-label').forEach(function(l){l.addEventListener('click',function(){var sec=l.dataset.section,body=document.getElementById(sec+'Body');if(body){var isOpen=body.style.maxHeight!=='0px'&&body.style.maxHeight!=='';body.style.maxHeight=isOpen?'0px':'800px';l.classList.toggle('open',!isOpen)}})});
-  ['upgradeModal','authModal','otpModal','founderModal','workspaceModal','privacyModal'].forEach(function(id){var modal=document.getElementById(id);if(modal)modal.addEventListener('click',function(e){if(e.target.id===id){modal.classList.remove('open');if(id==='upgradeModal'){document.getElementById('paymentSection').classList.remove('open');var s=document.getElementById('paymentStatus');if(s)s.innerHTML=''}}})});
+  ['upgradeModal','authModal','otpModal','founderModal','workspaceModal','privacyModal'].forEach(function(id){var modal=document.getElementById(id);if(modal)modal.addEventListener('click',function(e){if(e.target.id===id){modal.classList.remove('open');if(id==='upgradeModal'){document.getElementById('paymentSection').classList.remove('open');var s=document.getElementById('paymentStatus');if(s)s.innerHTML=''}if(id==='workspaceModal')stopWsPolling()}})});
 
-  // Fix 14: No fixed body — safe touch handling
+  // ✅ FIX 1: Corrected mobile swipe gesture
   var touchStartX=0;
   document.addEventListener('touchmove',function(e){var sb=document.querySelector('.sidebar.mobile-open');if(sb&&!sb.contains(e.target))e.preventDefault()},{passive:false});
   document.querySelector('.main')?.addEventListener('touchstart',function(e){touchStartX=e.touches[0].clientX},{passive:!0});
-  document.querySelector('.main')?.addEventListener('touchend',function(e){if(e.changedTouches[0].clientX-touchStartX>80)S.mobileOpenSidebar()});
+  document.querySelector('.main')?.addEventListener('touchend',function(e){var touchEndX=e.changedTouches[0].clientX;if(touchEndX-touchStartX>80&&!S.sidebarMobileOpen)mobileOpenSidebar()});
 }
 
 init();
