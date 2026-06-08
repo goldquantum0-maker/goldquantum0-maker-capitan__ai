@@ -30,7 +30,7 @@ MESSAGE_LIMITS = {"free": 10, "plus": 30, "pro": float("inf"), "founder": float(
 
 # Wallet addresses
 WALLETS = {
-    "USDC": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1",
+    "SOL": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1",
     "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
     "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
 }
