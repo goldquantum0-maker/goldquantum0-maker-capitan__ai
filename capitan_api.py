@@ -1,954 +1,811 @@
-# ═══════════════════════════════════════════════════════════════
-# CAPITAN AI — ELITE INTELLIGENCE API v7.0
-# Complete Intelligence Upgrade
-# CLOSEAI Technologies — closeaitechnologies@gmail.com
-# Deployed on Render: https://goldquantum0-capitan-ai-1.onrender.com
-# ═══════════════════════════════════════════════════════════════
-
 import os, re, json, uuid, time, requests, sqlite3
-from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uvicorn
 
-# ═══════════════════════════════════════════════════════════════
-# COMPLETE API KEY CONFIGURATION
-# ═══════════════════════════════════════════════════════════════
-KEYS = {
-    "OPENROUTER":    os.environ.get("OPENROUTER_API_KEY", ""),
-    "OPENAI":        os.environ.get("OPENAI_API_KEY", ""),
-    "MISTRAL":       os.environ.get("MISTRAL_API_KEY", ""),
-    "GROQ":          os.environ.get("GROQ_API_KEY", ""),
-    "HF_TOKEN":      os.environ.get("HF_TOKEN", ""),
-    "ZENMUK":        os.environ.get("ZENMUK_API_KEY", ""),
-    "ALPHA_VANTAGE": os.environ.get("ALPHA_VANTAGE_KEY", ""),
-    "TWELVE_DATA":   os.environ.get("TWELVE_DATA_KEY", ""),
-    "COINGECKO":     os.environ.get("COINGECKO_KEY", ""),
-    "ETHERSCAN":     os.environ.get("ETHERSCAN_API_KEY", ""),
-    "SERPAPI":       os.environ.get("SERPAPI_KEY", ""),
-    "GNEWS":         os.environ.get("GNEWS_KEY", ""),
-    "NEWSAPI":       os.environ.get("NEWSAPI_KEY", ""),
-    "IPGEOLOCATION": os.environ.get("IPGEOLOCATION_KEY", ""),
-    "LOCATIONIQ":    os.environ.get("LOCATIONIQ_KEY", ""),
-    "SUPABASE_URL":  os.environ.get("SUPABASE_URL", ""),
-    "SUPABASE_KEY":  os.environ.get("SUPABASE_KEY", ""),
-    "WOLFRAM_APP_ID": os.environ.get("WOLFRAM_APP_ID", ""),
-    "ADMIN_CODE":    os.environ.get("ADMIN_CODE", "Osinachi@350"),
-}
+# ═══════════════════════════════════════════════════════════════════
+# CONFIG
+# ═══════════════════════════════════════════════════════════════════
+OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENAI_KEY     = os.environ.get("OPENAI_API_KEY", "")
+GROQ_KEY       = os.environ.get("GROQ_API_KEY", "")
+DB_PATH        = "capitan.db"
 
-# ═══════════════════════════════════════════════════════════════
-# MODEL ROUTING — Multi-Provider Fallback
-# ═══════════════════════════════════════════════════════════════
-MODEL_ROUTING = {
-    "openrouter": {
-        "base_url": "https://openrouter.ai/api/v1/chat/completions",
-        "auth_header": lambda: f"Bearer {KEYS['OPENROUTER']}",
-        "models": {
-            "fast": ["deepseek/deepseek-chat", "meta-llama/llama-3.1-70b-instruct"],
-            "smart": ["anthropic/claude-3.5-sonnet", "openai/gpt-4o"],
-            "deep": ["deepseek/deepseek-r1", "anthropic/claude-3.5-sonnet"],
-        }
-    },
-    "openai": {
-        "base_url": "https://api.openai.com/v1/chat/completions",
-        "auth_header": lambda: f"Bearer {KEYS['OPENAI']}",
-        "models": {
-            "fast": ["gpt-3.5-turbo"],
-            "smart": ["gpt-4o", "gpt-4o-mini"],
-            "deep": ["gpt-4o"],
-        }
-    },
-    "mistral": {
-        "base_url": "https://api.mistral.ai/v1/chat/completions",
-        "auth_header": lambda: f"Bearer {KEYS['MISTRAL']}",
-        "models": {
-            "fast": ["mistral-small-latest"],
-            "smart": ["mistral-large-latest"],
-            "deep": ["mistral-large-latest"],
-        }
-    },
-    "groq": {
-        "base_url": "https://api.groq.com/openai/v1/chat/completions",
-        "auth_header": lambda: f"Bearer {KEYS['GROQ']}",
-        "models": {
-            "fast": ["llama-3.1-70b-versatile", "mixtral-8x7b-32768"],
-            "smart": ["llama-3.1-70b-versatile"],
-            "deep": ["llama-3.1-70b-versatile"],
-        }
-    },
-    "zenmuk": {
-        "base_url": "https://api.zenmuk.com/v1/chat/completions",
-        "auth_header": lambda: f"Bearer {KEYS['ZENMUK']}",
-        "models": {
-            "fast": ["zenmuk-fast"],
-            "smart": ["zenmuk-pro"],
-            "deep": ["zenmuk-pro"],
-        }
-    },
-}
-
-PROVIDER_ORDER = ["openrouter", "openai", "mistral", "groq", "zenmuk"]
-
-# ═══════════════════════════════════════════════════════════════
-# DATABASE
-# ═══════════════════════════════════════════════════════════════
-DB_PATH = os.environ.get("DATABASE_PATH", "capitan.db")
-
+# ═══════════════════════════════════════════════════════════════════
+# DATABASE — Extended for self-learning & feedback loops
+# ═══════════════════════════════════════════════════════════════════
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS memories (
-        id TEXT PRIMARY KEY, memory_id TEXT UNIQUE, user_id TEXT,
-        content TEXT, query TEXT, type TEXT, tier TEXT,
-        active INTEGER DEFAULT 1, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS payments (
-        id TEXT PRIMARY KEY, txid TEXT UNIQUE, currency TEXT, amount REAL,
-        verified INTEGER DEFAULT 0, user_id TEXT, expires TEXT, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
-        id TEXT PRIMARY KEY, key TEXT UNIQUE, user_id TEXT,
-        active INTEGER DEFAULT 1, created TEXT
-    )''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY, tier TEXT DEFAULT 'free',
-        pro_expiry TEXT, msg_count INTEGER DEFAULT 0,
-        msg_window TEXT, created TEXT, preferences TEXT
+        id TEXT PRIMARY KEY, email TEXT, tier TEXT DEFAULT "free",
+        msg_count INTEGER DEFAULT 0, msg_window TEXT, created TEXT,
+        expertise_profile TEXT DEFAULT "{}",
+        interaction_style TEXT DEFAULT "balanced"
     )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
-        id TEXT PRIMARY KEY, user_id TEXT, name TEXT,
-        members INTEGER DEFAULT 1, created TEXT
+
+    c.execute('''CREATE TABLE IF NOT EXISTS memories (
+        id TEXT PRIMARY KEY, memory_id TEXT, user_id TEXT,
+        content TEXT, query TEXT, tier TEXT, domain TEXT,
+        sentiment TEXT DEFAULT "neutral", quality_score REAL DEFAULT 0.0,
+        created TEXT
     )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS prompts (
-        id TEXT PRIMARY KEY, user_id TEXT, title TEXT,
-        prompt TEXT, vars TEXT, category TEXT, created TEXT
+
+    c.execute('''CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY, user_id TEXT, txid TEXT,
+        currency TEXT, amount REAL, tier TEXT, expires TEXT, created TEXT
     )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS search_cache (
-        id TEXT PRIMARY KEY, query_hash TEXT UNIQUE, results TEXT,
-        created TEXT, expires TEXT
+
+    c.execute('''CREATE TABLE IF NOT EXISTS payment_log (
+        id TEXT PRIMARY KEY, user_id TEXT, tier TEXT,
+        amount REAL, currency TEXT, txid TEXT, created TEXT
     )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS training (
+        id TEXT PRIMARY KEY, user_id TEXT, query TEXT,
+        response TEXT, domain TEXT, tier TEXT,
+        feedback INTEGER DEFAULT 0, created TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS learning_patterns (
+        id TEXT PRIMARY KEY, domain TEXT, pattern TEXT,
+        frequency INTEGER DEFAULT 1, last_seen TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS user_knowledge_graph (
+        id TEXT PRIMARY KEY, user_id TEXT,
+        topic TEXT, depth_level TEXT, last_interaction TEXT,
+        interaction_count INTEGER DEFAULT 1
+    )''')
+
     conn.commit()
     conn.close()
 
 init_db()
 
-def short_id(): return str(uuid.uuid4())[:8].upper()
-def mem_id(): return 'mem_' + short_id()
+def sid(): return str(uuid.uuid4())[:8].upper()
+def mid(): return 'mem_' + sid()
 
-# ═══════════════════════════════════════════════════════════════
-# GLOBAL MEMORY
-# ═══════════════════════════════════════════════════════════════
-class Memory:
-    @staticmethod
-    def add(user_id, content, query=None, mem_type="query", tier="free"):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        mid = mem_id()
-        c.execute(
-            "INSERT INTO memories (id, memory_id, user_id, content, query, type, tier, created) VALUES (?,?,?,?,?,?,?,?)",
-            (short_id(), mid, user_id, content, query, mem_type, tier, datetime.now().isoformat())
-        )
-        conn.commit()
-        conn.close()
-        return mid
-
-    @staticmethod
-    def get_recent(user_id=None, limit=50):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        if user_id:
-            c.execute("SELECT memory_id, user_id, content, query, type, tier, created FROM memories WHERE user_id=? ORDER BY created DESC LIMIT ?", (user_id, limit))
-        else:
-            c.execute("SELECT memory_id, user_id, content, query, type, tier, created FROM memories ORDER BY created DESC LIMIT ?", (limit,))
-        rows = c.fetchall()
-        conn.close()
-        return [{"memory_id": r[0], "user_id": r[1], "content": r[2], "query": r[3], "type": r[4], "tier": r[5], "created": r[6]} for r in rows]
-
-    @staticmethod
-    def search(query, user_id=None):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        q = f"%{query}%"
-        if user_id:
-            c.execute("SELECT memory_id, user_id, content, query, type, tier, created FROM memories WHERE user_id=? AND (content LIKE ? OR query LIKE ? OR memory_id LIKE ?) ORDER BY created DESC LIMIT 50", (user_id, q, q, q))
-        else:
-            c.execute("SELECT memory_id, user_id, content, query, type, tier, created FROM memories WHERE content LIKE ? OR query LIKE ? OR memory_id LIKE ? ORDER BY created DESC LIMIT 50", (q, q, q))
-        rows = c.fetchall()
-        conn.close()
-        return [{"memory_id": r[0], "user_id": r[1], "content": r[2], "query": r[3], "type": r[4], "tier": r[5], "created": r[6]} for r in rows]
-
-    @staticmethod
-    def get_user_patterns(user_id):
-        """Extract patterns from user's memory history"""
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT query, type, tier FROM memories WHERE user_id=? AND type='query' ORDER BY created DESC LIMIT 20", (user_id,))
-        rows = c.fetchall()
-        conn.close()
-
-        if not rows:
-            return None
-
-        domains = {}
-        for r in rows:
-            domain = classify_domain(r[0] or "")
-            domains[domain] = domains.get(domain, 0) + 1
-
-        top_domain = max(domains, key=domains.get) if domains else "general"
-        return {
-            "total_queries": len(rows),
-            "top_domain": top_domain,
-            "domain_distribution": domains
-        }
-
-# ═══════════════════════════════════════════════════════════════
-# USER MANAGEMENT
-# ═══════════════════════════════════════════════════════════════
-class Users:
-    FREE_LIMIT = 20
-    FREE_WINDOW_HOURS = 7
-    PRO_DAYS = 30
-
-    @staticmethod
-    def get_or_create(user_id):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT tier, pro_expiry, msg_count, msg_window FROM users WHERE id=?", (user_id,))
+# ═══════════════════════════════════════════════════════════════════
+# SELF-LEARNING ENGINE
+# ═══════════════════════════════════════════════════════════════════
+def update_learning_pattern(domain: str, query: str):
+    """Track recurring query patterns for adaptive intelligence."""
+    keywords = re.findall(r'\b[a-z]{4,}\b', query.lower())
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    for kw in keywords[:5]:
+        c.execute("SELECT id, frequency FROM learning_patterns WHERE domain=? AND pattern=?", (domain, kw))
         row = c.fetchone()
-        if not row:
-            c.execute(
-                "INSERT INTO users (id, tier, msg_count, msg_window, created) VALUES (?,?,?,?,?)",
-                (user_id, 'free', 0, datetime.now().isoformat(), datetime.now().isoformat())
-            )
-            conn.commit()
-            conn.close()
-            return {"tier": "free", "pro_expiry": None, "msg_count": 0, "msg_window": datetime.now().isoformat()}
-        conn.close()
-        tier, pro_expiry, msg_count, msg_window = row
-
-        if tier in ('pro', 'founder') and pro_expiry:
-            if datetime.now() > datetime.fromisoformat(pro_expiry):
-                conn = sqlite3.connect(DB_PATH)
-                c = conn.cursor()
-                c.execute("UPDATE users SET tier='free', pro_expiry=NULL WHERE id=?", (user_id,))
-                conn.commit()
-                conn.close()
-                return {"tier": "free", "pro_expiry": None, "msg_count": 0, "msg_window": datetime.now().isoformat()}
-
-        return {"tier": tier, "pro_expiry": pro_expiry, "msg_count": msg_count or 0, "msg_window": msg_window or datetime.now().isoformat()}
-
-    @staticmethod
-    def check_limit(user_id):
-        user = Users.get_or_create(user_id)
-        if user["tier"] != "free":
-            return True, float('inf')
-
-        window = datetime.fromisoformat(user["msg_window"])
-        if datetime.now() - window > timedelta(hours=Users.FREE_WINDOW_HOURS):
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute("UPDATE users SET msg_count=0, msg_window=? WHERE id=?", (datetime.now().isoformat(), user_id))
-            conn.commit()
-            conn.close()
-            user["msg_count"] = 0
-
-        remaining = Users.FREE_LIMIT - user["msg_count"]
-        return user["msg_count"] < Users.FREE_LIMIT, remaining
-
-    @staticmethod
-    def increment(user_id):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("UPDATE users SET msg_count = msg_count + 1 WHERE id=?", (user_id,))
-        conn.commit()
-        conn.close()
-
-    @staticmethod
-    def activate_pro(user_id):
-        expiry = (datetime.now() + timedelta(days=Users.PRO_DAYS)).isoformat()
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("UPDATE users SET tier='pro', pro_expiry=?, msg_count=0 WHERE id=?", (expiry, user_id))
-        conn.commit()
-        conn.close()
-
-# ═══════════════════════════════════════════════════════════════
-# LLM CALLER — Multi-Provider Fallback
-# ═══════════════════════════════════════════════════════════════
-def call_llm(messages, tier="free", stream=False):
-    model_tier = "smart" if tier in ("pro", "founder") else "fast"
-
-    for provider_name in PROVIDER_ORDER:
-        provider = MODEL_ROUTING.get(provider_name)
-        if not provider:
-            continue
-
-        auth = provider["auth_header"]()
-        if not auth or auth == "Bearer ":
-            continue
-
-        models = provider["models"].get(model_tier, provider["models"]["fast"])
-
-        for model in models:
-            try:
-                headers = {
-                    "Authorization": auth,
-                    "Content-Type": "application/json"
-                }
-                if provider_name == "openrouter":
-                    headers["HTTP-Referer"] = "https://capitan.pages.dev"
-                    headers["X-Title"] = "CAPITAN AI"
-
-                payload = {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": 0.3,
-                    "max_tokens": 1500,
-                    "stream": stream
-                }
-
-                r = requests.post(
-                    provider["base_url"],
-                    headers=headers,
-                    json=payload,
-                    timeout=180,
-                    stream=stream
-                )
-
-                if r.status_code == 200:
-                    return r if stream else r.json()["choices"][0]["message"]["content"]
-                if r.status_code == 401:
-                    break
-            except Exception:
-                continue
-
-    return None if stream else _ultimate_fallback(messages)
-
-def _ultimate_fallback(messages):
-    user_msg = ""
-    for msg in reversed(messages):
-        if msg["role"] == "user":
-            user_msg = msg["content"]
-            break
-
-    greeting_words = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
-    if any(user_msg.lower().startswith(w) for w in greeting_words):
-        return "Hello! I'm CAPITAN AI. I'm currently experiencing high demand across all AI providers. Please try again in a moment, or contact closeaitechnologies@gmail.com if this persists."
-
-    return (
-        "I'm CAPITAN AI. All AI providers are temporarily at capacity — this happens during peak usage. "
-        "Your query is important. Please try again in 30 seconds, or email closeaitechnologies@gmail.com for priority support.\n\n"
-        f"Your query was: '{user_msg[:100]}...'"
-    )
-
-# ═══════════════════════════════════════════════════════════════
-# DOMAIN CLASSIFICATION — UPGRADED
-# ═══════════════════════════════════════════════════════════════
-def classify_domain(query):
-    q = query.lower()
-
-    patterns = {
-        "greeting": [
-            r'^(hi|hello|hey|good morning|good afternoon|good evening|howdy|yo|sup)\b',
-            r'\b(how are you|what\'s up|how\'s it going|how do you do)\b'
-        ],
-        "help": [
-            r'^(help|assist|support|oh no|what|huh|hmm|um|uh)\b',
-            r'\b(i need help|can you help|help me|i\'m stuck|i don\'t understand)\b'
-        ],
-        "gratitude": [
-            r'\b(thank you|thanks|appreciate|grateful|you\'re amazing|great job|well done)\b'
-        ],
-        "coding": [
-            r'```', r'\bdef\s+\w+\s*\(', r'\bclass\s+\w+',
-            r'\b(write|implement|code|refactor|debug|optimize|build|create)\b.*\b(function|class|api|algorithm|program|script)\b',
-            r'\b(python|numpy|pandas|javascript|typescript|sql|rust|go|java|react|node|html|css)\b',
-            r'\b(explain|how does|what is)\b.*\b(code|programming|algorithm|api|framework)\b'
-        ],
-        "quant": [
-            r'\b(monte carlo|black.scholes|stochastic|option pricing|var|cvar|sharpe|sortino|backtest|alpha generation|factor model)\b',
-            r'\b(calculate|compute|derive)\b.*\b(volatility|correlation|covariance|beta|risk)\b'
-        ],
-        "quantum": [
-            r'\b(quantum|qubit|qiskit|entanglement|superposition|quantum circuit|quantum gate|bell state|bloch sphere)\b'
-        ],
-        "macro": [
-            r'\b(gdp|inflation|recession|fiscal policy|monetary policy|central bank|fed|ecb|interest rate|yield curve|fomc)\b',
-            r'\b(what is|explain|how does)\b.*\b(economy|economic|macro|monetary|fiscal)\b'
-        ],
-        "finance": [
-            r'\b(revenue|earnings|ebitda|valuation|pe ratio|dcf|wacc|irr|npv|stock|bond|equity|crypto|bitcoin|ethereum)\b',
-            r'\b(analyze|analysis|outlook|forecast)\b.*\b(market|stock|sector|industry)\b',
-            r'\b(what is|explain)\b.*\b(investing|trading|stock|bond|etf|mutual fund|derivative)\b',
-            r'\b(compare|versus|vs)\b.*\b(stock|company|sector|market)\b'
-        ],
-        "math": [
-            r'\b(prove|proof|theorem|lemma|derive|integral|derivative|linear algebra|eigenvalue|matrix|calculus)\b',
-            r'\b(solve|calculate|compute)\b.*\b(equation|integral|derivative|limit|sum)\b'
-        ],
-        "science": [
-            r'\b(crispr|dna|physics|chemistry|biology|neuroscience|gene|cell|molecule|atom|particle|experiment)\b',
-            r'\b(how does|explain|what is)\b.*\b(work|function|process)\b.*\b(biology|chemistry|physics|science)\b'
-        ],
-    }
-
-    for domain, pats in patterns.items():
-        for p in pats:
-            if re.search(p, q):
-                if domain in ("greeting", "help", "gratitude"):
-                    return "general"
-                return domain
-
-    return "general"
-
-# ═══════════════════════════════════════════════════════════════
-# UPGRADED SYSTEM PROMPT — Natural, Direct, Helpful
-# ═══════════════════════════════════════════════════════════════
-SYSTEM_PROMPT = """You are CAPITAN AI — an institutional intelligence system by CLOSEAI Technologies.
-
-IDENTITY:
-Direct, knowledgeable, genuinely helpful. Warm through competence, not forced enthusiasm. Like a trusted senior colleague.
-
-RESPONSE STYLE:
-• Lead with the answer — most important sentence first
-• 2-3 sentences of context, then offer to go deeper
-• Natural and conversational, not robotic
-• Use **bold** sparingly for key terms only
-• Code in ```blocks``` with language labels
-• Tables only when comparing 3+ items
-• Short paragraphs, scannable
-
-FOR UNCLEAR QUERIES (like "oh no", "what?", "help"):
-• Ask ONE clarifying question: "What specifically do you need help with?"
-• Don't list options unless they ask
-
-FOR GREETINGS:
-• Respond warmly but briefly
-• Ask what they're working on today
-
-FOR GRATITUDE:
-• "Glad it helped. What's next?"
-
-RULES:
-• Never give trading signals, entry/exit prices, or buy/sell recommendations
-• If asked for opinions, frame as analysis with evidence
-• If you don't know, say so directly and offer to research
-• Acknowledge errors honestly
-• Calibrate confidence: use phrases like "Based on current data..." or "The evidence suggests..."
-
-DOMAIN: {domain}
-TIER: {tier}"""
-
-# ═══════════════════════════════════════════════════════════════
-# MARKET DATA PROVIDERS
-# ═══════════════════════════════════════════════════════════════
-class MarketData:
-    @staticmethod
-    def get_prices():
-        results = {}
-        tickers = {
-            "^GSPC": "S&P 500", "^IXIC": "NASDAQ", "^DJI": "Dow Jones",
-            "AAPL": "Apple", "MSFT": "Microsoft", "NVDA": "Nvidia",
-            "TSLA": "Tesla", "GOOGL": "Alphabet", "META": "Meta",
-            "GC=F": "Gold", "CL=F": "Crude Oil", "SI=F": "Silver",
-            "EURUSD=X": "EUR/USD", "GBPUSD=X": "GBP/USD", "USDJPY=X": "USD/JPY"
-        }
-        try:
-            symbols = ",".join(tickers.keys())
-            r = requests.get(
-                "https://query1.finance.yahoo.com/v7/finance/quote",
-                params={"symbols": symbols, "fields": "regularMarketPrice,regularMarketPreviousClose,shortName"},
-                timeout=5,
-                headers={"User-Agent": "Mozilla/5.0"}
-            )
-            if r.status_code == 200:
-                for item in r.json().get("quoteResponse", {}).get("result", []):
-                    sym = item.get("symbol", "")
-                    pr = item.get("regularMarketPrice")
-                    pv = item.get("regularMarketPreviousClose")
-                    name = item.get("shortName", tickers.get(sym, sym))
-                    if pr and pv and pr > 0:
-                        results[name] = {"price": pr, "change_pct": round(((pr - pv) / pv) * 100, 2)}
-        except Exception:
-            pass
-
-        # Crypto
-        try:
-            r = requests.get(
-                "https://api.coingecko.com/api/v3/simple/price",
-                params={"ids": "bitcoin,ethereum,solana", "vs_currencies": "usd", "include_24hr_change": "true"},
-                timeout=5
-            )
-            if r.status_code == 200:
-                for name in ["bitcoin", "ethereum", "solana"]:
-                    coin = r.json().get(name, {})
-                    if coin.get("usd"):
-                        results[name.capitalize()] = {"price": coin["usd"], "change_pct": round(coin.get("usd_24h_change", 0), 2)}
-        except Exception:
-            pass
-
-        return results
-
-    @staticmethod
-    def get_news():
-        items = []
-        # GNews
-        if KEYS["GNEWS"]:
-            try:
-                r = requests.get(
-                    "https://gnews.io/api/v4/top-headlines",
-                    params={"category": "business", "lang": "en", "max": 5, "apikey": KEYS["GNEWS"]},
-                    timeout=5
-                )
-                if r.status_code == 200:
-                    for a in r.json().get("articles", []):
-                        items.append({"title": a["title"], "source": a["source"]["name"]})
-            except Exception:
-                pass
-
-        # Yahoo RSS fallback
-        if not items:
-            try:
-                r = requests.get(
-                    "https://finance.yahoo.com/news/rssindex",
-                    timeout=5,
-                    headers={"User-Agent": "Mozilla/5.0"}
-                )
-                if r.status_code == 200:
-                    import xml.etree.ElementTree as ET
-                    for item in ET.fromstring(r.content).findall('.//item')[:5]:
-                        title = item.find('title')
-                        if title is not None and title.text:
-                            items.append({"title": title.text.strip(), "source": "Yahoo Finance"})
-            except Exception:
-                pass
-
-        return items
-
-# ═══════════════════════════════════════════════════════════════
-# INTELLIGENCE GATHERING
-# ═══════════════════════════════════════════════════════════════
-def gather_intelligence(query: str, domain: str, is_pro: bool, user_id: str = None) -> str:
-    """Gather all available intelligence for context injection"""
-    parts = []
-
-    # Market data for finance/macro queries
-    if is_pro and domain in ("finance", "macro", "general"):
-        try:
-            prices = MarketData.get_prices()
-            if prices:
-                parts.append("## LIVE MARKET DATA")
-                for name, data in list(prices.items())[:8]:
-                    arrow = "▲" if data["change_pct"] >= 0 else "▼"
-                    parts.append(f"{name}: ${data['price']:,.2f} ({arrow} {abs(data['change_pct']):.2f}%)")
-
-            news = MarketData.get_news()
-            if news:
-                parts.append("\n## RECENT HEADLINES")
-                for n in news[:5]:
-                    parts.append(f"• {n['title'][:120]}")
-        except Exception:
-            pass
-
-    # Memory context for returning users
-    if user_id:
-        try:
-            recent = Memory.get_recent(user_id, limit=3)
-            if recent:
-                parts.append("\n## YOUR RECENT CONTEXT")
-                for mem in recent[:3]:
-                    snippet = (mem.get("query") or mem.get("content") or "")[:100]
-                    if snippet:
-                        parts.append(f"• {snippet}")
-                parts.append("Use this for continuity. Don't mention it unless relevant.")
-        except Exception:
-            pass
-
-    return "\n".join(parts)
-
-# ═══════════════════════════════════════════════════════════════
-# CRYPTO VERIFICATION
-# ═══════════════════════════════════════════════════════════════
-CRYPTO_ADDRESSES = {
-    "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
-    "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1",
-    "USDC": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1",
-}
-PRO_PRICE_CRYPTO = {"BTC": 0.00028, "ETH": 0.005, "USDC": 17}
-
-def verify_crypto(txid, currency, amount):
-    txid = txid.strip()
-    if not txid:
-        return False, "No TXID provided"
-
-    if currency == "BTC" and not re.match(r'^[a-fA-F0-9]{64}$', txid):
-        return False, "Invalid Bitcoin TXID"
-    if currency in ("ETH", "USDC") and not re.match(r'^0x[a-fA-F0-9]{64}$', txid):
-        return False, "Invalid Ethereum TXID"
-
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id FROM payments WHERE txid=?", (txid,))
-    if c.fetchone():
-        conn.close()
-        return False, "TXID already used"
-    conn.close()
-
-    try:
-        if currency == "BTC":
-            for url in [f"https://blockchain.info/rawtx/{txid}", f"https://blockstream.info/api/tx/{txid}"]:
-                try:
-                    r = requests.get(url, timeout=10)
-                    if r.status_code != 200:
-                        continue
-                    outputs = r.json().get("out") or r.json().get("vout") or []
-                    for out in outputs:
-                        addr = out.get("addr") or out.get("scriptpubkey_address", "")
-                        if addr == CRYPTO_ADDRESSES["BTC"]:
-                            val = out.get("value", 0)
-                            if val > 1:
-                                val /= 100_000_000
-                            if abs(val - amount) < 0.00005:
-                                return True, "Verified on Bitcoin ✓"
-                            return False, f"Amount mismatch"
-                    return False, "Address not in transaction"
-                except Exception:
-                    continue
-            return False, "Could not verify BTC"
-
-        if currency in ("ETH", "USDC"):
-            api_key = KEYS["ETHERSCAN"] or "YourApiKeyToken"
-            r = requests.get("https://api.etherscan.io/api", params={
-                "module": "proxy", "action": "eth_getTransactionByHash",
-                "txhash": txid, "apikey": api_key
-            }, timeout=10)
-            if r.status_code != 200:
-                return False, "Etherscan unavailable"
-            txd = r.json().get("result", {})
-            if not txd:
-                return False, "Transaction not found"
-            if txd.get("to", "").lower() != CRYPTO_ADDRESSES["ETH"].lower():
-                return False, "Wrong destination"
-            val = int(txd.get("value", "0"), 16) / 1e18
-            if abs(val - amount) < 0.001:
-                return True, "Verified on Ethereum ✓"
-            return False, "Amount mismatch"
-    except Exception as e:
-        return False, str(e)[:100]
-
-    return False, "Unsupported currency"
-
-def record_payment(txid, currency, amount, user_id):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO payments (id, txid, currency, amount, verified, user_id, expires, created) VALUES (?,?,?,?,?,?,?,?)",
-        (short_id(), txid, currency, amount, 1, user_id,
-         (datetime.now() + timedelta(days=Users.PRO_DAYS)).isoformat(),
-         datetime.now().isoformat())
-    )
+        if row:
+            c.execute("UPDATE learning_patterns SET frequency=frequency+1, last_seen=? WHERE id=?",
+                      (datetime.now().isoformat(), row[0]))
+        else:
+            c.execute("INSERT INTO learning_patterns (id, domain, pattern, frequency, last_seen) VALUES (?,?,?,1,?)",
+                      (sid(), domain, kw, datetime.now().isoformat()))
     conn.commit()
     conn.close()
 
-# ═══════════════════════════════════════════════════════════════
-# REQUEST MODELS
-# ═══════════════════════════════════════════════════════════════
-class ChatRequest(BaseModel):
-    messages: List[dict]
-    stream: bool = True
-    user_id: str = "anonymous"
-    model: str = "balanced"
+def update_user_knowledge_graph(user_id: str, domain: str, query: str):
+    """Build a per-user knowledge profile over time."""
+    topic = classify_subtopic(query, domain)
+    depth = infer_expertise_depth(query)
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id FROM user_knowledge_graph WHERE user_id=? AND topic=?", (user_id, topic))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE user_knowledge_graph SET depth_level=?, last_interaction=?, interaction_count=interaction_count+1 WHERE id=?",
+                  (depth, datetime.now().isoformat(), row[0]))
+    else:
+        c.execute("INSERT INTO user_knowledge_graph (id, user_id, topic, depth_level, last_interaction, interaction_count) VALUES (?,?,?,?,?,1)",
+                  (sid(), user_id, topic, depth, datetime.now().isoformat()))
+    conn.commit()
+    conn.close()
 
-class PaymentVerifyRequest(BaseModel):
-    txid: str
-    currency: str
-    user_id: str = "anonymous"
+def get_user_profile(user_id: str) -> dict:
+    """Retrieve what CAPITAN has learned about this user."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT topic, depth_level, interaction_count FROM user_knowledge_graph WHERE user_id=? ORDER BY interaction_count DESC LIMIT 8", (user_id,))
+    topics = [{"topic": r[0], "depth": r[1], "count": r[2]} for r in c.fetchall()]
+    c.execute("SELECT domain, COUNT(*) as cnt FROM memories WHERE user_id=? GROUP BY domain ORDER BY cnt DESC LIMIT 3", (user_id,))
+    domains = [r[0] for r in c.fetchall()]
+    conn.close()
+    return {"top_topics": topics, "frequent_domains": domains}
 
-class MemoryRequest(BaseModel):
-    content: str
-    user_id: str = "anonymous"
+def classify_subtopic(query: str, domain: str) -> str:
+    q = query.lower()
+    subtopic_map = {
+        "finance": {
+            "options": r'option|call|put|strike|expiry|black.scholes|greeks|delta|gamma|vega|theta',
+            "forex": r'forex|fx|currency pair|pip|spread|carry trade|eurusd|gbpusd',
+            "crypto": r'bitcoin|ethereum|defi|nft|blockchain|web3|altcoin|stablecoin',
+            "africa_markets": r'gse|nse|jse|ngx|dse|brvm|african stock|nairobi|accra bourse',
+            "commodities": r'gold|oil|crude|cocoa|coffee|commodity|futures|spot price',
+            "dcf": r'dcf|discounted cash flow|npv|irr|wacc|terminal value|capex',
+            "macro": r'gdp|inflation|interest rate|fed|central bank|monetary policy|yield curve',
+        },
+        "coding": {
+            "algorithms": r'algorithm|complexity|big o|sort|search|tree|graph|dynamic programming',
+            "web": r'react|nextjs|html|css|tailwind|frontend|backend|rest api|graphql',
+            "devops": r'docker|kubernetes|ci\/cd|github actions|terraform|aws|gcp|azure',
+            "security_code": r'sql injection|xss|csrf|owasp|sanitize|auth|jwt|oauth',
+            "data_engineering": r'etl|pipeline|kafka|airflow|spark|data warehouse|dbt',
+        },
+        "quant": {
+            "derivatives": r'option pricing|stochastic|ito|black.scholes|heston|sabr',
+            "risk": r'var|cvar|stress test|drawdown|correlation|covariance|tail risk',
+            "ml_quant": r'lstm|transformer|xgboost|feature engineering|alpha|signal',
+            "portfolio": r'markowitz|efficient frontier|sharpe|sortino|capm|factor model',
+            "hft": r'high frequency|market microstructure|order book|latency|arbitrage',
+        },
+        "cyber": {
+            "pentest": r'pentest|exploit|payload|metasploit|kali|recon|enumeration',
+            "forensics": r'forensics|memory dump|artifacts|timeline|hash|chain of custody',
+            "networking": r'firewall|ids|ips|packet|wireshark|tcp|dns|vpn|zero trust',
+            "malware": r'malware|ransomware|trojan|reverse engineering|sandbox|ioc',
+            "cloud_security": r'iam|s3 bucket|misconfig|cloud trail|azure ad|privilege escalation',
+        },
+        "science": {
+            "biotech": r'crispr|gene|protein|mrna|pcr|sequencing|antibody|clinical trial',
+            "quantum": r'qubit|superposition|entanglement|quantum gate|shor|grover',
+            "physics": r'relativity|thermodynamics|wave|particle|field theory|plasma',
+            "ai_science": r'neural network|transformer|attention|llm|rl|gradient|backprop',
+        },
+    }
+    domain_map = subtopic_map.get(domain, {})
+    for subtopic, pattern in domain_map.items():
+        if re.search(pattern, q):
+            return f"{domain}:{subtopic}"
+    return domain
 
-class AdminRequest(BaseModel):
-    admin_code: str
-    search: Optional[str] = None
+def infer_expertise_depth(query: str) -> str:
+    q = query.lower()
+    advanced_signals = r'stochastic|eigenvalue|hessian|microstructure|mev|zero.day|ito lemma|tensor|manifold|topology|cvar|sabr|entropy|convexity|delta neutral|basis risk|kolmogorov'
+    intermediate_signals = r'backtest|portfolio|api|function|class|recursive|regression|monte carlo|var|jwt|oauth|correlation|volatility|drawdown'
+    if re.search(advanced_signals, q): return "expert"
+    if re.search(intermediate_signals, q): return "intermediate"
+    if len(query.split()) > 20: return "intermediate"
+    return "beginner"
 
-class WorkspaceRequest(BaseModel):
-    name: str
-    user_id: str = "anonymous"
+# ═══════════════════════════════════════════════════════════════════
+# AI CALLER — Multi-provider with tier routing
+# ═══════════════════════════════════════════════════════════════════
+def call_ai(messages, tier="free"):
+    models = {
+        "free":    "deepseek/deepseek-chat",
+        "plus":    "meta-llama/llama-3.3-70b-instruct",
+        "pro":     "anthropic/claude-sonnet-4-5",
+        "founder": "anthropic/claude-sonnet-4-5"
+    }
+    model = models.get(tier, models["free"])
+    max_tokens = {
+        "free": 1000,
+        "plus": 2500,
+        "pro": 4000,
+        "founder": 6000
+    }.get(tier, 1000)
 
-# ═══════════════════════════════════════════════════════════════
-# FASTAPI APP
-# ═══════════════════════════════════════════════════════════════
-app = FastAPI(title="CAPITAN AI API", version="7.0")
+    # Try OpenRouter (primary)
+    if OPENROUTER_KEY:
+        try:
+            r = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_KEY}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://capitan.pages.dev",
+                    "X-Title": "CAPITAN AI"
+                },
+                json={"model": model, "messages": messages, "temperature": 0.25, "max_tokens": max_tokens},
+                timeout=90
+            )
+            if r.status_code == 200:
+                return r.json()["choices"][0]["message"]["content"]
+        except:
+            pass
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    # Fallback: OpenAI
+    if OPENAI_KEY:
+        try:
+            r = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {OPENAI_KEY}", "Content-Type": "application/json"},
+                json={"model": "gpt-4o-mini", "messages": messages, "temperature": 0.25, "max_tokens": max_tokens},
+                timeout=60
+            )
+            if r.status_code == 200:
+                return r.json()["choices"][0]["message"]["content"]
+        except:
+            pass
 
-@app.get("/")
-async def root():
-    active = [p for p in PROVIDER_ORDER if MODEL_ROUTING[p]["auth_header"]() not in ("Bearer ", "")]
-    services = []
-    if KEYS["ALPHA_VANTAGE"]: services.append("Alpha Vantage")
-    if KEYS["GNEWS"]: services.append("GNews")
-    if KEYS["SERPAPI"]: services.append("SerpAPI")
-    if KEYS["WOLFRAM_APP_ID"]: services.append("Wolfram Alpha")
-    if KEYS["ETHERSCAN"]: services.append("Etherscan")
+    # Fallback: Groq
+    if GROQ_KEY:
+        try:
+            r = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
+                json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.25, "max_tokens": max_tokens},
+                timeout=60
+            )
+            if r.status_code == 200:
+                return r.json()["choices"][0]["message"]["content"]
+        except:
+            pass
 
-    return {
-        "name": "CAPITAN AI API",
-        "version": "7.0",
-        "status": "operational",
-        "intelligence": "upgraded — natural responses, memory context, domain awareness",
-        "ai_providers": active,
-        "data_services": services,
-        "endpoints": ["/api/chat", "/api/prices", "/api/news", "/api/verify-payment", "/api/memory", "/api/admin/memory"]
+    return None
+
+# ═══════════════════════════════════════════════════════════════════
+# DOMAIN CLASSIFIER — Expanded, precise
+# ═══════════════════════════════════════════════════════════════════
+def classify(q: str) -> str:
+    q = q.lower()
+    if re.search(r'python|javascript|typescript|rust|go|java|c\+\+|kotlin|swift|react|nextjs|node|api|code|program|def |class |function|algorithm|sql|database|mongodb|redis|docker|kubernetes|microservice|devops|git|deploy', q): return 'coding'
+    if re.search(r'exploit|pentest|vulnerability|zero.day|cve|malware|ransomware|phishing|firewall|ids|ips|siem|forensics|incident response|osint|recon|burp suite|metasploit|reverse shell|privilege escalation|ctf|blue team|red team|soc|threat intel', q): return 'cyber'
+    if re.search(r'stochastic|ito lemma|sde|pde|black.scholes|heston|sabr|sabr|var|cvar|sharpe|sortino|drawdown|backtest|monte carlo|markowitz|efficient frontier|factor model|alpha|beta|capm|kelly criterion|options pricing|greeks|delta|gamma|vega|theta|vix|implied volatility|order book|market microstructure|hft|arbitrage|stat arb|pairs trading', q): return 'quant'
+    if re.search(r'stock|revenue|ebitda|valuation|dcf|p\/e|ev|merger|acquisition|ipo|bond|yield|duration|credit|forex|fx|crypto|bitcoin|ethereum|defi|nft|commodity|gold|oil|hedge fund|private equity|venture capital|inflation|interest rate|central bank|monetary policy|fiscal policy|gse|nse|jse|accra bourse|nigerian exchange|nairobi|african market|mobile money|cedi|naira|rand|shilling|birr|momo payment', q): return 'finance'
+    if re.search(r'crispr|dna|rna|protein|gene|pcr|mrna|antibody|clinical trial|drug discovery|physics|quantum|relativity|thermodynamics|chemistry|organic|inorganic|biology|ecology|neuroscience|llm|transformer|attention|neural|backprop|gradient|tensor|reinforcement learning', q): return 'science'
+    if re.search(r'mobile money|momo|ghana card|nhis|ecg|dstv|gra|dvla|cedi|accra|kumasi|tamale|pidgin|naija|lagos|abuja|nairobi|johannesburg|kampala|dar es salaam|kigali|african', q): return 'local'
+    if re.search(r'market|trade|position|entry|exit|setup|chart|candle|trend|support|resistance|breakout|momentum|rsi|macd|ema|sma|fibonacci|elliott|volume|liquidity|spread|slippage|execution|broker|leverage|margin|risk reward|stop loss|take profit', q): return 'trading'
+    return 'general'
+
+# ═══════════════════════════════════════════════════════════════════
+# SYSTEM PROMPT — ELITE INTELLIGENCE BRAIN
+# ═══════════════════════════════════════════════════════════════════
+def system_prompt(domain: str, tier: str, user_id: str = None, depth: str = "intermediate") -> str:
+
+    base = """You are CAPITAN — an elite intelligence system engineered by CLOSEAI Technologies. You are not a chatbot. You are a thinking partner, a strategic advisor, and a professional collaborator for experts around the world.
+
+═══════════════════════════════════
+IDENTITY & PHILOSOPHY
+═══════════════════════════════════
+You speak with the quiet confidence of someone who has mastered their craft. You are warm, precise, and never condescending. You treat every person as a capable professional deserving of real depth, not watered-down summaries.
+
+You hold yourself to the standard of the world's best analyst, engineer, trader, scientist, or strategist — depending on the context. When you don't know something, you say so honestly and explore what you do know.
+
+You understand Africa deeply: its markets, currencies, infrastructure, culture, regulatory environments, and the unique economic dynamics that make it different from the West. You also understand global markets, Western finance, Silicon Valley engineering culture, and international science.
+
+═══════════════════════════════════
+COMMUNICATION STYLE
+═══════════════════════════════════
+• Lead with the most important insight — not preamble
+• Speak naturally, like a brilliant colleague explaining something over coffee
+• Match the user's sophistication level — never talk down, never over-complicate
+• Use **bold** for key terms and critical insights
+• Code always in ```language``` blocks with production-quality standards
+• Tables and structured formats when comparing options or data
+• Ask one sharp clarifying question if the problem is ambiguous — never multiple
+• Acknowledge uncertainty honestly: "The data on this is mixed..." or "My view here is..."
+• Never give direct buy/sell/trade signals — frame as analysis and frameworks instead
+• If asked something outside your knowledge boundary, explore adjacent knowledge usefully
+
+═══════════════════════════════════
+SELF-IMPROVEMENT PRINCIPLE
+═══════════════════════════════════
+Each conversation makes you more useful. You build on what the user has shared before, adapt your depth to their expertise, and remember the context of ongoing work. You are always learning.
+"""
+
+    # ─── DOMAIN INTELLIGENCE MODULES ───────────────────────────────
+
+    domain_modules = {
+
+        'finance': """
+═══════════════════════════════════
+DOMAIN: ELITE FINANCIAL INTELLIGENCE
+═══════════════════════════════════
+You are a world-class financial analyst with deep knowledge across:
+
+GLOBAL MARKETS:
+• Equity markets: valuation (DCF, comps, LBO, sum-of-the-parts), capital structure, M&A, IPOs, activist investing
+• Fixed income: bond pricing, duration, convexity, credit spreads, yield curve dynamics, sovereign debt
+• Derivatives: options theory (Black-Scholes, binomial, Monte Carlo), Greeks, hedging strategies, structured products
+• Macro: Fed policy, fiscal multipliers, inflation dynamics, currency regimes, geopolitical risk
+• Alternative assets: private equity, venture capital, real assets, hedge fund strategies
+• Crypto & DeFi: on-chain analytics, tokenomics, protocol mechanics, DeFi risk (impermanent loss, liquidation cascades)
+
+AFRICAN MARKETS (deep expertise):
+• Equity exchanges: GSE (Ghana), NGX (Nigeria), JSE (South Africa), NSE (Nairobi), BRVM (Francophone West Africa), DSE (Tanzania), USE (Uganda)
+• Currency dynamics: cedi depreciation, naira parallel market, rand volatility, impact of commodity cycles on African FX
+• Mobile money ecosystem: M-Pesa, MTN MoMo, Airtel Money — payment infrastructure, float economics, financial inclusion
+• African sovereign debt: Eurobonds, domestic T-bills, IMF/World Bank programs, restructuring history
+• Regulatory environment: SEC Ghana, CBN Nigeria, SARB South Africa, capital controls, local content rules
+• Commodity markets as they relate to African economies: gold, cocoa, oil, copper, lithium
+
+ANALYSIS FRAMEWORKS:
+• Always explore bull/bear/base cases when assessing situations
+• Quantify risks with ranges, not just directional statements
+• Connect macro forces to individual asset/company implications
+• Surface second-order effects that non-experts miss
+
+HARD RULE: Never say "buy X" or "sell Y." Instead: "The setup suggests a risk/reward of..." or "The bull case requires X to hold..."
+""",
+
+        'coding': """
+═══════════════════════════════════
+DOMAIN: ELITE SOFTWARE ENGINEERING
+═══════════════════════════════════
+You are a senior engineer with production experience across multiple stacks. You write code that is clean, tested, and deployable — not toy examples.
+
+LANGUAGES & FRAMEWORKS (deep expertise):
+• Python: async/await, Pydantic, FastAPI, SQLAlchemy, Pandas/Polars, NumPy, type hints, decorators, metaclasses
+• JavaScript/TypeScript: React, Next.js, Node.js, tRPC, Prisma, Zod, modern ES features, SSR/SSG/ISR
+• Systems: Rust (ownership model, lifetimes, async), Go (goroutines, channels), C++ (memory management, RAII)
+• Data: SQL (window functions, CTEs, query optimization), MongoDB, Redis, Kafka, Spark, dbt
+• Cloud & DevOps: Docker, Kubernetes, GitHub Actions, Terraform, AWS/GCP/Azure, serverless, CDN strategies
+• AI/ML: PyTorch, Hugging Face, LangChain, RAG architectures, vector databases (Pinecone, Qdrant), fine-tuning
+
+CODE STANDARDS:
+• Write production-grade code with proper error handling, logging, and type safety
+• Include time/space complexity analysis for algorithms
+• Add security considerations (input validation, auth, secrets management)
+• Explain architectural decisions, not just syntax
+• Surface edge cases and failure modes proactively
+• When reviewing code, catch performance issues, security holes, and anti-patterns
+""",
+
+        'trading': """
+═══════════════════════════════════
+DOMAIN: PROFESSIONAL MARKETS INTELLIGENCE
+═══════════════════════════════════
+You are a markets professional who understands trading deeply — from execution mechanics to strategy design to risk management. You speak the language of traders: prop shops, hedge funds, independent operators.
+
+TECHNICAL ANALYSIS & MARKET STRUCTURE:
+• Price action: candlestick patterns, structure breaks (BOS, CHOCH), supply/demand zones, fair value gaps
+• Indicators: RSI divergence, MACD signal, EMA crossovers, VWAP, volume profile, ATR-based position sizing
+• Market microstructure: bid/ask spread dynamics, order flow, liquidity pools, stop hunts, institutional footprints
+• Multi-timeframe analysis: alignment, confluence, top-down analysis from macro to execution
+
+STRATEGY FRAMEWORKS:
+• Trend following, mean reversion, breakout, scalping, swing trading — mechanics and conditions for each
+• Risk management: position sizing (fixed %, Kelly, ATR-based), R-multiple tracking, max drawdown controls
+• Portfolio construction: correlation management, sector rotation, hedging with options/futures
+• Psychology: discipline under drawdown, avoiding revenge trading, journaling practices
+
+GLOBAL & AFRICAN TRADING CONTEXTS:
+• African stock exchanges: liquidity constraints, T+3 settlement, foreign investor access, currency risk
+• Commodities tied to African exports: cocoa (Ghana/Ivory Coast), oil (Nigeria/Angola), gold (Ghana/SA)
+• Crypto in Africa: P2P dynamics, arbitrage between exchanges, mobile money on/off ramps
+
+RULE: All analysis is educational and framework-based. Never: "Go long now." Always: "The risk/reward structure here is X because..."
+""",
+
+        'quant': """
+═══════════════════════════════════
+DOMAIN: QUANTITATIVE FINANCE & RESEARCH
+═══════════════════════════════════
+You are a quantitative researcher with expertise spanning mathematical finance, statistical modeling, and systematic strategy development. You write rigorous, implementable research.
+
+MATHEMATICAL FINANCE:
+• Stochastic calculus: Itô's lemma, Girsanov, Feynman-Kac, SDEs (GBM, mean-reverting, jump-diffusion)
+• Option pricing: Black-Scholes derivation, risk-neutral pricing, numerical methods (FDM, Monte Carlo, binomial trees)
+• Volatility models: local vol (Dupire), stochastic vol (Heston, SABR), VIX term structure, vol surface calibration
+• Interest rate models: Hull-White, CIR, HJM framework, LIBOR market model
+• Fixed income quant: bond pricing, OAS, convexity hedging, mortgage prepayment models
+
+RISK & PORTFOLIO:
+• Market risk: VaR (historical, parametric, Monte Carlo), CVaR/Expected Shortfall, stress testing, scenario analysis
+• Portfolio optimization: mean-variance (Markowitz), Black-Litterman, risk parity, hierarchical risk parity (HRP)
+• Factor models: Fama-French, Barra, PCA-based factors, alpha/beta decomposition
+• Drawdown analytics: max drawdown, Calmar, Ulcer Index, drawdown duration distributions
+
+SYSTEMATIC STRATEGIES:
+• Backtesting: data snooping bias, look-ahead bias, survivorship bias, walk-forward validation
+• Signal construction: momentum (time-series, cross-sectional), mean reversion, carry, value
+• Execution modeling: market impact (Almgren-Chriss), transaction costs, slippage modeling
+• ML in quant: feature engineering for financial time series, LSTM/transformer for forecasting, regularization
+
+CODE: Default to Python with NumPy, Pandas, SciPy, statsmodels. Show math then implementation.
+""",
+
+        'cyber': """
+═══════════════════════════════════
+DOMAIN: ELITE CYBERSECURITY INTELLIGENCE
+═══════════════════════════════════
+You are a seasoned security professional — red team operator, blue team defender, and security architect. You think like an attacker to defend like an expert.
+
+OFFENSIVE SECURITY (ethical/educational):
+• Penetration testing methodology: recon (OSINT, passive/active), scanning, enumeration, exploitation, post-exploitation, reporting
+• Web application security: OWASP Top 10 (SQLi, XSS, CSRF, SSRF, XXE, IDOR, broken auth), advanced bypass techniques
+• Network attacks: ARP spoofing, MITM, DNS poisoning, lateral movement, pivoting, C2 frameworks
+• Exploit development: buffer overflows, ROP chains, heap exploitation (conceptual education)
+• Social engineering: phishing, pretexting, vishing — awareness and simulation
+
+DEFENSIVE SECURITY:
+• Security architecture: zero-trust, defense-in-depth, principle of least privilege, microsegmentation
+• Identity & Access: MFA, PAM, SSO, OAuth/OIDC flows, AD hardening, Azure AD security
+• SIEM & Detection: log ingestion, correlation rules, MITRE ATT&CK mapping, threat hunting, IOC enrichment
+• Incident response: triage, containment, eradication, recovery, post-mortem, chain of custody
+• Threat intelligence: TTP analysis, actor profiling, dark web monitoring, threat feeds
+
+CLOUD & APPLICATION SECURITY:
+• Cloud misconfigs: S3 bucket exposure, IAM privilege escalation, metadata service attacks
+• Container security: Docker escape, Kubernetes RBAC, image scanning, runtime protection
+• AppSec: SAST/DAST, secure SDLC, secrets management, dependency scanning, supply chain attacks
+• Cryptography: TLS/SSL, PKI, symmetric vs asymmetric, post-quantum considerations
+
+AFRICA-SPECIFIC THREATS: Mobile money fraud, SIM swapping attacks on African telcos, BEC targeting African businesses, regional threat actors.
+
+RULE: All offensive knowledge is framed for defense, education, and authorized testing. Never assist in unauthorized access.
+""",
+
+        'science': """
+═══════════════════════════════════
+DOMAIN: ADVANCED SCIENCE & TECHNOLOGY
+═══════════════════════════════════
+You are a multidisciplinary scientist who can go deep across fields, connecting first principles to cutting-edge research.
+
+LIFE SCIENCES & BIOTECH:
+• Molecular biology: DNA/RNA mechanisms, CRISPR-Cas9 (base editing, prime editing, epigenome editing), gene therapy delivery vectors
+• Protein science: structure prediction (AlphaFold), folding mechanics, drug-target interactions, antibody engineering
+• Genomics: sequencing technologies (short/long read), variant calling, GWAS, pharmacogenomics
+• Drug discovery: target identification, hit-to-lead, ADMET, clinical trial phases, regulatory pathways (FDA/EMA)
+• Synthetic biology: metabolic engineering, cell-free systems, biosensors
+
+PHYSICS & ENGINEERING:
+• Quantum mechanics: wave functions, measurement, entanglement, decoherence, quantum computing (qubits, gates, error correction)
+• Thermodynamics & statistical mechanics: entropy, phase transitions, Boltzmann, partition functions
+• Materials science: semiconductors, superconductors, 2D materials (graphene), nanotechnology
+• Energy systems: solar PV physics, battery electrochemistry, nuclear fission/fusion basics
+
+AI & MACHINE LEARNING (scientific depth):
+• Deep learning theory: universal approximation, optimization landscapes, generalization, double descent
+• Transformer architecture: attention mechanisms, positional encoding, scaling laws, emergent capabilities
+• Reinforcement learning: MDP formulation, policy gradients, actor-critic, RLHF
+• Scientific ML: physics-informed neural networks, differentiable programming, AI for drug discovery
+
+SCIENCE IN AFRICA: CRISPR applications for African diseases (sickle cell, malaria), African genomics diversity, climate science for African agriculture, clean energy access.
+""",
+
+        'local': """
+═══════════════════════════════════
+DOMAIN: AFRICAN LOCAL INTELLIGENCE
+═══════════════════════════════════
+You know Africa from the inside — not as an outsider looking in.
+
+GHANA (deep):
+• Mobile money: MTN MoMo, Vodafone Cash, AirtelTigo Money — USSD codes, transaction limits, merchant payments, QR systems
+• Ghana Card (NIA): registration, use cases, linking to bank accounts, GRA TIN integration
+• NHIS: registration, renewal, covered services, claims process, NIA linkage
+• Banking: GCB, Absa, Stanchart, Ecobank, CalBank, Fidelity — account types, charges, FX access
+• ECG/PURC: credit meter processes, billing disputes, load shedding (Dumsor) patterns
+• DVLA: vehicle registration, roadworthy certificates, driver's license processes
+• GRA: filing seasons, withholding tax, VAT, transfer pricing for businesses
+• Real estate: land title issues, Lands Commission processes, Land Use and Spatial Planning Act
+• Markets: Makola, Kejetia, Trade Fair — price dynamics, seasonal patterns
+• Transportation: Accra Metro, trotro routes, Uber/Bolt dynamics, intercity travel
+
+WEST AFRICA:
+• Nigeria: CBN policy, fintech ecosystem (Paystack, Flutterwave, Opay), Lagos/Abuja business environment, FIRS tax
+• Senegal/BRVM: CFA franc dynamics, Dakar financial hub, regional securities exchange
+• Ivory Coast: Abidjan as financial center, cocoa market dynamics
+
+EAST AFRICA:
+• Kenya: M-Pesa (the original), Safaricom ecosystem, NSE, Nairobi as tech hub
+• Ethiopia, Tanzania, Rwanda: emerging market dynamics, mobile money expansion
+
+PAN-AFRICAN:
+• AfCFTA implications, Afreximbank, African Development Bank, diaspora remittances
+• Cross-border payment challenges and fintech solutions (Chipper Cash, Nala, Lemonade Finance)
+""",
+
+        'general': """
+You are a brilliant generalist — curious, deeply read, and able to synthesize insights across domains. 
+
+For every question, aim to:
+• Surface the non-obvious angle that makes the answer more useful
+• Connect ideas across disciplines when relevant
+• Give a calibrated view: what's known, what's uncertain, what's actively debated
+• Be a thinking partner, not just an answer machine
+
+Adapt depth to what the person needs. Sometimes one clear paragraph is better than a comprehensive treatise.
+"""
     }
 
+    base += domain_modules.get(domain, domain_modules['general'])
+
+    # ─── TIER MODIFIERS ─────────────────────────────────────────────
+    tier_context = {
+        "free":    "\n\nProvide a complete, useful answer. Offer to go deeper if needed.",
+        "plus":    "\n\nProvide thorough analysis with supporting reasoning. Include examples and edge cases.",
+        "pro":     "\n\nProvide expert-level depth. Include quantitative frameworks, code when relevant, multiple perspectives, and professional-grade analysis.",
+        "founder": "\n\nNo limits on depth. Go as deep as the question demands. Include derivations, code, original frameworks, and strategic synthesis."
+    }
+    base += tier_context.get(tier, tier_context["free"])
+
+    # ─── DEPTH ADAPTATION ───────────────────────────────────────────
+    depth_context = {
+        "beginner":     "\n\nThis person is newer to this domain — build intuition before formulas. Use analogies. Don't assume jargon familiarity.",
+        "intermediate": "\n\nThis person has working knowledge — skip basics, go into mechanisms and trade-offs.",
+        "expert":       "\n\nThis is an expert — use technical language freely, go into nuance, engage as a peer. Challenge assumptions where appropriate."
+    }
+    base += depth_context.get(depth, depth_context["intermediate"])
+
+    # ─── USER MEMORY & CONTEXT ──────────────────────────────────────
+    if user_id:
+        try:
+            profile = get_user_profile(user_id)
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute("SELECT query, content FROM memories WHERE user_id=? ORDER BY created DESC LIMIT 5", (user_id,))
+            rows = c.fetchall()
+            conn.close()
+
+            if rows or profile["top_topics"]:
+                base += "\n\n═══════════════════════════════════\nUSER CONTEXT (use for continuity)\n═══════════════════════════════════"
+                if profile["top_topics"]:
+                    topics_str = ", ".join([f"{t['topic']} ({t['depth']})" for t in profile["top_topics"][:4]])
+                    base += f"\nUser's knowledge profile: {topics_str}"
+                if rows:
+                    base += "\nRecent conversation thread:"
+                    for row in rows[:3]:
+                        base += f"\n• Asked: {row[0][:100]}"
+                base += "\nUse this to maintain continuity. Adapt your depth accordingly. Don't explicitly reference 'your profile' — just be naturally calibrated."
+        except:
+            pass
+
+    return base
+
+# ═══════════════════════════════════════════════════════════════════
+# MODELS
+# ═══════════════════════════════════════════════════════════════════
+class ChatRequest(BaseModel):
+    messages: list
+    user_id: str = "anonymous"
+    stream: bool = False
+
+class AuthRequest(BaseModel):
+    email: str
+
+class UpgradeRequest(BaseModel):
+    user_id: str
+    tier: str
+    txid: str
+    currency: str = "USDC"
+
+class FounderRequest(BaseModel):
+    user_id: str
+    code: str
+
+class AdminRequest(BaseModel):
+    code: str
+
+class FeedbackRequest(BaseModel):
+    user_id: str
+    memory_id: str
+    score: int  # 1 = helpful, -1 = not helpful
+
+# ═══════════════════════════════════════════════════════════════════
+# APP
+# ═══════════════════════════════════════════════════════════════════
+app = FastAPI(title="CAPITAN AI Brain", version="2.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+@app.get("/")
+def root():
+    return {"name": "CAPITAN AI Brain", "version": "2.0", "status": "operational", "intelligence": "elite"}
+
 @app.get("/health")
-async def health():
-    return {"status": "healthy", "version": "7.0"}
+def health():
+    return {"status": "ok", "brain": "active", "version": "2.0"}
 
-# ═══════════════════════════════════════════════════════════════
-# CHAT ENDPOINT — FULLY UPGRADED
-# ═══════════════════════════════════════════════════════════════
+# ─── AUTH ────────────────────────────────────────────────────────
+@app.post("/api/auth")
+def auth(req: AuthRequest):
+    if not req.email or '@' not in req.email:
+        raise HTTPException(400, "Valid email required")
+    clean = req.email.lower().strip()
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, tier FROM users WHERE email=?", (clean,))
+    row = c.fetchone()
+    if not row:
+        uid = 'u_' + sid()
+        c.execute("INSERT INTO users (id, email, tier, msg_count, msg_window, created) VALUES (?,?,?,0,?,?)",
+                  (uid, clean, 'free', datetime.now().isoformat(), datetime.now().isoformat()))
+        conn.commit()
+        row = (uid, 'free')
+    conn.close()
+    return {"user_id": row[0], "email": clean, "tier": row[1]}
+
+# ─── CHAT ────────────────────────────────────────────────────────
 @app.post("/api/chat")
-async def chat(req: ChatRequest):
-    user = Users.get_or_create(req.user_id)
-    is_pro = user["tier"] in ("pro", "founder")
+def chat(req: ChatRequest):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT tier, msg_count, msg_window FROM users WHERE id=?", (req.user_id,))
+    row = c.fetchone()
+    tier = row[0] if row else 'free'
+    msg_count = row[1] if row else 0
 
-    # Check limits
-    if not is_pro:
-        can_send, remaining = Users.check_limit(req.user_id)
-        if not can_send:
-            raise HTTPException(
-                status_code=429,
-                detail=f"Message limit reached ({Users.FREE_LIMIT} per {Users.FREE_WINDOW_HOURS}h). Upgrade to Pro for unlimited."
-            )
+    # Free tier: 30 msgs / 24 hours
+    if tier == 'free' and msg_count >= 30:
+        w = datetime.fromisoformat(row[2]) if row and row[2] else datetime.now()
+        if datetime.now() - w < timedelta(hours=24):
+            conn.close()
+            return {
+                "error": "Daily limit reached",
+                "can_send": False,
+                "reset_in": str(timedelta(hours=24) - (datetime.now() - w))
+            }
+        c.execute("UPDATE users SET msg_count=0, msg_window=? WHERE id=?",
+                  (datetime.now().isoformat(), req.user_id))
+        conn.commit()
 
     # Extract user message
     user_msg = ""
-    for msg in reversed(req.messages):
-        if msg.get("role") == "user":
-            user_msg = msg.get("content", "")
+    for m in reversed(req.messages):
+        if m.get("role") == "user":
+            user_msg = m["content"]
             break
 
-    if not user_msg:
-        raise HTTPException(status_code=400, detail="No message found")
+    if not user_msg.strip():
+        conn.close()
+        raise HTTPException(400, "No message provided")
 
-    # Classify domain
-    domain = classify_domain(user_msg)
-
-    # Block pro domains
-    pro_domains = ["quant", "quantum", "coding", "math", "science"]
-    if not is_pro and domain in pro_domains:
-        raise HTTPException(
-            status_code=403,
-            detail=f"'{domain}' features require Pro ($17/month). Finance and general queries are always free."
-        )
-
-    # Store query
-    Memory.add(req.user_id, user_msg, query=user_msg, mem_type="query", tier=user["tier"])
-
-    # Increment count
-    if not is_pro:
-        Users.increment(req.user_id)
-
-    # Gather intelligence
-    intelligence = gather_intelligence(user_msg, domain, is_pro, req.user_id)
-
-    # Build system prompt
-    system_content = SYSTEM_PROMPT.format(domain=domain, tier=user["tier"])
-    if intelligence:
-        system_content += "\n\n" + intelligence
-
-    # Build messages for LLM
-    llm_messages = [{"role": "system", "content": system_content}]
-    for msg in req.messages:
-        llm_messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
-
-    # Streaming response
-    if req.stream:
-        response = call_llm(llm_messages, tier=user["tier"], stream=True)
-
-        if not response:
-            fallback = _ultimate_fallback(llm_messages)
-            async def gen_fallback():
-                yield f"data: {json.dumps({'content': fallback})}\n\n"
-                mid = Memory.add(req.user_id, fallback, query=user_msg, mem_type="response", tier=user["tier"])
-                yield f"data: {json.dumps({'done': True, 'memory_id': mid})}\n\n"
-            return StreamingResponse(gen_fallback(), media_type="text/event-stream")
-
-        async def generate():
-            full = ""
-            for line in response.iter_lines():
-                if line:
-                    line = line.decode("utf-8")
-                    if line.startswith("data: "):
-                        d = line[6:]
-                        if d == "[DONE]":
-                            break
-                        try:
-                            delta = json.loads(d).get("choices", [{}])[0].get("delta", {}).get("content", "")
-                            if delta:
-                                full += delta
-                                yield f"data: {json.dumps({'content': full})}\n\n"
-                        except Exception:
-                            continue
-
-            if full:
-                mid = Memory.add(req.user_id, full, query=user_msg, mem_type="response", tier=user["tier"])
-                yield f"data: {json.dumps({'done': True, 'memory_id': mid, 'domain': domain})}\n\n"
-            else:
-                yield f"data: {json.dumps({'done': True, 'domain': domain})}\n\n"
-
-        return StreamingResponse(generate(), media_type="text/event-stream")
-    else:
-        response = call_llm(llm_messages, tier=user["tier"], stream=False)
-        mid = Memory.add(req.user_id, response, query=user_msg, mem_type="response", tier=user["tier"])
-        return {"content": response, "memory_id": mid, "domain": domain}
-
-# ═══════════════════════════════════════════════════════════════
-# MARKET ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/prices")
-async def prices():
-    return {"prices": MarketData.get_prices(), "timestamp": datetime.now().isoformat()}
-
-@app.get("/api/news")
-async def news():
-    return {"news": MarketData.get_news(), "timestamp": datetime.now().isoformat()}
-
-# ═══════════════════════════════════════════════════════════════
-# PAYMENT
-# ═══════════════════════════════════════════════════════════════
-@app.post("/api/verify-payment")
-async def verify_payment(req: PaymentVerifyRequest):
-    currency = req.currency.upper()
-    if currency not in PRO_PRICE_CRYPTO:
-        raise HTTPException(status_code=400, detail="Unsupported currency")
-
-    amount = PRO_PRICE_CRYPTO[currency]
-    verified, message = verify_crypto(req.txid, currency, amount)
-
-    if verified:
-        record_payment(req.txid, currency, amount, req.user_id)
-        Users.activate_pro(req.user_id)
-        return {"verified": True, "message": message, "plan": "pro", "expires_days": Users.PRO_DAYS}
-
-    return {"verified": False, "message": message}
-
-# ═══════════════════════════════════════════════════════════════
-# MEMORY
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/memory")
-async def get_memories(user_id: str = "anonymous", limit: int = 50):
-    memories = Memory.get_recent(user_id, limit)
-    patterns = Memory.get_user_patterns(user_id)
-    return {"memories": memories, "count": len(memories), "patterns": patterns}
-
-@app.post("/api/memory")
-async def add_memory(req: MemoryRequest):
-    mid = Memory.add(req.user_id, req.content, mem_type="manual")
-    return {"memory_id": mid, "status": "saved"}
-
-@app.delete("/api/memory/{memory_id}")
-async def delete_memory(memory_id: str):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM memories WHERE memory_id=?", (memory_id,))
-    deleted = c.rowcount
+    # Increment message count
+    c.execute("UPDATE users SET msg_count = msg_count + 1 WHERE id=?", (req.user_id,))
     conn.commit()
     conn.close()
-    return {"status": "deleted" if deleted else "not found"}
 
-# ═══════════════════════════════════════════════════════════════
-# ADMIN
-# ═══════════════════════════════════════════════════════════════
-@app.post("/api/admin/memory")
-async def admin_memory(req: AdminRequest):
-    if req.admin_code != KEYS["ADMIN_CODE"]:
-        raise HTTPException(status_code=403, detail="Invalid admin code")
+    # Intelligence pipeline
+    domain = classify(user_msg)
+    depth  = infer_expertise_depth(user_msg)
+    prompt = system_prompt(domain, tier, req.user_id, depth)
 
-    memories = Memory.search(req.search) if req.search else Memory.get_recent(limit=100)
-    return {"memories": memories, "count": len(memories), "access": "admin"}
+    # Build LLM message array
+    llm_msgs = [{"role": "system", "content": prompt}]
+    for m in req.messages:
+        llm_msgs.append({"role": m.get("role", "user"), "content": m.get("content", "")})
 
-# ═══════════════════════════════════════════════════════════════
-# WORKSPACES
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/workspaces")
-async def get_workspaces(user_id: str = "anonymous"):
+    # Call AI
+    result = call_ai(llm_msgs, tier)
+
+    # Self-learning updates
+    update_learning_pattern(domain, user_msg)
+    update_user_knowledge_graph(req.user_id, domain, user_msg)
+
+    # Store memory + training data
+    memory_id = mid()
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, name, members, created FROM workspaces WHERE user_id=?", (user_id,))
-    rows = c.fetchall()
-    conn.close()
-    return {"workspaces": [{"id": r[0], "name": r[1], "members": r[2], "created": r[3]} for r in rows]}
-
-@app.post("/api/workspaces")
-async def create_workspace(req: WorkspaceRequest):
-    wid = short_id()
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO workspaces (id, user_id, name, members, created) VALUES (?,?,?,?,?)",
-              (wid, req.user_id, req.name, 1, datetime.now().isoformat()))
+    c.execute(
+        "INSERT INTO memories (id, memory_id, user_id, content, query, tier, domain, created) VALUES (?,?,?,?,?,?,?,?)",
+        (sid(), memory_id, req.user_id, result or '', user_msg, tier, domain, datetime.now().isoformat())
+    )
+    c.execute(
+        "INSERT INTO training (id, user_id, query, response, domain, tier, created) VALUES (?,?,?,?,?,?,?)",
+        (sid(), req.user_id, user_msg, result or '', domain, tier, datetime.now().isoformat())
+    )
     conn.commit()
     conn.close()
-    return {"id": wid, "name": req.name, "status": "created"}
 
-# ═══════════════════════════════════════════════════════════════
-# API KEYS
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/keys")
-async def get_keys(user_id: str = "anonymous"):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, key, active, created FROM api_keys WHERE user_id=? AND active=1", (user_id,))
-    rows = c.fetchall()
-    conn.close()
-    return {"keys": [{"id": r[0], "key": r[1], "active": r[2], "created": r[3]} for r in rows]}
-
-@app.post("/api/keys")
-async def create_key(user_id: str = "anonymous"):
-    key = "cap_" + str(uuid.uuid4()).replace("-", "")[:24]
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO api_keys (id, key, user_id, created) VALUES (?,?,?,?)",
-              (short_id(), key, user_id, datetime.now().isoformat()))
-    conn.commit()
-    conn.close()
-    return {"key": key, "status": "created"}
-
-# ═══════════════════════════════════════════════════════════════
-# USER STATUS
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/user/{user_id}")
-async def get_user(user_id: str):
-    user = Users.get_or_create(user_id)
-    can_send, remaining = Users.check_limit(user_id)
-    patterns = Memory.get_user_patterns(user_id)
     return {
-        "user_id": user_id,
-        "tier": user["tier"],
-        "pro_expiry": user["pro_expiry"],
-        "can_message": can_send,
-        "remaining": remaining if user["tier"] == "free" else "unlimited",
-        "patterns": patterns
+        "content": result or "I encountered an issue generating a response. Please try again.",
+        "domain": domain,
+        "depth": depth,
+        "memory_id": memory_id
     }
 
-# ═══════════════════════════════════════════════════════════════
+# ─── FEEDBACK (self-learning signal) ─────────────────────────────
+@app.post("/api/feedback")
+def feedback(req: FeedbackRequest):
+    if req.score not in (-1, 1):
+        raise HTTPException(400, "Score must be 1 or -1")
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE training SET feedback=? WHERE user_id=? AND id=(SELECT id FROM memories WHERE memory_id=? LIMIT 1)",
+              (req.score, req.user_id, req.memory_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "signal": "learning updated"}
+
+# ─── USER PROFILE ────────────────────────────────────────────────
+@app.get("/api/profile/{user_id}")
+def profile(user_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT tier, msg_count, created FROM users WHERE id=?", (user_id,))
+    row = c.fetchone()
+    if not row:
+        raise HTTPException(404, "User not found")
+    knowledge = get_user_profile(user_id)
+    c.execute("SELECT domain, COUNT(*) FROM memories WHERE user_id=? GROUP BY domain", (user_id,))
+    domain_counts = {r[0]: r[1] for r in c.fetchall()}
+    conn.close()
+    return {
+        "user_id": user_id,
+        "tier": row[0],
+        "total_messages": row[1],
+        "member_since": row[2],
+        "knowledge_profile": knowledge,
+        "domain_activity": domain_counts
+    }
+
+# ─── UPGRADE ─────────────────────────────────────────────────────
+@app.post("/api/upgrade")
+def upgrade(req: UpgradeRequest):
+    prices = {"plus": 8, "pro": 17}
+    if req.tier not in prices:
+        raise HTTPException(400, "Invalid tier. Choose: plus or pro")
+    if not req.txid.strip():
+        raise HTTPException(400, "Transaction ID required")
+
+    cur = req.currency.upper()
+    expiry = (datetime.now() + timedelta(days=30)).isoformat()
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO payments (id, user_id, txid, currency, amount, tier, expires, created) VALUES (?,?,?,?,?,?,?,?)",
+        (sid(), req.user_id, req.txid.strip(), cur, prices[req.tier], req.tier, expiry, datetime.now().isoformat())
+    )
+    c.execute("UPDATE users SET tier=?, msg_count=0 WHERE id=?", (req.tier, req.user_id))
+    c.execute(
+        "INSERT INTO payment_log (id, user_id, tier, amount, currency, txid, created) VALUES (?,?,?,?,?,?,?)",
+        (sid(), req.user_id, req.tier, prices[req.tier], cur, req.txid, datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+    return {"verified": True, "tier": req.tier, "expires": expiry}
+
+# ─── FOUNDER ACCESS ──────────────────────────────────────────────
+@app.post("/api/founder")
+def founder(req: FounderRequest):
+    if req.code != "Osinachi@350":
+        raise HTTPException(403, "Invalid founder code")
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE users SET tier='founder', msg_count=0 WHERE id=?", (req.user_id,))
+    conn.commit()
+    conn.close()
+    return {"verified": True, "tier": "founder", "access": "unlimited"}
+
+# ─── ADMIN ───────────────────────────────────────────────────────
+@app.post("/api/admin")
+def admin(req: AdminRequest):
+    if req.code != "Osinachi@350":
+        raise HTTPException(403, "Access denied")
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute("SELECT id, email, tier, msg_count, created FROM users ORDER BY created DESC LIMIT 100")
+    users = [{"id": r[0], "email": r[1], "tier": r[2], "msg_count": r[3], "created": r[4]} for r in c.fetchall()]
+
+    c.execute("SELECT * FROM payment_log ORDER BY created DESC LIMIT 100")
+    payments = [{"user_id": r[1], "tier": r[2], "amount": r[3], "currency": r[4], "txid": r[5], "created": r[6]} for r in c.fetchall()]
+
+    c.execute("SELECT domain, COUNT(*) as cnt FROM training GROUP BY domain ORDER BY cnt DESC")
+    domain_stats = {r[0]: r[1] for r in c.fetchall()}
+
+    c.execute("SELECT domain, pattern, frequency FROM learning_patterns ORDER BY frequency DESC LIMIT 20")
+    top_patterns = [{"domain": r[0], "pattern": r[1], "frequency": r[2]} for r in c.fetchall()]
+
+    c.execute("SELECT tier, COUNT(*) FROM users GROUP BY tier")
+    tier_breakdown = {r[0]: r[1] for r in c.fetchall()}
+
+    conn.close()
+    return {
+        "users": users,
+        "payments": payments,
+        "total_users": len(users),
+        "tier_breakdown": tier_breakdown,
+        "domain_activity": domain_stats,
+        "top_learning_patterns": top_patterns
+    }
+
+# ─── INSIGHTS (trending topics CAPITAN has learned) ──────────────
+@app.get("/api/insights")
+def insights():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT domain, pattern, frequency FROM learning_patterns ORDER BY frequency DESC LIMIT 30")
+    patterns = [{"domain": r[0], "topic": r[1], "frequency": r[2]} for r in c.fetchall()]
+    conn.close()
+    return {"trending_topics": patterns, "generated": datetime.now().isoformat()}
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    active_providers = [p for p in PROVIDER_ORDER if MODEL_ROUTING[p]["auth_header"]() not in ("Bearer ", "")]
-    print(f"⚓ CAPITAN AI API v7.0 starting on port {port}")
-    print(f"   Active AI providers: {active_providers}")
-    print(f"   Intelligence: upgraded — natural responses, memory context, domain awareness")
     uvicorn.run(app, host="0.0.0.0", port=port)
