@@ -1,359 +1,559 @@
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CAPITAN AI">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>CAPITAN AI</title>
 <script>
-// Theme flash prevention
-(function(){
-  var t=localStorage.getItem('cap_theme');
-  if(t==='light')document.documentElement.classList.add('light');
+(function () {
+  try {
+    if (localStorage.getItem('cap_theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) {}
 })();
 </script>
 <style>
-:root{--bg:#000;--bg2:#080808;--bg3:#111;--bdr:#1a1a1a;--bdr2:#252525;--txt:#fff;--txt2:#aaa;--txt3:#666;--txt4:#444;--up:#4caf50;--down:#f44336;--radius:12px;--radius-sm:8px;--font-sm:14px;--font-md:15px;--font-lg:18px;--font-xl:26px;--safe-bottom:env(safe-area-inset-bottom,0px)}
-:root.light{--bg:#fff;--bg2:#f8f8f8;--bg3:#eee;--bdr:#e0e0e0;--bdr2:#ccc;--txt:#000;--txt2:#555;--txt3:#999;--txt4:#bbb;--up:#2e7d32;--down:#c62828}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{font-size:15px;height:100%}
-body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:var(--font-sm);height:100vh;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;line-height:1.6;-webkit-overflow-scrolling:touch}
-#app{display:flex;height:100vh;height:100dvh;position:relative}
-::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
-
-/* ── Sidebar ── */
-.sidebar{width:260px;min-width:260px;background:var(--bg);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;overflow-y:auto;overflow-x:hidden;transition:width .3s cubic-bezier(.4,0,.2,1),min-width .3s,opacity .3s;height:100%}
-.sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none;opacity:0;padding:0}
-.sidebar-founder{border-right:2px solid #fff;box-shadow:0 0 60px rgba(255,255,255,.1)}
-:root.light .sidebar-founder{border-right:2px solid #000;box-shadow:0 0 60px rgba(0,0,0,.1)}
-.sb-section{padding:16px 14px;border-bottom:1px solid var(--bdr);overflow:hidden}
-.sb-logo{font-size:28px;cursor:pointer;user-select:none;display:inline-block;margin-bottom:2px;transition:transform .2s}.sb-logo:hover{transform:scale(1.1)}.sb-logo:active{transform:scale(.95)}
-.sb-logo-text{font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-.sb-title-section{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.sb-title{font-size:18px;font-weight:700;color:var(--txt)}
-.tier-badge{font-size:11px;padding:4px 10px;border-radius:6px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.tier-free{background:var(--bg3);color:var(--txt2);border:1px solid var(--bdr)}
-.tier-plus{background:var(--txt);color:var(--bg)}
-.tier-pro{background:var(--txt);color:var(--bg);box-shadow:0 0 10px var(--txt)}
-.tier-founder{background:#fff;color:#000;font-weight:800;box-shadow:0 0 15px rgba(255,255,255,.5)}
-:root.light .tier-founder{background:#000;color:#fff;box-shadow:0 0 15px rgba(0,0,0,.5)}
-.btn-new{width:100%;background:var(--txt);color:var(--bg);border:none;padding:12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:700;margin-top:10px;font-family:inherit}.btn-new:hover{opacity:.85}
-.btn-upgrade{width:100%;background:var(--txt);color:var(--bg);border:none;padding:10px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;margin-top:8px;font-family:inherit}.btn-upgrade:hover{opacity:.85}
-.sb-label{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.12em;font-weight:700;padding:8px 0 4px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}.sb-label:hover{color:var(--txt2)}
-.sb-label .arrow{font-size:8px;transition:transform .25s}.sb-label.open .arrow{transform:rotate(90deg)}
-.sb-body{overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1)}
-.sb-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;color:var(--txt2);font-size:13px;transition:all .12s;margin:1px 0;min-height:40px}.sb-item:hover{background:var(--bg3);color:var(--txt)}
-.sb-item .tag{font-size:8px;padding:2px 6px;border-radius:4px;background:var(--bg3);color:var(--txt3)}
-.sb-item .tag-pro{font-size:7px;padding:2px 6px;border-radius:4px;background:var(--txt);color:var(--bg);font-weight:700;letter-spacing:.05em}
-.sb-item .tag-plus{font-size:7px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.1);color:var(--txt2);border:1px solid var(--bdr2)}
-.sb-item.founder-only{position:relative}.sb-item.founder-only:hover{background:rgba(255,255,255,.1)}
-:root.light .sb-item.founder-only:hover{background:rgba(0,0,0,.05)}
-.lock-icon{font-size:10px;color:var(--txt);margin-left:4px}
-.sb-user{padding:14px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;margin-top:auto}.sb-user:hover{background:var(--bg3)}
-.sb-user-avatar{font-size:18px}
-.sb-user-tier{font-size:9px;color:var(--txt3)}
-.sb-user-name{font-weight:600;color:var(--txt);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-.mkt-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;font-size:11px;color:var(--txt2);cursor:pointer;border-radius:4px;transition:background .12s}.mkt-item:hover{background:var(--bg3)}
-.mkt-sym{font-weight:700;color:var(--txt);min-width:45px;font-size:10px}
-.mkt-price{font-family:monospace;font-size:10px;min-width:55px;text-align:right}
-.mkt-chg{font-size:9px;min-width:45px;text-align:right;font-weight:600}.mkt-chg.up{color:var(--up)}.mkt-chg.down{color:var(--down)}
-.mkt-label{font-size:8px;color:var(--txt4);text-transform:uppercase;letter-spacing:.1em;padding:4px 10px 2px;font-weight:700}
-.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;opacity:0;transition:opacity .3s}.sb-overlay.visible{display:block;opacity:1}
-
-.mains{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0;position:relative}
-.mains-expanded{margin-left:0}
-.mains-collapsed{margin-left:0}
-.chat-wrap{flex:1;display:flex;flex-direction:column;max-width:720px;margin:0 auto;width:100%;min-height:0}
-.chat-msgs{flex:1;overflow-y:auto;padding:24px 18px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;min-height:0}
-.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;text-align:center;padding:20px}
-.welcome-logo{font-size:56px;margin-bottom:16px;animation:welcomePulse 3s ease-in-out infinite}
-@keyframes welcomePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06) rotate(3deg)}}
-.welcome h1{font-size:var(--font-xl);font-weight:700;color:var(--txt);margin-bottom:8px;letter-spacing:-.02em}
-.welcome p{font-size:var(--font-sm);color:var(--txt3);max-width:380px;line-height:1.6}
-
-.msg{margin-bottom:22px;animation:fadeIn .25s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+:root{--bg:#000;--bg2:#0d0d0d;--bg3:#151515;--bdr:#242424;--txt:#fff;--txt2:#b7b7b7;--txt3:#7a7a7a;--radius:12px;--safe-bottom:env(safe-area-inset-bottom,0px)}
+:root.light{--bg:#fff;--bg2:#f7f7f7;--bg3:#ececec;--bdr:#dedede;--txt:#000;--txt2:#555;--txt3:#888}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow:hidden}
+button,input{font:inherit}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:#555;border-radius:3px}
+#app{display:flex;height:100vh;height:100dvh}
+.sidebar{width:260px;min-width:260px;border-right:1px solid var(--bdr);background:var(--bg);display:flex;flex-direction:column;overflow:auto;transition:transform .25s ease}
+.sidebar.collapsed{transform:translateX(-100%)}
+.sb-section{padding:16px;border-bottom:1px solid var(--bdr)}
+.sb-title{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);font-weight:700}
+.sb-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sb-logo{font-size:28px}
+.sb-name{font-size:18px;font-weight:800}
+.btn-new{width:100%;padding:12px;border:0;border-radius:8px;background:var(--txt);color:var(--bg);font-weight:700;cursor:pointer}
+.sb-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:8px;color:var(--txt2);cursor:pointer}
+.sb-item:hover{background:var(--bg3);color:var(--txt)}
+.sb-user{margin-top:auto;padding:14px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:10px;cursor:pointer}
+.sb-user:hover{background:var(--bg3)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:var(--bg);z-index:10}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--txt);color:var(--bg);display:grid;place-items:center;font-size:24px;font-weight:800}
+.title{font-size:22px;font-weight:800}
+.header-right{display:flex;gap:10px;align-items:center;position:relative}
+.icon-btn,.menu-btn{width:38px;height:38px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg2);color:var(--txt);cursor:pointer;display:grid;place-items:center}
+.dropdown{display:none;position:absolute;right:0;top:46px;min-width:180px;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.dropdown.visible{display:block}
+.dropdown div{padding:10px 14px;color:var(--txt2);cursor:pointer}
+.dropdown div:hover{background:var(--bg3);color:var(--txt)}
+.chat{flex:1;overflow:auto;padding:22px 18px;max-width:760px;width:100%;margin:0 auto}
+.welcome{min-height:55vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.welcome h1{margin:12px 0 8px;font-size:26px}
+.welcome p{color:var(--txt3);max-width:420px}
+.msg{margin-bottom:18px}
 .msg.user{display:flex;justify-content:flex-end}
-.msg-user{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--radius);padding:12px 16px;max-width:82%;color:var(--txt);line-height:1.7;font-size:var(--font-sm);word-break:break-word}
-.msg-ai-label{font-size:11px;color:var(--txt3);margin-bottom:6px;font-weight:600}
-.msg-ai-body{color:var(--txt);line-height:1.75;font-size:var(--font-sm)}
-.msg-ai-body p{margin-bottom:10px}.msg-ai-body strong{font-weight:700}
-.msg-ai-body code{background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:.9em;border:1px solid var(--bdr)}
-.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:12px;overflow-x:auto;margin:8px 0;font-size:12px}
-.msg-acts{display:flex;gap:8px;margin-top:10px;opacity:0;transition:opacity .2s}.msg:hover .msg-acts{opacity:.6}
-.msg-act{background:none;border:none;color:var(--txt2);font-size:10px;cursor:pointer;padding:4px 8px;border-radius:4px}.msg-act:hover{color:var(--txt);background:var(--bg3)}
-
-.think{display:flex;align-items:center;gap:10px;padding:8px 0}
-.think-emoji{font-size:24px;display:inline-block;animation:curlSpin 1s ease-in-out infinite}
-@keyframes curlSpin{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(-15deg) scale(1.1)}50%{transform:rotate(10deg) scale(.95)}75%{transform:rotate(-8deg) scale(1.05)}100%{transform:rotate(0deg) scale(1)}}
-.think-text{font-size:12px;color:var(--txt3);font-style:italic}
-
-/* File Upload */
-.file-preview{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg2);border:1px solid var(--txt);border-radius:var(--radius-sm);margin-bottom:12px}.file-info{display:flex;align-items:center;gap:12px}.file-info svg{color:var(--txt);width:20px;height:20px}.file-details{display:flex;flex-direction:column;gap:2px}.file-name{color:var(--txt);font-size:14px;font-weight:600}.file-size{color:var(--txt3);font-size:12px}.remove-file{width:28px;height:28px;border-radius:6px;border:1px solid var(--bdr);background:var(--bg3);color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center}.remove-file:hover{background:var(--bg);color:var(--txt)}
-
-.input-area{padding:12px 18px calc(12px + var(--safe-bottom));flex-shrink:0;background:var(--bg)}
-.input-box{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--radius);padding:8px 8px 8px 14px;align-items:center;transition:border-color .2s,box-shadow .2s}.input-box:focus-within{border-color:var(--bdr2);box-shadow:0 0 0 3px rgba(255,255,255,.04)}
-.input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:15px;padding:8px 0;font-family:inherit}.input-field::placeholder{color:var(--txt3)}.input-field:disabled{opacity:.4}
-.attach-btn{width:40px;height:40px;background:var(--bg3);color:var(--txt);border:1px solid var(--bdr);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px}.attach-btn:hover{background:var(--bg);border-color:var(--txt)}
-.voice-btn{width:36px;height:36px;background:var(--bg3);color:var(--txt2);border:1px solid var(--bdr);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}.voice-btn:hover{background:var(--bg);color:var(--txt)}
-.send-btn{width:40px;height:40px;background:var(--txt);color:var(--bg);border:none;border-radius:8px;cursor:pointer;font-size:17px;flex-shrink:0}.send-btn:hover{opacity:.8}.send-btn:disabled{opacity:.12}
-
-.menu-btn{position:fixed;top:16px;left:16px;z-index:101;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);width:40px;height:40px;border-radius:8px;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:18px}
-.sb-toggle-desktop{position:fixed;top:16px;left:16px;z-index:101;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);width:34px;height:34px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:left .3s}.sb-toggle-desktop.shifted{left:272px}
-
-.limit-wrap{padding:4px 0}
-.limit-msg{text-align:center;font-size:10px;color:var(--txt3);padding:4px 0}.limit-msg span{color:var(--txt2);cursor:pointer;text-decoration:underline;font-weight:600}
-
-/* Header */
-.header{display:flex;justify-content:space-between;align-items:center;padding:20px 30px;background:var(--bg);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}.header-left{display:flex;align-items:center;gap:12px}.logo-container{width:48px;height:48px;background:var(--txt);border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px var(--txt)}.logo-emoji{font-size:28px}.header-title{font-size:26px;font-weight:800;color:var(--txt);letter-spacing:-.5px}.header-right{display:flex;align-items:center;gap:12px}
-.founder-secret{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--txt);color:var(--bg);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px var(--txt)}.founder-secret:hover{opacity:.9;transform:translateY(-2px)}
-.settings-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg2);color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center}.settings-btn:hover{background:var(--bg3);border-color:var(--txt)}
-.theme-toggle{width:40px;height:40px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg2);color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center}.theme-toggle:hover{background:var(--bg3);border-color:var(--txt)}
-
-/* Modal */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;align-items:center;justify-content:center;padding:16px}.modal-overlay.open{display:flex}
-.modal{background:var(--bg);border:1px solid var(--bdr2);border-radius:var(--radius);padding:28px;width:440px;max-width:94vw;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.modal h2{font-size:var(--font-lg);font-weight:700;color:var(--txt);margin-bottom:8px}
-.modal p{font-size:13px;color:var(--txt2);margin-bottom:16px;line-height:1.6}
-.modal input,.modal select{width:100%;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);padding:12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:10px;outline:none;font-family:inherit}.modal input:focus,.modal select:focus{border-color:var(--bdr2)}
-.modal-btn{width:100%;background:var(--txt);color:var(--bg);border:none;padding:12px;border-radius:var(--radius-sm);cursor:pointer;font-weight:700;font-size:13px;margin-top:8px;font-family:inherit}.modal-btn:hover{opacity:.85}.modal-btn:disabled{opacity:.3}
-.modal-btn.sec{background:transparent;border:1px solid var(--bdr);color:var(--txt);margin-top:6px}
-
-/* Tier Cards */
-.tier-card{border:1px solid var(--bdr);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .15s;margin-bottom:10px}.tier-card:hover{border-color:var(--txt)}.tier-card.selected{border-color:var(--txt);background:rgba(255,255,255,.03)}.tier-card h3{font-size:var(--font-md);font-weight:700;color:var(--txt)}.tier-card .price{font-size:22px;font-weight:700;color:var(--txt);margin:6px 0}.tier-card .price span{font-size:12px;color:var(--txt2);font-weight:400}.tier-card ul{list-style:none;margin-top:8px}.tier-card li{font-size:12px;color:var(--txt2);padding:3px 0;display:flex;align-items:center;gap:8px}.tier-card li .dot{width:5px;height:5px;border-radius:50%;background:var(--txt3);flex-shrink:0}.tier-card.popular{border-color:rgba(255,255,255,.3)}.tier-card .badge{display:inline-block;font-size:9px;padding:3px 8px;border-radius:4px;background:var(--txt);color:var(--bg);font-weight:700;margin-bottom:8px}
-
-/* Crypto Payment */
-.payment-section{padding:14px;border:1px solid var(--bdr);border-radius:var(--radius);background:var(--bg2);display:none}.payment-section.open{display:block}
-.crypto-tabs{display:flex;gap:6px;margin-bottom:10px}
-.crypto-tab{padding:6px 14px;border:1px solid var(--bdr);border-radius:6px;background:none;color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit}.crypto-tab.active,.crypto-tab:hover{background:var(--txt);color:var(--bg);border-color:var(--txt)}
-.wallet-display{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--txt2);font-family:monospace;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;word-break:break-all}
-.copy-addr{background:none;border:1px solid var(--bdr);color:var(--txt2);padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;white-space:nowrap;font-family:inherit}.copy-addr:hover{color:var(--txt)}
-.status-badge{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:8px;font-size:12px;margin:8px 0}.status-badge.pending{background:rgba(255,200,50,.1);border:1px solid rgba(255,200,50,.3);color:#ffc832}.status-badge.success{background:rgba(100,200,100,.1);border:1px solid rgba(100,200,100,.3);color:#64c864}.status-badge.error{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#ff5050}
-
-/* Founder Dashboard */
-.founder-dashboard{padding:30px;max-width:1200px;margin:0 auto}.dashboard-header{margin-bottom:40px}.dashboard-header h1{font-size:32px;font-weight:800;color:var(--txt);letter-spacing:-1px;margin:0}.dashboard-subtitle{color:var(--txt2);font-size:16px;margin-top:8px}
-.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:40px}.metric-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:24px;display:flex;align-items:flex-start;gap:16px;transition:all .2s}.metric-card:hover{border-color:var(--txt);transform:translateY(-2px)}
-.metric-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center}.metric-icon svg{width:24px;height:24px}.metric-primary .metric-icon{background:var(--txt);color:var(--bg)}.metric-success .metric-icon{background:#22c55e;color:#fff}.metric-accent .metric-icon{background:var(--txt);color:var(--bg);box-shadow:0 0 15px var(--txt)}.metric-info .metric-icon{background:#3b82f6;color:#fff}
-.metric-content{flex:1}.metric-title{color:var(--txt2);font-size:13px;font-weight:600;margin:0}.metric-value{color:var(--txt);font-size:28px;font-weight:800;margin:8px 0;letter-spacing:-1px}.metric-change{display:flex;align-items:center;gap:4px;color:#22c55e;font-size:13px;font-weight:600}
-
-/* Workspace */
-.ws-modal{width:520px}.ws-tabs{display:flex;gap:6px;margin-bottom:16px}.ws-tab{flex:1;padding:10px;border:1px solid var(--bdr);border-radius:var(--radius-sm);background:none;color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}.ws-tab:hover{color:var(--txt);border-color:var(--bdr2)}.ws-tab.active{background:var(--txt);color:var(--bg);border-color:var(--txt)}
-.ws-guide{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-bottom:12px;font-size:11px;color:var(--txt2);line-height:1.6}.ws-guide strong{color:var(--txt)}.ws-code-display{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:14px;text-align:center;margin:10px 0}.ws-code-display .code-val{font-size:30px;font-weight:700;letter-spacing:.15em;color:var(--txt);font-family:monospace}
-.ws-chat{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--radius);padding:12px;height:220px;overflow-y:auto;margin-bottom:10px}.ws-msg{margin-bottom:10px;font-size:12px}.ws-msg .ws-author{font-size:10px;color:var(--txt3);font-weight:700;margin-bottom:2px}.ws-msg .ws-text{color:var(--txt2);line-height:1.5}.ws-msg.own .ws-text{color:var(--txt)}.ws-input-row{display:flex;gap:8px}.ws-input-row input{flex:1;margin-bottom:0}.ws-input-row button{width:auto;padding:10px 16px;margin-top:0;white-space:nowrap;font-size:12px}
-.ws-members{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.ws-member{font-size:10px;padding:3px 8px;border:1px solid var(--bdr);border-radius:12px;color:var(--txt2)}.ws-member.online{border-color:rgba(100,200,100,.5);color:rgba(150,220,150,1)}
-
-/* Settings */
-.settings-section{margin-bottom:32px}.settings-section:last-child{margin-bottom:0}.settings-section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;color:var(--txt);font-size:18px;font-weight:700}.settings-section-header svg{color:var(--txt)}.settings-items{display:flex;flex-direction:column;gap:16px}
-.settings-item{display:flex;justify-content:space-between;align-items:center;padding:16px;background:var(--bg2);border:1px solid var(--bdr);border-radius:10px}.settings-label{color:var(--txt);font-size:14px;font-weight:600}.settings-value{color:var(--txt2);font-size:14px}
-.settings-toggle{width:50px;height:28px;background:var(--bg);border:1px solid var(--bdr);border-radius:14px;cursor:pointer;position:relative}.settings-toggle.active{background:var(--txt);border-color:var(--txt)}.toggle-indicator{width:22px;height:22px;background:var(--txt2);border-radius:11px;position:absolute;top:2px;left:2px;transition:all .2s}.settings-toggle.active .toggle-indicator{background:var(--bg);left:24px}
-
-/* Toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:10px 22px;border-radius:20px;font-size:12px;font-weight:600;z-index:400;animation:toastIn .3s ease,toastOut .3s ease 2.6s forwards;pointer-events:none}@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}@keyframes toastOut{from{opacity:1}to{opacity:0}}
-
-/* Access Denied */
-.access-denied{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:20px}.access-denied svg{color:var(--txt3);width:64px;height:64px}.access-denied h2{color:var(--txt);font-size:24px;font-weight:700;margin:0}.access-denied p{color:var(--txt2);font-size:16px;text-align:center;margin:0}
-
-@media(min-width:769px){.menu-btn{display:none}.sb-toggle-desktop{display:flex}}
+.msg-user{max-width:86%;padding:12px 15px;border:1px solid var(--bdr);background:var(--bg3);border-radius:var(--radius);white-space:pre-wrap;word-break:break-word}
+.msg-ai-label{font-size:11px;color:var(--txt3);margin-bottom:6px;font-weight:700}
+.msg-ai-body{line-height:1.75;white-space:normal}
+.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:12px;overflow:auto}
+.msg-ai-body code{background:var(--bg3);padding:2px 6px;border-radius:4px}
+.msg-actions{display:flex;gap:8px;margin-top:10px;opacity:.75;flex-wrap:wrap}
+.msg-action{border:1px solid var(--bdr);background:var(--bg2);color:var(--txt2);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:11px}
+.msg-action:hover{color:var(--txt);border-color:var(--txt)}
+.input-area{padding:12px 18px calc(12px + var(--safe-bottom));border-top:1px solid var(--bdr);background:var(--bg)}
+.input-box{display:flex;gap:8px;align-items:center;padding:8px 8px 8px 14px;border:1px solid var(--bdr);border-radius:var(--radius);background:var(--bg2)}
+.input{flex:1;border:0;outline:0;background:transparent;color:var(--txt);font-size:15px}
+.input::placeholder{color:var(--txt3)}
+.small-btn,.send-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg3);color:var(--txt);cursor:pointer;display:grid;place-items:center}
+.send-btn{background:var(--txt);color:var(--bg);border:0}
+.file-preview{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg2)}
+.file-meta{display:flex;flex-direction:column}
+.file-name{font-weight:700}
+.file-size{font-size:12px;color:var(--txt3)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{width:440px;max-width:96vw;max-height:88vh;overflow:auto;background:var(--bg);border:1px solid var(--bdr);border-radius:var(--radius);padding:24px}
+.modal h2{margin:0 0 8px;font-size:20px}
+.modal p{margin:0 0 14px;color:var(--txt2);line-height:1.6}
+.modal input{width:100%;padding:12px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg2);color:var(--txt);margin-bottom:10px}
+.btn{width:100%;border:0;border-radius:8px;padding:12px;background:var(--txt);color:var(--bg);font-weight:700;cursor:pointer}
+.btn.secondary{background:transparent;border:1px solid var(--bdr);color:var(--txt);margin-top:6px}
+.card{border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer}
+.card.selected{border-color:var(--txt)}
+.price{font-size:24px;font-weight:800;margin:8px 0}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;padding:8px;border:1px solid var(--bdr);background:transparent;color:var(--txt2);border-radius:8px;cursor:pointer}
+.tab.active{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+.wallet{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg3);font-family:monospace;font-size:11px;margin-bottom:8px;word-break:break-all}
+.copy{border:1px solid var(--bdr);background:transparent;color:var(--txt2);border-radius:6px;padding:5px 10px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:12px;font-weight:700;z-index:200}
+.toggle{width:52px;height:30px;border-radius:999px;border:1px solid var(--bdr);background:var(--bg2);position:relative;cursor:pointer}
+.toggle.on{background:var(--txt)}
+.dot{width:22px;height:22px;border-radius:50%;background:var(--txt2);position:absolute;top:3px;left:3px;transition:all .2s}
+.toggle.on .dot{left:25px;background:var(--bg)}
+.menu-toggle{display:none}
 @media(max-width:768px){
-  .sidebar{position:fixed;left:0;top:0;bottom:0;width:270px;min-width:270px;box-shadow:12px 0 50px rgba(0,0,0,.8);transform:translateX(-100%)}.sidebar.mobile-open{transform:translateX(0);width:270px;min-width:270px;opacity:1}
-  .sb-toggle-desktop{display:none}.menu-btn{display:flex}
-  .sb-overlay{display:block}
-  .msg-user{max-width:90%}
-  .chat-msgs{padding:56px 14px 16px}
-  .input-area{padding:10px 14px calc(10px + var(--safe-bottom))}
-  .welcome-logo{font-size:44px}.welcome h1{font-size:22px}
-  .modal{width:100%;padding:22px}
-  .metrics-grid{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:480px){
-  .metrics-grid{grid-template-columns:1fr}
-  .header{padding:16px}.header-title{font-size:20px}
-  .logo-container{width:40px;height:40px}.logo-emoji{font-size:24px}
+.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:20;box-shadow:12px 0 40px rgba(0,0,0,.45)}
+.menu-toggle{display:grid}
 }
 </style>
 </head>
 <body>
 <div id="app"></div>
-<div class="sb-overlay" id="sbOverlay"></div>
-<button class="menu-btn" id="menuBtn">☰</button>
-<button class="sb-toggle-desktop" id="sbToggleDesktop">◀</button>
+<button class="menu-btn menu-toggle" id="menuBtn">☰</button>
 
-<!-- Header -->
-<div class="header" id="header"><div class="header-left"><div class="logo-container"><span class="logo-emoji">👌</span></div><h1 class="header-title">Capitan AI</h1></div><div class="header-right"><button class="founder-secret" id="founderSecretBtn" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C9.24 2 7 4.24 7 7V10H6C4.9 10 4 10.9 4 12V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V12C20 10.9 19.1 10 18 10H17V7C17 4.24 14.76 2 12 2ZM12 14C13.1 14 14 14.9 14 16C14 17.1 13.1 18 12 18C10.9 18 10 17.1 10 16C10 14.9 10.9 14 12 14ZM9 10V7C9 5.34 10.34 4 12 4C13.66 4 15 5.34 15 7V10H9Z" fill="currentColor"/></svg><span>Founder Entry</span></button><button class="settings-btn" id="settingsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94C19.16 12.78 19.17 12.61 19.17 12.44C19.17 12.27 19.16 12.1 19.14 11.94L21.19 10.34C21.38 10.19 21.43 9.93 21.32 9.7L19.32 6.25C19.21 6.02 18.94 5.93 18.71 6.02L16.29 7.01C15.72 6.57 15.09 6.24 14.44 6.05L14.05 3.45C14.01 3.21 13.81 3.04 13.57 3.04H10.43C10.19 3.04 9.99 3.21 9.95 3.45L9.56 6.05C8.91 6.24 8.28 6.57 7.71 7.01L5.29 6.02C5.06 5.93 4.79 6.02 4.68 6.25L2.68 9.7C2.57 9.93 2.62 10.19 2.81 10.34L4.86 11.94C4.84 12.1 4.83 12.27 4.83 12.44C4.83 12.61 4.84 12.78 4.86 12.94L2.81 14.54C2.62 14.69 2.57 14.95 2.68 15.18L4.68 18.63C4.79 18.86 5.06 18.95 5.29 18.86L7.71 17.87C8.28 18.31 8.91 18.64 9.56 18.83L9.95 21.43C9.99 21.67 10.19 21.84 10.43 21.84H13.57C13.81 21.84 14.01 21.67 14.05 21.43L14.44 18.83C15.09 18.64 15.72 18.31 16.29 17.87L18.71 18.86C18.94 18.95 19.21 18.86 19.32 18.63L21.32 15.18C21.43 14.95 21.38 14.69 21.19 14.54L19.14 12.94ZM12 15.5C13.08 15.5 14 14.58 14 13.5C14 12.42 13.08 11.5 12 11.5C10.92 11.5 10 12.42 10 13.5C10 14.58 10.92 15.5 12 15.5Z" fill="currentColor"/></svg></button><button class="theme-toggle" id="themeBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 7C9.24 7 7 9.24 7 12S9.24 17 12 17 17 14.76 17 12S14.76 7 12 7ZM2 13H4C4 11.17 4.84 9 5.92 7.54L4.38 5.99C3.05 7.75 2.15 9.95 2 12.29V13ZM12 2C11.61 2 11.22 2.04 10.84 2.11L11.84 4.11C12.08 4.15 12.32 4.17 12.56 4.17 13.25 4.17 13.93 4.26 14.58 4.42L15.16 2.38C14.23 2.14 13.28 2 12.33 2H12ZM12 22C12.39 22 12.78 21.96 13.16 21.89L12.16 19.89C11.92 19.85 11.68 19.83 11.44 19.83 10.75 19.83 10.07 19.74 9.42 19.58L8.84 21.62C9.77 21.86 10.72 22 11.67 22H12ZM22 11H20C20 12.83 19.16 15 18.08 16.46L19.62 18.01C20.95 16.25 21.85 14.05 22 11.71V11ZM6 12C6 10.17 6.84 8 7.92 6.54L6.38 4.99C5.05 6.75 4.15 8.95 4 11.29V12H6Z" fill="currentColor"/></svg></button></div></div>
+<div id="authModal" class="modal-overlay"><div class="modal"><h2>✨ Welcome</h2><p>Enter your email to sign in.</p><input id="authEmail" type="email" placeholder="you@email.com"><button class="btn" id="authBtn">Continue →</button><button class="btn secondary" id="authSkip">Skip</button></div></div>
 
-<!-- Auth Modal -->
-<div id="authModal" class="modal-overlay"><div class="modal"><h2>✨ Welcome</h2><p>Enter your email to sign in or create an account.</p><input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email"><button class="modal-btn" id="authBtn">Continue →</button><button class="modal-btn sec" id="authSkip">Skip for now</button></div></div>
+<div id="otpModal" class="modal-overlay"><div class="modal"><h2>📧 Verify Email</h2><p>Enter the 6-digit code sent to <strong id="otpEmailDisplay"></strong></p><input id="otpInput" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn" id="otpVerifyBtn">Verify</button><button class="btn secondary" id="otpCancel">Cancel</button></div></div>
 
-<!-- OTP Modal -->
-<div id="otpModal" class="modal-overlay"><div class="modal"><h2>📧 Verify Email</h2><p>Enter the 6-digit code sent to <strong id="otpEmailDisplay"></strong></p><input type="text" id="otpInput" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code"><button class="modal-btn" id="otpVerifyBtn">Verify</button><button class="modal-btn sec" id="otpCancel">Cancel</button></div></div>
+<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Choose Plan</h2><div class="card" data-tier="free"><h3>Free</h3><div class="price">$0</div><p>10 messages/day</p></div><div class="card" data-tier="plus"><h3>Plus</h3><div class="price">$8<span style="font-size:12px;color:var(--txt2)">/mo</span></div><p>30 messages/day · Workspace · Coding</p></div><div class="card" data-tier="pro"><h3>Pro</h3><div class="price">$17<span style="font-size:12px;color:var(--txt2)">/mo</span></div><p>Unlimited messages · markets · uploads</p></div><div id="paymentSection" style="display:none;margin-top:10px"><div class="tabs"><button class="tab active" data-coin="USDC">USDC</button><button class="tab" data-coin="BTC">BTC</button><button class="tab" data-coin="ETH">ETH</button></div><div class="wallet"><span id="walletAddr">Loading...</span><button class="copy" id="copyWalletBtn">Copy</button></div><div id="paymentStatus"></div><input id="txidInput" placeholder="Transaction hash (TXID)"><button class="btn" id="verifyUpgrade">✅ Activate</button></div><button class="btn secondary" id="closeUpgrade">Close</button></div></div>
 
-<!-- Upgrade Modal -->
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Choose Your Plan</h2>
-<div class="tier-card" id="tierFree"><h3>🔹 Free</h3><div class="price">$0</div><ul><li><span class="dot"></span>10 messages/day</li><li><span class="dot"></span>Core chat</li></ul></div>
-<div class="tier-card popular" id="tierPlus"><div class="badge">⭐ POPULAR</div><h3>🔶 Plus</h3><div class="price">$8<span>/mo</span></div><ul><li><span class="dot"></span>30 messages/day</li><li><span class="dot"></span>Coding & Quant</li><li><span class="dot"></span>African Finance</li><li><span class="dot"></span>Workspace (3 people)</li></ul></div>
-<div class="tier-card" id="tierPro"><div class="badge">🚀 PRO</div><h3>💎 Pro</h3><div class="price">$17<span>/mo</span></div><ul><li><span class="dot"></span>Unlimited messages</li><li><span class="dot"></span>Live market data & news</li><li><span class="dot"></span>PDF/Code uploads</li><li><span class="dot"></span>Workspace (10 people)</li><li><span class="dot"></span>Business mode</li></ul></div>
-<div class="payment-section" id="paymentSection">
-<div class="crypto-tabs"><button class="crypto-tab active" data-coin="USDC">USDC</button><button class="crypto-tab" data-coin="BTC">BTC</button><button class="crypto-tab" data-coin="ETH">ETH</button></div>
-<div class="wallet-display"><span id="walletAddr">Loading...</span><button class="copy-addr" id="copyWalletBtn">Copy</button></div>
-<div id="paymentStatus"></div>
-<input type="text" id="txidInput" placeholder="Transaction hash (TXID)"><button class="modal-btn" id="verifyUpgrade">✅ Activate Plan</button></div>
-<button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
+<div id="privacyModal" class="modal-overlay"><div class="modal"><h2>🔒 Privacy Policy</h2><p>CAPITAN AI by CLOSEAI Technologies.</p><p><strong>Data:</strong> We store email, chat history, and payment records to provide the service.</p><p><strong>Training:</strong> Conversations are not used to train models without consent.</p><p><strong>Sharing:</strong> We never sell your data.</p><button class="btn secondary" id="closePrivacy">Close</button></div></div>
 
-<!-- Founder Modal -->
-<div id="founderModal" class="modal-overlay"><div class="modal"><h2>🔐 Founder Access</h2><input type="password" id="founderCode" placeholder="Founder code"><button class="modal-btn" id="verifyFounder">🔓 Activate</button><button class="modal-btn sec" id="closeFounder">Close</button></div></div>
+<div id="savedModal" class="modal-overlay"><div class="modal"><h2>💾 Saved Messages</h2><div id="savedList"></div><button class="btn secondary" id="closeSaved">Close</button></div></div>
 
-<!-- Admin Modal -->
-<div id="adminModal" class="modal-overlay"><div class="modal" style="width:520px"><h2>🛠️ Admin Panel</h2><div id="adminContent"></div><button class="modal-btn sec" id="closeAdmin" style="margin-top:12px">Close</button></div></div>
-
-<!-- Founder Dashboard Modal -->
-<div id="dashboardModal" class="modal-overlay"><div class="modal founder-dashboard" style="width:1000px;max-width:95vw"><h2>👑 Founder Dashboard</h2><p class="dashboard-subtitle">Real-time analytics and user management</p>
-<div class="metrics-grid" id="metricsGrid"></div>
-<div class="settings-section"><h3>Tier Distribution</h3><div id="tierDistribution"></div></div>
-<div class="settings-section"><h3>Recent Activities</h3><div id="recentActivities"></div></div>
-<button class="modal-btn sec" id="closeDashboard" style="margin-top:12px">Close</button></div></div>
-
-<!-- Workspace Modal -->
-<div id="workspaceModal" class="modal-overlay"><div class="modal ws-modal"><h2>🗂️ Workspace</h2>
-<div class="ws-guide"><strong>👌 How it works:</strong><br>1. Create a room → get a code<br>2. Share code with team<br>3. Everyone joins → real-time chat<br>4. Share AI responses to workspace</div>
-<div class="ws-tabs"><button class="ws-tab active" id="wsTabCreate">Create</button><button class="ws-tab" id="wsTabJoin">Join</button><button class="ws-tab" id="wsTabChat">Chat</button></div>
-<div id="wsCreatePanel"><button class="modal-btn" id="wsCreateBtn">✨ Create Room</button><div id="wsRoomDisplay" style="display:none"><div class="ws-code-display"><div class="code-val" id="wsRoomCode">—</div><div style="font-size:11px;color:var(--txt3);margin-top:4px">Share this code</div></div><button class="modal-btn sec" id="wsCopyCode">📋 Copy Code</button></div></div>
-<div id="wsJoinPanel" style="display:none"><input type="text" id="wsJoinInput" placeholder="Room code (e.g. CAP-7X2Q-M9KF)" style="text-transform:uppercase;letter-spacing:.1em"><button class="modal-btn" id="wsJoinBtn">🚀 Join</button></div>
-<div id="wsChatPanel" style="display:none"><div class="ws-members" id="wsMembersList"></div><div class="ws-chat" id="wsMessages"><p style="font-size:12px;color:var(--txt3);text-align:center;padding-top:40px">Say hello! 👋</p></div><div class="ws-input-row"><input type="text" id="wsMessageInput" placeholder="Message..."><button class="modal-btn" id="wsSendBtn" style="width:auto;margin-top:0;padding:10px 16px">Send</button></div></div>
-<button class="modal-btn sec" id="closeWorkspace" style="margin-top:12px">Close</button></div></div>
-
-<!-- Settings Modal -->
-<div id="settingsModal" class="modal-overlay"><div class="modal"><h2>⚙️ Settings</h2>
-<div class="settings-section">
-<div class="settings-section-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 12C14.21 12 16 10.21 16 8S14.21 4 12 4 8 5.79 8 8S9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="currentColor"/></svg><h3>Profile</h3></div>
-<div class="settings-items" id="settingsProfile"></div>
-</div>
-<div class="settings-section">
-<div class="settings-section-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12S17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12S16.41 20 12 20ZM11 16.5V11H13V16.5H11ZM11 7V9H13V7H11Z" fill="currentColor"/></svg><h3>Notifications</h3></div>
-<div class="settings-items">
-<div class="settings-item"><span class="settings-label">Notifications</span><div class="settings-toggle active" id="notifToggle"><div class="toggle-indicator"></div></div></div>
-<div class="settings-item"><span class="settings-label">Email Alerts</span><div class="settings-toggle active" id="emailToggle"><div class="toggle-indicator"></div></div></div>
-</div>
-</div>
-<div class="settings-section">
-<div class="settings-section-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3C7.58 3 4 4.58 4 7S7.58 11 12 11 20 9.42 20 7 16.42 3 12 3ZM12 9C9.5 9 7.42 10 7 10.64C7.42 10.21 9.5 9 12 9 14.5 9 16.58 10 17 10.64C16.58 10.21 14.5 9 12 9ZM12 13C7.58 13 4 14.58 4 17S7.58 21 12 21 20 19.42 20 17 16.42 13 12 13ZM12 19C9.5 19 7.42 18 7 17.36C7.42 17.79 9.5 19 12 19 14.5 19 16.58 18 17 17.36C16.58 17.79 14.5 19 12 19Z" fill="currentColor"/></svg><h3>Appearance</h3></div>
-<div class="settings-items">
-<div class="settings-item"><span class="settings-label">Dark Mode</span><div class="settings-toggle active" id="darkToggle"><div class="toggle-indicator"></div></div></div>
-</div>
-</div>
-<div class="settings-section">
-<div class="settings-section-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-
->
-
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 8H17V7C17 5.34 15.66 4 14 4H13V3C13 2.45 12.55 2 12 2S11 2.45 11 3V4H10C8.34 4 7 5.34 7 7V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 16C10.9 16 10 15.1 10 14S10.9 12 12 12S14 12.9 14 14S13.1 16 12 16ZM14.24 6.5L15.76 8H14V7C14 6.45 13.55 6 13 6H12V5H14C14.55 5 14.99 5.45 15.24 6.5ZM6 10H18V20H6V10Z" fill="currentColor"/></svg><h3>Security</h3></div>
-<div class="settings-items">
-<div class="settings-item"><span class="settings-label">Two-Factor Auth</span><div class="settings-toggle" id="twoFactorToggle"><div class="toggle-indicator"></div></div></div>
-<div class="settings-item"><span class="settings-label">API Keys</span><button class="modal-btn" style="width:auto;padding:8px 16px;margin:0" id="apiKeysBtn">Manage</button></div>
-</div>
-</div>
-<button class="modal-btn sec" id="closeSettings" style="margin-top:12px">Close</button></div></div>
-
-<!-- Privacy Modal -->
-<div id="privacyModal" class="modal-overlay"><div class="modal"><h2>🔒 Privacy Policy</h2><div style="font-size:12px;color:var(--txt2);line-height:1.8">
-<p>CAPITAN AI by CLOSEAI Technologies.</p><p><strong>Data Collection:</strong> We store email, chat history, and payment records to provide our service.</p><p><strong>ML Training:</strong> User conversations are NOT used to train models without explicit consent.</p><p><strong>Data Sharing:</strong> We never sell your data.</p><p><strong>Your Rights:</strong> Request deletion at closeaitechnologies@protonmail.com.</p></div><button class="modal-btn sec" id="closePrivacy" style="margin-top:12px">Close</button></div></div>
+<div id="settingsModal" class="modal-overlay"><div class="modal"><h2>⚙️ Settings</h2><div style="display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg2);margin-bottom:12px"><span>Dark Mode</span><div id="darkToggle" class="toggle on"><div class="dot"></div></div></div><button class="btn secondary" id="closeSettings">Close</button></div></div>
 
 <script>
-var API='https://goldquantum0-capitan-ai-1.onrender.com';
-var S={messages:[],streaming:!1,userId:null,email:null,tier:'free',token:null,theme:'dark',selectedTier:null,selectedCoin:'USDC',founderClicks:0,sidebarDesktopOpen:!0,sidebarMobileOpen:!1,sections:{menu:!0,markets:!0,settings:!0},workspace:{roomId:null,roomCode:null,messages:[],members:[],tab:'create'},marketData:{},wallets:{},paymentConfig:null,attachedFile:null,settings:{notifications:!0,emailAlerts:!0,darkMode:!0,twoFactor:!0}};
+const API = 'https://goldquantum0-capitan-ai-1.onrender.com';
+const S = { messages: [], userId: null, email: null, tier: 'free', token: null, theme: 'dark', selectedTier: 'free', selectedCoin: 'USDC', attachedFile: null, wallets: {}, streaming: false };
+const $ = id => document.getElementById(id);
+const save = (k, v) => localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+const read = (k, d = null) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
 
-// Fix theme
-function init(){
-  var s=localStorage.getItem('cap_user');if(s){var d=JSON.parse(s);S.userId=d.userId;S.email=d.email;S.tier=d.tier||'free';S.token=d.token||null}
-  if(!S.userId)S.userId='anon_'+crypto.randomUUID().slice(0,12);
-  var t=localStorage.getItem('cap_theme');if(t)S.theme=t;applyTheme();
-  var m=localStorage.getItem('cap_messages');if(m)try{S.messages=JSON.parse(m)}catch(e){}
-  var w=localStorage.getItem('cap_workspace');if(w)try{S.workspace=Object.assign(S.workspace,JSON.parse(w))}catch(e){}
-  var sb=localStorage.getItem('cap_sidebar');if(sb!==null)S.sidebarDesktopOpen=sb==='1';
-  if(!S.email)document.getElementById('authModal').classList.add('open');
-  fetchPaymentConfig();
+function toast(msg) {
+  const t = document.querySelector('.toast');
+  if (t) t.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function fmt(text) {
+  return esc(text)
+    .replace(/```(w*)
+?([sS]*?)```/g, (_, lang, code) => `<pre><code>${code.trim()}</code></pre>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/
+/g, '<br>')
+    .replace(/**(.*?)**/g, '<strong>$1</strong>');
+}
+
+function applyTheme() {
+  document.documentElement.classList.toggle('light', S.theme === 'light');
+  $('darkToggle')?.classList.toggle('on', S.theme === 'dark');
+}
+
+function openModal(id) { $(id).classList.add('open'); }
+function closeModal(id) { $(id).classList.remove('open'); }
+
+function downloadText(data, filename, type = 'text/plain') {
+  const blob = new Blob([data], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function api(path, method = 'GET', body) {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (S.token) headers.Authorization = 'Bearer ' + S.token;
+    const res = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    return await res.json();
+  } catch (e) {
+    return { error: 'offline' };
+  }
+}
+
+async function fetchWallets() {
+  try {
+    const r = await fetch(API + '/api/payment-config');
+    if (r.ok) {
+      const d = await r.json();
+      S.wallets = d.wallets || {};
+    }
+  } catch (e) {
+    S.wallets = {
+      USDC: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+      BTC: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      ETH: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+    };
+  }
+  renderWallet();
+}
+
+function renderWallet() {
+  const el = $('walletAddr');
+  if (el) el.textContent = S.wallets[S.selectedCoin] || 'Unavailable';
+}
+
+async function fetchMarkets() {
+  try {
+    const r = await fetch(API + '/api/markets');
+    if (r.ok) {
+      const d = await r.json();
+      S.markets = d.prices || d;
+    }
+  } catch (e) {}
+}
+
+function saveState() {
+  save('cap_user', { userId: S.userId, email: S.email, tier: S.tier, token: S.token });
+  save('cap_messages', S.messages.slice(-40));
+  save('cap_theme', S.theme);
+}
+
+function init() {
+  const u = read('cap_user');
+  if (u) {
+    S.userId = u.userId;
+    S.email = u.email;
+    S.tier = u.tier || 'free';
+    S.token = u.token || null;
+  }
+  if (!S.userId) S.userId = 'anon_' + crypto.randomUUID().slice(0, 10);
+  const m = read('cap_messages');
+  if (Array.isArray(m)) S.messages = m;
+  const t = localStorage.getItem('cap_theme');
+  if (t) S.theme = t;
+  applyTheme();
+  fetchWallets();
   render();
-  if(S.tier==='pro'||S.tier==='founder'){fetchMarketData();setInterval(fetchMarketData,30000)}
+  if (!S.email) openModal('authModal');
+  if (S.tier === 'pro' || S.tier === 'founder') fetchMarkets();
 }
 
-async function fetchPaymentConfig(){
-  try{var r=await fetch(API+'/api/payment-config');if(r.ok){var d=await r.json();S.wallets=d.wallets||{};S.paymentConfig=d;updateWalletDisplay()}}catch(e){S.wallets={USDC:'0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',BTC:'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',ETH:'0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'};updateWalletDisplay()}
-}
-function updateWalletDisplay(){var addr=S.wallets[S.selectedCoin];if(addr)document.getElementById('walletAddr').textContent=addr}
-
-function applyTheme(){document.documentElement.classList.toggle('light',S.theme==='light')}
-function toast(msg,dur){var t=document.querySelector('.toast');if(t)t.remove();var e=document.createElement('div');e.className='toast';e.textContent=msg;document.body.appendChild(e);setTimeout(function(){e.remove()},dur||2600)}
-function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'):''}
-function fmt(s){if(!s)return'';s=esc(s);s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){return'<pre><code>'+code.trim()+'</code></pre>'});s=s.replace(/\n/g,'<br>');s=s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');s=s.replace(/`(.*?)`/g,'<code>$1</code>');return s}
-function greet(){var h=new Date().getHours(),n=S.email?' '+S.email.split('@')[0]:'';if(h<12)return'Good morning'+n+'. ☀️';if(h<17)return'Good afternoon'+n+'. 🌤️';if(h<21)return'Good evening'+n+'. 🌆';return'Night session'+n+'. 🌃'}
-
-function authHeaders(){var h={'Content-Type':'application/json'};if(S.token)h['Authorization']='Bearer '+S.token;return h}
-async function api(endpoint,method,body){
-  try{var opts={method:method||'GET',headers:authHeaders()};if(body)opts.body=JSON.stringify(body);var r=await fetch(API+endpoint,opts);return await r.json()}catch(e){return{error:'Connection failed'}}
+async function requestOTP() {
+  const email = $('authEmail').value.trim();
+  if (!email) return toast('Enter email');
+  const d = await api('/api/auth/send-otp', 'POST', { email });
+  if (d.sent) {
+    S.email = email;
+    $('otpEmailDisplay').textContent = email;
+    closeModal('authModal');
+    openModal('otpModal');
+    toast('Code sent');
+  }
 }
 
-async function requestOTP(email){
-  var d=await api('/api/auth/send-otp','POST',{email:email});
-  if(d.sent){document.getElementById('authModal').classList.remove('open');document.getElementById('otpEmailDisplay').textContent=email;document.getElementById('otpModal').classList.add('open');S.email=email}else toast('Failed to send OTP')}
-async function verifyOTP(){
-  var code=document.getElementById('otpInput')?.value?.trim();if(!code||code.length!==6){toast('Enter 6-digit code');return}
-  var d=await api('/api/auth/verify-otp','POST',{email:S.email,code:code});
-  if(d.token){S.userId=d.user_id;S.token=d.token;S.email=d.email;S.tier=d.tier||'free';saveUser();document.getElementById('otpModal').classList.remove('open');toast('Verified! ✨');render()}else toast(d.error||'Invalid code')}
-
-function saveUser(){localStorage.setItem('cap_user',JSON.stringify({userId:S.userId,email:S.email,tier:S.tier,token:S.token}))}
-function saveMessages(){localStorage.setItem('cap_messages',JSON.stringify(S.messages.slice(-40)))}
-function saveWorkspace(){localStorage.setItem('cap_workspace',JSON.stringify(S.workspace))}
-
-async function fetchMarketData(){
-  try{var r=await fetch(API+'/api/markets');if(r.ok){var d=await r.json();S.marketData=d.prices||d;updateMarketSection()}}catch(e){}
-}
-function updateMarketSection(){
-  var el=document.getElementById('marketsBody');if(!el)return;if(!Object.keys(S.marketData).length)return;
-  var h='';var mktKeys=[{k:'S&P 500',n:'S&P 500'},{k:'NASDAQ',n:'NASDAQ'},{k:'Dow Jones',n:'Dow'},{k:'FTSE 100',n:'FTSE'},{k:'Apple',n:'Apple'},{k:'Microsoft',n:'MSFT'},{k:'Nvidia',n:'Nvidia'},{k:'Tesla',n:'Tesla'},{k:'Gold',n:'Gold'},{k:'Oil',n:'Oil'}];
-  h+='<div class="mkt-label">🌍 Global</div>';
-  mktKeys.forEach(function(k){var d=S.marketData[k.k];if(d)h+='<div class="mkt-item"><span class="mkt-sym">'+k.n.substring(0,6)+'</span><span class="mkt-price">'+(d.price<10?d.price.toFixed(4):d.price<1000?d.price.toFixed(2):d.price.toLocaleString())+'</span><span class="mkt-chg '+(d.change>=0?'up':'down')+'">'+(d.change>=0?'▲':'▼')+' '+Math.abs(d.change).toFixed(2)+'%</span></div>'});
-  var crKeys=['Bitcoin','Ethereum'];h+='<div class="mkt-label" style="margin-top:6px">₿ Crypto</div>';
-  crKeys.forEach(function(k){var cd=S.marketData[k];if(cd)h+='<div class="mkt-item"><span class="mkt-sym">'+k+'</span><span class="mkt-price">$'+cd.price.toLocaleString()+'</span><span class="mkt-chg '+(cd.change>=0?'up':'down')+'">'+(cd.change>=0?'▲':'▼')+' '+Math.abs(cd.change).toFixed(2)+'%</span></div>'});
-  el.innerHTML=h;
+async function verifyOTP() {
+  const code = $('otpInput').value.trim();
+  if (code.length !== 6) return toast('6 digits');
+  const d = await api('/api/auth/verify-otp', 'POST', { email: S.email, code });
+  if (d.token) {
+    S.userId = d.user_id;
+    S.token = d.token;
+    S.email = d.email;
+    S.tier = d.tier || 'free';
+    saveState();
+    closeModal('otpModal');
+    toast('Verified!');
+    render();
+  } else {
+    toast(d.error || 'Invalid code');
+  }
 }
 
-async function sendMessage(content){
-  var input=document.getElementById('chatInput'),text=content||(input?input.value.trim():'');if(!text&&!S.attachedFile)return;
-  S.messages.push({role:'user',content:text,file:S.attachedFile,id:'msg_'+Date.now()});var ai={role:'assistant',content:'',id:'msg_'+(Date.now()+1)};S.messages.push(ai);S.streaming=!0;saveMessages();
-  if(input){input.value='';S.attachedFile=null;renderInput()}renderMessages();
-  var d=await api('/api/chat','POST',{messages:S.messages.filter(function(m){return m.content||m.file}).map(function(m){return{role:m.role,content:m.content,file:m.file}}),user_id:S.userId});
-  if(d.error&&d.error.includes('limit')){ai.content=d.error;document.getElementById('upgradeModal').classList.add('open')}else{ai.content=d.content||'No response. Retry?'}
-  S.streaming=!1;saveMessages();renderMessages();
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copied!'));
 }
 
-function selectTier(tier){S.selectedTier=tier;document.querySelectorAll('.tier-card').forEach(function(c){c.classList.toggle('selected',c.id==='tier'+tier.charAt(0).toUpperCase()+tier.slice(1))});if(tier==='free'){document.getElementById('paymentSection').classList.remove('open');return}updateWalletDisplay();document.getElementById('paymentSection').classList.add('open')}
-function switchCoin(coin){S.selectedCoin=coin;updateWalletDisplay();document.querySelectorAll('.crypto-tab').forEach(function(t){t.classList.toggle('active',t.dataset.coin===coin)})}
-
-async function upgradeTier(){
-  var txid=document.getElementById('txidInput'),tx=txid?txid.value.trim():'';if(!tx){toast('Enter TXID');return}
-  if(!S.selectedTier||S.selectedTier==='free'){toast('Select a plan');return}
-  var btn=document.getElementById('verifyUpgrade'),statusEl=document.getElementById('paymentStatus');
-  btn.textContent='⏳ Verifying...';btn.disabled=!0;
-  statusEl.innerHTML='<div class="status-badge pending">⏳ Checking blockchain...</div>';
-  var d=await api('/api/upgrade','POST',{user_id:S.userId,tier:S.selectedTier,txid:tx,currency:S.selectedCoin});
-  if(d.verified){S.tier=S.selectedTier;S.token=d.token||S.token;saveUser();statusEl.innerHTML='<div class="status-badge success">✅ Payment verified!</div>';setTimeout(function(){document.getElementById('upgradeModal').classList.remove('open');document.getElementById('paymentSection').classList.remove('open');statusEl.innerHTML='';render()},1500)}else{statusEl.innerHTML='<div class="status-badge error">❌ '+(d.message||d.error||'Failed')+'</div>'}
-  btn.textContent='✅ Activate Plan';btn.disabled=!1;
+function copyMsg(btn) {
+  copyText(btn.closest('.msg').querySelector('.msg-ai-body').innerText);
 }
 
-async function activateFounder(){
-  var code=document.getElementById('founderCode'),c=code?code.value.trim():'';if(!c){toast('Enter code');return}
-  var d=await api('/api/founder','POST',{user_id:S.userId,code:c});
-  if(d.verified){S.tier='founder';S.token=d.token||S.token;saveUser();document.getElementById('founderModal').classList.remove('open');toast('👑 Founder!');render()}else toast('Invalid code')}
+function saveMsg(btn) {
+  const txt = btn.closest('.msg').querySelector('.msg-ai-body').innerText;
+  const saved = read('cap_saved', []);
+  saved.push({ content: txt, date: new Date().toISOString() });
+  save('cap_saved', saved);
+  toast('Saved!');
+}
 
-async function loadAdmin(){
-  document.getElementById('adminContent').innerHTML='<p style="color:var(--txt3)">Loading...</p>';
-  var d=await api('/api/admin','POST',{});
-  if(d.error){document.getElementById('adminContent').innerHTML='<p>Access denied. Founder only.</p>';return}
-  var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--txt3)">TOTAL USERS</div><div style="font-size:22px;font-weight:700">'+(d.total_users||0)+'</div></div></div>';
-  var users=d.users||[];h+='<div style="max-height:250px;overflow-y:auto">';
-  users.forEach(function(u){h+='<div style="padding:8px 0;border-bottom:1px solid var(--bdr);font-size:12px;display:flex;justify-content:space-between"><span>'+esc(u.email||'anon')+'</span><span style="color:var(--txt3)">'+(u.tier||'free').toUpperCase()+'</span></div>'});
+function downloadMsg(btn) {
+  const txt = btn.closest('.msg').querySelector('.msg-ai-body').innerText;
+  downloadText(txt, `message-${Date.now()}.txt`);
+  toast('Downloaded!');
+}
 
+function retryMsg() {
+  const last = [...S.messages].reverse().find(m => m.role === 'user');
+  if (last) sendMessage(last.content);
+}
+
+function bookmarkChat() {
+  const bookmarks = read('cap_bookmarks', []);
+  bookmarks.push({ messages: S.messages, date: new Date().toISOString() });
+  save('cap_bookmarks', bookmarks);
+  toast('Bookmarked!');
+  $('dropdownMenu').classList.remove('visible');
+}
+
+function shareChat() {
+  copyText(location.origin + '?share=' + btoa(unescape(encodeURIComponent(JSON.stringify(S.messages)))));
+  $('dropdownMenu').classList.remove('visible');
+}
+
+function exportChat() {
+  const text = S.messages.map(m => (m.role === 'user' ? 'User: ' : 'AI: ') + m.content).join('
+
+');
+  downloadText(text, `chat-${Date.now()}.txt`);
+  $('dropdownMenu').classList.remove('visible');
+}
+
+function openPrivacy() {
+  openModal('privacyModal');
+  $('dropdownMenu').classList.remove('visible');
+}
+
+function selectTier(t) {
+  S.selectedTier = t;
+  document.querySelectorAll('.card').forEach(c => c.classList.toggle('selected', c.dataset.tier === t));
+  $('paymentSection').style.display = t === 'free' ? 'none' : 'block';
+}
+
+function switchCoin(c) {
+  S.selectedCoin = c;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.coin === c));
+  renderWallet();
+}
+
+async function upgradeTier() {
+  const txid = $('txidInput').value.trim();
+  if (!S.selectedTier || S.selectedTier === 'free') return toast('Select a paid plan');
+  if (!txid) return toast('Enter TXID');
+  $('paymentStatus').innerHTML = '<div style="padding:10px;border:1px solid rgba(255,200,50,.3);color:#ffc832;border-radius:8px">Checking...</div>';
+  const d = await api('/api/upgrade', 'POST', { user_id: S.userId, tier: S.selectedTier, txid, currency: S.selectedCoin });
+  if (d.verified) {
+    S.tier = S.selectedTier;
+    saveState();
+    $('paymentStatus').innerHTML = '<div style="padding:10px;border:1px solid rgba(100,200,100,.3);color:#64c864;border-radius:8px">✅ Verified!</div>';
+    setTimeout(() => { closeModal('upgradeModal'); render(); }, 800);
+  } else {
+    $('paymentStatus').innerHTML = '<div style="padding:10px;border:1px solid rgba(255,80,80,.3);color:#ff5050;border-radius:8px">❌ Failed</div>';
+  }
+}
+
+function renderSaved() {
+  const el = $('savedList');
+  const saved = read('cap_saved', []);
+  if (!saved.length) {
+    el.innerHTML = '<p style="color:var(--txt3)">No saved messages.</p>';
+    return;
+  }
+  el.innerHTML = saved.slice().reverse().map((s, i) => `
+    <div style="border:1px solid var(--bdr);background:var(--bg2);border-radius:12px;padding:16px;margin-bottom:10px">
+      <div style="white-space:pre-wrap;line-height:1.7">${esc(s.content)}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="msg-action" onclick="copyText(${JSON.stringify(s.content)})">Copy</button>
+        <button class="msg-action" onclick="deleteSaved(${i})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteSaved(idx) {
+  const saved = read('cap_saved', []);
+  saved.splice(saved.length - 1 - idx, 1);
+  save('cap_saved', saved);
+  renderSaved();
+  toast('Deleted');
+}
+
+function render() {
+  applyTheme();
+  const app = $('app');
+  const tier = S.tier || 'free';
+  app.innerHTML = '';
+
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'sidebar' + (localStorage.getItem('cap_sidebar') === '0' ? ' collapsed' : '');
+  sidebar.id = 'sidebar';
+  sidebar.innerHTML = `
+    <div class="sb-section">
+      <div class="sb-head">
+        <div class="sb-logo">👌</div>
+        <div><div class="sb-title">CAPITAN AI</div><div class="sb-name">Workspace</div></div>
+      </div>
+      <button class="btn-new" id="newChatBtn">✨ New Chat</button>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">Menu</div>
+      <div class="sb-item" id="savedBtn2">💾 Saved</div>
+      <div class="sb-item" id="settingsBtn2">⚙️ Settings</div>
+      <div class="sb-item" id="privacyBtn2">🔒 Privacy</div>
+    </div>
+    <div class="sb-user" id="userBtn">
+      <div style="font-size:18px">${tier === 'free' ? '🔹' : tier === 'plus' ? '🔶' : tier === 'pro' ? '💎' : '👑'}</div>
+      <div style="min-width:0">
+        <div style="font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(S.email || 'Sign in')}</div>
+        <div style="font-size:9px;color:var(--txt3);text-transform:uppercase">${tier}</div>
+      </div>
+    </div>`;
+  app.appendChild(sidebar);
+
+  const main = document.createElement('main');
+  main.className = 'main';
+  main.innerHTML = `
+    <div class="header">
+      <div class="header-left"><div class="logo">👌</div><div class="title">Capitan AI</div></div>
+      <div class="header-right">
+        <button class="icon-btn" id="savedBtn">💾</button>
+        <button class="icon-btn" id="settingsBtn">⚙️</button>
+        <button class="icon-btn" id="menuDots">⋮</button>
+        <div class="dropdown" id="dropdownMenu">
+          <div onclick="openPrivacy()">Privacy Policy</div>
+          <div onclick="bookmarkChat()">Bookmark Chat</div>
+          <div onclick="shareChat()">Share Chat</div>
+          <div onclick="exportChat()">Export Chat</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat" id="chatMsgs"></div>
+    <div class="input-area">
+      <div id="filePreviewHost"></div>
+      <div class="input-box">
+        <button class="small-btn" id="attachBtn">📎</button>
+        <input id="fileInput" type="file" accept=".pdf,.doc,.docx,.txt,.csv" hidden>
+        <input class="input" id="chatInput" placeholder="Message Capitan..." autocomplete="off">
+        <button class="small-btn" id="voiceBtn">🎤</button>
+        <button class="send-btn" id="sendBtn">↑</button>
+      </div>
+    </div>`;
+  app.appendChild(main);
+
+  renderMessages();
+  renderWallet();
+  bind();
+}
+
+function renderMessages() {
+  const el = $('chatMsgs');
+  if (!el) return;
+  if (!S.messages.length) {
+    el.innerHTML = `<div class="welcome"><div style="font-size:56px">👌</div><h1>${greet()}</h1><p>Ask anything — coding, finance, summaries, or planning.</p></div>`;
+    return;
+  }
+  el.innerHTML = S.messages.map(m => m.role === 'user'
+    ? `<div class="msg user"><div class="msg-user">${esc(m.content)}</div></div>`
+    : `<div class="msg"><div class="msg-ai-label">👌 Capitan AI</div><div class="msg-ai-body">${fmt(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyMsg(this)">Copy</button><button class="msg-action" onclick="saveMsg(this)">Save</button><button class="msg-action" onclick="downloadMsg(this)">Download</button><button class="msg-action" onclick="retryMsg(this)">Retry</button></div></div>`
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function greet() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning ☀️' : h < 17 ? 'Good afternoon 🌤️' : h < 21 ? 'Good evening 🌆' : 'Night session 🌃';
+}
+
+async function sendMessage(content) {
+  const input = $('chatInput');
+  const text = (content ?? input?.value ?? '').trim();
+  if (!text && !S.attachedFile) return;
+  S.messages.push({ role: 'user', content: text, file: S.attachedFile || null });
+  S.messages.push({ role: 'assistant', content: '…' });
+  S.streaming = true;
+  saveState();
+  if (input) input.value = '';
+  S.attachedFile = null;
+  render();
+
+  const payload = {
+    messages: S.messages.map(m => ({ role: m.role, content: m.content, file: m.file || null })),
+    user_id: S.userId
+  };
+  const d = await api('/api/chat', 'POST', payload);
+  S.messages[S.messages.length - 1] = { role: 'assistant', content: d.content || 'Retry?' };
+  S.streaming = false;
+  saveState();
+  render();
+}
+
+function bind() {
+  $('menuBtn').onclick = () => $('sidebar').classList.toggle('collapsed');
+  $('menuDots').onclick = e => { $('dropdownMenu').classList.toggle('visible'); e.stopPropagation(); };
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.header-right')) $('dropdownMenu')?.classList.remove('visible');
+  });
+
+  $('authBtn').onclick = requestOTP;
+  $('authSkip').onclick = () => closeModal('authModal');
+  $('otpVerifyBtn').onclick = verifyOTP;
+  $('otpCancel').onclick = () => { closeModal('otpModal'); openModal('authModal'); };
+
+  $('savedBtn').onclick = () => { renderSaved(); openModal('savedModal'); };
+  $('savedBtn2').onclick = $('savedBtn').onclick;
+  $('settingsBtn').onclick = () => openModal('settingsModal');
+  $('settingsBtn2').onclick = $('settingsBtn').onclick;
+  $('privacyBtn2').onclick = openPrivacy;
+  $('closePrivacy').onclick = () => closeModal('privacyModal');
+  $('closeSaved').onclick = () => closeModal('savedModal');
+  $('closeSettings').onclick = () => closeModal('settingsModal');
+
+  $('darkToggle').onclick = () => {
+    S.theme = S.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('cap_theme', S.theme);
+    applyTheme();
+    save('cap_theme', S.theme);
+  };
+
+  $('newChatBtn').onclick = () => {
+    S.messages = [];
+    saveState();
+    renderMessages();
+  };
+
+  $('attachBtn').onclick = () => $('fileInput').click();
+  $('fileInput').onchange = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (/^image//.test(f.type)) {
+      toast('Images not supported');
+      $('fileInput').value = '';
+      return;
+    }
+    S.attachedFile = { name: f.name, size: f.size };
+    const host = $('filePreviewHost');
+    host.innerHTML = `<div class="file-preview"><div class="file-meta"><div class="file-name">${esc(f.name)}</div><div class="file-size">${(f.size / 1024).toFixed(1)} KB</div></div><button class="small-btn" id="removeFile">✕</button></div>`;
+    $('removeFile').onclick = () => {
+      S.attachedFile = null;
+      host.innerHTML = '';
+      $('fileInput').value = '';
+    };
+  };
+
+  $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+  $('sendBtn').onclick = () => sendMessage();
+  $('voiceBtn').onclick = () => toast('Voice input not implemented');
+
+  document.querySelectorAll('.card').forEach(c => c.onclick = () => selectTier(c.dataset.tier));
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchCoin(t.dataset.coin));
+  $('copyWalletBtn').onclick = () => copyText($('walletAddr').textContent);
+  $('verifyUpgrade').onclick = upgradeTier;
+  $('closeUpgrade').onclick = () => closeModal('upgradeModal');
+
+  $('userBtn').onclick = () => S.tier === 'free' ? openModal('upgradeModal') : openModal('settingsModal');
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
+</body>
+</html>
