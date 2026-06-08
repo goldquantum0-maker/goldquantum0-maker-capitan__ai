@@ -272,7 +272,7 @@ body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSys
 </div>
 
 <script>
-var API ='https://capitan-api.onrender.com';
+var API ='https://goldquantum0-capitan-ai-1.onrender.com';
 
 // ── Wallet addresses per coin ── REPLACE THESE WITH YOUR REAL ADDRESSES
 var WALLETS = {
@@ -328,7 +328,6 @@ function fmt(s) {
 }
 function greet() {
   var h = new Date().getHours(), name = S.email ? (' ' + S.email.split('@')[0]) : '';
-  if (h < 6) return 'Akwaaba' + name + '! 🌙';
   if (h < 12) return 'Good morning' + (name || '') + '. ☀️';
   if (h < 17) return 'Good afternoon' + (name || '') + '. 🌤️';
   if (h < 21) return 'Good evening' + (name || '') + '. 🌆';
