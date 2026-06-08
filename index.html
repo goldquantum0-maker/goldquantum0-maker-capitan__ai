@@ -6,438 +6,333 @@
 <title>CAPITAN AI</title>
 <style>
 :root {
-  --bg: #000000;
-  --bg2: #0a0a0a;
-  --bg3: #111111;
-  --bdr: #1a1a1a;
-  --bdr2: #252525;
-  --txt: #ffffff;
-  --txt2: #999999;
-  --txt3: #444444;
-  --emoji-filter: grayscale(1);
-  --radius: 12px;
-  --radius-sm: 8px;
-  --font-xs: 10px;
-  --font-sm: 12px;
-  --font-md: 14px;
-  --font-lg: 18px;
-  --font-xl: 26px;
+  --bg: #000000; --bg2: #050505; --bg3: #0a0a0a;
+  --bdr: #141414; --bdr2: #1e1e1e;
+  --txt: #ffffff; --txt2: #999999; --txt3: #555555;
+  --radius: 10px; --radius-sm: 6px;
+  --font-xs: 10px; --font-sm: 12px; --font-md: 14px; --font-lg: 18px; --font-xl: 24px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 :root.light {
-  --bg: #ffffff;
-  --bg2: #f5f5f5;
-  --bg3: #eeeeee;
-  --bdr: #e0e0e0;
-  --bdr2: #cccccc;
-  --txt: #000000;
-  --txt2: #444444;
-  --txt3: #999999;
-  --emoji-filter: grayscale(1) brightness(0);
+  --bg: #ffffff; --bg2: #fafafa; --bg3: #f0f0f0;
+  --bdr: #e0e0e0; --bdr2: #cccccc;
+  --txt: #000000; --txt2: #444444; --txt3: #888888;
 }
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { font-size: 14px; }
-body {
-  background: var(--bg); color: var(--txt);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: var(--font-sm); height: 100vh; height: 100dvh;
-  overflow: hidden; -webkit-font-smoothing: antialiased;
-}
-#app { display: flex; height: 100vh; height: 100dvh; }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:14px}
+body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:var(--font-sm);height:100vh;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
+#app{display:flex;height:100vh;height:100dvh}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
 
-.sidebar { width: 240px; min-width: 240px; background: var(--bg2); border-right: 1px solid var(--bdr); display: flex; flex-direction: column; z-index: 60; transition: transform 0.3s var(--ease); }
-.sb-top { padding: 20px 16px; border-bottom: 1px solid var(--bdr); }
-.sb-logo { font-size: 28px; cursor: pointer; user-select: none; filter: var(--emoji-filter); display: inline-block; }
-.sb-logo-text { font-size: var(--font-xs); color: var(--txt3); margin-top: 4px; font-weight: 600; letter-spacing: 0.05em; }
-.btn-new-chat { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--font-xs); font-weight: 600; margin-top: 12px; transition: all 0.15s; }
-.btn-new-chat:hover { background: var(--bdr); }
-.sb-nav { flex: 1; overflow-y: auto; padding: 8px; }
-.sb-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--txt2); font-size: var(--font-xs); transition: all 0.15s; }
-.sb-nav-item:hover { background: var(--bg3); color: var(--txt); }
-.sb-nav-item .tier-badge { font-size: 8px; padding: 2px 6px; border-radius: 4px; background: var(--bg3); color: var(--txt2); }
-.sb-nav-item .tier-badge.plus { background: #1a1a1a; color: #ccc; }
-.sb-nav-item .tier-badge.pro { background: #000; color: #fff; border: 1px solid #333; }
-.sb-bottom { padding: 12px 16px; border-top: 1px solid var(--bdr); }
-.sb-user { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--radius-sm); cursor: pointer; }
-.sb-user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 12px; filter: var(--emoji-filter); }
-.sb-user-info { flex: 1; min-width: 0; }
-.sb-user-name { font-size: var(--font-xs); color: var(--txt); font-weight: 600; }
-.sb-user-tier { font-size: 9px; color: var(--txt3); }
+.sidebar{width:230px;min-width:230px;background:var(--bg);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:60;overflow-y:auto}
+.sb-section{padding:14px 12px;border-bottom:1px solid var(--bdr)}
+.sb-logo{font-size:24px;cursor:pointer;user-select:none;display:inline-block;filter:grayscale(1)}.light .sb-logo{filter:grayscale(1) brightness(0)}
+.sb-logo-text{font-size:9px;color:var(--txt3);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px}
+.btn-new{width:100%;background:var(--txt);color:var(--bg);border:none;padding:10px;border-radius:var(--radius-sm);cursor:pointer;font-size:var(--font-xs);font-weight:700;margin-top:8px;font-family:inherit;letter-spacing:0.03em}.btn-new:hover{opacity:0.85}
+.sb-label{font-size:8px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.12em;font-weight:700;padding:6px 0 4px}
+.sb-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--txt2);font-size:var(--font-xs);transition:all 0.12s}.sb-item:hover{background:var(--bg3);color:var(--txt)}
+.sb-item.active{color:var(--txt);font-weight:600}
+.sb-item .tag{font-size:7px;padding:2px 5px;border-radius:3px;background:var(--bg3);color:var(--txt3)}
+.sb-item .tag.pro{background:var(--txt);color:var(--bg)}
+.sb-item .tag.plus{background:var(--bdr2);color:var(--txt2)}
+.sb-mkt{display:flex;justify-content:space-between;padding:5px 10px;font-size:9px;color:var(--txt2);cursor:pointer}.sb-mkt:hover{color:var(--txt)}
+.sb-news{padding:5px 10px;font-size:9px;color:var(--txt2);cursor:pointer;border-left:1px solid transparent}.sb-news:hover{border-left-color:var(--bdr2);color:var(--txt)}
+.sb-user{padding:12px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:var(--font-xs)}.sb-user:hover{background:var(--bg3)}
+.sb-user-avatar{font-size:14px;filter:grayscale(1)}.light .sb-user-avatar{filter:grayscale(1) brightness(0)}
+.sb-user-tier{font-size:8px;color:var(--txt3)}
 
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
-.chat-wrap { flex: 1; display: flex; flex-direction: column; max-width: 700px; margin: 0 auto; width: 100%; }
-.chat-messages { flex: 1; overflow-y: auto; padding: 24px 20px; scroll-behavior: smooth; }
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.chat-wrap{flex:1;display:flex;flex-direction:column;max-width:680px;margin:0 auto;width:100%}
+.chat-msgs{flex:1;overflow-y:auto;padding:20px 16px;scroll-behavior:smooth}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;text-align:center;padding:20px}
+.welcome-logo{font-size:48px;filter:grayscale(1);margin-bottom:12px}.light .welcome-logo{filter:grayscale(1) brightness(0)}
+.welcome h1{font-size:var(--font-xl);font-weight:700;color:var(--txt);margin-bottom:6px;letter-spacing:-0.02em}
+.welcome p{font-size:var(--font-sm);color:var(--txt3);max-width:340px;line-height:1.5}
 
-.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 55vh; text-align: center; padding: 20px; }
-.welcome-logo { font-size: 56px; filter: var(--emoji-filter); margin-bottom: 16px; }
-.welcome h1 { font-size: var(--font-xl); font-weight: 700; color: var(--txt); margin-bottom: 8px; letter-spacing: -0.02em; }
-.welcome-sub { font-size: var(--font-sm); color: var(--txt3); max-width: 360px; line-height: 1.5; }
+.msg{margin-bottom:18px;animation:in 0.2s ease}@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{display:flex;justify-content:flex-end}
+.msg-user{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--radius);padding:10px 14px;max-width:78%;color:var(--txt);line-height:1.6;font-size:var(--font-sm)}
+.msg-ai-label{font-size:var(--font-xs);color:var(--txt3);margin-bottom:4px;font-weight:600}
+.msg-ai-body{color:var(--txt);line-height:1.7;font-size:var(--font-sm)}
+.msg-ai-body p{margin-bottom:8px}.msg-ai-body strong{font-weight:700}
+.msg-ai-body code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:0.9em}
+.msg-acts{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity 0.2s}.msg:hover .msg-acts{opacity:0.5}
+.msg-act{background:none;border:none;color:var(--txt2);font-size:9px;cursor:pointer;padding:3px 6px;border-radius:3px}.msg-act:hover{color:var(--txt);background:var(--bg3)}
+.think{display:flex;align-items:center;gap:4px;padding:4px 0}.think-dot{width:4px;height:4px;border-radius:50%;background:var(--txt3);animation:pulse 1.2s infinite}.think-dot:nth-child(2){animation-delay:0.2s}.think-dot:nth-child(3){animation-delay:0.4s}@keyframes pulse{0%,80%,100%{opacity:0.2}40%{opacity:1}}
 
-.msg { margin-bottom: 20px; animation: msgIn 0.25s ease; }
-@keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.msg.user { display: flex; justify-content: flex-end; }
-.msg-user-bubble { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 12px 16px; max-width: 78%; color: var(--txt); line-height: 1.6; font-size: var(--font-sm); }
-.msg.ai { padding-left: 4px; }
-.msg-ai-label { font-size: var(--font-xs); color: var(--txt3); margin-bottom: 6px; font-weight: 600; }
-.msg-ai-body { color: var(--txt); line-height: 1.7; font-size: var(--font-sm); }
-.msg-ai-body p { margin-bottom: 10px; }
-.msg-ai-body strong { color: var(--txt); font-weight: 700; }
-.msg-ai-body code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
-.msg-ai-body pre { background: var(--bg2); border: 1px solid var(--bdr); padding: 12px; border-radius: var(--radius-sm); overflow-x: auto; margin: 8px 0; }
-.msg-actions { display: flex; gap: 8px; margin-top: 8px; opacity: 0; transition: opacity 0.2s; }
-.msg:hover .msg-actions { opacity: 0.6; }
-.msg-action-btn { background: none; border: none; color: var(--txt2); font-size: var(--font-xs); cursor: pointer; padding: 4px 8px; border-radius: 4px; }
-.msg-action-btn:hover { color: var(--txt); background: var(--bg3); }
-.ai-note { font-size: 9px; color: var(--txt3); margin-top: 6px; }
+.input-area{padding:10px 16px 16px}.input-box{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--radius);padding:5px 5px 5px 12px;align-items:center;transition:border-color 0.2s}.input-box:focus-within{border-color:var(--bdr2)}
+.input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:var(--font-sm);padding:7px 0;font-family:inherit}.input-field::placeholder{color:var(--txt3)}
+.send-btn{width:34px;height:34px;background:var(--txt);color:var(--bg);border:none;border-radius:6px;cursor:pointer;font-size:14px;flex-shrink:0}.send-btn:hover{opacity:0.8}.send-btn:disabled{opacity:0.15}
+.emoji-btn{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px;padding:4px;filter:grayscale(1)}.light .emoji-btn{filter:grayscale(1) brightness(0)}.emoji-btn:hover{filter:none}
 
-.thinking { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
-.thinking-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--txt3); animation: dotPulse 1.2s infinite; }
-.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
-.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dotPulse { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;align-items:center;justify-content:center;padding:16px}.modal-overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--bdr2);border-radius:var(--radius);padding:24px;width:400px;max-width:94vw;max-height:85vh;overflow-y:auto}
+.modal h2{font-size:var(--font-lg);font-weight:700;color:var(--txt);margin-bottom:6px}
+.modal p{font-size:var(--font-xs);color:var(--txt2);margin-bottom:14px;line-height:1.5}
+.modal input{width:100%;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);padding:9px 10px;border-radius:var(--radius-sm);font-size:var(--font-xs);margin-bottom:8px;outline:none;font-family:inherit}.modal input:focus{border-color:var(--bdr2)}
+.modal-btn{width:100%;background:var(--txt);color:var(--bg);border:none;padding:10px;border-radius:var(--radius-sm);cursor:pointer;font-weight:700;font-size:var(--font-xs);margin-top:6px;font-family:inherit}.modal-btn:hover{opacity:0.85}
+.modal-btn.sec{background:transparent;border:1px solid var(--bdr);color:var(--txt);margin-top:4px}
 
-.input-area { padding: 12px 20px 20px; }
-.input-box { display: flex; gap: 8px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 6px 6px 6px 14px; transition: border-color 0.2s; align-items: center; }
-.input-box:focus-within { border-color: var(--bdr2); }
-.input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: var(--font-sm); padding: 8px 0; font-family: inherit; }
-.input-field::placeholder { color: var(--txt3); }
-.send-btn { width: 36px; height: 36px; background: var(--txt); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: opacity 0.15s; flex-shrink: 0; }
-.send-btn:hover { opacity: 0.8; }
-.send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-.limit-bar { text-align: center; padding: 4px; font-size: 9px; color: var(--txt3); }
-.limit-bar span { color: var(--txt2); cursor: pointer; text-decoration: underline; }
+.tier-card{border:1px solid var(--bdr);border-radius:var(--radius);padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}.tier-card:hover{border-color:var(--txt)}
+.tier-card h3{font-size:var(--font-md);font-weight:700;color:var(--txt)}.tier-card .price{font-size:var(--font-lg);font-weight:700;color:var(--txt);margin:4px 0}.tier-card .price span{font-size:var(--font-xs);color:var(--txt2);font-weight:400}
+.tier-card ul{list-style:none;margin-top:6px}.tier-card li{font-size:var(--font-xs);color:var(--txt2);padding:2px 0}.tier-card li::before{content:'✓ ';color:var(--txt3)}
+.tier-card.popular{border-color:var(--txt)}.tier-card .badge{display:inline-block;font-size:8px;padding:2px 7px;border-radius:3px;background:var(--txt);color:var(--bg);font-weight:700;margin-bottom:6px}
 
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
-.modal-overlay.open { display: flex; }
-.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 28px; width: 420px; max-width: 92vw; max-height: 85vh; overflow-y: auto; }
-.modal h2 { font-size: var(--font-lg); font-weight: 700; color: var(--txt); margin-bottom: 8px; }
-.modal p { font-size: var(--font-xs); color: var(--txt2); margin-bottom: 16px; line-height: 1.6; }
-.modal input { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 10px 12px; border-radius: var(--radius-sm); font-size: var(--font-xs); margin-bottom: 10px; outline: none; font-family: inherit; }
-.modal input:focus { border-color: var(--bdr2); }
-.modal-btn { width: 100%; background: var(--txt); color: var(--bg); border: none; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; font-size: var(--font-xs); margin-top: 8px; font-family: inherit; }
-.modal-btn.secondary { background: transparent; border: 1px solid var(--bdr); color: var(--txt); margin-top: 4px; }
-.modal-btn:hover { opacity: 0.85; }
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:7px 16px;border-radius:16px;font-size:var(--font-xs);font-weight:600;z-index:300;animation:toastIn 0.3s ease,toastOut 0.3s ease 2.4s forwards;pointer-events:none}@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}@keyframes toastOut{from{opacity:1}to{opacity:0}}
+.limit-msg{text-align:center;font-size:9px;color:var(--txt3);padding:4px}.limit-msg span{color:var(--txt2);cursor:pointer;text-decoration:underline}
 
-.tier-card { border: 1px solid var(--bdr); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
-.tier-card:hover { border-color: var(--bdr2); }
-.tier-card h3 { font-size: var(--font-md); font-weight: 700; color: var(--txt); margin-bottom: 4px; }
-.tier-card .price { font-size: var(--font-lg); font-weight: 700; color: var(--txt); }
-.tier-card .price span { font-size: var(--font-xs); color: var(--txt2); font-weight: 400; }
-.tier-card ul { list-style: none; margin-top: 8px; }
-.tier-card li { font-size: var(--font-xs); color: var(--txt2); padding: 3px 0; }
-.tier-card li::before { content: '• '; color: var(--txt3); }
-
-.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--txt); color: var(--bg); padding: 8px 18px; border-radius: 20px; font-size: var(--font-xs); font-weight: 600; z-index: 300; animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards; pointer-events: none; }
-@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
-
-@media (max-width: 768px) {
-  .sidebar { position: fixed; left: -250px; top: 0; bottom: 0; width: 250px; min-width: 250px; box-shadow: 10px 0 40px rgba(0,0,0,0.6); }
-  .sidebar.open { left: 0; }
-  .msg-user-bubble { max-width: 88%; }
-  .chat-messages { padding: 16px 12px; }
-  .input-area { padding: 8px 12px 16px; }
-}
+@media(max-width:768px){.sidebar{position:fixed;left:-240px;top:0;bottom:0;width:240px;min-width:240px;box-shadow:8px 0 30px rgba(0,0,0,0.6)}.sidebar.open{left:0}.msg-user{max-width:88%}.chat-msgs{padding:14px 10px}.input-area{padding:8px 10px 14px}}
 </style>
 </head>
 <body>
-
 <div id="app"></div>
 
-<div id="authModal" class="modal-overlay">
-  <div class="modal">
-    <h2>👋 Welcome to CAPITAN</h2>
-    <p>Enter your email to start. We'll send you a prompt.</p>
-    <input type="email" id="authEmail" placeholder="you@gmx.com" autocomplete="email">
-    <button class="modal-btn" id="authBtn">Continue</button>
-    <button class="modal-btn secondary" id="authSkip">Skip for now</button>
-  </div>
-</div>
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal-overlay"><div class="modal">
+  <h2>Welcome to CAPITAN</h2>
+  <p>Sign up with your email. We use Proton Mail for secure communication.</p>
+  <input type="email" id="authEmail" placeholder="you@proton.me" autocomplete="email">
+  <button class="modal-btn" id="authBtn">Continue</button>
+  <button class="modal-btn sec" id="authSkip">Try without signing up</button>
+</div></div>
 
-<div id="upgradeModal" class="modal-overlay">
-  <div class="modal">
-    <h2>Upgrade</h2>
-    <div class="tier-card" id="tierPlus">
-      <h3>Plus</h3>
-      <div class="price">$6<span>/month</span></div>
-      <ul>
-        <li>Limited daily messaging</li>
-        <li>Standard AI responses</li>
-        <li>Finance & general knowledge</li>
-        <li>Basic support</li>
-      </ul>
-    </div>
-    <div class="tier-card" id="tierPro">
-      <h3>Pro</h3>
-      <div class="price">$17<span>/month</span></div>
-      <ul>
-        <li>Unlimited messaging</li>
-        <li>Advanced AI models</li>
-        <li>Science & tech education</li>
-        <li>Networking features</li>
-        <li>Idea sharing community</li>
-        <li>Priority support</li>
-      </ul>
-    </div>
-    <div id="upgradePayment" style="display:none">
-      <p style="margin-top:12px">Pay with crypto:</p>
-      <select id="cryptoCurrency" style="width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:8px;border-radius:var(--radius-sm);font-size:var(--font-xs);margin-bottom:8px;font-family:inherit">
-        <option value="BTC">BTC</option><option value="ETH">ETH</option><option value="USDC">USDC</option>
-      </select>
-      <input type="text" id="txidInput" placeholder="Transaction hash (TXID)">
-      <button class="modal-btn" id="verifyUpgrade">Verify Payment</button>
-    </div>
-    <button class="modal-btn secondary" id="closeUpgrade">Close</button>
+<!-- UPGRADE MODAL -->
+<div id="upgradeModal" class="modal-overlay"><div class="modal">
+  <h2>Choose Your Plan</h2>
+  <p>Simple, fair, built for Africa. Low Data Mode is FREE for everyone.</p>
+  <div class="tier-card" id="tierFree"><h3>Free</h3><div class="price">$0<span>/month</span></div><ul><li>30 messages/day</li><li>Core chat & local knowledge</li><li>Quick codes & Pidgin</li><li>Low Data Mode</li></ul></div>
+  <div class="tier-card popular" id="tierPlus"><div class="badge">MOST POPULAR</div><h3>Plus</h3><div class="price">$8<span>/month</span></div><ul><li>Unlimited messages</li><li>Full local knowledge</li><li>Advanced memory & saved chats</li><li>Coding, Quant, Finance</li><li>Workspace (3-5 people)</li><li>Voice & image help</li></ul></div>
+  <div class="tier-card" id="tierPro"><h3>Pro</h3><div class="price">$17<span>/month</span></div><ul><li>Unlimited everything</li><li>Market prices & news</li><li>File uploads & custom guides</li><li>Offline save</li><li>Business mode</li><li>Priority support</li></ul></div>
+  <div id="paymentSection" style="display:none;margin-top:12px">
+    <p>Pay with crypto to activate <span id="selectedTierName"></span>:</p>
+    <select id="cryptoCurrency" style="width:100%;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);padding:7px;border-radius:var(--radius-sm);font-size:var(--font-xs);margin-bottom:6px;font-family:inherit"><option value="BTC">BTC</option><option value="ETH">ETH</option><option value="USDC">USDC</option></select>
+    <input type="text" id="txidInput" placeholder="Transaction hash (TXID)">
+    <button class="modal-btn" id="verifyUpgrade">Verify & Activate</button>
   </div>
-</div>
+  <button class="modal-btn sec" id="closeUpgrade">Close</button>
+  <p style="font-size:8px;color:var(--txt3);margin-top:10px;text-align:center">Instant access · Cancel anytime · 100% private · No data selling</p>
+</div></div>
+
+<!-- FOUNDER MODAL -->
+<div id="founderModal" class="modal-overlay"><div class="modal">
+  <h2>Founder Access</h2>
+  <p>Enter the founder code to activate Pro mode.</p>
+  <input type="password" id="founderCode" placeholder="Founder code">
+  <button class="modal-btn" id="verifyFounder">Activate</button>
+  <button class="modal-btn sec" id="closeFounder">Close</button>
+</div></div>
+
+<!-- ADMIN MODAL -->
+<div id="adminModal" class="modal-overlay"><div class="modal" style="width:500px">
+  <h2>Admin Panel</h2>
+  <div id="adminContent"></div>
+  <button class="modal-btn sec" id="closeAdmin">Close</button>
+</div></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CAPITAN AI — Frontend v9.0
-// ═══════════════════════════════════════════════════════════════
-
-const API = 'https://capitan-api.your-subdomain.workers.dev';
-const S = {
-  messages: [], streaming: false, userId: null, email: null,
-  tier: 'free', sidebarOpen: false, theme: 'dark',
-  msgCount: 0, msgLimit: 20, selectedTier: null
-};
+const API = 'https://workerjs.goldquantum0.workers.dev';
+const S = { messages: [], streaming: false, userId: null, email: null, tier: 'free', theme: 'dark', sidebarOpen: false, selectedTier: null, founderClicks: 0 };
 
 function init() {
-  const saved = localStorage.getItem('capitan_user');
-  if (saved) {
-    const d = JSON.parse(saved);
-    S.userId = d.userId; S.email = d.email; S.tier = d.tier || 'free';
-  }
-  const theme = localStorage.getItem('capitan_theme');
-  if (theme) S.theme = theme;
-  
-  if (!S.userId) {
-    document.getElementById('authModal').classList.add('open');
-  }
-  
+  const saved = localStorage.getItem('cap_user');
+  if (saved) { const d = JSON.parse(saved); S.userId = d.userId; S.email = d.email; S.tier = d.tier || 'free'; }
+  const theme = localStorage.getItem('cap_theme'); if (theme) S.theme = theme;
   applyTheme();
+  if (!S.userId) document.getElementById('authModal').classList.add('open');
   render();
 }
 
 function applyTheme() { document.documentElement.classList.toggle('light', S.theme === 'light'); }
-
-function toast(msg) {
-  const t = document.querySelector('.toast'); if (t) t.remove();
-  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
-  document.body.appendChild(el); setTimeout(() => el.remove(), 2800);
-}
-
+function toast(m) { const t = document.querySelector('.toast'); if (t) t.remove(); const e = document.createElement('div'); e.className = 'toast'; e.textContent = m; document.body.appendChild(e); setTimeout(() => e.remove(), 2600); }
 function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
-function fmt(s) {
-  if (!s) return '';
-  return s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>');
+function fmt(s) { return s ? s.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>') : ''; }
+const greet = () => { const h = new Date().getHours(); if (h < 6) return 'Akwaaba! Late night?'; if (h < 12) return 'Good morning.'; if (h < 17) return 'Good afternoon.'; if (h < 21) return 'Good evening.'; return 'Night session.'; };
+
+async function api(endpoint, method = 'GET', body = null) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(API + endpoint, opts);
+    return await r.json();
+  } catch (e) { return { error: 'Connection failed' }; }
 }
 
-const greeting = () => {
-  const h = new Date().getHours();
-  if (h < 6) return 'Late night.';
-  if (h < 12) return 'Good morning.';
-  if (h < 17) return 'Good afternoon.';
-  if (h < 21) return 'Good evening.';
-  return 'Night session.';
-};
-
-// ═══════════════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════════════
 async function register(email) {
-  try {
-    const r = await fetch(API + '/api/auth/register', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email })
-    });
-    const data = await r.json();
-    if (data.user_id) {
-      S.userId = data.user_id; S.email = email; S.tier = data.tier || 'free';
-      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
-      document.getElementById('authModal').classList.remove('open');
-      toast(data.welcome_prompt || 'Welcome!');
-      render();
-      if (data.welcome_prompt) {
-        setTimeout(() => sendMessage(data.welcome_prompt), 500);
-      }
-    }
-  } catch (e) { toast('Connection error'); }
+  const d = await api('/api/auth/register', 'POST', { email });
+  if (d.user_id) {
+    S.userId = d.user_id; S.email = email; S.tier = d.tier || 'free';
+    localStorage.setItem('cap_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+    document.getElementById('authModal').classList.remove('open');
+    toast(d.welcome || 'Welcome!');
+    render();
+  } else { toast('Registration failed'); }
 }
 
-async function login(email) {
-  try {
-    const r = await fetch(API + '/api/auth/login', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email })
-    });
-    const data = await r.json();
-    if (data.user_id) {
-      S.userId = data.user_id; S.email = email; S.tier = data.tier || 'free';
-      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
-      document.getElementById('authModal').classList.remove('open');
-      render();
-    }
-  } catch (e) { toast('Connection error'); }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CHAT
-// ═══════════════════════════════════════════════════════════════
 async function sendMessage(content) {
   const input = document.getElementById('chatInput');
   const text = content || input?.value?.trim();
   if (!text || S.streaming) return;
-
   S.messages.push({ role: 'user', content: text });
-  const aiMsg = { role: 'assistant', content: '' };
-  S.messages.push(aiMsg);
-  S.streaming = true;
+  const ai = { role: 'assistant', content: '' }; S.messages.push(ai); S.streaming = true;
   if (input) { input.value = ''; input.blur(); }
-  renderMessages();
-
-  try {
-    const r = await fetch(API + '/api/chat', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ messages: S.messages.filter(m => m.content).map(m => ({role:m.role,content:m.content})), user_id: S.userId || 'anonymous' })
-    });
-    const data = await r.json();
-    
-    if (data.error && !data.can_send) {
-      aiMsg.content = data.error;
-      toast('Limit reached');
-      document.getElementById('upgradeModal').classList.add('open');
-    } else {
-      aiMsg.content = data.content || 'No response.';
-      S.msgCount = (S.msgCount || 0) + 1;
-    }
-  } catch (e) {
-    aiMsg.content = 'Connection lost. Please try again.';
-  }
-
-  S.streaming = false;
-  renderMessages();
+  renderMsgs();
+  const d = await api('/api/chat', 'POST', { messages: S.messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })), user_id: S.userId || 'anonymous' });
+  if (d.error && !d.can_send) { ai.content = d.error; document.getElementById('upgradeModal').classList.add('open'); }
+  else ai.content = d.content || 'Try again.';
+  S.streaming = false; renderMsgs();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// UPGRADE
-// ═══════════════════════════════════════════════════════════════
-async function upgrade(tier) {
+async function upgradeTier(tier) {
   const txid = document.getElementById('txidInput')?.value?.trim();
   const currency = document.getElementById('cryptoCurrency')?.value || 'USDC';
   if (!txid) { toast('Enter TXID'); return; }
-
-  try {
-    const r = await fetch(API + '/api/upgrade', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ user_id: S.userId, tier, txid, currency })
-    });
-    const data = await r.json();
-    if (data.verified) {
-      S.tier = tier;
-      localStorage.setItem('capitan_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
-      document.getElementById('upgradeModal').classList.remove('open');
-      toast(`Upgraded to ${tier.toUpperCase()}!`);
-      render();
-    } else {
-      toast(data.message || 'Failed');
-    }
-  } catch (e) { toast('Error'); }
+  const d = await api('/api/upgrade', 'POST', { user_id: S.userId, tier, txid, currency });
+  if (d.verified) {
+    S.tier = tier; localStorage.setItem('cap_user', JSON.stringify({ userId: S.userId, email: S.email, tier: S.tier }));
+    document.getElementById('upgradeModal').classList.remove('open');
+    document.getElementById('paymentSection').style.display = 'none';
+    toast(`Upgraded to ${tier.toUpperCase()}!`); render();
+  } else toast(d.message || 'Failed');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// RENDER
-// ═══════════════════════════════════════════════════════════════
+async function activateFounder() {
+  const code = document.getElementById('founderCode')?.value?.trim();
+  if (!code) { toast('Enter code'); return; }
+  const d = await api('/api/founder', 'POST', { user_id: S.userId, code });
+  if (d.verified) {
+    S.tier = 'founder'; localStorage.setItem('cap_user', JSON.stringify({ userId: S.userId, email: S.email, tier: 'founder' }));
+    document.getElementById('founderModal').classList.remove('open');
+    toast('Founder mode activated!'); render();
+  } else toast('Invalid code');
+}
+
+async function loadAdmin() {
+  const d = await api('/api/admin/users', 'POST', { admin_code: 'Osinachi@350' });
+  if (d.error) { document.getElementById('adminContent').innerHTML = '<p>Access denied</p>'; return; }
+  document.getElementById('adminContent').innerHTML = `
+    <p><strong>Total Users:</strong> ${d.total_users} | <strong>Payments:</strong> ${d.payments?.length || 0} | <strong>Training:</strong> ${d.total_training || 0}</p>
+    <div style="max-height:200px;overflow-y:auto;font-size:9px">
+      <p style="color:var(--txt3);margin-top:8px">RECENT USERS</p>
+      ${(d.users||[]).slice(0,10).map(u => `<div style="padding:4px 0;border-bottom:1px solid var(--bdr)">${u.email} · ${u.tier} · ${u.msg_count} msgs</div>`).join('')}
+      <p style="color:var(--txt3);margin-top:8px">RECENT PAYMENTS</p>
+      ${(d.payments||[]).slice(0,10).map(p => `<div style="padding:4px 0;border-bottom:1px solid var(--bdr)">${p.user_id} · ${p.tier} · $${p.amount} ${p.currency}</div>`).join('')}
+    </div>`;
+}
+
 function render() {
   applyTheme();
   const app = document.getElementById('app'); app.innerHTML = '';
-
-  // Sidebar
-  const sb = document.createElement('aside');
-  sb.className = `sidebar${S.sidebarOpen ? ' open' : ''}`;
+  const t = S.tier, isPro = t === 'pro' || t === 'founder', isPlus = t === 'plus' || isPro, isFounder = t === 'founder';
+  
+  const sb = document.createElement('aside'); sb.className = `sidebar${S.sidebarOpen ? ' open' : ''}`;
   sb.innerHTML = `
-    <div class="sb-top">
-      <div class="sb-logo" id="logoToggle">👌</div>
+    <div class="sb-section">
+      <div class="sb-logo" id="logoClick">👌</div>
       <div class="sb-logo-text">CAPITAN AI</div>
-      <button class="btn-new-chat" id="btnNewChat">New conversation</button>
+      <button class="btn-new" id="btnNewChat">New conversation</button>
     </div>
-    <div class="sb-nav">
-      <div class="sb-nav-item" id="btnTheme">${S.theme === 'dark' ? 'Light mode' : 'Dark mode'}</div>
-      <div class="sb-nav-item" id="btnUpgrade">
-        ${S.tier === 'free' ? 'Upgrade' : S.tier === 'plus' ? 'Upgrade to Pro' : 'Pro — Active'}
-        <span class="tier-badge ${S.tier}">${S.tier.toUpperCase()}</span>
-      </div>
+    <div class="sb-section">
+      <div class="sb-label">Menu</div>
+      <div class="sb-item" id="btnChat">Chat</div>
+      <div class="sb-item" id="btnHistory">Recent chats</div>
+      <div class="sb-item" id="btnKnowledge">📚 Local Knowledge</div>
+      <div class="sb-item" id="btnLowData">📶 Low Data Mode <span class="tag">ON</span></div>
+      <div class="sb-item" id="btnCodes">📱 Quick Codes</div>
+      ${isPlus ? `<div class="sb-item" id="btnSaved">Bookmarks</div><div class="sb-item" id="btnProfile">👤 Profile & Memory</div><div class="sb-item" id="btnCodeQuant">Coding & Quant</div><div class="sb-item" id="btnWorkspace">Workspace</div><div class="sb-item" id="btnFinance">African & Global Finance</div>` : ''}
+      ${isPro ? `<div class="sb-item" id="btnUpload">📂 Upload Files</div><div class="sb-item" id="btnGuides">📖 Custom Guides</div><div class="sb-item" id="btnOffline">📥 Offline Save</div><div class="sb-item" id="btnTools">🧰 Advanced Tools</div><div class="sb-item" id="btnPriority">🚀 Priority Support</div><div class="sb-item" id="btnBusiness">💼 Business Mode</div>` : ''}
     </div>
-    <div class="sb-bottom">
-      <div class="sb-user" id="btnAuth">
-        <div class="sb-user-avatar">👌</div>
-        <div class="sb-user-info">
-          <div class="sb-user-name">${S.email || 'Sign in'}</div>
-          <div class="sb-user-tier">${S.tier.toUpperCase()}</div>
-        </div>
-      </div>
+    ${isPro ? `<div class="sb-section"><div class="sb-label">Markets</div>${generateMarketHTML()}</div><div class="sb-section"><div class="sb-label">News</div>${generateNewsHTML()}</div>` : ''}
+    <div class="sb-section">
+      <div class="sb-label">Settings</div>
+      <div class="sb-item" id="btnTheme">${S.theme === 'dark' ? 'Light mode' : 'Dark mode'}</div>
+      <div class="sb-item" id="btnPrivacy">Privacy</div>
+      <div class="sb-item" id="btnHelp">Help</div>
+    </div>
+    <div class="sb-user" id="btnUser">
+      <span class="sb-user-avatar">👌</span>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;color:var(--txt)">${S.email || 'Sign in'}</div><div class="sb-user-tier">${t.toUpperCase()}</div></div>
+      ${t === 'free' ? '<span style="font-size:8px;color:var(--txt2);text-decoration:underline">Upgrade</span>' : ''}
     </div>`;
   app.appendChild(sb);
 
-  // Main
   const main = document.createElement('main'); main.className = 'main';
   main.innerHTML = `
     <div class="chat-wrap">
-      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-msgs" id="chatMsgs"></div>
       <div class="input-area">
         <div class="input-box">
+          <button class="emoji-btn" id="emojiBtn">😊</button>
           <input class="input-field" type="text" id="chatInput" placeholder="Message CAPITAN..." ${S.streaming?'disabled':''} autocomplete="off">
           <button class="send-btn" id="sendBtn" ${S.streaming?'disabled':''}>↑</button>
         </div>
-        ${S.tier === 'free' ? `<div class="limit-bar">Limited messaging · <span id="upgradeLink">Upgrade →</span></div>` : ''}
+        ${t === 'free' ? '<div class="limit-msg">30 messages/day · <span id="upgradeLink">Upgrade →</span></div>' : ''}
       </div>
     </div>`;
   app.appendChild(main);
 
-  bindEvents();
-  renderMessages();
+  bindEvents(); renderMsgs();
 }
 
-function renderMessages() {
-  const el = document.getElementById('chatMessages'); if (!el) return;
-  if (!S.messages.length) {
-    el.innerHTML = `<div class="welcome"><div class="welcome-logo">👌</div><h1>${greeting()}</h1><p class="welcome-sub">Ask me anything — finance, coding, science, or just explore.</p></div>`;
-    return;
-  }
+function generateMarketHTML() {
+  return '<div id="marketData" style="font-size:9px;color:var(--txt3)">Loading prices...</div>';
+}
+
+function generateNewsHTML() {
+  return '<div id="newsData" style="font-size:9px;color:var(--txt3)">Loading news...</div>';
+}
+
+function renderMsgs() {
+  const el = document.getElementById('chatMsgs'); if (!el) return;
+  if (!S.messages.length) { el.innerHTML = `<div class="welcome"><div class="welcome-logo">👌</div><h1>${greet()}</h1><p>Ask me anything — local knowledge, finance, coding, or just explore.</p></div>`; return; }
   el.innerHTML = S.messages.map((m, i) => {
-    if (m.role === 'user') return `<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`;
-    const isLast = i === S.messages.length - 1, content = m.content || '';
-    return `<div class="msg ai"><div class="msg-ai-label">CAPITAN AI</div>${isLast && !content ? `<div class="thinking"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>` : `<div class="msg-ai-body">${fmt(content)}</div><div class="msg-actions"><button class="msg-action-btn" onclick="navigator.clipboard.writeText(\`${content.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`);toast('Copied')">Copy</button></div><div class="ai-note">CAPITAN AI can make mistakes.</div>`}</div>`;
+    if (m.role === 'user') return `<div class="msg user"><div class="msg-user">${esc(m.content)}</div></div>`;
+    const isLast = i === S.messages.length - 1, c = m.content || '';
+    return `<div class="msg ai"><div class="msg-ai-label">CAPITAN AI</div>${isLast && !c ? '<div class="think"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div>' : `<div class="msg-ai-body">${fmt(c)}</div><div class="msg-acts"><button class="msg-act" onclick="navigator.clipboard.writeText(\`${c.replace(/`/g,'\\`')}\`);toast('Copied')">Copy</button></div>`}</div>`;
   }).join('');
   el.scrollTop = el.scrollHeight;
 }
 
 function bindEvents() {
-  document.getElementById('logoToggle')?.addEventListener('click', () => { S.sidebarOpen = !S.sidebarOpen; render(); });
-  document.getElementById('btnNewChat')?.addEventListener('click', () => { S.messages = []; render(); });
-  document.getElementById('btnTheme')?.addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('capitan_theme', S.theme); render(); });
-  document.getElementById('btnUpgrade')?.addEventListener('click', () => { if (S.tier === 'pro') { toast('You are on Pro'); return; } document.getElementById('upgradeModal').classList.add('open'); });
-  document.getElementById('btnAuth')?.addEventListener('click', () => { document.getElementById('authModal').classList.add('open'); });
-  document.getElementById('upgradeLink')?.addEventListener('click', () => { document.getElementById('upgradeModal').classList.add('open'); });
+  document.getElementById('logoClick')?.addEventListener('click', () => {
+    S.founderClicks++; if (S.founderClicks >= 5) { S.founderClicks = 0; if (S.tier !== 'founder') document.getElementById('founderModal').classList.add('open'); else toast('Already founder'); }
+    setTimeout(() => { S.founderClicks = 0; }, 2000);
+  });
+  document.getElementById('btnNewChat')?.addEventListener('click', () => { S.messages = []; renderMsgs(); });
+  document.getElementById('btnChat')?.addEventListener('click', () => { S.messages = []; renderMsgs(); });
+  document.getElementById('btnTheme')?.addEventListener('click', () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('cap_theme', S.theme); render(); });
+  document.getElementById('btnUser')?.addEventListener('click', () => { if (!S.userId) document.getElementById('authModal').classList.add('open'); else document.getElementById('upgradeModal').classList.add('open'); });
+  document.getElementById('upgradeLink')?.addEventListener('click', () => document.getElementById('upgradeModal').classList.add('open'));
+  document.getElementById('btnHelp')?.addEventListener('click', () => toast('Email: closeaitechnologies@gmail.com'));
+  document.getElementById('btnPrivacy')?.addEventListener('click', () => alert('CAPITAN AI Privacy: No data selling. End-to-end encrypted. Delete anytime.'));
   
   document.getElementById('chatInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
   document.getElementById('sendBtn')?.addEventListener('click', () => sendMessage());
+  document.getElementById('emojiBtn')?.addEventListener('click', () => { const emojis = '😊😂❤️👍🔥🎉💡📚💰🌍'; const e = document.getElementById('chatInput'); if (e) e.value += emojis[Math.floor(Math.random()*emojis.length)]; });
   
-  document.getElementById('authBtn')?.addEventListener('click', () => {
-    const email = document.getElementById('authEmail')?.value?.trim();
-    if (email && email.includes('@')) { register(email); } else { toast('Enter valid email'); }
-  });
+  document.getElementById('authBtn')?.addEventListener('click', () => { const e = document.getElementById('authEmail')?.value?.trim(); if (e && e.includes('@')) register(e); else toast('Enter valid email'); });
   document.getElementById('authSkip')?.addEventListener('click', () => { document.getElementById('authModal').classList.remove('open'); S.userId = 'anonymous'; render(); });
-  document.getElementById('authEmail')?.addEventListener('keydown', e => { if (e.key === 'Enter') { const email = e.target.value?.trim(); if (email && email.includes('@')) register(email); } });
   
-  document.getElementById('tierPlus')?.addEventListener('click', () => { S.selectedTier = 'plus'; document.getElementById('upgradePayment').style.display = 'block'; });
-  document.getElementById('tierPro')?.addEventListener('click', () => { S.selectedTier = 'pro'; document.getElementById('upgradePayment').style.display = 'block'; });
-  document.getElementById('verifyUpgrade')?.addEventListener('click', () => { if (S.selectedTier) upgrade(S.selectedTier); });
-  document.getElementById('closeUpgrade')?.addEventListener('click', () => { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('upgradePayment').style.display = 'none'; });
+  document.getElementById('tierPlus')?.addEventListener('click', () => { S.selectedTier = 'plus'; document.getElementById('selectedTierName').textContent = 'Plus ($8/mo)'; document.getElementById('paymentSection').style.display = 'block'; });
+  document.getElementById('tierPro')?.addEventListener('click', () => { S.selectedTier = 'pro'; document.getElementById('selectedTierName').textContent = 'Pro ($17/mo)'; document.getElementById('paymentSection').style.display = 'block'; });
+  document.getElementById('verifyUpgrade')?.addEventListener('click', () => { if (S.selectedTier) upgradeTier(S.selectedTier); });
+  document.getElementById('closeUpgrade')?.addEventListener('click', () => { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('paymentSection').style.display = 'none'; });
   
-  document.getElementById('upgradeModal')?.addEventListener('click', e => { if (e.target.id === 'upgradeModal') { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('upgradePayment').style.display = 'none'; } });
+  document.getElementById('verifyFounder')?.addEventListener('click', activateFounder);
+  document.getElementById('closeFounder')?.addEventListener('click', () => document.getElementById('founderModal').classList.remove('open'));
+  
+  if (S.tier === 'founder') {
+    const adminBtn = document.createElement('div');
+    adminBtn.className = 'sb-item'; adminBtn.textContent = '🔐 Admin'; adminBtn.style.cssText = 'margin-top:4px;color:var(--txt3)';
+    adminBtn.addEventListener('click', () => { loadAdmin(); document.getElementById('adminModal').classList.add('open'); });
+    document.querySelector('.sb-section:last-of-type')?.appendChild(adminBtn);
+  }
+  document.getElementById('closeAdmin')?.addEventListener('click', () => document.getElementById('adminModal').classList.remove('open'));
+  
+  document.getElementById('upgradeModal')?.addEventListener('click', e => { if (e.target.id === 'upgradeModal') { document.getElementById('upgradeModal').classList.remove('open'); document.getElementById('paymentSection').style.display = 'none'; } });
   document.getElementById('authModal')?.addEventListener('click', e => { if (e.target.id === 'authModal') document.getElementById('authModal').classList.remove('open'); });
+  document.getElementById('founderModal')?.addEventListener('click', e => { if (e.target.id === 'founderModal') document.getElementById('founderModal').classList.remove('open'); });
 }
 
 init();
