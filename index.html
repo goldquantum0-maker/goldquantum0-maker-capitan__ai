@@ -1,559 +1,1413 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
-<title>CAPITAN AI</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<meta name="color-scheme" content="dark light" />
+<title>Capitan AI</title>
+
 <script>
 (function () {
   try {
-    if (localStorage.getItem('cap_theme') === 'light') {
+    if (localStorage.getItem('capitan-theme') === 'light') {
       document.documentElement.classList.add('light');
     }
   } catch (e) {}
 })();
 </script>
+
 <style>
-:root{--bg:#000;--bg2:#0d0d0d;--bg3:#151515;--bdr:#242424;--txt:#fff;--txt2:#b7b7b7;--txt3:#7a7a7a;--radius:12px;--safe-bottom:env(safe-area-inset-bottom,0px)}
-:root.light{--bg:#fff;--bg2:#f7f7f7;--bg3:#ececec;--bdr:#dedede;--txt:#000;--txt2:#555;--txt3:#888}
+:root{
+  --bg:#000;
+  --panel:#0a0a0a;
+  --panel2:#111;
+  --panel3:#161616;
+  --line:#242424;
+  --text:#fff;
+  --muted:#a9a9a9;
+  --faint:#777;
+  --shadow:0 20px 70px rgba(0,0,0,.45);
+  --radius:18px;
+  --radius-sm:12px;
+  --sidebar:300px;
+  --topbar:68px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --success:#7ef1a7;
+  --danger:#ff7676;
+}
+:root.light{
+  --bg:#fff;
+  --panel:#f7f7f7;
+  --panel2:#ededed;
+  --panel3:#e4e4e4;
+  --line:#dedede;
+  --text:#000;
+  --muted:#4b4b4b;
+  --faint:#7a7a7a;
+  --shadow:0 20px 70px rgba(0,0,0,.08);
+}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow:hidden}
-button,input{font:inherit}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+button,input,textarea,select{font:inherit}
+button{border:0;cursor:pointer}
+a{color:inherit}
 ::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-thumb{background:#555;border-radius:3px}
-#app{display:flex;height:100vh;height:100dvh}
-.sidebar{width:260px;min-width:260px;border-right:1px solid var(--bdr);background:var(--bg);display:flex;flex-direction:column;overflow:auto;transition:transform .25s ease}
-.sidebar.collapsed{transform:translateX(-100%)}
-.sb-section{padding:16px;border-bottom:1px solid var(--bdr)}
-.sb-title{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);font-weight:700}
-.sb-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.sb-logo{font-size:28px}
-.sb-name{font-size:18px;font-weight:800}
-.btn-new{width:100%;padding:12px;border:0;border-radius:8px;background:var(--txt);color:var(--bg);font-weight:700;cursor:pointer}
-.sb-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:8px;color:var(--txt2);cursor:pointer}
-.sb-item:hover{background:var(--bg3);color:var(--txt)}
-.sb-user{margin-top:auto;padding:14px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:10px;cursor:pointer}
-.sb-user:hover{background:var(--bg3)}
-.main{flex:1;display:flex;flex-direction:column;min-width:0}
-.header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:var(--bg);z-index:10}
-.header-left{display:flex;align-items:center;gap:12px}
-.logo{width:42px;height:42px;border-radius:12px;background:var(--txt);color:var(--bg);display:grid;place-items:center;font-size:24px;font-weight:800}
-.title{font-size:22px;font-weight:800}
-.header-right{display:flex;gap:10px;align-items:center;position:relative}
-.icon-btn,.menu-btn{width:38px;height:38px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg2);color:var(--txt);cursor:pointer;display:grid;place-items:center}
-.dropdown{display:none;position:absolute;right:0;top:46px;min-width:180px;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.25)}
-.dropdown.visible{display:block}
-.dropdown div{padding:10px 14px;color:var(--txt2);cursor:pointer}
-.dropdown div:hover{background:var(--bg3);color:var(--txt)}
-.chat{flex:1;overflow:auto;padding:22px 18px;max-width:760px;width:100%;margin:0 auto}
-.welcome{min-height:55vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
-.welcome h1{margin:12px 0 8px;font-size:26px}
-.welcome p{color:var(--txt3);max-width:420px}
-.msg{margin-bottom:18px}
-.msg.user{display:flex;justify-content:flex-end}
-.msg-user{max-width:86%;padding:12px 15px;border:1px solid var(--bdr);background:var(--bg3);border-radius:var(--radius);white-space:pre-wrap;word-break:break-word}
-.msg-ai-label{font-size:11px;color:var(--txt3);margin-bottom:6px;font-weight:700}
-.msg-ai-body{line-height:1.75;white-space:normal}
-.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:12px;overflow:auto}
-.msg-ai-body code{background:var(--bg3);padding:2px 6px;border-radius:4px}
-.msg-actions{display:flex;gap:8px;margin-top:10px;opacity:.75;flex-wrap:wrap}
-.msg-action{border:1px solid var(--bdr);background:var(--bg2);color:var(--txt2);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:11px}
-.msg-action:hover{color:var(--txt);border-color:var(--txt)}
-.input-area{padding:12px 18px calc(12px + var(--safe-bottom));border-top:1px solid var(--bdr);background:var(--bg)}
-.input-box{display:flex;gap:8px;align-items:center;padding:8px 8px 8px 14px;border:1px solid var(--bdr);border-radius:var(--radius);background:var(--bg2)}
-.input{flex:1;border:0;outline:0;background:transparent;color:var(--txt);font-size:15px}
-.input::placeholder{color:var(--txt3)}
-.small-btn,.send-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg3);color:var(--txt);cursor:pointer;display:grid;place-items:center}
-.send-btn{background:var(--txt);color:var(--bg);border:0}
-.file-preview{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg2)}
-.file-meta{display:flex;flex-direction:column}
-.file-name{font-weight:700}
-.file-size{font-size:12px;color:var(--txt3)}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:16px}
+::-webkit-scrollbar-thumb{background:#5a5a5a;border-radius:999px}
+.hidden{display:none !important}
+
+.shell{
+  height:100vh;
+  height:100dvh;
+  display:grid;
+  grid-template-columns:var(--sidebar) 1fr;
+  background:var(--bg);
+}
+
+.sidebar{
+  border-right:1px solid var(--line);
+  background:linear-gradient(180deg,var(--panel),var(--bg));
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+.brand{
+  padding:20px 18px 16px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.mark{
+  width:46px;
+  height:46px;
+  border-radius:14px;
+  background:var(--text);
+  color:var(--bg);
+  display:grid;
+  place-items:center;
+  font-size:25px;
+  font-weight:900;
+  box-shadow:var(--shadow);
+  flex:0 0 auto;
+}
+.brand-copy{min-width:0}
+.brand-title{
+  font-size:18px;
+  font-weight:800;
+  line-height:1.1;
+}
+.brand-sub{
+  margin-top:3px;
+  font-size:11px;
+  color:var(--faint);
+  text-transform:uppercase;
+  letter-spacing:.14em;
+}
+
+.side-block{
+  padding:16px 14px;
+  border-bottom:1px solid var(--line);
+}
+.side-label{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  color:var(--faint);
+  margin:0 0 10px;
+  font-weight:700;
+}
+.new-chat{
+  width:100%;
+  height:46px;
+  border-radius:14px;
+  background:var(--text);
+  color:var(--bg);
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:transform .15s ease,opacity .15s ease;
+}
+.new-chat:hover{transform:translateY(-1px);opacity:.94}
+
+.nav{
+  display:grid;
+  gap:6px;
+}
+.nav-item{
+  height:44px;
+  border-radius:14px;
+  background:transparent;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 12px;
+  transition:background .15s ease,color .15s ease;
+}
+.nav-item:hover{background:var(--panel2);color:var(--text)}
+.nav-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.nav-ico{width:20px;text-align:center;flex:0 0 auto}
+.nav-text{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:14px;
+  font-weight:600;
+}
+.plan-card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--panel);
+  padding:14px;
+}
+.plan-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.plan-name{font-weight:800}
+.plan-badge{
+  font-size:11px;
+  color:var(--muted);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:5px 9px;
+}
+.plan-desc{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.55;
+}
+.user-card{
+  margin-top:auto;
+  border-top:1px solid var(--line);
+  padding:14px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  min-width:0;
+  background:linear-gradient(180deg,transparent,var(--panel));
+}
+.avatar{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  background:var(--panel2);
+  display:grid;
+  place-items:center;
+  font-size:20px;
+  flex:0 0 auto;
+  border:1px solid var(--line);
+}
+.user-meta{min-width:0;flex:1}
+.user-name{
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.user-status{
+  font-size:11px;
+  color:var(--faint);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin-top:4px;
+}
+
+.main{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg);
+}
+.topbar{
+  height:var(--topbar);
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:0 16px;
+  background:rgba(0,0,0,.02);
+  backdrop-filter:blur(14px);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.top-left,.top-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.burger,.icon-btn{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--text);
+  display:grid;
+  place-items:center;
+  transition:transform .15s ease,background .15s ease,border-color .15s ease;
+  flex:0 0 auto;
+}
+.burger:hover,.icon-btn:hover{
+  transform:translateY(-1px);
+  background:var(--panel2);
+  border-color:var(--text);
+}
+.top-title{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.top-title strong{
+  font-size:14px;
+  font-weight:800;
+  line-height:1.1;
+}
+.top-title span{
+  font-size:11px;
+  color:var(--faint);
+  margin-top:3px;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+}
+.pill{
+  height:38px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  padding:0 14px;
+  background:var(--panel);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:700;
+}
+.content{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding:18px;
+}
+.chat-wrap{
+  max-width:1020px;
+  margin:0 auto;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  min-height:100%;
+}
+.hero{
+  padding:28px 0 18px;
+  display:grid;
+  gap:10px;
+  place-items:center;
+  text-align:center;
+}
+.hero-mark{
+  font-size:56px;
+  line-height:1;
+  filter:drop-shadow(0 0 18px rgba(255,255,255,.12));
+}
+.hero h1{
+  margin:0;
+  font-size:clamp(28px,5vw,46px);
+  line-height:1.02;
+  letter-spacing:-.04em;
+  max-width:14ch;
+}
+.hero p{
+  margin:0;
+  max-width:68ch;
+  color:var(--muted);
+  line-height:1.7;
+  font-size:15px;
+}
+.status-grid{
+  margin:16px auto 0;
+  display:grid;
+  gap:10px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  width:100%;
+}
+.quick-grid{
+  margin:16px auto 0;
+  display:grid;
+  gap:10px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  width:100%;
+  max-width:820px;
+}
+.card, .quick, .market-card, .workspace-card, .auth-card, .panel{
+  border:1px solid var(--line);
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border-radius:18px;
+  box-shadow:var(--shadow);
+}
+.card{
+  min-height:88px;
+  padding:16px;
+}
+.card .k,.quick .k,.section-label{
+  font-size:12px;
+  color:var(--faint);
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  font-weight:700;
+}
+.card .v,.quick .v{
+  margin-top:10px;
+  font-size:14px;
+  line-height:1.5;
+  font-weight:700;
+}
+.quick{
+  padding:16px;
+  min-height:92px;
+  color:var(--text);
+  text-align:left;
+  transition:transform .15s ease,border-color .15s ease;
+}
+.quick:hover{transform:translateY(-1px);border-color:var(--text)}
+.messages{
+  flex:1;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding:12px 0 18px;
+}
+.msg{
+  display:flex;
+  gap:12px;
+  max-width:100%;
+}
+.msg.user{justify-content:flex-end}
+.bubble{
+  max-width:min(86ch,88%);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px 16px;
+  background:var(--panel);
+  box-shadow:var(--shadow);
+  white-space:pre-wrap;
+  word-break:break-word;
+  line-height:1.75;
+  font-size:14px;
+}
+.msg.user .bubble{background:var(--panel2)}
+.assistant-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+  color:var(--faint);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.typing-mark{
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  font-size:16px;
+  background:var(--text);
+  color:var(--bg);
+  box-shadow:0 0 0 0 rgba(255,255,255,.4);
+  animation:pulse 1.15s infinite ease-in-out;
+}
+@keyframes pulse{
+  0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.25);opacity:.9}
+  50%{transform:scale(1.12);box-shadow:0 0 0 10px rgba(255,255,255,0);opacity:1}
+  100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,0);opacity:.9}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+.composer{
+  border-top:1px solid var(--line);
+  padding:14px 18px calc(14px + var(--safe-bottom));
+  background:linear-gradient(180deg,rgba(0,0,0,0),var(--bg));
+}
+.composer-shell{
+  max-width:1020px;
+  margin:0 auto;
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:var(--panel);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  box-shadow:var(--shadow);
+}
+.row{
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+}
+.row-stacked{
+  display:grid;
+  gap:10px;
+}
+.attachment{
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--panel2);
+}
+.attachment.on{display:flex}
+.file-meta{min-width:0}
+.file-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-size{font-size:12px;color:var(--faint);margin-top:3px}
+.text, .input, .select{
+  width:100%;
+  border:1px solid var(--line);
+  background:var(--panel2);
+  color:var(--text);
+  border-radius:14px;
+  padding:12px 14px;
+  outline:none;
+}
+.text{
+  resize:none;
+  min-height:46px;
+  max-height:160px;
+  line-height:1.5;
+}
+.text::placeholder,.input::placeholder{color:var(--faint)}
+.send{
+  width:48px;
+  height:48px;
+  border-radius:16px;
+  background:var(--text);
+  color:var(--bg);
+  display:grid;
+  place-items:center;
+  font-size:18px;
+  font-weight:900;
+}
+.pair{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.toggle-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.toggle{
+  width:52px;
+  height:30px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:var(--panel2);
+  position:relative;
+}
+.dot{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:var(--muted);
+  position:absolute;
+  top:3px;
+  left:3px;
+  transition:all .2s ease;
+}
+.toggle.on{
+  background:var(--text);
+}
+.toggle.on .dot{
+  left:25px;
+  background:var(--bg);
+}
+.dropdown{
+  position:absolute;
+  right:16px;
+  top:calc(var(--topbar) + 10px);
+  width:min(380px,calc(100vw - 24px));
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  display:none;
+  z-index:60;
+}
+.dropdown.open{display:block}
+.drop-item{
+  padding:14px 16px;
+  border-bottom:1px solid var(--line);
+  color:var(--muted);
+  font-weight:600;
+}
+.drop-item:hover{background:var(--panel2);color:var(--text)}
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease;
+  z-index:40;
+}
+.overlay.open{opacity:1;pointer-events:auto}
+.side-menu{
+  position:fixed;
+  inset:0 auto 0 0;
+  width:var(--sidebar);
+  transform:translateX(-100%);
+  transition:transform .2s ease;
+  z-index:50;
+  box-shadow:var(--shadow);
+}
+.side-menu.open{transform:translateX(0)}
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:22px;
+  transform:translateX(-50%);
+  background:var(--text);
+  color:var(--bg);
+  padding:10px 14px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  z-index:80;
+  box-shadow:var(--shadow);
+}
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  z-index:90;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
 .modal-overlay.open{display:flex}
-.modal{width:440px;max-width:96vw;max-height:88vh;overflow:auto;background:var(--bg);border:1px solid var(--bdr);border-radius:var(--radius);padding:24px}
-.modal h2{margin:0 0 8px;font-size:20px}
-.modal p{margin:0 0 14px;color:var(--txt2);line-height:1.6}
-.modal input{width:100%;padding:12px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg2);color:var(--txt);margin-bottom:10px}
-.btn{width:100%;border:0;border-radius:8px;padding:12px;background:var(--txt);color:var(--bg);font-weight:700;cursor:pointer}
-.btn.secondary{background:transparent;border:1px solid var(--bdr);color:var(--txt);margin-top:6px}
-.card{border:1px solid var(--bdr);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer}
-.card.selected{border-color:var(--txt)}
-.price{font-size:24px;font-weight:800;margin:8px 0}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tab{flex:1;padding:8px;border:1px solid var(--bdr);background:transparent;color:var(--txt2);border-radius:8px;cursor:pointer}
-.tab.active{background:var(--txt);color:var(--bg);border-color:var(--txt)}
-.wallet{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg3);font-family:monospace;font-size:11px;margin-bottom:8px;word-break:break-all}
-.copy{border:1px solid var(--bdr);background:transparent;color:var(--txt2);border-radius:6px;padding:5px 10px;cursor:pointer}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:12px;font-weight:700;z-index:200}
-.toggle{width:52px;height:30px;border-radius:999px;border:1px solid var(--bdr);background:var(--bg2);position:relative;cursor:pointer}
-.toggle.on{background:var(--txt)}
-.dot{width:22px;height:22px;border-radius:50%;background:var(--txt2);position:absolute;top:3px;left:3px;transition:all .2s}
-.toggle.on .dot{left:25px;background:var(--bg)}
-.menu-toggle{display:none}
-@media(max-width:768px){
-.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:20;box-shadow:12px 0 40px rgba(0,0,0,.45)}
-.menu-toggle{display:grid}
+.modal{
+  width:min(720px,100%);
+  max-height:90vh;
+  overflow:auto;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  padding:18px;
+}
+.modal h2{
+  margin:0 0 8px;
+  font-size:22px;
+}
+.modal p{
+  margin:0 0 14px;
+  color:var(--muted);
+  line-height:1.6;
+}
+.modal-section{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--panel);
+  padding:14px;
+  margin-bottom:12px;
+}
+.grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.grid-3{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+.btn{
+  border:0;
+  border-radius:14px;
+  padding:12px 14px;
+  background:var(--text);
+  color:var(--bg);
+  font-weight:800;
+  text-align:center;
+}
+.btn.secondary{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--text);
+}
+.small{
+  font-size:12px;
+  color:var(--faint);
+  line-height:1.55;
+}
+.wallet{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--panel2);
+  font-family:monospace;
+  font-size:11px;
+  margin-bottom:8px;
+  word-break:break-all;
+}
+.copy{
+  border:1px solid var(--line);
+  background:transparent;
+  color:var(--muted);
+  border-radius:8px;
+  padding:5px 10px;
+  cursor:pointer;
+}
+.section-tabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:12px;
+}
+.tab{
+  flex:1;
+  padding:10px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:transparent;
+  color:var(--muted);
+  font-weight:700;
+}
+.tab.active{
+  background:var(--text);
+  color:var(--bg);
+  border-color:var(--text);
+}
+.table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+.table td,.table th{
+  border-bottom:1px solid var(--line);
+  padding:10px 8px;
+  text-align:left;
+  vertical-align:top;
+}
+.table th{
+  color:var(--faint);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:11px;
+  color:var(--muted);
+}
+.market-list{
+  display:grid;
+  gap:8px;
+}
+.market-item{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel2);
+}
+.market-item .name{font-weight:800}
+.market-item .chg.up{color:var(--success)}
+.market-item .chg.down{color:var(--danger)}
+.auth-card{
+  padding:16px;
+}
+.auth-actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
+@media (max-width: 980px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 700px){
+  .quick-grid,.grid-2,.grid-3,.pair,.status-grid{grid-template-columns:1fr}
+  .bubble{max-width:100%}
 }
 </style>
 </head>
 <body>
-<div id="app"></div>
-<button class="menu-btn menu-toggle" id="menuBtn">☰</button>
+<div class="overlay" id="overlay"></div>
 
-<div id="authModal" class="modal-overlay"><div class="modal"><h2>✨ Welcome</h2><p>Enter your email to sign in.</p><input id="authEmail" type="email" placeholder="you@email.com"><button class="btn" id="authBtn">Continue →</button><button class="btn secondary" id="authSkip">Skip</button></div></div>
+<aside class="sidebar side-menu" id="mobileSidebar">
+  <div class="brand">
+    <div class="mark">👌</div>
+    <div class="brand-copy">
+      <div class="brand-title">Capitan AI</div>
+      <div class="brand-sub">World Class Intelligence</div>
+    </div>
+  </div>
 
-<div id="otpModal" class="modal-overlay"><div class="modal"><h2>📧 Verify Email</h2><p>Enter the 6-digit code sent to <strong id="otpEmailDisplay"></strong></p><input id="otpInput" inputmode="numeric" maxlength="6" placeholder="000000"><button class="btn" id="otpVerifyBtn">Verify</button><button class="btn secondary" id="otpCancel">Cancel</button></div></div>
+  <div class="side-block">
+    <div class="side-label">Actions</div>
+    <button class="new-chat" id="newChatBtn">＋ New Chat</button>
+  </div>
 
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Choose Plan</h2><div class="card" data-tier="free"><h3>Free</h3><div class="price">$0</div><p>10 messages/day</p></div><div class="card" data-tier="plus"><h3>Plus</h3><div class="price">$8<span style="font-size:12px;color:var(--txt2)">/mo</span></div><p>30 messages/day · Workspace · Coding</p></div><div class="card" data-tier="pro"><h3>Pro</h3><div class="price">$17<span style="font-size:12px;color:var(--txt2)">/mo</span></div><p>Unlimited messages · markets · uploads</p></div><div id="paymentSection" style="display:none;margin-top:10px"><div class="tabs"><button class="tab active" data-coin="USDC">USDC</button><button class="tab" data-coin="BTC">BTC</button><button class="tab" data-coin="ETH">ETH</button></div><div class="wallet"><span id="walletAddr">Loading...</span><button class="copy" id="copyWalletBtn">Copy</button></div><div id="paymentStatus"></div><input id="txidInput" placeholder="Transaction hash (TXID)"><button class="btn" id="verifyUpgrade">✅ Activate</button></div><button class="btn secondary" id="closeUpgrade">Close</button></div></div>
+  <div class="side-block">
+    <div class="side-label">Navigation</div>
+    <div class="nav">
+      <button class="nav-item" data-action="saved"><span class="nav-left"><span class="nav-ico">💾</span><span class="nav-text">Saved Messages</span></span><span>›</span></button>
+      <button class="nav-item" data-action="workspace"><span class="nav-left"><span class="nav-ico">🧩</span><span class="nav-text">Workspaces</span></span><span>›</span></button>
+      <button class="nav-item" data-action="markets"><span class="nav-left"><span class="nav-ico">📈</span><span class="nav-text">Markets</span></span><span>›</span></button>
+      <button class="nav-item" data-action="settings"><span class="nav-left"><span class="nav-ico">⚙️</span><span class="nav-text">Settings</span></span><span>›</span></button>
+      <button class="nav-item" data-action="privacy"><span class="nav-left"><span class="nav-ico">🔒</span><span class="nav-text">Privacy</span></span><span>›</span></button>
+    </div>
+  </div>
 
-<div id="privacyModal" class="modal-overlay"><div class="modal"><h2>🔒 Privacy Policy</h2><p>CAPITAN AI by CLOSEAI Technologies.</p><p><strong>Data:</strong> We store email, chat history, and payment records to provide the service.</p><p><strong>Training:</strong> Conversations are not used to train models without consent.</p><p><strong>Sharing:</strong> We never sell your data.</p><button class="btn secondary" id="closePrivacy">Close</button></div></div>
+  <div class="side-block">
+    <div class="side-label">Plan</div>
+    <div class="plan-card">
+      <div class="plan-top">
+        <div class="plan-name" id="planName">Free</div>
+        <div class="plan-badge" id="planBadge">Free Tier</div>
+      </div>
+      <div class="plan-desc" id="planDesc">Elite cloud-native UI. Fast, clean, and built to scale with your backend.</div>
+    </div>
+  </div>
 
-<div id="savedModal" class="modal-overlay"><div class="modal"><h2>💾 Saved Messages</h2><div id="savedList"></div><button class="btn secondary" id="closeSaved">Close</button></div></div>
+  <div class="user-card">
+    <div class="avatar">👌</div>
+    <div class="user-meta">
+      <div class="user-name" id="userLabel">Guest</div>
+      <div class="user-status" id="userStatus">Offline-ready shell</div>
+    </div>
+  </div>
+</aside>
 
-<div id="settingsModal" class="modal-overlay"><div class="modal"><h2>⚙️ Settings</h2><div style="display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg2);margin-bottom:12px"><span>Dark Mode</span><div id="darkToggle" class="toggle on"><div class="dot"></div></div></div><button class="btn secondary" id="closeSettings">Close</button></div></div>
+<div class="shell">
+  <main class="main">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="burger" id="burgerBtn">☰</button>
+        <div class="mark" style="width:42px;height:42px;border-radius:14px">👌</div>
+        <div class="top-title">
+          <strong>Capitan AI</strong>
+          <span id="subline">World-class chat UI</span>
+        </div>
+      </div>
+      <div class="top-right">
+        <div class="pill" id="connectionPill">● Ready</div>
+        <button class="icon-btn" id="themeBtn" title="Toggle theme">◐</button>
+        <button class="icon-btn" id="menuBtn" title="More">⋮</button>
+      </div>
+      <div class="dropdown" id="dropdown">
+        <div class="drop-item" data-action="saved">Saved Messages</div>
+        <div class="drop-item" data-action="workspace">Workspaces</div>
+        <div class="drop-item" data-action="markets">Markets</div>
+        <div class="drop-item" data-action="upgrade">Upgrade Plan</div>
+        <div class="drop-item" data-action="privacy">Privacy Policy</div>
+      </div>
+    </header>
+
+    <section class="content">
+      <div class="chat-wrap">
+        <div class="hero" id="hero">
+          <div class="hero-mark">👌</div>
+          <h1 id="heroTitle">Your sharpest AI workspace.</h1>
+          <p id="heroText">Ask, plan, write, analyze, collaborate, and export. Built to feel premium on Cloudflare Pages and work cleanly with your FastAPI backend.</p>
+        </div>
+
+        <div class="status-grid" id="statusGrid">
+          <div class="card"><div class="k">Intelligence</div><div class="v" id="intelLevel">World-class</div></div>
+          <div class="card"><div class="k">Connection</div><div class="v" id="connLevel">Backend ready</div></div>
+          <div class="card"><div class="k">Mode</div><div class="v" id="modeLevel">Human language + analysis</div></div>
+          <div class="card"><div class="k">Organization</div><div class="v" id="orgLevel">Partner-capable</div></div>
+        </div>
+
+        <div class="quick-grid" id="quickGrid">
+          <button class="quick" data-prompt="Summarize Capitan AI's architecture and capabilities."><div class="k">Architecture</div><div class="v">Summarize Capitan AI's architecture and capabilities.</div></button>
+          <button class="quick" data-prompt="Draft a premium onboarding flow for new users."><div class="k">UX Flow</div><div class="v">Draft a premium onboarding flow for new users.</div></button>
+          <button class="quick" data-prompt="Create a black and white pricing screen with three tiers."><div class="k">Pricing</div><div class="v">Create a black and white pricing screen with three tiers.</div></button>
+          <button class="quick" data-prompt="Write a concise, elegant product update email."><div class="k">Copy</div><div class="v">Write a concise, elegant product update email.</div></button>
+        </div>
+
+        <div class="messages" id="messages"></div>
+      </div>
+    </section>
+
+    <footer class="composer">
+      <div class="composer-shell">
+        <div class="attachment" id="attachmentBar">
+          <div class="file-meta">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+          </div>
+          <button class="icon-btn" id="removeFileBtn" title="Remove file">✕</button>
+        </div>
+
+        <div class="row">
+          <div class="composer-actions">
+            <button class="icon-btn" id="attachBtn" title="Attach file">📎</button>
+            <input id="fileInput" type="file" accept=".pdf,.doc,.docx,.txt,.csv" hidden />
+          </div>
+          <textarea class="text" id="prompt" rows="1" placeholder="Message Capitan..."></textarea>
+          <button class="send" id="sendBtn" title="Send">↑</button>
+        </div>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal"></div>
+</div>
 
 <script>
 const API = 'https://goldquantum0-capitan-ai-1.onrender.com';
-const S = { messages: [], userId: null, email: null, tier: 'free', token: null, theme: 'dark', selectedTier: 'free', selectedCoin: 'USDC', attachedFile: null, wallets: {}, streaming: false };
-const $ = id => document.getElementById(id);
-const save = (k, v) => localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-const read = (k, d = null) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
+const state = {
+  theme: 'dark',
+  token: localStorage.getItem('capitan-token') || '',
+  user: safeRead('capitan-user', { id:'anonymous', email:'Guest', tier:'free' }),
+  messages: safeRead('capitan-messages', []),
+  markets: {},
+  paymentConfig: null,
+  attachedFile: null,
+  view: 'chat',
+  workspace: { roomCode:'', members:[], messages:[] },
+  authEmail: '',
+  authOtp: '',
+  upgradeTier: 'plus',
+  txid: '',
+  currency: 'USDC',
+  founderCode: '',
+  adminData: null
+};
 
-function toast(msg) {
-  const t = document.querySelector('.toast');
-  if (t) t.remove();
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2200);
+function el(id){ return document.getElementById(id); }
+function safeRead(k,d){ try{ const r=localStorage.getItem(k); return r ? JSON.parse(r) : d; } catch { return d; } }
+function safeWrite(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+function toast(text){
+  const prev=document.querySelector('.toast');
+  if(prev) prev.remove();
+  const node=document.createElement('div');
+  node.className='toast';
+  node.textContent=text;
+  document.body.appendChild(node);
+  setTimeout(()=>node.remove(),1800);
 }
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+function setTheme(next){
+  state.theme=next;
+  document.documentElement.classList.toggle('light', next==='light');
+  safeWrite('capitan-theme', next);
 }
-
-function fmt(text) {
-  return esc(text)
-    .replace(/```(w*)
-?([sS]*?)```/g, (_, lang, code) => `<pre><code>${code.trim()}</code></pre>`)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/
-/g, '<br>')
-    .replace(/**(.*?)**/g, '<strong>$1</strong>');
+function escapeHtml(input){
+  return String(input||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
+function money(v){ return Number(v).toLocaleString(); }
+function scrollToBottom(){ const box=el('messages'); box.scrollTop=box.scrollHeight; }
 
-function applyTheme() {
-  document.documentElement.classList.toggle('light', S.theme === 'light');
-  $('darkToggle')?.classList.toggle('on', S.theme === 'dark');
+function renderShell(){
+  el('userLabel').textContent = state.user?.email || 'Guest';
+  el('userStatus').textContent = state.token ? 'Authenticated' : 'Offline-ready shell';
+  el('planName').textContent = state.user?.tier || 'Free';
+  el('planBadge').textContent = ((state.user?.tier || 'Free') + ' Tier');
+  el('planDesc').textContent = 'Built for high-performance AI, collaboration, upgrades, and workspace intelligence.';
+  el('connLevel').textContent = state.token ? 'Connected' : 'Backend ready';
+  el('intelLevel').textContent = state.user?.tier === 'founder' ? 'Founder grade' : 'World-class';
+  el('modeLevel').textContent = 'Human language + analysis';
+  el('orgLevel').textContent = 'Partner-capable';
 }
-
-function openModal(id) { $(id).classList.add('open'); }
-function closeModal(id) { $(id).classList.remove('open'); }
-
-function downloadText(data, filename, type = 'text/plain') {
-  const blob = new Blob([data], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-async function api(path, method = 'GET', body) {
-  try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (S.token) headers.Authorization = 'Bearer ' + S.token;
-    const res = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
-    return await res.json();
-  } catch (e) {
-    return { error: 'offline' };
+function renderMessages(){
+  const box=el('messages');
+  if(!state.messages.length){
+    box.innerHTML='';
+    el('hero').classList.remove('hidden');
+    el('quickGrid').classList.remove('hidden');
+    el('statusGrid').classList.remove('hidden');
+    return;
   }
+  el('hero').classList.add('hidden');
+  el('quickGrid').classList.add('hidden');
+  box.innerHTML = state.messages.map(m=>{
+    if(m.role==='user'){
+      return `<div class="msg user"><div class="bubble">${escapeHtml(m.content)}</div></div>`;
+    }
+    const head = m.typing ? `<div class="assistant-head"><span class="typing-mark">👌</span><span>Typing</span></div>` : `<div class="assistant-head"><span>👌 Capitan AI</span></div>`;
+    return `<div class="msg"><div class="bubble">${head}${escapeHtml(m.content)}</div></div>`;
+  }).join('');
+  scrollToBottom();
+}
+function setConnection(text){ el('connectionPill').textContent = text; }
+function autoGrow(t){ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,160)+'px'; }
+
+function showAttachment(file){
+  state.attachedFile = file;
+  el('attachmentBar').classList.add('on');
+  el('fileName').textContent = file.name;
+  el('fileSize').textContent = `${(file.size/1024).toFixed(1)} KB`;
+}
+function hideAttachment(){
+  state.attachedFile = null;
+  el('attachmentBar').classList.remove('on');
+  el('fileName').textContent = '';
+  el('fileSize').textContent = '';
+  el('fileInput').value = '';
 }
 
-async function fetchWallets() {
-  try {
-    const r = await fetch(API + '/api/payment-config');
-    if (r.ok) {
+function openModal(html){
+  el('modal').innerHTML = html;
+  el('modalOverlay').classList.add('open');
+}
+function closeModal(){ el('modalOverlay').classList.remove('open'); }
+function copy(text){ navigator.clipboard.writeText(text); toast('Copied'); }
+
+function authView(){
+  openModal(`
+    <h2>Authentication</h2>
+    <p>Sign in with email OTP or use the login flow. Your backend already supports both.</p>
+    <div class="modal-section">
+      <div class="grid-2">
+        <input class="input" id="authEmailInput" type="email" placeholder="Email address" value="${escapeHtml(state.authEmail)}">
+        <input class="input" id="authOtpInput" type="text" placeholder="6-digit OTP" value="${escapeHtml(state.authOtp)}">
+      </div>
+      <div class="auth-actions">
+        <button class="btn" id="sendOtpBtn">Send OTP</button>
+        <button class="btn secondary" id="verifyOtpBtn">Verify OTP</button>
+      </div>
+      <div class="small">JWT will be stored locally after verification. The frontend can then include it in Authorization headers for admin/founder flows.</div>
+    </div>
+  `);
+  el('sendOtpBtn').onclick = async () => {
+    state.authEmail = el('authEmailInput').value.trim();
+    try{
+      const r = await fetch(API + '/api/auth/send-otp', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: state.authEmail })
+      });
       const d = await r.json();
-      S.wallets = d.wallets || {};
+      toast(d.message || 'OTP sent');
+    }catch(e){ toast('OTP send failed'); }
+  };
+  el('verifyOtpBtn').onclick = async () => {
+    state.authEmail = el('authEmailInput').value.trim();
+    state.authOtp = el('authOtpInput').value.trim();
+    try{
+      const r = await fetch(API + '/api/auth/verify-otp', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: state.authEmail, code: state.authOtp })
+      });
+      const d = await r.json();
+      state.token = d.token || '';
+      state.user = { id: d.user_id, email: d.email, tier: d.tier };
+      safeWrite('capitan-token', state.token);
+      safeWrite('capitan-user', state.user);
+      renderShell();
+      toast('Authenticated');
+      closeModal();
+    }catch(e){ toast('OTP verification failed'); }
+  };
+}
+
+async function loadMarkets(){
+  try{
+    const r = await fetch(API + '/api/markets');
+    const d = await r.json();
+    state.markets = d.prices || {};
+    renderMarkets();
+  }catch(e){ toast('Markets unavailable'); }
+}
+function renderMarkets(){
+  const items = Object.entries(state.markets).slice(0,14).map(([name,v])=>{
+    const change = Number(v.change || 0);
+    const cls = change >= 0 ? 'up' : 'down';
+    return `<div class="market-item"><div><div class="name">${escapeHtml(name)}</div><div class="small">Price</div></div><div style="text-align:right"><div>${escapeHtml(String(v.price))}</div><div class="chg ${cls}">${change >= 0 ? '+' : ''}${change}%</div></div></div>`;
+  }).join('');
+  openModal(`
+    <h2>Markets</h2>
+    <p>Live market and crypto feed from your backend.</p>
+    <div class="modal-section">
+      <div class="market-list">${items || '<div class="small">No market data available.</div>'}</div>
+      <div style="margin-top:12px" class="small">This is designed as a lightweight dashboard so it remains Cloudflare Pages friendly.</div>
+    </div>
+  `);
+}
+
+async function loadPaymentConfig(){
+  try{
+    const r = await fetch(API + '/api/payment-config');
+    state.paymentConfig = await r.json();
+  }catch(e){}
+}
+function upgradeView(){
+  const cfg = state.paymentConfig || { wallets:{}, prices:{plus:8,pro:17}, crypto_prices:{plus:{USDC:8},pro:{USDC:17}} };
+  const wallets = cfg.wallets || {};
+  openModal(`
+    <h2>Upgrade</h2>
+    <p>Choose a tier, send TXID, and verify instantly through your backend.</p>
+    <div class="modal-section">
+      <div class="section-tabs">
+        <button class="tab ${state.upgradeTier==='plus'?'active':''}" data-tier="plus">Plus</button>
+        <button class="tab ${state.upgradeTier==='pro'?'active':''}" data-tier="pro">Pro</button>
+      </div>
+      <div class="grid-2">
+        <div><div class="small">Tier</div><div class="badge" id="tierLabel">${escapeHtml(state.upgradeTier)}</div></div>
+        <div><div class="small">Currency</div><select class="select" id="currencyInput"><option>USDC</option><option>BTC</option><option>ETH</option></select></div>
+      </div>
+      <div style="height:10px"></div>
+      <input class="input" id="txidInput" placeholder="Transaction ID" value="${escapeHtml(state.txid)}">
+      <div style="height:10px"></div>
+      <button class="btn" id="verifyUpgradeBtn">Verify Upgrade</button>
+      <div style="height:10px"></div>
+      <div class="small">Current tier price: ${escapeHtml(String(cfg.prices?.[state.upgradeTier] ?? '?'))} USD equivalent</div>
+    </div>
+    <div class="modal-section">
+      <div class="small" style="margin-bottom:8px">Wallets</div>
+      ${Object.entries(wallets).map(([k,v]) => `<div class="wallet"><span>${k}: ${escapeHtml(v)}</span><button class="copy" data-copy="${escapeHtml(v)}">Copy</button></div>`).join('')}
+    </div>
+  `);
+  document.querySelectorAll('.tab').forEach(btn => btn.onclick = () => { state.upgradeTier = btn.dataset.tier; closeModal(); upgradeView(); });
+  document.querySelectorAll('.copy').forEach(btn => btn.onclick = () => copy(btn.dataset.copy));
+  el('currencyInput').value = state.currency;
+  el('txidInput').value = state.txid;
+  el('verifyUpgradeBtn').onclick = async () => {
+    state.txid = el('txidInput').value.trim();
+    state.currency = el('currencyInput').value;
+    try{
+      const r = await fetch(API + '/api/upgrade', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ user_id: state.user.id || 'anonymous', tier: state.upgradeTier, txid: state.txid, currency: state.currency })
+      });
+      const d = await r.json();
+      if(d.token){ state.token = d.token; safeWrite('capitan-token', state.token); }
+      state.user.tier = d.tier || state.upgradeTier;
+      safeWrite('capitan-user', state.user);
+      renderShell();
+      toast('Upgrade verified');
+      closeModal();
+    }catch(e){ toast('Upgrade failed'); }
+  };
+}
+
+function founderView(){
+  openModal(`
+    <h2>Founder Access</h2>
+    <p>Unlock founder tier using your admin code.</p>
+    <div class="modal-section">
+      <input class="input" id="founderCodeInput" type="password" placeholder="Founder code">
+      <div style="height:10px"></div>
+      <button class="btn" id="founderVerifyBtn">Verify Founder</button>
+      <div class="small" style="margin-top:10px">Founder mode should be restricted in production to trusted admins only.</div>
+    </div>
+  `);
+  el('founderVerifyBtn').onclick = async () => {
+    state.founderCode = el('founderCodeInput').value.trim();
+    try{
+      const r = await fetch(API + '/api/founder', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ user_id: state.user.id || 'anonymous', code: state.founderCode })
+      });
+      const d = await r.json();
+      if(d.token){ state.token = d.token; safeWrite('capitan-token', state.token); }
+      state.user.tier = 'founder';
+      safeWrite('capitan-user', state.user);
+      renderShell();
+      toast('Founder activated');
+      closeModal();
+    }catch(e){ toast('Founder verification failed'); }
+  };
+}
+
+async function loadAdmin(){
+  try{
+    const r = await fetch(API + '/api/admin', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + (state.token || '')
+      },
+      body:'{}'
+    });
+    state.adminData = await r.json();
+    openModal(`
+      <h2>Admin Console</h2>
+      <p>Founder-only snapshot of users and payments.</p>
+      <div class="modal-section">
+        <table class="table">
+          <thead><tr><th>User</th><th>Email</th><th>Tier</th><th>Messages</th><th>Created</th></tr></thead>
+          <tbody>
+            ${(state.adminData.users || []).map(u => `<tr><td>${u.id}</td><td>${escapeHtml(u.email||'')}</td><td>${escapeHtml(u.tier||'')}</td><td>${u.msg_count}</td><td>${escapeHtml(u.created||'')}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-section">
+        <table class="table">
+          <thead><tr><th>TX</th><th>User</th><th>Tier</th><th>Amount</th><th>Currency</th></tr></thead>
+          <tbody>
+            ${(state.adminData.payments || []).map(p => `<tr><td>${escapeHtml(p.txid||'')}</td><td>${escapeHtml(p.user_id||'')}</td><td>${escapeHtml(p.tier||'')}</td><td>${p.amount}</td><td>${escapeHtml(p.currency||'')}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    `);
+  }catch(e){ toast('Admin denied'); }
+}
+
+function workspaceView(){
+  openModal(`
+    <h2>Workspaces</h2>
+    <p>Collaborative rooms for teams, clients, and organizations.</p>
+    <div class="modal-section">
+      <div class="grid-2">
+        <input class="input" id="roomCodeInput" placeholder="Room code">
+        <input class="input" id="maxMembersInput" type="number" min="2" max="50" placeholder="Max members" value="3">
+      </div>
+      <div style="height:10px"></div>
+      <div class="grid-2">
+        <button class="btn" id="createRoomBtn">Create Room</button>
+        <button class="btn secondary" id="joinRoomBtn">Join Room</button>
+      </div>
+    </div>
+    <div class="modal-section" id="workspaceOutput">
+      <div class="small">Create or join a room to load messages and members.</div>
+    </div>
+  `);
+  const output = () => el('workspaceOutput');
+  el('createRoomBtn').onclick = async () => {
+    const room_code = el('roomCodeInput').value.trim();
+    const max_members = Number(el('maxMembersInput').value || 3);
+    try{
+      const r = await fetch(API + '/api/workspace/create', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ user_id: state.user.id || 'anonymous', room_code, max_members })
+      });
+      const d = await r.json();
+      output().innerHTML = `<div class="badge">Created ${escapeHtml(d.room_code)}</div>`;
+      toast('Workspace created');
+    }catch(e){ toast('Workspace creation failed'); }
+  };
+  el('joinRoomBtn').onclick = async () => {
+    const room_code = el('roomCodeInput').value.trim();
+    try{
+      const r = await fetch(API + '/api/workspace/join', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ user_id: state.user.id || 'anonymous', room_code })
+      });
+      const d = await r.json();
+      state.workspace = d;
+      output().innerHTML = `
+        <div class="badge">Joined ${escapeHtml(room_code.toUpperCase())}</div>
+        <div style="height:10px"></div>
+        <div class="small">Members: ${(d.members || []).map(m => escapeHtml(m.name)).join(', ')}</div>
+        <div style="height:10px"></div>
+        <div class="small">${(d.messages || []).map(m => `${escapeHtml(m.author)}: ${escapeHtml(m.message)}`).join('<br>')}</div>
+      `;
+      toast('Workspace joined');
+    }catch(e){ toast('Workspace join failed'); }
+  };
+}
+
+function saveCurrentChat(){
+  safeWrite('capitan-messages', state.messages);
+  toast('Saved');
+}
+
+async function sendMessage(content){
+  const text = (content ?? el('prompt').value).trim();
+  if(!text && !state.attachedFile) return;
+
+  const file = state.attachedFile;
+  hideAttachment();
+
+  state.messages.push({ role:'user', content:text || 'File attached' });
+  state.messages.push({ role:'assistant', content:'', typing:true });
+  saveCurrentChat();
+  renderMessages();
+
+  el('prompt').value='';
+  autoGrow(el('prompt'));
+
+  try{
+    const tokenHeaders = state.token ? { Authorization: 'Bearer ' + state.token } : {};
+    const payload = {
+      messages: [
+        { role:'user', content:text },
+        ...(file ? [{ role:'user', content:`Attached file: ${file.name} (${file.size} bytes)` }] : [])
+      ],
+      user_id: state.user.id || 'anonymous'
+    };
+    const res = await fetch(API + '/api/chat', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', ...tokenHeaders },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    state.messages[state.messages.length - 1] = {
+      role:'assistant',
+      content: data.content || 'No response returned.',
+      typing:false
+    };
+    if(data.domain){
+      el('subline').textContent = data.domain + ' intelligence';
     }
-  } catch (e) {
-    S.wallets = {
-      USDC: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
-      BTC: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-      ETH: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+  }catch(e){
+    state.messages[state.messages.length - 1] = {
+      role:'assistant',
+      content:'Backend unavailable right now. The UI shell is intact; verify your backend route contract and deployment.',
+      typing:false
     };
   }
-  renderWallet();
-}
 
-function renderWallet() {
-  const el = $('walletAddr');
-  if (el) el.textContent = S.wallets[S.selectedCoin] || 'Unavailable';
-}
-
-async function fetchMarkets() {
-  try {
-    const r = await fetch(API + '/api/markets');
-    if (r.ok) {
-      const d = await r.json();
-      S.markets = d.prices || d;
-    }
-  } catch (e) {}
-}
-
-function saveState() {
-  save('cap_user', { userId: S.userId, email: S.email, tier: S.tier, token: S.token });
-  save('cap_messages', S.messages.slice(-40));
-  save('cap_theme', S.theme);
-}
-
-function init() {
-  const u = read('cap_user');
-  if (u) {
-    S.userId = u.userId;
-    S.email = u.email;
-    S.tier = u.tier || 'free';
-    S.token = u.token || null;
-  }
-  if (!S.userId) S.userId = 'anon_' + crypto.randomUUID().slice(0, 10);
-  const m = read('cap_messages');
-  if (Array.isArray(m)) S.messages = m;
-  const t = localStorage.getItem('cap_theme');
-  if (t) S.theme = t;
-  applyTheme();
-  fetchWallets();
-  render();
-  if (!S.email) openModal('authModal');
-  if (S.tier === 'pro' || S.tier === 'founder') fetchMarkets();
-}
-
-async function requestOTP() {
-  const email = $('authEmail').value.trim();
-  if (!email) return toast('Enter email');
-  const d = await api('/api/auth/send-otp', 'POST', { email });
-  if (d.sent) {
-    S.email = email;
-    $('otpEmailDisplay').textContent = email;
-    closeModal('authModal');
-    openModal('otpModal');
-    toast('Code sent');
-  }
-}
-
-async function verifyOTP() {
-  const code = $('otpInput').value.trim();
-  if (code.length !== 6) return toast('6 digits');
-  const d = await api('/api/auth/verify-otp', 'POST', { email: S.email, code });
-  if (d.token) {
-    S.userId = d.user_id;
-    S.token = d.token;
-    S.email = d.email;
-    S.tier = d.tier || 'free';
-    saveState();
-    closeModal('otpModal');
-    toast('Verified!');
-    render();
-  } else {
-    toast(d.error || 'Invalid code');
-  }
-}
-
-function copyText(text) {
-  navigator.clipboard.writeText(text).then(() => toast('Copied!'));
-}
-
-function copyMsg(btn) {
-  copyText(btn.closest('.msg').querySelector('.msg-ai-body').innerText);
-}
-
-function saveMsg(btn) {
-  const txt = btn.closest('.msg').querySelector('.msg-ai-body').innerText;
-  const saved = read('cap_saved', []);
-  saved.push({ content: txt, date: new Date().toISOString() });
-  save('cap_saved', saved);
-  toast('Saved!');
-}
-
-function downloadMsg(btn) {
-  const txt = btn.closest('.msg').querySelector('.msg-ai-body').innerText;
-  downloadText(txt, `message-${Date.now()}.txt`);
-  toast('Downloaded!');
-}
-
-function retryMsg() {
-  const last = [...S.messages].reverse().find(m => m.role === 'user');
-  if (last) sendMessage(last.content);
-}
-
-function bookmarkChat() {
-  const bookmarks = read('cap_bookmarks', []);
-  bookmarks.push({ messages: S.messages, date: new Date().toISOString() });
-  save('cap_bookmarks', bookmarks);
-  toast('Bookmarked!');
-  $('dropdownMenu').classList.remove('visible');
-}
-
-function shareChat() {
-  copyText(location.origin + '?share=' + btoa(unescape(encodeURIComponent(JSON.stringify(S.messages)))));
-  $('dropdownMenu').classList.remove('visible');
-}
-
-function exportChat() {
-  const text = S.messages.map(m => (m.role === 'user' ? 'User: ' : 'AI: ') + m.content).join('
-
-');
-  downloadText(text, `chat-${Date.now()}.txt`);
-  $('dropdownMenu').classList.remove('visible');
-}
-
-function openPrivacy() {
-  openModal('privacyModal');
-  $('dropdownMenu').classList.remove('visible');
-}
-
-function selectTier(t) {
-  S.selectedTier = t;
-  document.querySelectorAll('.card').forEach(c => c.classList.toggle('selected', c.dataset.tier === t));
-  $('paymentSection').style.display = t === 'free' ? 'none' : 'block';
-}
-
-function switchCoin(c) {
-  S.selectedCoin = c;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.coin === c));
-  renderWallet();
-}
-
-async function upgradeTier() {
-  const txid = $('txidInput').value.trim();
-  if (!S.selectedTier || S.selectedTier === 'free') return toast('Select a paid plan');
-  if (!txid) return toast('Enter TXID');
-  $('paymentStatus').innerHTML = '<div style="padding:10px;border:1px solid rgba(255,200,50,.3);color:#ffc832;border-radius:8px">Checking...</div>';
-  const d = await api('/api/upgrade', 'POST', { user_id: S.userId, tier: S.selectedTier, txid, currency: S.selectedCoin });
-  if (d.verified) {
-    S.tier = S.selectedTier;
-    saveState();
-    $('paymentStatus').innerHTML = '<div style="padding:10px;border:1px solid rgba(100,200,100,.3);color:#64c864;border-radius:8px">✅ Verified!</div>';
-    setTimeout(() => { closeModal('upgradeModal'); render(); }, 800);
-  } else {
-    $('paymentStatus').innerHTML = '<div style="padding:10px;border:1px solid rgba(255,80,80,.3);color:#ff5050;border-radius:8px">❌ Failed</div>';
-  }
-}
-
-function renderSaved() {
-  const el = $('savedList');
-  const saved = read('cap_saved', []);
-  if (!saved.length) {
-    el.innerHTML = '<p style="color:var(--txt3)">No saved messages.</p>';
-    return;
-  }
-  el.innerHTML = saved.slice().reverse().map((s, i) => `
-    <div style="border:1px solid var(--bdr);background:var(--bg2);border-radius:12px;padding:16px;margin-bottom:10px">
-      <div style="white-space:pre-wrap;line-height:1.7">${esc(s.content)}</div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="msg-action" onclick="copyText(${JSON.stringify(s.content)})">Copy</button>
-        <button class="msg-action" onclick="deleteSaved(${i})">Delete</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function deleteSaved(idx) {
-  const saved = read('cap_saved', []);
-  saved.splice(saved.length - 1 - idx, 1);
-  save('cap_saved', saved);
-  renderSaved();
-  toast('Deleted');
-}
-
-function render() {
-  applyTheme();
-  const app = $('app');
-  const tier = S.tier || 'free';
-  app.innerHTML = '';
-
-  const sidebar = document.createElement('aside');
-  sidebar.className = 'sidebar' + (localStorage.getItem('cap_sidebar') === '0' ? ' collapsed' : '');
-  sidebar.id = 'sidebar';
-  sidebar.innerHTML = `
-    <div class="sb-section">
-      <div class="sb-head">
-        <div class="sb-logo">👌</div>
-        <div><div class="sb-title">CAPITAN AI</div><div class="sb-name">Workspace</div></div>
-      </div>
-      <button class="btn-new" id="newChatBtn">✨ New Chat</button>
-    </div>
-    <div class="sb-section">
-      <div class="sb-title">Menu</div>
-      <div class="sb-item" id="savedBtn2">💾 Saved</div>
-      <div class="sb-item" id="settingsBtn2">⚙️ Settings</div>
-      <div class="sb-item" id="privacyBtn2">🔒 Privacy</div>
-    </div>
-    <div class="sb-user" id="userBtn">
-      <div style="font-size:18px">${tier === 'free' ? '🔹' : tier === 'plus' ? '🔶' : tier === 'pro' ? '💎' : '👑'}</div>
-      <div style="min-width:0">
-        <div style="font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(S.email || 'Sign in')}</div>
-        <div style="font-size:9px;color:var(--txt3);text-transform:uppercase">${tier}</div>
-      </div>
-    </div>`;
-  app.appendChild(sidebar);
-
-  const main = document.createElement('main');
-  main.className = 'main';
-  main.innerHTML = `
-    <div class="header">
-      <div class="header-left"><div class="logo">👌</div><div class="title">Capitan AI</div></div>
-      <div class="header-right">
-        <button class="icon-btn" id="savedBtn">💾</button>
-        <button class="icon-btn" id="settingsBtn">⚙️</button>
-        <button class="icon-btn" id="menuDots">⋮</button>
-        <div class="dropdown" id="dropdownMenu">
-          <div onclick="openPrivacy()">Privacy Policy</div>
-          <div onclick="bookmarkChat()">Bookmark Chat</div>
-          <div onclick="shareChat()">Share Chat</div>
-          <div onclick="exportChat()">Export Chat</div>
-        </div>
-      </div>
-    </div>
-    <div class="chat" id="chatMsgs"></div>
-    <div class="input-area">
-      <div id="filePreviewHost"></div>
-      <div class="input-box">
-        <button class="small-btn" id="attachBtn">📎</button>
-        <input id="fileInput" type="file" accept=".pdf,.doc,.docx,.txt,.csv" hidden>
-        <input class="input" id="chatInput" placeholder="Message Capitan..." autocomplete="off">
-        <button class="small-btn" id="voiceBtn">🎤</button>
-        <button class="send-btn" id="sendBtn">↑</button>
-      </div>
-    </div>`;
-  app.appendChild(main);
-
+  saveCurrentChat();
   renderMessages();
-  renderWallet();
-  bind();
 }
 
-function renderMessages() {
-  const el = $('chatMsgs');
-  if (!el) return;
-  if (!S.messages.length) {
-    el.innerHTML = `<div class="welcome"><div style="font-size:56px">👌</div><h1>${greet()}</h1><p>Ask anything — coding, finance, summaries, or planning.</p></div>`;
-    return;
+function renderPanels(action){
+  if(action==='saved'){
+    openModal(`
+      <h2>Saved Messages</h2>
+      <p>Your locally saved chat history.</p>
+      <div class="modal-section">
+        ${(state.messages || []).filter(m => !m.typing).map(m => `<div class="wallet"><span>${m.role}: ${escapeHtml(String(m.content).slice(0,70))}</span><button class="copy" data-copy="${escapeHtml(String(m.content))}">Copy</button></div>`).join('') || '<div class="small">No saved messages yet.</div>'}
+      </div>
+    `);
+    document.querySelectorAll('.copy').forEach(btn => btn.onclick = () => copy(btn.dataset.copy));
   }
-  el.innerHTML = S.messages.map(m => m.role === 'user'
-    ? `<div class="msg user"><div class="msg-user">${esc(m.content)}</div></div>`
-    : `<div class="msg"><div class="msg-ai-label">👌 Capitan AI</div><div class="msg-ai-body">${fmt(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyMsg(this)">Copy</button><button class="msg-action" onclick="saveMsg(this)">Save</button><button class="msg-action" onclick="downloadMsg(this)">Download</button><button class="msg-action" onclick="retryMsg(this)">Retry</button></div></div>`
-  ).join('');
-  el.scrollTop = el.scrollHeight;
+  if(action==='markets') loadMarkets();
+  if(action==='upgrade') upgradeView();
+  if(action==='workspace') workspaceView();
+  if(action==='privacy') openModal(`<h2>Privacy</h2><p>Your frontend stores theme, token, and local chat history in the browser. Server-side access should remain limited to authenticated routes.</p><div class="modal-section"><div class="small">CORS is enabled in your backend, which supports a separately hosted frontend.</div></div>`);
+  if(action==='settings') openModal(`
+    <h2>Settings</h2>
+    <div class="modal-section">
+      <div class="toggle-row"><div><strong>Theme</strong><div class="small">Black / White mode</div></div><button class="toggle ${state.theme==='light'?'on':''}" id="themeToggle"><span class="dot"></span></button></div>
+      <div style="height:12px"></div>
+      <div class="toggle-row"><div><strong>Auth</strong><div class="small">Sign in with OTP</div></div><button class="btn secondary" id="openAuthBtn">Open</button></div>
+      <div style="height:12px"></div>
+      <div class="toggle-row"><div><strong>Founder</strong><div class="small">Admin tier</div></div><button class="btn secondary" id="openFounderBtn">Open</button></div>
+      <div style="height:12px"></div>
+      <div class="toggle-row"><div><strong>Admin</strong><div class="small">Founder-only console</div></div><button class="btn secondary" id="openAdminBtn">Open</button></div>
+    </div>
+  `);
+  if(el('themeToggle')) el('themeToggle').onclick = () => setTheme(state.theme==='dark'?'light':'dark');
+  if(el('openAuthBtn')) el('openAuthBtn').onclick = authView;
+  if(el('openFounderBtn')) el('openFounderBtn').onclick = founderView;
+  if(el('openAdminBtn')) el('openAdminBtn').onclick = loadAdmin;
 }
 
-function greet() {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good morning ☀️' : h < 17 ? 'Good afternoon 🌤️' : h < 21 ? 'Good evening 🌆' : 'Night session 🌃';
-}
+function bind(){
+  el('themeBtn').onclick = () => setTheme(state.theme==='dark'?'light':'dark');
+  el('burgerBtn').onclick = () => { el('mobileSidebar').classList.add('open'); el('overlay').classList.add('open'); };
+  el('menuBtn').onclick = () => el('dropdown').classList.toggle('open');
+  el('overlay').onclick = () => { el('mobileSidebar').classList.remove('open'); el('overlay').classList.remove('open'); el('dropdown').classList.remove('open'); closeModal(); };
 
-async function sendMessage(content) {
-  const input = $('chatInput');
-  const text = (content ?? input?.value ?? '').trim();
-  if (!text && !S.attachedFile) return;
-  S.messages.push({ role: 'user', content: text, file: S.attachedFile || null });
-  S.messages.push({ role: 'assistant', content: '…' });
-  S.streaming = true;
-  saveState();
-  if (input) input.value = '';
-  S.attachedFile = null;
-  render();
-
-  const payload = {
-    messages: S.messages.map(m => ({ role: m.role, content: m.content, file: m.file || null })),
-    user_id: S.userId
-  };
-  const d = await api('/api/chat', 'POST', payload);
-  S.messages[S.messages.length - 1] = { role: 'assistant', content: d.content || 'Retry?' };
-  S.streaming = false;
-  saveState();
-  render();
-}
-
-function bind() {
-  $('menuBtn').onclick = () => $('sidebar').classList.toggle('collapsed');
-  $('menuDots').onclick = e => { $('dropdownMenu').classList.toggle('visible'); e.stopPropagation(); };
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.header-right')) $('dropdownMenu')?.classList.remove('visible');
+  document.querySelectorAll('.nav-item,.drop-item').forEach(node=>{
+    node.addEventListener('click', ()=>{
+      renderPanels(node.dataset.action);
+      el('mobileSidebar').classList.remove('open');
+      el('overlay').classList.remove('open');
+      el('dropdown').classList.remove('open');
+    });
   });
 
-  $('authBtn').onclick = requestOTP;
-  $('authSkip').onclick = () => closeModal('authModal');
-  $('otpVerifyBtn').onclick = verifyOTP;
-  $('otpCancel').onclick = () => { closeModal('otpModal'); openModal('authModal'); };
-
-  $('savedBtn').onclick = () => { renderSaved(); openModal('savedModal'); };
-  $('savedBtn2').onclick = $('savedBtn').onclick;
-  $('settingsBtn').onclick = () => openModal('settingsModal');
-  $('settingsBtn2').onclick = $('settingsBtn').onclick;
-  $('privacyBtn2').onclick = openPrivacy;
-  $('closePrivacy').onclick = () => closeModal('privacyModal');
-  $('closeSaved').onclick = () => closeModal('savedModal');
-  $('closeSettings').onclick = () => closeModal('settingsModal');
-
-  $('darkToggle').onclick = () => {
-    S.theme = S.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('cap_theme', S.theme);
-    applyTheme();
-    save('cap_theme', S.theme);
-  };
-
-  $('newChatBtn').onclick = () => {
-    S.messages = [];
-    saveState();
+  el('newChatBtn').onclick = () => {
+    state.messages = [];
+    saveCurrentChat();
     renderMessages();
+    toast('New chat ready');
   };
 
-  $('attachBtn').onclick = () => $('fileInput').click();
-  $('fileInput').onchange = e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    if (/^image//.test(f.type)) {
-      toast('Images not supported');
-      $('fileInput').value = '';
-      return;
-    }
-    S.attachedFile = { name: f.name, size: f.size };
-    const host = $('filePreviewHost');
-    host.innerHTML = `<div class="file-preview"><div class="file-meta"><div class="file-name">${esc(f.name)}</div><div class="file-size">${(f.size / 1024).toFixed(1)} KB</div></div><button class="small-btn" id="removeFile">✕</button></div>`;
-    $('removeFile').onclick = () => {
-      S.attachedFile = null;
-      host.innerHTML = '';
-      $('fileInput').value = '';
+  document.querySelectorAll('.quick').forEach(q=>{
+    q.onclick = () => {
+      el('prompt').value = q.dataset.prompt;
+      autoGrow(el('prompt'));
+      el('prompt').focus();
     };
+  });
+
+  el('attachBtn').onclick = () => el('fileInput').click();
+  el('removeFileBtn').onclick = () => hideAttachment();
+  el('fileInput').onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    showAttachment(file);
   };
-
-  $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
-  $('sendBtn').onclick = () => sendMessage();
-  $('voiceBtn').onclick = () => toast('Voice input not implemented');
-
-  document.querySelectorAll('.card').forEach(c => c.onclick = () => selectTier(c.dataset.tier));
-  document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchCoin(t.dataset.coin));
-  $('copyWalletBtn').onclick = () => copyText($('walletAddr').textContent);
-  $('verifyUpgrade').onclick = upgradeTier;
-  $('closeUpgrade').onclick = () => closeModal('upgradeModal');
-
-  $('userBtn').onclick = () => S.tier === 'free' ? openModal('upgradeModal') : openModal('settingsModal');
+  el('prompt').addEventListener('input', ()=>autoGrow(el('prompt')));
+  el('prompt').addEventListener('keydown', e => {
+    if(e.key==='Enter' && !e.shiftKey){
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  el('sendBtn').onclick = () => sendMessage();
+  el('modalOverlay').onclick = (e) => { if(e.target === el('modalOverlay')) closeModal(); };
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+async function init(){
+  try{
+    const savedTheme = localStorage.getItem('capitan-theme');
+    if(savedTheme) state.theme = savedTheme;
+    setTheme(state.theme);
+    renderShell();
+    renderMessages();
+    bind();
+    await loadPaymentConfig();
+    await loadMarkets();
+    if(state.messages.length) renderMessages();
+    setConnection(state.token ? '● Connected' : '● Ready');
+  }catch(e){
+    document.body.innerHTML = '<div style="min-height:100vh;display:grid;place-items:center;background:#000;color:#fff;font-family:system-ui;padding:24px;text-align:center"><div><div style="font-size:56px;line-height:1">👌</div><h1 style="margin:18px 0 8px">Capitan AI failed to boot</h1><p style="max-width:620px;margin:0 auto;color:#aaa;line-height:1.7">Check the browser console, confirm the Render API URL, and verify route names match the frontend.</p></div></div>';
+  }
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 </script>
 </body>
 </html>
