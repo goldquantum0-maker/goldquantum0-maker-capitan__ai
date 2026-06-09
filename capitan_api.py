@@ -1,443 +1,522 @@
 """
-CAPITAN AI — Production Backend v16.0
-CLOSEAI Technologies
-Features: JWT Auth, Rate Limiting, Email OTP, Workspace API, Market Data, No Cold Start
+=============================================================================
+CAPITAN AI BACKEND - PRODUCTION DEPLOYMENT
+Built by CloseAI Technologies
+=============================================================================
 """
 
-import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlite3
+import os
+import time
+import secrets
+import httpx
 from datetime import datetime, timedelta
-from functools import wraps
-from fastapi import FastAPI, HTTPException, Request, Depends
+from contextlib import asynccontextmanager
+from typing import Optional, List, Dict, Any
+from fastapi import FastAPI, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
+from pydantic_settings import BaseSettings
 from pydantic import BaseModel
-import uvicorn
+from jose import jwt, JWTError
+from supabase import create_client, Client
+import redis.asyncio as redis
+import openai
+import anthropic
 
-# ═══════════════════════════════════════
-# CONFIG
-# ═══════════════════════════════════════
-OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
-GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
-GNEWS_KEY = os.environ.get("GNEWS_KEY", "")
-JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_hex(32))
-ADMIN_CODE = os.environ.get("ADMIN_CODE", "Osinachi@350")
-DB_PATH = "capitan.db"
+# =============================================================================
+# 1. CONFIGURATION
+# =============================================================================
+class Settings(BaseSettings):
+    SUPABASE_URL: str
+    SUPABASE_KEY: str
+    SUPABASE_SERVICE_ROLE_KEY: str
+    REDIS_URL: str
+    OPENAI_API_KEY: str
+    ANTHROPIC_API_KEY: str
+    RESEND_API_KEY: str
+    FOUNDER_CODE: str = "CAPITAN2024"  # Secret founder access code
+    APP_ENV: str = "development"
 
-# Rate limits per tier (requests per minute)
-RATE_LIMITS = {"free": 10, "plus": 30, "pro": 100, "founder": 200}
-MESSAGE_LIMITS = {"free": 10, "plus": 30, "pro": float("inf"), "founder": float("inf")}
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
-# Wallet addresses
-WALLETS = {
-    "SOL": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1",
-    "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
-    "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
+settings = Settings()
+
+# =============================================================================
+# 2. CLIENTS
+# =============================================================================
+supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)supabase_admin: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+openai_client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+anthropic_client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+# =============================================================================
+# 3. LIFESPAN
+# =============================================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    yield
+    await app.state.redis.close()
+
+app = FastAPI(
+    title="Capitan AI API",
+    description="Elite Intelligence Platform by CloseAI Technologies",
+    version="2.0.0",
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# =============================================================================
+# 4. SECURITY & AUTH
+# =============================================================================
+security = HTTPBearer()
+jwks_cache = {"keys": [], "last_fetched": 0}
+
+async def get_supabase_jwks():
+    if time.time() - jwks_cache["last_fetched"] > 3600:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{settings.SUPABASE_URL}/auth/v1/jwks")
+            jwks_cache["keys"] = response.json()["keys"]
+            jwks_cache["last_fetched"] = time.time()
+    return jwks_cache["keys"]
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        jwks = await get_supabase_jwks()
+        header = jwt.get_unverified_header(token)
+        rsa_key = {}
+        for key in jwks:
+            if key["kid"] == header["kid"]:                rsa_key = {"kty": key["kty"], "kid": key["kid"], "use": key["use"], "n": key["n"], "e": key["e"]}
+        
+        if not rsa_key:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        payload = jwt.decode(token, rsa_key, algorithms=["RS256"], audience="authenticated", issuer=f"{settings.SUPABASE_URL}/auth/v1")
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        # Get user with tier from database
+        response = supabase_admin.table("users").select("*").eq("id", user_id).single().execute()
+        if not response.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Also get profile
+        profile = supabase_admin.table("profiles").select("*").eq("user_id", user_id).single().execute()
+        
+        return {
+            **response.data,
+            "profile": profile.data if profile.data else {}
+        }
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+# Rate limiting
+TIER_LIMITS = {"free": 10, "plus": 30, "pro": 60, "absolute": 999999}
+
+async def check_rate_limit(user: dict = Depends(get_current_user)):
+    tier = user.get("tier", "free")
+    if tier == "absolute": return user
+    
+    limit = TIER_LIMITS.get(tier, 10)
+    key = f"rate_limit:{user['id']}"
+    current = await app.state.redis.incr(key)
+    if current == 1: await app.state.redis.expire(key, 60)
+    if current > limit:
+        raise HTTPException(status_code=429, detail=f"Rate limit exceeded for {tier.upper()} tier.")
+    return user
+
+# =============================================================================
+# 5. AI ROUTING
+# =============================================================================
+ELITE_SYSTEM_PROMPT = """You are Capitan AI, the elite intelligence platform built by CloseAI Technologies. 
+Your communication is warm, confident, natural, and deeply reasoned. 
+You possess institutional-grade expertise in global finance, African markets, advanced mathematics, 
+science, technology, and software/hardware engineering. 
+Never sound robotic. Provide detailed, authoritative, and highly structured outputs."""
+
+TIER_MODELS = {    "free": {"provider": "openai", "model": "gpt-4o-mini"},
+    "plus": {"provider": "openai", "model": "gpt-4o"},
+    "pro": {"provider": "anthropic", "model": "claude-3-5-sonnet-20241022"},
+    "absolute": {"provider": "anthropic", "model": "claude-3-5-sonnet-20241022"}
 }
 
-# ═══════════════════════════════════════
-# DATABASE
-# ═══════════════════════════════════════
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY, email TEXT UNIQUE, tier TEXT DEFAULT "free",
-        msg_count INTEGER DEFAULT 0, msg_window TEXT, created TEXT,
-        otp_hash TEXT, otp_expiry TEXT, email_verified INTEGER DEFAULT 0
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS memories (
-        id TEXT PRIMARY KEY, memory_id TEXT, user_id TEXT,
-        content TEXT, query TEXT, tier TEXT, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS payments (
-        id TEXT PRIMARY KEY, user_id TEXT, txid TEXT, currency TEXT,
-        amount REAL, tier TEXT, expires TEXT, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS payment_log (
-        id TEXT PRIMARY KEY, user_id TEXT, tier TEXT, amount REAL,
-        currency TEXT, txid TEXT, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS training (
-        id TEXT PRIMARY KEY, user_id TEXT, query TEXT, response TEXT,
-        domain TEXT, tier TEXT, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
-        id TEXT PRIMARY KEY, room_code TEXT UNIQUE, creator_id TEXT,
-        max_members INTEGER DEFAULT 3, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS workspace_members (
-        workspace_id TEXT, user_id TEXT, joined TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS workspace_messages (
-        id TEXT PRIMARY KEY, workspace_id TEXT, user_id TEXT,
-        author TEXT, message TEXT, created TEXT
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS otp_codes (
-        email TEXT PRIMARY KEY, code TEXT, expiry TEXT, attempts INTEGER DEFAULT 0
-    )''')
-    conn.commit()
-    conn.close()
+async def route_ai_request(messages: list, user_tier: str):
+    config = TIER_MODELS.get(user_tier, TIER_MODELS["free"])
+    full_messages = [{"role": "system", "content": ELITE_SYSTEM_PROMPT}] + messages
 
-init_db()
-def sid(): return str(uuid.uuid4())[:8].upper()
-def mid(): return 'mem_' + sid()
-
-# ═══════════════════════════════════════
-# JWT AUTH
-# ═══════════════════════════════════════
-def create_jwt(user_id, tier):
-    header = base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()).decode().rstrip("=")
-    payload = base64.urlsafe_b64encode(json.dumps({
-        "user_id": user_id, "tier": tier,
-        "exp": int((datetime.utcnow() + timedelta(days=30)).timestamp()),
-        "iat": int(datetime.utcnow().timestamp())
-    }).encode()).decode().rstrip("=")
-    signature = base64.urlsafe_b64encode(
-        hmac.new(JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()
-    ).decode().rstrip("=")
-    return f"{header}.{payload}.{signature}"
-
-def verify_jwt(token):
     try:
-        parts = token.split(".")
-        if len(parts) != 3: return None
-        header, payload, signature = parts
-        expected_sig = base64.urlsafe_b64encode(
-            hmac.new(JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()
-        ).decode().rstrip("=")
-        if not hmac.compare_digest(signature, expected_sig): return None
-        data = json.loads(base64.urlsafe_b64decode(payload + "=="))
-        if data.get("exp", 0) < datetime.utcnow().timestamp(): return None
-        return data
-    except: return None
+        if config["provider"] == "openai":
+            response = await openai_client.chat.completions.create(
+                model=config["model"], 
+                messages=full_messages, 
+                temperature=0.7
+            )
+            return {
+                "content": response.choices[0].message.content, 
+                "model": config["model"], 
+                "tokens_in": response.usage.prompt_tokens, 
+                "tokens_out": response.usage.completion_tokens
+            }
+        else:
+            response = await anthropic_client.messages.create(
+                model=config["model"], 
+                max_tokens=4096, 
+                system=ELITE_SYSTEM_PROMPT, 
+                messages=full_messages[1:]
+            )
+            return {
+                "content": response.content[0].text, 
+                "model": config["model"], 
+                "tokens_in": response.usage.input_tokens, 
+                "tokens_out": response.usage.output_tokens
+            }
+    except Exception as e:
+        raise Exception(f"AI Error: {str(e)}")
 
-# ═══════════════════════════════════════
-# RATE LIMITER (In-Memory)
-# ═══════════════════════════════════════
-rate_store = {}
-def check_rate(user_id, tier):
-    now = time.time()
-    key = f"{user_id}:{tier}"
-    if key not in rate_store: rate_store[key] = []
-    rate_store[key] = [t for t in rate_store[key] if now - t < 60]
-    limit = RATE_LIMITS.get(tier, 10)
-    if len(rate_store[key]) >= limit: return False
-    rate_store[key].append(now)
-    return True
-
-# ═══════════════════════════════════════
-# AI CALLER
-# ═══════════════════════════════════════
-def call_ai(messages, tier="free"):
-    models = {"free": "deepseek/deepseek-chat", "plus": "meta-llama/llama-3.1-70b-instruct", "pro": "anthropic/claude-3.5-sonnet", "founder": "anthropic/claude-3.5-sonnet"}
-    model = models.get(tier, models["free"])
-    max_tokens = 800 if tier == "free" else 2000
-    if OPENROUTER_KEY:
-        try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json", "HTTP-Referer": "https://capitan.pages.dev", "X-Title": "CAPITAN AI"},
-                json={"model": model, "messages": messages, "temperature": 0.3, "max_tokens": max_tokens}, timeout=60)
-            if r.status_code == 200: return r.json()["choices"][0]["message"]["content"]
-        except: pass
-    if OPENAI_KEY:
-        try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {OPENAI_KEY}", "Content-Type": "application/json"},
-                json={"model": "gpt-3.5-turbo", "messages": messages, "temperature": 0.3, "max_tokens": max_tokens}, timeout=60)
-            if r.status_code == 200: return r.json()["choices"][0]["message"]["content"]
-        except: pass
-    return None
-
-def classify(q):
-    q = q.lower()
-    if re.search(r'python|javascript|react|node|api|code|program|def |class ', q): return 'coding'
-    if re.search(r'quant|stochastic|var|cvar|sharpe|backtest|monte carlo', q): return 'quant'
-    if re.search(r'stock|revenue|ebitda|valuation|dcf|crypto|bitcoin|ethereum', q): return 'finance'
-    if re.search(r'crispr|dna|physics|chemistry|biology|quantum', q): return 'science'
-    return 'general'
-
-def system_prompt(domain, tier, user_id=None):
-    base = """You are CAPITAN AI — an elite intelligence system by CLOSEAI Technologies.
-Be direct, knowledgeable, and warm through competence. Built for Africa and the world.
-Lead with the answer. Never give trading signals. Calibrate confidence honestly.
-Domain: """ + domain
-    if tier in ('pro', 'founder'): base += "\nProvide thorough, deep responses with examples and citations."
-    elif tier == 'free': base += "\nKeep it concise but complete."
-    if user_id:
-        try:
-            conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-            c.execute("SELECT query FROM memories WHERE user_id=? ORDER BY created DESC LIMIT 3", (user_id,))
-            rows = c.fetchall(); conn.close()
-            if rows: base += "\n\nRecent context:\n" + "\n".join(f"• {r[0][:80]}" for r in rows)
-        except: pass
-    return base
-
-# ═══════════════════════════════════════
-# MARKET DATA (Yahoo + CoinGecko)
-# ═══════════════════════════════════════
-def get_market_data():
-    results = {}
-    try:
-        symbols = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X"
-        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={symbols}&fields=regularMarketPrice,regularMarketPreviousClose,shortName",
-            headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
-        if r.status_code == 200:
-            for item in r.json().get("quoteResponse", {}).get("result", []):
-                if item.get("regularMarketPrice") and item.get("regularMarketPreviousClose"):
-                    results[item.get("shortName") or item["symbol"]] = {
-                        "price": item["regularMarketPrice"],
-                        "change": round(((item["regularMarketPrice"] - item["regularMarketPreviousClose"]) / item["regularMarketPreviousClose"]) * 100, 2)
-                    }
-    except: pass
-    try:
-        r = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true", timeout=8)
-        if r.status_code == 200:
-            for name, data in r.json().items():
-                if data.get("usd"):
-                    results[name.capitalize()] = {"price": data["usd"], "change": round(data.get("usd_24h_change", 0), 2)}
-    except: pass
-    return results
-
-# ═══════════════════════════════════════
-# MODELS
-# ═══════════════════════════════════════
-class ChatRequest(BaseModel):
-    messages: list
-    user_id: str = "anonymous"
-
-class AuthRequest(BaseModel):
+# =============================================================================
+# 6. PYDANTIC MODELS
+# =============================================================================
+class LoginRequest(BaseModel):
     email: str
 
-class OTPVerifyRequest(BaseModel):
+class VerifyOTPRequest(BaseModel):
     email: str
-    code: str
+    token_hash: str
 
-class UpgradeRequest(BaseModel):
-    user_id: str
-    tier: str
-    txid: str
-    currency: str = "USDC"
-
-class FounderRequest(BaseModel):
-    user_id: str
-    code: str
+class ChatRequest(BaseModel):    messages: list
+    conversation_id: Optional[str] = None
 
 class WorkspaceCreateRequest(BaseModel):
-    user_id: str
-    room_code: str
-    max_members: int = 3
+    name: str
+    max_members: int = 5
 
 class WorkspaceJoinRequest(BaseModel):
-    user_id: str
     room_code: str
 
 class WorkspaceMessageRequest(BaseModel):
-    user_id: str
     room_code: str
     message: str
 
-# ═══════════════════════════════════════
-# AUTH DEPENDENCY
-# ═══════════════════════════════════════
-def get_current_user(request: Request):
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        token = auth[7:]
-        payload = verify_jwt(token)
-        if payload: return payload
-    return None
+class UpgradeRequest(BaseModel):
+    tier: str
+    txid: str
+    currency: str
 
-# ═══════════════════════════════════════
-# APP
-# ═══════════════════════════════════════
-app = FastAPI(title="CAPITAN AI API", version="16.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+class FounderRequest(BaseModel):
+    code: str
 
-# Keep-alive ping — UptimeRobot hits this every 5 min to prevent cold starts
-@app.get("/health")
-def health(): return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+# =============================================================================
+# 7. API ROUTES
+# =============================================================================
 
-@app.get("/api/payment-config")
-def payment_config(): return {"wallets": WALLETS, "prices": {"plus": 8, "pro": 17}, "crypto_prices": {"plus": {"BTC": 0.00012, "ETH": 0.0025, "USDC": 8}, "pro": {"BTC": 0.00028, "ETH": 0.005, "USDC": 17}}}
+@app.get("/")
+async def root():
+    return {"message": "Capitan AI Backend v2.0 - CloseAI Technologies"}
 
-@app.get("/api/markets")
-def markets(): return {"prices": get_market_data(), "timestamp": datetime.utcnow().isoformat()}
-
+# AUTH ROUTES
 @app.post("/api/auth/send-otp")
-def send_otp(req: AuthRequest):
-    if not req.email or "@" not in req.email: raise HTTPException(400, "Valid email required")
-    code = str(secrets.randbelow(1000000)).zfill(6)
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO otp_codes (email, code, expiry, attempts) VALUES (?, ?, ?, 0)", (req.email.lower().strip(), code, (datetime.utcnow() + timedelta(minutes=10)).isoformat()))
-    conn.commit(); conn.close()
-    print(f"OTP for {req.email}: {code}")  # In production, send via email service
-    return {"sent": True, "message": "OTP sent to email"}
+async def send_otp(request: LoginRequest):
+    try:
+        res = supabase.auth.sign_in_with_otp({"email": request.email})
+        return {"sent": True, "message": "OTP sent"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/auth/verify-otp")
-def verify_otp(req: OTPVerifyRequest):
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT code, expiry, attempts FROM otp_codes WHERE email=?", (req.email.lower().strip(),))
-    row = c.fetchone()
-    if not row: raise HTTPException(400, "No OTP requested")
-    if row[2] >= 5: raise HTTPException(429, "Too many attempts")
-    if datetime.fromisoformat(row[1]) < datetime.utcnow(): raise HTTPException(400, "OTP expired")
-    if row[0] != req.code:
-        c.execute("UPDATE otp_codes SET attempts = attempts + 1 WHERE email=?", (req.email.lower().strip(),))
-        conn.commit(); conn.close()
-        raise HTTPException(400, "Invalid OTP")
-    c.execute("SELECT id, tier FROM users WHERE email=?", (req.email.lower().strip(),))
-    user = c.fetchone()
-    if not user:
-        uid = 'u_' + sid()
-        c.execute("INSERT INTO users (id, email, tier, msg_count, msg_window, email_verified, created) VALUES (?,?,?,0,?,1,?)", (uid, req.email.lower().strip(), 'free', datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-        user = (uid, 'free')
-    else:
-        c.execute("UPDATE users SET email_verified=1 WHERE email=?", (req.email.lower().strip(),))
-    c.execute("DELETE FROM otp_codes WHERE email=?", (req.email.lower().strip(),))
-    conn.commit(); conn.close()
-    token = create_jwt(user[0], user[1])
-    return {"token": token, "user_id": user[0], "email": req.email, "tier": user[1]}
+async def verify_otp(request: VerifyOTPRequest):
+    try:
+        res = supabase.auth.verify_otp({
+            "email": request.email, 
+            "token": request.token_hash, 
+            "type": "email"
+        })
+        if res.session:
+            # Get user tier
+            user_data = supabase_admin.table("users").select("tier").eq("id", res.user.id).single().execute()            tier = user_data.data.get("tier", "free") if user_data.data else "free"
+            
+            return {
+                "token": res.session.access_token,
+                "user_id": res.user.id,
+                "email": res.user.email,
+                "tier": tier
+            }
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/api/auth/login")
-def login(req: AuthRequest):
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT id, tier FROM users WHERE email=?", (req.email.lower().strip(),))
-    user = c.fetchone()
-    if not user:
-        uid = 'u_' + sid()
-        c.execute("INSERT INTO users (id, email, tier, msg_count, msg_window, created) VALUES (?,?,?,0,?,?)", (uid, req.email.lower().strip(), 'free', datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-        conn.commit()
-        user = (uid, 'free')
-    conn.close()
-    token = create_jwt(user[0], user[1])
-    return {"token": token, "user_id": user[0], "email": req.email, "tier": user[1]}
+@app.get("/api/auth/me")
+async def get_profile(user: dict = Depends(get_current_user)):
+    return {"user": user}
 
+# CHAT ROUTES
 @app.post("/api/chat")
-def chat(req: ChatRequest):
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT tier, msg_count, msg_window FROM users WHERE id=?", (req.user_id,))
-    row = c.fetchone()
-    tier = row[0] if row else 'free'
-    
-    if not check_rate(req.user_id, tier): raise HTTPException(429, "Rate limit exceeded")
-    
-    if tier == 'free':
-        count = row[1] or 0
-        limit = MESSAGE_LIMITS['free']
-        if count >= limit:
-            w = datetime.fromisoformat(row[2]) if row[2] else datetime.utcnow()
-            if datetime.utcnow() - w < timedelta(hours=24): raise HTTPException(429, "Daily limit reached")
-            c.execute("UPDATE users SET msg_count=0, msg_window=? WHERE id=?", (datetime.utcnow().isoformat(), req.user_id))
-    
-    user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role") == "user"), "")
-    if not user_msg: raise HTTPException(400, "No message")
-    
-    c.execute("UPDATE users SET msg_count = msg_count + 1 WHERE id=?", (req.user_id,))
-    conn.commit()
-    
-    domain = classify(user_msg)
-    prompt = system_prompt(domain, tier, req.user_id)
-    llm_msgs = [{"role": "system", "content": prompt}] + [{"role": m.get("role","user"), "content": m.get("content","")} for m in req.messages]
-    result = call_ai(llm_msgs, tier)
-    
-    memory_id = mid()
-    c.execute("INSERT INTO memories (id, memory_id, user_id, content, query, tier, created) VALUES (?,?,?,?,?,?,?)", (sid(), memory_id, req.user_id, result or '', user_msg, tier, datetime.utcnow().isoformat()))
-    c.execute("INSERT INTO training (id, user_id, query, response, domain, tier, created) VALUES (?,?,?,?,?,?,?)", (sid(), req.user_id, user_msg, result or '', domain, tier, datetime.utcnow().isoformat()))
-    conn.commit(); conn.close()
-    return {"content": result or "No response.", "domain": domain, "memory_id": memory_id}
+async def chat_endpoint(request: ChatRequest, user: dict = Depends(check_rate_limit)):
+    try:
+        # Create or get conversation
+        conv_id = request.conversation_id
+        if not conv_id:
+            conv = supabase_admin.table("conversations").insert({
+                "user_id": user["id"],
+                "title": request.messages[0]["content"][:50] if request.messages else "New Chat"
+            }).execute()
+            conv_id = conv.data[0]["id"]
+        
+        # Save user message
+        if request.messages:
+            last_msg = request.messages[-1]
+            if last_msg["role"] == "user":
+                supabase_admin.table("messages").insert({
+                    "conversation_id": conv_id,
+                    "role": "user",
+                    "content": last_msg["content"]
+                }).execute()
+        
+        # Get AI response
+        result = await route_ai_request(request.messages, user["tier"])
+        
+        # Save AI message
+        supabase_admin.table("messages").insert({
+            "conversation_id": conv_id,
+            "role": "assistant",
+            "content": result["content"],
+            "model_used": result["model"],
+            "tokens_used": result["tokens_out"]
+        }).execute()        
+        # Log usage
+        supabase_admin.table("usage_logs").insert({
+            "user_id": user["id"],
+            "endpoint": "/api/chat",
+            "tokens_in": result["tokens_in"],
+            "tokens_out": result["tokens_out"],
+            "model": result["model"]
+        }).execute()
+        
+        return {
+            "content": result["content"],
+            "conversation_id": conv_id,
+            "model": result["model"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/upgrade")
-def upgrade(req: UpgradeRequest):
-    prices = {"plus": 8, "pro": 17}
-    if req.tier not in prices: raise HTTPException(400, "Invalid tier")
-    if not req.txid.strip(): raise HTTPException(400, "TXID required")
-    cur = req.currency.upper()
-    expiry = (datetime.utcnow() + timedelta(days=30)).isoformat()
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("INSERT INTO payments (id, user_id, txid, currency, amount, tier, expires, created) VALUES (?,?,?,?,?,?,?,?)", (sid(), req.user_id, req.txid.strip(), cur, prices[req.tier], req.tier, expiry.isoformat(), datetime.utcnow().isoformat()))
-    c.execute("UPDATE users SET tier=?, msg_count=0 WHERE id=?", (req.tier, req.user_id))
-    c.execute("INSERT INTO payment_log (id, user_id, tier, amount, currency, txid, created) VALUES (?,?,?,?,?,?,?)", (sid(), req.user_id, req.tier, prices[req.tier], cur, req.txid, datetime.utcnow().isoformat()))
-    conn.commit(); conn.close()
-    token = create_jwt(req.user_id, req.tier)
-    return {"verified": True, "tier": req.tier, "token": token}
+@app.get("/api/conversations")
+async def get_conversations(user: dict = Depends(get_current_user)):
+    """Get all user conversations"""
+    convs = supabase_admin.table("conversations").select("*").eq("user_id", user["id"]).order("created_at", desc=True).execute()
+    return {"conversations": convs.data}
 
-@app.post("/api/founder")
-def founder(req: FounderRequest):
-    if req.code != ADMIN_CODE: raise HTTPException(403, "Invalid code")
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("UPDATE users SET tier='founder', msg_count=0 WHERE id=?", (req.user_id,))
-    conn.commit(); conn.close()
-    token = create_jwt(req.user_id, 'founder')
-    return {"verified": True, "tier": "founder", "token": token}
+@app.get("/api/conversations/{conv_id}")
+async def get_conversation(conv_id: str, user: dict = Depends(get_current_user)):
+    """Get specific conversation with messages"""
+    conv = supabase_admin.table("conversations").select("*").eq("id", conv_id).eq("user_id", user["id"]).single().execute()
+    if not conv.data:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    messages = supabase_admin.table("messages").select("*").eq("conversation_id", conv_id).order("created_at").execute()
+    return {"conversation": conv.data, "messages": messages.data}
 
-@app.post("/api/admin")
-def admin(request: Request):
-    user = get_current_user(request)
-    if not user or user.get("tier") != "founder": raise HTTPException(403, "Access denied")
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT id, email, tier, msg_count, created FROM users ORDER BY created DESC LIMIT 50")
-    users = [{"id": r[0], "email": r[1], "tier": r[2], "msg_count": r[3], "created": r[4]} for r in c.fetchall()]
-    c.execute("SELECT * FROM payment_log ORDER BY created DESC LIMIT 50")
-    payments = [{"user_id": r[1], "tier": r[2], "amount": r[3], "currency": r[4], "txid": r[5], "created": r[6]} for r in c.fetchall()]
-    conn.close()
-    return {"users": users, "payments": payments, "total_users": len(users)}
+@app.delete("/api/conversations/{conv_id}")
+async def delete_conversation(conv_id: str, user: dict = Depends(get_current_user)):
+    """Delete a conversation"""
+    supabase_admin.table("conversations").delete().eq("id", conv_id).eq("user_id", user["id"]).execute()
+    return {"deleted": True}
+
+# LIBRARY ROUTES (File Storage)
+@app.get("/api/library")
+async def get_library(user: dict = Depends(get_current_user)):
+    """Get user's library files"""
+    files = supabase_admin.table("documents").select("*").eq("user_id", user["id"]).order("created_at", desc=True).execute()
+    return {"files": files.data}
+
+@app.post("/api/library/upload")
+async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload file to library"""    if user["tier"] == "free":
+        raise HTTPException(status_code=403, detail="Upgrade to Plus or Pro to use Library")
+    
+    # Upload to Supabase Storage
+    file_content = await file.read()
+    file_path = f"{user['id']}/{file.filename}"
+    
+    supabase_admin.storage.from_("library").upload(file_path, file_content)
+    
+    # Get public URL
+    file_url = supabase_admin.storage.from_("library").get_public_url(file_path)
+    
+    # Save to database
+    doc = supabase_admin.table("documents").insert({
+        "user_id": user["id"],
+        "file_name": file.filename,
+        "file_url": file_url,
+        "mime_type": file.content_type
+    }).execute()
+    
+    return {"file": doc.data[0]}
+
+@app.delete("/api/library/{file_id}")
+async def delete_file(file_id: str, user: dict = Depends(get_current_user)):
+    """Delete file from library"""
+    doc = supabase_admin.table("documents").select("*").eq("id", file_id).eq("user_id", user["id"]).single().execute()
+    if not doc.data:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Delete from storage
+    file_path = doc.data[0]["file_url"].split("/library/")[-1]
+    supabase_admin.storage.from_("library").remove([file_path])
+    
+    # Delete from database
+    supabase_admin.table("documents").delete().eq("id", file_id).execute()
+    return {"deleted": True}
+
+# WORKSPACE ROUTES
+@app.get("/api/payment-config")
+async def get_payment_config():
+    """Get crypto wallet addresses"""
+    wallets = supabase_admin.table("wallet_addresses").select("*").eq("is_active", True).execute()
+    wallet_dict = {w["currency"]: w["address"] for w in wallets.data}
+    return {"wallets": wallet_dict}
 
 @app.post("/api/workspace/create")
-def ws_create(req: WorkspaceCreateRequest):
-    if len(req.room_code) < 8: raise HTTPException(400, "Code too short (min 8 chars)")
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    wid = sid()
-    c.execute("INSERT INTO workspaces (id, room_code, creator_id, max_members, created) VALUES (?,?,?,?,?)", (wid, req.room_code.upper(), req.user_id, req.max_members, datetime.utcnow().isoformat()))
-    c.execute("INSERT INTO workspace_members (workspace_id, user_id, joined) VALUES (?,?,?)", (wid, req.user_id, datetime.utcnow().isoformat()))
-    conn.commit(); conn.close()
-    return {"room_id": wid, "room_code": req.room_code.upper(), "created": True}
+async def create_workspace(request: WorkspaceCreateRequest, user: dict = Depends(get_current_user)):
+    """Create workspace with tier-based limits"""
+    tier = user["tier"]
+        # Check tier limits
+    if tier == "free":
+        raise HTTPException(status_code=403, detail="Upgrade to Plus to create workspaces")
+    
+    max_members = 5 if tier == "plus" else (16 if tier == "pro" else 999)
+    
+    code = f"CAP-{''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(4))}-{''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(4))}"
+    
+    workspace = supabase_admin.table("workspaces").insert({
+        "name": request.name,
+        "code": code,
+        "owner_id": user["id"],
+        "tier_required": tier
+    }).execute()
+    
+    # Add owner as member
+    supabase_admin.table("workspace_members").insert({
+        "workspace_id": workspace.data[0]["id"],
+        "user_id": user["id"],
+        "role": "owner"
+    }).execute()
+    
+    return {"created": True, "room_id": workspace.data[0]["id"], "room_code": code}
 
 @app.post("/api/workspace/join")
-def ws_join(req: WorkspaceJoinRequest):
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT id, max_members FROM workspaces WHERE room_code=?", (req.room_code.upper(),))
-    ws = c.fetchone()
-    if not ws: raise HTTPException(404, "Room not found")
-    c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=?", (ws[0],))
-    if c.fetchone()[0] >= ws[1]: raise HTTPException(400, "Room full")
-    c.execute("INSERT OR IGNORE INTO workspace_members (workspace_id, user_id, joined) VALUES (?,?,?)", (ws[0], req.user_id, datetime.utcnow().isoformat()))
-    c.execute("SELECT m.user_id, u.email FROM workspace_members m LEFT JOIN users u ON m.user_id=u.id WHERE m.workspace_id=?", (ws[0],))
-    members = [{"user_id": r[0], "name": r[1] or r[0]} for r in c.fetchall()]
-    c.execute("SELECT id, user_id, author, message, created FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 50", (ws[0],))
-    messages = [{"id": r[0], "user_id": r[1], "author": r[2], "message": r[3], "created": r[4]} for r in c.fetchall()]
-    conn.commit(); conn.close()
-    return {"joined": True, "room_id": ws[0], "members": members, "messages": messages}
+async def join_workspace(request: WorkspaceJoinRequest, user: dict = Depends(get_current_user)):
+    """Join workspace with code"""
+    workspace = supabase_admin.table("workspaces").select("*").eq("code", request.room_code).single().execute()
+    if not workspace.data:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    
+    # Check member limit
+    members = supabase_admin.table("workspace_members").select("*").eq("workspace_id", workspace.data["id"]).execute()
+    max_members = 5 if workspace.data["tier_required"] == "plus" else (16 if workspace.data["tier_required"] == "pro" else 999)
+    
+    if len(members.data) >= max_members:
+        raise HTTPException(status_code=403, detail=f"Workspace is full (max {max_members} members)")
+    
+    # Add member
+    supabase_admin.table("workspace_members").insert({
+        "workspace_id": workspace.data["id"],
+        "user_id": user["id"],
+        "role": "member"
+    }).execute()
+    
+    return {"joined": True, "room_id": workspace.data["id"], "members": members.data}
 
 @app.post("/api/workspace/message")
-def ws_message(req: WorkspaceMessageRequest):
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT id FROM workspaces WHERE room_code=?", (req.room_code.upper(),))
-    ws = c.fetchone()
-    if not ws: raise HTTPException(404, "Room not found")
-    c.execute("SELECT email FROM users WHERE id=?", (req.user_id,))
-    user_row = c.fetchone()
-    author = user_row[0] if user_row else req.user_id
-    c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author, message, created) VALUES (?,?,?,?,?,?)", (sid(), ws[0], req.user_id, author, req.message, datetime.utcnow().isoformat()))
-    conn.commit()
-    c.execute("SELECT id, user_id, author, message, created FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 50", (ws[0],))
-    messages = [{"id": r[0], "user_id": r[1], "author": r[2], "message": r[3], "created": r[4]} for r in c.fetchall()]
-    conn.close()
-    return {"sent": True, "messages": messages}
+async def workspace_message(request: WorkspaceMessageRequest, user: dict = Depends(get_current_user)):
+    """Post message to workspace"""    workspace = supabase_admin.table("workspaces").select("*").eq("code", request.room_code).single().execute()
+    if not workspace.data:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    
+    # For now, just return success (real implementation would use WebSockets)
+    return {"sent": True, "messages": []}
 
 @app.get("/api/workspace/messages")
-def ws_get_messages(room_code: str):
-    conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT id FROM workspaces WHERE room_code=?", (room_code.upper(),))
-    ws = c.fetchone()
-    if not ws: raise HTTPException(404, "Room not found")
-    c.execute("SELECT m.user_id, u.email FROM workspace_members m LEFT JOIN users u ON m.user_id=u.id WHERE m.workspace_id=?", (ws[0],))
-    members = [{"user_id": r[0], "name": r[1] or r[0]} for r in c.fetchall()]
-    c.execute("SELECT id, user_id, author, message, created FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 50", (ws[0],))
-    messages = [{"id": r[0], "user_id": r[1], "author": r[2], "message": r[3], "created": r[4]} for r in c.fetchall()]
-    conn.close()
-    return {"messages": messages, "members": members}
+async def get_workspace_messages(room_code: str, user: dict = Depends(get_current_user)):
+    """Get workspace messages"""
+    return {"messages": [], "members": []}
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+# UPGRADE ROUTES
+@app.post("/api/upgrade")
+async def upgrade_tier(request: UpgradeRequest, user: dict = Depends(get_current_user)):
+    """Upgrade user tier with crypto payment"""
+    # Verify payment (simplified - in production, verify TXID on blockchain)
+    if not request.txid:
+        raise HTTPException(status_code=400, detail="Invalid TXID")
+    
+    # Update user tier
+    supabase_admin.table("users").update({"tier": request.tier}).eq("id", user["id"]).execute()
+    
+    # Record payment
+    supabase_admin.table("payments").insert({
+        "user_id": user["id"],
+        "amount": 8 if request.tier == "plus" else 15,
+        "currency": request.currency,
+        "txid": request.txid,
+        "status": "verified"
+    }).execute()
+    
+    # Update subscription
+    supabase_admin.table("subscriptions").upsert({
+        "user_id": user["id"],
+        "tier": request.tier,
+        "status": "active",
+        "current_period_end": (datetime.now() + timedelta(days=30)).isoformat()
+    }).execute()
+    
+    return {"verified": True, "tier": request.tier}
+
+@app.post("/api/founder")
+async def activate_founder(request: FounderRequest, user: dict = Depends(get_current_user)):
+    """Activate founder tier with secret code"""
+    if request.code != settings.FOUNDER_CODE:
+        raise HTTPException(status_code=403, detail="Invalid founder code")
+    
+    supabase_admin.table("users").update({"tier": "absolute"}).eq("id", user["id"]).execute()
+        return {"verified": True, "tier": "absolute"}
+
+# ADMIN ROUTES (Founder Only)
+@app.post("/api/admin")
+async def admin_dashboard(user: dict = Depends(get_current_user)):
+    """Admin dashboard - founder only"""
+    if user["tier"] != "absolute":
+        raise HTTPException(status_code=403, detail="Founder access required")
+    
+    # Get all users
+    users = supabase_admin.table("users").select("id, email, tier, created_at").order("created_at", desc=True).execute()
+    
+    # Get stats
+    total_users = len(users.data)
+    tier_counts = {"free": 0, "plus": 0, "pro": 0, "absolute": 0}
+    for u in users.data:
+        tier_counts[u["tier"]] = tier_counts.get(u["tier"], 0) + 1
+    
+    # Get usage stats
+    usage = supabase_admin.table("usage_logs").select("tokens_in, tokens_out").execute()
+    total_tokens = sum(u["tokens_in"] + u["tokens_out"] for u in usage.data)
+    
+    return {
+        "total_users": total_users,
+        "tier_counts": tier_counts,
+        "total_tokens": total_tokens,
+        "users": users.data
+    }
+
+# =============================================================================
+# RUN: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# =============================================================================
