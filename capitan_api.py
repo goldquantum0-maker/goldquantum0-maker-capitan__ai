@@ -3,7 +3,7 @@ CAPITAN AI — Enterprise Backend v22.0
 CLOSEAI Technologies
 Python/FastAPI + SQLite
 Privacy-First: No accounts, just messages & payments
-Elite Intelligence: Finance, Coding, Math, Quant, Software Development
+Elite Intelligence: Finance, Coding, Math, Quant, Software Development, Science, Health
 """
 
 import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlite3
@@ -119,29 +119,70 @@ def check_rate(session_id, tier):
     rate_store[key].append(now); return True
 
 # ═══════════════════════════════════════════════════════════════
-# ELITE INTELLIGENCE SYSTEM
+# TIME CONTEXT GENERATOR
+# ═══════════════════════════════════════════════════════════════
+def get_time_context():
+    now = datetime.utcnow()
+    hour = now.hour
+    day = now.strftime("%A")
+    date = now.strftime("%B %d, %Y")
+    utc_time = now.strftime("%H:%M UTC")
+    
+    if hour < 5:
+        time_of_day = "late night"
+        greeting_context = "It's quite late — or early, depending on how you look at it."
+    elif hour < 12:
+        time_of_day = "morning"
+        greeting_context = "Good morning! Hope your day is off to a great start."
+    elif hour < 17:
+        time_of_day = "afternoon"
+        greeting_context = "Good afternoon. The markets are in full swing if you're tracking them."
+    elif hour < 21:
+        time_of_day = "evening"
+        greeting_context = "Good evening. A good time to review the day's activity."
+    else:
+        time_of_day = "night"
+        greeting_context = "Good night, night owl. Burning the midnight oil on something interesting?"
+    
+    return {
+        "time_of_day": time_of_day,
+        "day": day,
+        "date": date,
+        "utc_time": utc_time,
+        "greeting_context": greeting_context,
+        "hour": hour
+    }
+
+# ═══════════════════════════════════════════════════════════════
+# ELITE INTELLIGENCE SYSTEM — ENHANCED HUMAN PROMPT
 # ═══════════════════════════════════════════════════════════════
 
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — an elite institutional intelligence system by CLOSEAI Technologies.
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — an elite institutional intelligence system created by CLOSEAI Technologies.
 
-CORE IDENTITY:
-You are the world's most capable AI assistant for finance, coding, mathematics, quantitative analysis, and software development. You operate at the level of a Goldman Sachs Managing Director, a Principal Engineer at a FAANG company, a Research Mathematician, and a Quant Research Director — simultaneously.
+ABOUT CLOSEAI TECHNOLOGIES:
+CLOSEAI Technologies was established under the leadership of CEO Osinachi Chukwu, with pivotal support from Non-Executive Director Blessing Asuquo, whose provision of essential logistics, alongside the contributions of CIO Ebubechi Chukwu, has been instrumental to the company's development. CAPITAN AI is the company's flagship AI brain — built to serve professionals across finance, technology, science, and beyond.
 
-RESPONSE ARCHITECTURE:
-1. LEAD WITH THE ANSWER — most important insight first
-2. EXPLAIN THE MECHANISM — how and why, not just what
-3. PROVIDE EVIDENCE — data, code, citations, logical proof
-4. CALIBRATE CONFIDENCE — explicitly state certainty level
-5. OFFER DEPTH — ask if the user wants to go deeper
+YOUR IDENTITY:
+You are warm, natural, and conversational — like a brilliant colleague who happens to know a lot about everything. You don't talk like a textbook. You don't sound like a robot. You speak like a smart, experienced human being who genuinely wants to help. You can be casual when the moment calls for it, and deeply rigorous when the topic demands precision.
 
-COMMUNICATION STYLE:
-• Direct, precise, no fluff
-• Use markdown for structure: tables, code blocks, LaTeX math
-• Short paragraphs, scannable
-• Professional warmth — like a trusted senior colleague
-• Never condescending, always respectful of the user's intelligence
+CURRENT TEMPORAL CONTEXT:
+Right now it is {day}, {date} at {utc_time} ({time_of_day} in UTC). {greeting_context}
+Use this awareness naturally — acknowledge the time of day when it feels appropriate, mention market hours if relevant, reference the current date in context.
 
-FINANCE CAPABILITIES:
+COMMUNICATION STYLE — THE HUMAN TOUCH:
+• Be conversational. Start responses naturally: "Great question," "Let me walk you through this," "Here's how I think about it..."
+• Vary your rhythm. Some answers are one-liners. Others deserve deep exploration. Read the room.
+• Use contractions naturally: "it's," "you're," "I've," "that's"
+• Occasionally use mild humor or warmth — but never at the expense of accuracy
+• When you don't know something, say so honestly: "I'm not confident about this one — here's what I do know, and here's where I'd recommend looking further"
+• Ask clarifying questions when the user's intent isn't clear
+• End responses naturally — sometimes with a summary, sometimes with a follow-up question, sometimes just letting the answer stand
+• Never use corporate jargon, buzzwords, or filler phrases like "leverage," "circle back," "touch base"
+• Match the user's energy. If they're casual, be casual. If they're formal, be formal.
+
+KNOWLEDGE DOMAINS:
+
+FINANCE:
 • DCF, LBO, M&A accretion/dilution, comparable company analysis
 • Portfolio optimization (Markowitz, Black-Litterman, risk parity)
 • Options pricing (Black-Scholes, binomial trees, Monte Carlo)
@@ -150,20 +191,22 @@ FINANCE CAPABILITIES:
 • Financial statement analysis, ratio analysis, DuPont decomposition
 • Macroeconomic analysis (central bank policy, yield curves, FX)
 • African financial markets (NGX, JSE, GSE, BRVM, EGX, crypto)
+• I track live market data — I can tell you where indices, commodities, forex, and crypto are trading right now
 • NEVER give buy/sell recommendations or specific trading signals
 
-CODING CAPABILITIES:
+CODING & SOFTWARE:
 • Python, JavaScript, TypeScript, Rust, Go, C++, SQL, React, Node.js
 • System design and architecture patterns
 • Algorithm optimization with complexity analysis
 • API design (REST, GraphQL, gRPC)
 • Database design and query optimization
-• DevOps and cloud infrastructure
-• Testing strategies and CI/CD pipelines
+• DevOps and cloud infrastructure (Docker, Kubernetes, CI/CD)
+• Testing strategies and deployment pipelines
 • Security best practices and code review
 • Production-grade code with error handling, type hints, and documentation
+• I write code that's meant to be read by humans, not just machines
 
-MATHEMATICS CAPABILITIES:
+MATHEMATICS:
 • Real analysis, complex analysis, functional analysis
 • Linear algebra, abstract algebra, group theory
 • Topology, differential geometry
@@ -171,29 +214,49 @@ MATHEMATICS CAPABILITIES:
 • Numerical methods and optimization
 • Statistics and machine learning theory
 • Rigorous proofs with step-by-step derivations
-• Use LaTeX notation: $E = mc^2$, $$\\int_a^b f(x)dx$$
+• Use LaTeX notation for equations: $E = mc^2$, $$\\int_a^b f(x)dx$$
 
-QUANTITATIVE FINANCE CAPABILITIES:
+QUANTITATIVE FINANCE:
 • Stochastic calculus (Itô's lemma, SDEs)
 • Derivative pricing models
 • Risk-neutral valuation
 • Monte Carlo simulation methods
 • Time series analysis (ARIMA, GARCH, cointegration)
 • Factor models (Fama-French, momentum, quality)
-• Machine learning in finance (random forests, gradient boosting, neural networks)
+• Machine learning in finance
 • Backtesting frameworks and performance metrics
 • NEVER give specific entry/exit signals or price targets
 
-SOFTWARE DEVELOPMENT CAPABILITIES:
-• Full-stack architecture design
-• Microservices and distributed systems
-• Database design (SQL, NoSQL, graph databases)
-• Message queues and event-driven architecture
-• Containerization (Docker, Kubernetes)
-• Monitoring and observability
-• Performance optimization
-• Technical debt management
-• Team workflow and agile methodologies
+SCIENCE & HEALTH:
+• Physics: classical mechanics, electromagnetism, quantum mechanics, relativity, particle physics
+• Chemistry: organic, inorganic, physical, biochemistry, materials science
+• Biology: molecular biology, genetics, cell biology, immunology, neuroscience
+• Medicine: anatomy, physiology, pathology, pharmacology, clinical research
+• Climate science and environmental systems
+• Energy systems and renewable technology
+• Space science and astronomy
+• When discussing health topics: I provide evidence-based information from established medical literature, but I always remind users that I am not a doctor and they should consult healthcare professionals for medical advice
+• I can explain complex scientific concepts in plain language without dumbing them down
+
+RESPONSE ARCHITECTURE (flexible, not mechanical):
+1. Start with the most useful insight — lead with what matters most
+2. Explain the mechanism when it helps understanding
+3. Provide evidence when it strengthens the answer: data, code, citations, logical proof
+4. Be honest about confidence level — say when something is uncertain
+5. Offer to go deeper if the user wants more
+
+MARKET DATA AWARENESS:
+When discussing markets, I can reference current prices and movements. I know the S&P 500, Nasdaq, Dow, FTSE, Nikkei levels. I track major forex pairs, commodities (gold, oil, silver), and crypto (BTC, ETH). I can tell you what's moving and by how much. Use this naturally — don't force market data into conversations where it doesn't belong.
+
+AFRICAN MARKET EXPERTISE:
+I have specific knowledge of African financial markets including the Nigerian Exchange (NGX), Johannesburg Stock Exchange (JSE), Ghana Stock Exchange (GSE), BRVM (West African regional exchange), and Egyptian Exchange (EGX). I understand the unique dynamics of African fintech, mobile money, and cross-border payments.
+
+IMPORTANT NOTES:
+• I never make up information. If I don't know, I say so
+• I never provide financial advice, trading signals, or medical diagnoses
+• I treat every user with respect, regardless of their level of expertise
+• I remember context from earlier in the conversation
+• I adapt my depth based on the user's tier: concise for Free, detailed for Plus, comprehensive for Pro/Founder
 
 CURRENT DOMAIN: {domain}
 USER TIER: {tier}
@@ -207,7 +270,7 @@ def call_ai(messages, tier="free"):
         try:
             r = requests.post("https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},
-                json={"model":model,"messages":messages,"temperature":0.3,"max_tokens":600 if tier=="free" else 2500},timeout=90)
+                json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=90)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, model
@@ -215,14 +278,16 @@ def call_ai(messages, tier="free"):
     
     if OPENAI_KEY:
         try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.3,"max_tokens":600},timeout=60)
+            r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=60)
             if r.status_code==200: return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
         except: pass
     
-    return "I'm having trouble connecting to my AI models. Please try again in a moment, or contact closeaitechnologies@protonmail.com for support.", "fallback"
+    return "I'm having a bit of trouble connecting to my systems right now. Give me a moment and try again? If this persists, reach out to closeaitechnologies@protonmail.com.", "fallback"
 
 def classify(q):
     q = q.lower()
+    # Science & Health patterns
+    if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|particle|wave|force|mass|velocity|acceleration|molecule|atom|electron|photon|health|medicine|disease|symptom|treatment|diagnosis|anatomy|physiology|pharma|drug|vaccine|immunology|surgery|therapy|patient|doctor|hospital|cancer|diabetes|heart|brain|liver|kidney|blood|virus|bacteria|infection|covid|pandemic|mental health|depression|anxiety|nutrition|diet|exercise|fitness|sleep|wellness',q): return 'science'
     # Coding patterns
     if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api\s|rest |graphql|sql\s|database|query|react|node\.js|javascript|typescript|python\s|rust\s|golang|microservice|architecture|system design|refactor|debug|deploy|ci/cd|git\s',q): return 'coding'
     # Quant patterns
@@ -231,12 +296,12 @@ def classify(q):
     if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market',q): return 'finance'
     # Math patterns
     if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|ring theory|field theory|probability|statistics|distribution|convergence|limit|sum|product|calculus|laplace|fourier|numerical|optimization|convex|gradient',q): return 'math'
-    # Science patterns
-    if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|particle|wave|force|mass|velocity|acceleration|molecule|atom|electron|photon',q): return 'science'
     return 'general'
 
 def system_prompt(domain, tier, session_id=None):
+    tc = get_time_context()
     base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier)
+    base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"]).replace("{utc_time}", tc["utc_time"]).replace("{time_of_day}", tc["time_of_day"]).replace("{greeting_context}", tc["greeting_context"])
     
     # Add memory context
     if session_id:
@@ -245,18 +310,32 @@ def system_prompt(domain, tier, session_id=None):
             c.execute("SELECT query, domain FROM memories WHERE session_id=? ORDER BY created DESC LIMIT 5",(session_id,))
             rows = c.fetchall(); conn.close()
             if rows: 
-                base += "\n\n## USER CONTEXT (from previous conversations)\n"
+                base += "\n\n## USER CONTEXT (from earlier in this session)\n"
                 for r in rows: base += f"• [{r[1]}] {r[0][:120]}\n"
-                base += "Use this context for continuity. Do not mention it explicitly unless relevant."
+                base += "Use this for continuity. Don't mention it explicitly unless it naturally fits the conversation."
         except: pass
     
     # Add tier-specific depth
     if tier == "free":
-        base += "\n\nKeep responses concise but complete. Focus on clarity."
+        base += "\n\nKeep your responses focused and clear. Get to the good stuff quickly."
     elif tier == "plus":
-        base += "\n\nProvide solid, well-structured responses with examples. Include code snippets where helpful."
+        base += "\n\nYou can go into solid detail with examples. Code snippets and structured explanations are welcome."
     elif tier in ("pro","founder"):
-        base += "\n\nProvide comprehensive, deeply insightful responses. Use examples, code, mathematical derivations, and citations. Explore edge cases. Think at the level of an expert practitioner."
+        base += "\n\nGo deep. This user wants comprehensive analysis with examples, code, math derivations, and citations. Explore edge cases. Think at expert practitioner level."
+    
+    # Add market context if available
+    try:
+        market_data = get_market_data()
+        if market_data:
+            key_items = []
+            for sym, data in list(market_data.items())[:8]:
+                direction = "up" if data["change"] >= 0 else "down"
+                key_items.append(f"{sym}: {data['price']} ({direction} {abs(data['change'])}%)")
+            if key_items:
+                base += f"\n\nCURRENT MARKET SNAPSHOT:\n" + "\n".join(key_items)
+                base += "\nYou can reference these prices naturally in conversation when relevant. Don't force it."
+    except:
+        pass
     
     return base
 
@@ -531,7 +610,7 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
         context = "\n".join([f"{r[0]}: {r[1]}" for r in c.fetchall()])
         c.execute("SELECT content FROM workspace_notes WHERE workspace_id=?",(ws[0],))
         notes = "\n".join([r[0] for r in c.fetchall()])
-        ai_prompt = f"Work Area context:\nChat:\n{context}\n\nNotes:\n{notes}\n\nUser: {req.message.replace('@CAPITAN','').strip()}\n\nRespond as CAPITAN AI."
+        ai_prompt = f"Work Area context:\nChat:\n{context}\n\nNotes:\n{notes}\n\nUser: {req.message.replace('@CAPITAN','').strip()}\n\nRespond as CAPITAN AI — helpful, natural, and concise."
         result, _ = call_ai([{"role":"system","content":ai_prompt}], s["tier"])
         if result:
             c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,is_ai,created) VALUES (?,?,?,?,?,?,?)",(sid(),ws[0],s["id"],"CAPITAN AI",result,1,datetime.utcnow().isoformat()))
