@@ -262,26 +262,113 @@ CURRENT DOMAIN: {domain}
 USER TIER: {tier}
 """
 
+# ═══════════════════════════════════════════════════════════════
+# AI CALL FUNCTION — MULTI-PROVIDER WITH GROQ FALLBACK
+# ═══════════════════════════════════════════════════════════════
+
 def call_ai(messages, tier="free"):
-    models_to_try = ["google/gemini-flash-1.5","mistral/mistral-7b-instruct","deepseek/deepseek-chat","meta-llama/llama-3.1-8b-instruct","openai/gpt-3.5-turbo"]
-    if tier in ("pro","founder"): models_to_try = ["anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models_to_try
+    """
+    Try AI providers in order:
+    1. OpenRouter (Claude, GPT-4o, Gemini, Mistral, DeepSeek, Llama, GPT-3.5)
+    2. Groq (Llama 3.1 8B Instant — free, fast, reliable)
+    3. Direct OpenAI (GPT-3.5 Turbo)
+    4. Fallback message
+    """
     
-    for model in models_to_try:
+    # ─── PROVIDER 1: OpenRouter ───────────────────────────
+    if OPENROUTER_KEY:
+        if tier in ("pro", "founder"):
+            models_to_try = [
+                "anthropic/claude-3.5-sonnet",
+                "openai/gpt-4o",
+                "google/gemini-flash-1.5",
+                "mistral/mistral-7b-instruct",
+                "deepseek/deepseek-chat",
+                "meta-llama/llama-3.1-8b-instruct",
+                "openai/gpt-3.5-turbo"
+            ]
+        else:
+            models_to_try = [
+                "google/gemini-flash-1.5",
+                "mistral/mistral-7b-instruct",
+                "deepseek/deepseek-chat",
+                "meta-llama/llama-3.1-8b-instruct",
+                "openai/gpt-3.5-turbo"
+            ]
+        
+        for model in models_to_try:
+            try:
+                r = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {OPENROUTER_KEY}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://capitan.pages.dev",
+                        "X-Title": "CAPITAN AI"
+                    },
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "temperature": 0.4,
+                        "max_tokens": 600 if tier == "free" else 2500
+                    },
+                    timeout=90
+                )
+                if r.status_code == 200:
+                    content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if content:
+                        return content, model
+            except:
+                continue
+    
+    # ─── PROVIDER 2: Groq (Free, Fast, Reliable) ──────────
+    if GROQ_KEY:
         try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},
-                json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=90)
-            if r.status_code==200:
-                content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
-                if content: return content, model
-        except: continue
+            groq_model = "llama-3.1-8b-instant"
+            r = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {GROQ_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": groq_model,
+                    "messages": messages,
+                    "temperature": 0.4,
+                    "max_tokens": 600 if tier == "free" else 2500
+                },
+                timeout=60
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, f"groq/{groq_model}"
+        except:
+            pass
     
+    # ─── PROVIDER 3: Direct OpenAI ────────────────────────
     if OPENAI_KEY:
         try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=60)
-            if r.status_code==200: return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
-        except: pass
+            r = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "gpt-3.5-turbo",
+                    "messages": messages,
+                    "temperature": 0.4,
+                    "max_tokens": 600
+                },
+                timeout=60
+            )
+            if r.status_code == 200:
+                return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
+        except:
+            pass
     
+    # ─── ULTIMATE FALLBACK ────────────────────────────────
     return "I'm having a bit of trouble connecting to my systems right now. Give me a moment and try again? If this persists, reach out to closeaitechnologies@protonmail.com.", "fallback"
 
 def classify(q):
@@ -293,7 +380,7 @@ def classify(q):
     # Quant patterns
     if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim',q): return 'quant'
     # Finance patterns
-    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market',q): return 'finance'
+    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|xauusd|silver|oil|commodity',q): return 'finance'
     # Math patterns
     if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|ring theory|field theory|probability|statistics|distribution|convergence|limit|sum|product|calculus|laplace|fourier|numerical|optimization|convex|gradient',q): return 'math'
     return 'general'
@@ -372,11 +459,37 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 @app.get("/health")
 def health():
     ai = "disconnected"
+    
+    # Check OpenRouter
     if OPENROUTER_KEY:
         try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json"},json={"model":"google/gemini-flash-1.5","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=15)
+            r = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json"},
+                json={"model":"google/gemini-flash-1.5","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},
+                timeout=15)
             if r.status_code==200: ai="connected"
         except: pass
+    
+    # Check Groq if OpenRouter failed
+    if ai != "connected" and GROQ_KEY:
+        try:
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},
+                json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},
+                timeout=15)
+            if r.status_code==200: ai="connected"
+        except: pass
+    
+    # Check OpenAI if others failed
+    if ai != "connected" and OPENAI_KEY:
+        try:
+            r = requests.post("https://api.openai.com/v1/chat/completions",
+                headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},
+                json={"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},
+                timeout=15)
+            if r.status_code==200: ai="connected"
+        except: pass
+    
     return {"status":"ok","version":"22.0","ai":ai}
 
 @app.get("/api/session")
