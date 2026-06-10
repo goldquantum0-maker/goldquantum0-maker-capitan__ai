@@ -7,262 +7,935 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000">
 <title>CAPITAN AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>(function(){var t=localStorage.getItem('cap_theme');if(t==='light')document.documentElement.classList.add('light')})()</script>
 <style>
-:root{--bg:#000;--bg2:#080808;--bg3:#111;--bdr:#1a1a1a;--bdr2:#252525;--txt:#fff;--txt2:#aaa;--txt3:#555;--accent:#5b6af5;--radius:12px;--r-sm:8px;--fs-xs:11px;--fs-sm:13px;--fs-md:15px;--fs-lg:18px;--safe:env(safe-area-inset-bottom,0px)}
-:root.light{--bg:#fff;--bg2:#f5f5f5;--bg3:#eee;--bdr:#ddd;--bdr2:#ccc;--txt:#111;--txt2:#555;--txt3:#999}
+:root{
+  --bg:#000000;--bg2:#0a0a0a;--bg3:#141414;--bg4:#1a1a1a;
+  --bdr:#1e1e1e;--bdr2:#2a2a2a;--bdr3:#333333;
+  --txt:#ECECEC;--txt2:#B4B4B4;--txt3:#8E8E8E;--txt4:#6B7280;
+  --accent:#5b6af5;--accent-hover:#7b8bf7;
+  --red:#F87171;--green:#4ade80;
+  --icon:#9CA3AF;--icon-hover:#ECECEC;
+  --radius:12px;--r-sm:8px;--r-xs:6px;
+  --fs-xs:12px;--fs-sm:14px;--fs-md:16px;--fs-lg:20px;--fs-xl:26px;
+  --lh:1.55;
+  --safe:env(safe-area-inset-bottom,0px);
+  --shadow:0 16px 48px rgba(0,0,0,.6);
+  --transition:0.2s cubic-bezier(0.4,0,0.2,1);
+}
+:root.light{
+  --bg:#ffffff;--bg2:#f8f8f8;--bg3:#f0f0f0;--bg4:#e8e8e8;
+  --bdr:#e5e5e5;--bdr2:#d4d4d4;--bdr3:#c0c0c0;
+  --txt:#171717;--txt2:#4B5563;--txt3:#6B7280;--txt4:#9CA3AF;
+  --accent:#4f46e5;--accent-hover:#6366f1;
+  --red:#DC2626;--green:#16a34a;
+  --icon:#6B7280;--icon-hover:#171717;
+  --shadow:0 8px 30px rgba(0,0,0,.08);
+}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{font-size:15px;height:100%}
-body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:var(--fs-sm);height:100vh;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;line-height:1.5}
+html{font-size:16px;height:100%}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  font-size:var(--fs-md);font-weight:400;line-height:var(--lh);
+  height:100vh;height:100dvh;overflow:hidden;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
 #app{display:flex;height:100vh;height:100dvh}
-::-webkit-scrollbar{width:2px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
-.sidebar{width:240px;min-width:240px;background:var(--bg);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;overflow-y:auto;overflow-x:hidden;transition:width .28s,min-width .28s,opacity .28s;height:100%}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr3);border-radius:3px}
+
+/* ─── SIDEBAR ──────────────────────────────── */
+.sidebar{
+  width:252px;min-width:252px;background:var(--bg);
+  border-right:1px solid var(--bdr);display:flex;flex-direction:column;
+  z-index:100;overflow-y:auto;overflow-x:hidden;
+  transition:width .28s var(--transition),min-width .28s var(--transition),opacity .28s var(--transition);
+  height:100%;
+}
 .sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none;opacity:0}
-.sb-sec{padding:14px 10px;border-bottom:1px solid var(--bdr)}
-.sb-logo{font-size:26px;cursor:pointer;display:inline-block;transition:transform .2s}.sb-logo:hover{transform:scale(1.1)}
-.sb-logo-text{font-size:8px;color:var(--txt3);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
-.btn-new{width:100%;background:var(--bg3);color:var(--txt);border:1px solid var(--bdr2);padding:10px;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-xs);font-weight:600;margin-top:8px;font-family:inherit;transition:all .15s}.btn-new:hover{background:var(--bdr);border-color:var(--txt3)}
-.sb-label{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.14em;font-weight:700;padding:6px 0 3px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}.sb-label:hover{color:var(--txt2)}
-.sb-label .arrow{font-size:7px;transition:transform .25s}.sb-label.open .arrow{transform:rotate(90deg)}
-.sb-body{overflow:hidden;transition:max-height .3s}
-.sb-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--r-sm);cursor:pointer;color:var(--txt2);font-size:var(--fs-xs);transition:all .1s;margin:1px 0;min-height:38px}.sb-item:hover{background:var(--bg3);color:var(--txt)}
-.sb-chat-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:var(--r-sm);cursor:pointer;color:var(--txt2);font-size:11px}.sb-chat-item:hover{background:var(--bg3);color:var(--txt)}
+.sb-sec{padding:16px 12px;border-bottom:1px solid var(--bdr)}
+.sb-logo{
+  font-size:26px;cursor:pointer;display:inline-block;
+  transition:transform .2s;user-select:none;
+}
+.sb-logo:hover{transform:scale(1.1)}
+.sb-logo-text{font-size:9px;color:var(--txt3);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+.btn-new{
+  width:100%;background:var(--bg3);color:var(--txt);
+  border:1px solid var(--bdr2);padding:10px 12px;border-radius:var(--r-sm);
+  cursor:pointer;font-size:var(--fs-xs);font-weight:600;margin-top:8px;
+  font-family:inherit;display:flex;align-items:center;gap:8px;
+  transition:all .15s var(--transition);
+}
+.btn-new:hover{background:var(--bg4);border-color:var(--bdr3)}
+.sb-label{
+  font-size:10px;color:var(--txt4);text-transform:uppercase;
+  letter-spacing:.1em;font-weight:700;padding:8px 4px 4px;
+  cursor:pointer;display:flex;justify-content:space-between;align-items:center;
+  user-select:none;transition:color .15s;
+}
+.sb-label:hover{color:var(--txt3)}
+.sb-label .arrow{font-size:8px;transition:transform .25s var(--transition);opacity:.6}
+.sb-label.open .arrow{transform:rotate(90deg)}
+.sb-body{overflow:hidden;transition:max-height .3s var(--transition)}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;
+  border-radius:var(--r-sm);cursor:pointer;color:var(--txt2);
+  font-size:var(--fs-sm);font-weight:500;transition:all .1s var(--transition);
+  margin:1px 0;min-height:40px;
+}
+.sb-item:hover{background:var(--bg3);color:var(--txt)}
+.sb-chat-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;
+  color:var(--txt2);font-size:var(--fs-xs);font-weight:500;
+  transition:all .1s var(--transition);
+}
+.sb-chat-item:hover{background:var(--bg3);color:var(--txt)}
+.sb-chat-item.active{background:var(--bg3);color:var(--txt);font-weight:600}
 .sb-chat-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sb-chat-del{background:none;border:none;color:transparent;cursor:pointer;font-size:10px;padding:2px 4px}.sb-chat-item:hover .sb-chat-del{color:var(--txt3)}.sb-chat-del:hover{color:var(--txt)!important}
-.sb-badge{font-size:7px;padding:2px 6px;border-radius:3px;background:var(--bg3);color:var(--txt3);font-weight:700;margin-left:auto}
-.sb-user{padding:12px 10px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:var(--fs-xs);margin-top:auto;transition:background .12s}.sb-user:hover{background:var(--bg3)}
-.sb-avatar{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;color:var(--txt2);font-weight:600}
-.sb-footer{text-align:center;padding:8px;font-size:8px;color:var(--txt3);letter-spacing:.1em;border-top:1px solid var(--bdr)}
-.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99;opacity:0;transition:opacity .25s}.sb-overlay.visible{display:block;opacity:1}
+.sb-chat-del{
+  background:none;border:none;color:transparent;cursor:pointer;
+  font-size:12px;padding:2px 6px;border-radius:3px;flex-shrink:0;
+  transition:color .15s;
+}
+.sb-chat-item:hover .sb-chat-del{color:var(--txt4)}
+.sb-chat-del:hover{color:var(--red)!important;background:var(--bg4)}
+.sb-badge{font-size:8px;padding:2px 6px;border-radius:4px;background:var(--bg4);color:var(--txt4);font-weight:700;margin-left:auto}
+.sb-user{
+  padding:14px 12px;border-top:1px solid var(--bdr);
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  font-size:var(--fs-sm);margin-top:auto;transition:background .12s;
+}
+.sb-user:hover{background:var(--bg3)}
+.sb-avatar{
+  width:32px;height:32px;border-radius:50%;background:var(--bg3);
+  border:1px solid var(--bdr2);display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0;
+}
+.sb-footer{text-align:center;padding:10px;font-size:9px;color:var(--txt4);letter-spacing:.1em;border-top:1px solid var(--bdr);font-weight:600}
+
+/* ─── OVERLAY ──────────────────────────────── */
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99;opacity:0;transition:opacity .25s}
+.sb-overlay.visible{display:block;opacity:1}
+
+/* ─── MAIN CHAT ────────────────────────────── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0}
-.chat-wrap{flex:1;display:flex;flex-direction:column;max-width:700px;margin:0 auto;width:100%;min-height:0}
-.chat-msgs{flex:1;overflow-y:auto;padding:24px 16px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.chat-wrap{flex:1;display:flex;flex-direction:column;max-width:720px;margin:0 auto;width:100%;min-height:0}
+.chat-msgs{flex:1;overflow-y:auto;padding:28px 18px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+
+/* ─── WELCOME ──────────────────────────────── */
 .welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;text-align:center;padding:24px}
-.welcome-logo{font-size:52px;margin-bottom:12px;animation:wFloat 4s ease-in-out infinite}@keyframes wFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.welcome h1{font-size:var(--fs-md);font-weight:600;color:var(--txt);margin-bottom:16px}
+.welcome-logo{font-size:52px;margin-bottom:14px;animation:wFloat 4s ease-in-out infinite}
+@keyframes wFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.welcome h1{font-size:var(--fs-lg);font-weight:600;color:var(--txt);margin-bottom:4px}
+.welcome-sub{font-size:var(--fs-xs);color:var(--txt3);margin-bottom:18px;font-weight:500}
 .welcome-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.wp-pill{padding:8px 16px;border:1px solid var(--bdr2);border-radius:20px;font-size:var(--fs-xs);color:var(--txt2);cursor:pointer;transition:all .15s;font-weight:500}.wp-pill:hover{border-color:var(--txt3);color:var(--txt);background:var(--bg3)}
-.msg{margin-bottom:18px;animation:fIn .2s ease}@keyframes fIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.wp-pill{padding:9px 18px;border:1px solid var(--bdr2);border-radius:22px;font-size:var(--fs-sm);color:var(--txt2);cursor:pointer;transition:all .15s var(--transition);font-weight:500}
+.wp-pill:hover{border-color:var(--bdr3);color:var(--txt);background:var(--bg3)}
+
+/* ─── MESSAGES ─────────────────────────────── */
+.msg{margin-bottom:20px;animation:fIn .2s ease}
+@keyframes fIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .msg.user{display:flex;justify-content:flex-end}
-.msg-user{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--radius) var(--radius) 4px var(--radius);padding:10px 14px;max-width:82%;color:var(--txt);line-height:1.6;font-size:var(--fs-sm);word-break:break-word}
-.msg-ai-label{font-size:10px;color:var(--txt3);margin-bottom:4px;font-weight:700}
-.msg-ai-body{color:var(--txt);line-height:1.65;font-size:var(--fs-sm)}
-.msg-ai-body p{margin-bottom:8px}.msg-ai-body strong{font-weight:600}
-.msg-ai-body code{background:var(--bg3);padding:2px 5px;border-radius:3px;font-size:.9em;border:1px solid var(--bdr)}
-.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:10px;overflow-x:auto;margin:8px 0;font-size:11px}
-.msg-acts{display:flex;gap:4px;margin-top:6px;opacity:0;transition:opacity .15s}.msg:hover .msg-acts{opacity:.6}
-.msg-act{background:none;border:none;color:var(--txt3);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:3px;font-family:inherit}.msg-act:hover{color:var(--txt);background:var(--bg3)}
-.think{display:flex;align-items:center;gap:8px;padding:4px 0}.think-dots{display:flex;gap:4px}.think-dot{width:5px;height:5px;border-radius:50%;background:var(--txt3);animation:dotPulse 1.2s infinite}.think-dot:nth-child(2){animation-delay:.2s}.think-dot:nth-child(3){animation-delay:.4s}@keyframes dotPulse{0%,80%,100%{opacity:.3;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
-.input-area{padding:10px 16px calc(10px + var(--safe));flex-shrink:0;background:var(--bg);border-top:1px solid var(--bdr)}
-.email-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-sm);margin-bottom:8px;font-size:var(--fs-xs)}.email-bar.hidden{display:none}
-.email-bar span{color:var(--txt3);white-space:nowrap}.email-bar input{flex:1;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:7px 10px;border-radius:var(--r-sm);font-size:var(--fs-xs);outline:none;min-width:0;font-family:inherit}.email-bar button{background:var(--txt);color:var(--bg);border:none;padding:7px 14px;border-radius:var(--r-sm);cursor:pointer;font-weight:600;font-size:var(--fs-xs);white-space:nowrap;font-family:inherit}
-.input-box{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--radius);padding:7px 7px 7px 14px;align-items:center;transition:border-color .2s}.input-box:focus-within{border-color:var(--txt3)}
-.input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:var(--fs-sm);padding:7px 0;font-family:inherit}.input-field::placeholder{color:var(--txt3)}
-.send-btn{width:36px;height:36px;background:var(--txt);color:var(--bg);border:none;border-radius:var(--r-sm);cursor:pointer;font-size:15px;flex-shrink:0}.send-btn:hover{opacity:.85}.send-btn:disabled{opacity:.12}
-.sb-toggle-desktop{position:fixed;top:14px;left:14px;z-index:101;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt2);width:30px;height:30px;border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:left .28s}.sb-toggle-desktop.shifted{left:252px}.menu-btn{position:fixed;top:14px;left:14px;z-index:101;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);width:38px;height:38px;border-radius:var(--r-sm);cursor:pointer;display:none;align-items:center;justify-content:center;font-size:16px}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(6px)}.modal-overlay.open{display:flex}
-.modal{background:var(--bg);border:1px solid var(--bdr2);border-radius:16px;padding:24px;width:400px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.6)}.modal h2{font-size:var(--fs-sm);font-weight:700;margin-bottom:6px}.modal p{font-size:var(--fs-xs);color:var(--txt2);margin-bottom:12px;line-height:1.5}.modal input,.modal textarea{width:100%;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);padding:10px;border-radius:var(--r-sm);font-size:var(--fs-xs);margin-bottom:8px;outline:none;font-family:inherit}.modal-btn{width:100%;background:var(--txt);color:var(--bg);border:none;padding:10px;border-radius:var(--r-sm);cursor:pointer;font-weight:700;font-size:var(--fs-xs);margin-top:6px;font-family:inherit}.modal-btn:hover{opacity:.85}.modal-btn.sec{background:transparent;border:1px solid var(--bdr);color:var(--txt);margin-top:4px}.pill-tabs{display:flex;gap:4px;margin-bottom:10px}.pill-tab{flex:1;padding:7px;border:1px solid var(--bdr);border-radius:20px;background:none;color:var(--txt3);font-size:10px;cursor:pointer;font-family:inherit;font-weight:600;text-align:center}.pill-tab.active{background:var(--txt);color:var(--bg);border-color:var(--txt)}.pill-tab:hover:not(.active){color:var(--txt)}
-.tier-card{border:1px solid var(--bdr);border-radius:var(--r-sm);padding:14px;cursor:pointer;margin-bottom:8px;transition:border-color .15s}.tier-card:hover{border-color:var(--txt)}.tier-card.selected{border-color:var(--txt)}.tier-card h3{font-size:var(--fs-xs);font-weight:700}.tier-card .price{font-size:20px;font-weight:700;margin:4px 0}.tier-card .price span{font-size:11px;color:var(--txt2);font-weight:400}.tier-card ul{margin-top:6px;list-style:none}.tier-card li{font-size:10px;color:var(--txt2);padding:2px 0}
-.payment-section{padding:12px;border:1px solid var(--bdr);border-radius:var(--r-sm);background:var(--bg2);display:none}.payment-section.open{display:block}.wallet-display{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-sm);padding:10px;font-size:9px;color:var(--txt2);font-family:monospace;word-break:break-all;margin-bottom:8px;cursor:pointer}.wallet-display:hover{border-color:var(--txt)}
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:8px 18px;border-radius:20px;font-size:11px;font-weight:600;z-index:400;animation:tIn .25s ease,tOut .3s ease 2.3s forwards;pointer-events:none;white-space:nowrap}@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}@keyframes tOut{from{opacity:1}to{opacity:0}}
-.ws-note-box{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;max-height:120px;overflow-y:auto;font-size:10px;color:var(--txt2);line-height:1.5}
-@media(min-width:769px){.menu-btn{display:none}.sb-toggle-desktop{display:flex}}@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;min-width:260px;transform:translateX(-110%);box-shadow:10px 0 40px rgba(0,0,0,.8)}.sidebar.mobile-open{transform:translateX(0)}.sb-toggle-desktop{display:none}.menu-btn{display:flex}.msg-user{max-width:92%}.chat-msgs{padding:50px 12px 12px}.input-area{padding:8px 12px calc(8px + var(--safe))}.welcome-logo{font-size:42px}}
+.msg-user{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--radius) var(--radius) 4px var(--radius);padding:12px 16px;max-width:82%;color:var(--txt);line-height:var(--lh);font-size:var(--fs-md);word-break:break-word}
+.msg-ai-label{font-size:11px;color:var(--txt4);margin-bottom:6px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.msg-ai-body{color:var(--txt);line-height:1.65;font-size:var(--fs-md)}
+.msg-ai-body p{margin-bottom:8px}
+.msg-ai-body strong{font-weight:600;color:var(--txt)}
+.msg-ai-body code{background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:.9em;border:1px solid var(--bdr);font-family:'SF Mono','Fira Code',monospace}
+.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:12px;overflow-x:auto;margin:8px 0;font-size:13px}
+.msg-acts{display:flex;gap:6px;margin-top:8px;opacity:0;transition:opacity .15s}
+.msg:hover .msg-acts{opacity:.6}
+.msg-act{background:none;border:none;color:var(--txt4);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:4px;font-family:inherit;font-weight:500;transition:all .1s}
+.msg-act:hover{color:var(--txt);background:var(--bg3)}
+
+/* ─── THINKING INDICATOR ───────────────────── */
+.think{display:flex;align-items:center;gap:10px;padding:6px 0}
+.think-dots{display:flex;gap:5px}
+.think-dot{width:6px;height:6px;border-radius:50%;background:var(--txt4);animation:dotPulse 1.2s infinite}
+.think-dot:nth-child(2){animation-delay:.2s}.think-dot:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,80%,100%{opacity:.3;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
+
+/* ─── INPUT AREA ───────────────────────────── */
+.input-area{padding:12px 18px calc(12px + var(--safe));flex-shrink:0;background:var(--bg);border-top:1px solid var(--bdr)}
+.input-box{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--radius);padding:8px 8px 8px 16px;align-items:center;transition:border-color .2s}
+.input-box:focus-within{border-color:var(--bdr3)}
+.input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:var(--fs-md);padding:8px 0;font-family:inherit;font-weight:400}
+.input-field::placeholder{color:var(--txt4)}.input-field:disabled{opacity:.4}
+.send-btn{width:38px;height:38px;background:var(--txt);color:var(--bg);border:none;border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s,transform .1s}
+.send-btn:hover:not(:disabled){opacity:.85;transform:scale(1.05)}.send-btn:disabled{opacity:.12;transform:scale(1)}
+.send-btn:active:not(:disabled){transform:scale(.95)}
+
+/* ─── STATUS BAR ───────────────────────────── */
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:9px;color:var(--txt4);min-height:16px}
+
+/* ─── CONNECTION DOT ───────────────────────── */
+.conn-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+.conn-dot.online{background:var(--green)}.conn-dot.degraded{background:#f59e0b}.conn-dot.offline{background:var(--red)}
+
+/* ─── TOGGLE BUTTONS ───────────────────────── */
+.sb-toggle-desktop{
+  position:fixed;top:16px;left:16px;z-index:101;
+  background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);
+  width:32px;height:32px;border-radius:var(--r-sm);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:left .28s var(--transition),color .15s;
+}
+.sb-toggle-desktop.shifted{left:268px}
+.sb-toggle-desktop:hover{color:var(--icon-hover)}
+.menu-btn{
+  position:fixed;top:16px;left:16px;z-index:101;
+  background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);
+  width:40px;height:40px;border-radius:var(--r-sm);
+  cursor:pointer;display:none;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.menu-btn:hover{background:var(--bg3)}
+
+/* ─── MODALS ───────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--bdr2);border-radius:16px;padding:28px;width:420px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal h2{font-size:var(--fs-lg);font-weight:700;margin-bottom:8px}
+.modal p{font-size:var(--fs-sm);color:var(--txt2);margin-bottom:14px;line-height:var(--lh)}
+.modal input,.modal textarea,.modal select{width:100%;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);padding:10px 12px;border-radius:var(--r-sm);font-size:var(--fs-sm);margin-bottom:8px;outline:none;font-family:inherit;transition:border-color .15s}
+.modal input:focus,.modal textarea:focus{border-color:var(--bdr3)}
+.modal-btn{width:100%;background:var(--txt);color:var(--bg);border:none;padding:11px;border-radius:var(--r-sm);cursor:pointer;font-weight:600;font-size:var(--fs-sm);margin-top:6px;font-family:inherit;transition:opacity .15s,transform .1s}
+.modal-btn:hover{opacity:.85}.modal-btn:active{transform:scale(.98)}
+.modal-btn.sec{background:transparent;border:1px solid var(--bdr);color:var(--txt2);margin-top:4px}
+.modal-btn.sec:hover{color:var(--txt);border-color:var(--bdr3)}
+
+/* ─── PILL TABS ────────────────────────────── */
+.pill-tabs{display:flex;gap:4px;margin-bottom:12px}
+.pill-tab{flex:1;padding:8px;border:1px solid var(--bdr);border-radius:22px;background:none;color:var(--txt4);font-size:var(--fs-xs);cursor:pointer;font-family:inherit;font-weight:600;text-align:center;transition:all .15s var(--transition)}
+.pill-tab.active{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+.pill-tab:hover:not(.active){border-color:var(--bdr3);color:var(--txt2)}
+
+/* ─── TIER CARDS ───────────────────────────── */
+.tier-card{border:1px solid var(--bdr);border-radius:var(--r-sm);padding:16px;cursor:pointer;margin-bottom:8px;transition:border-color .15s var(--transition)}
+.tier-card:hover{border-color:var(--bdr3)}
+.tier-card.selected{border-color:var(--txt);background:var(--bg2)}
+.tier-card h3{font-size:var(--fs-sm);font-weight:700;margin-bottom:4px}
+.tier-card .price{font-size:22px;font-weight:700;margin:4px 0}
+.tier-card .price span{font-size:12px;color:var(--txt2);font-weight:400}
+.tier-card ul{margin-top:6px;list-style:none;padding:0}
+.tier-card li{font-size:var(--fs-xs);color:var(--txt2);padding:2px 0;display:flex;align-items:center;gap:6px}
+.tier-card li::before{content:'•';color:var(--txt4)}
+
+/* ─── PAYMENT SECTION ──────────────────────── */
+.payment-section{padding:12px;border:1px solid var(--bdr);border-radius:var(--r-sm);background:var(--bg2);display:none}
+.payment-section.open{display:block}
+.wallet-display{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-sm);padding:10px;font-size:9px;color:var(--txt2);font-family:'SF Mono','Fira Code',monospace;word-break:break-all;margin-bottom:8px;cursor:pointer;transition:background .15s}
+.wallet-display:hover{background:var(--bg4)}
+
+/* ─── TOAST ────────────────────────────────── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:10px 20px;border-radius:22px;font-size:var(--fs-sm);font-weight:600;z-index:400;animation:tIn .25s ease,tOut .3s ease 2.3s forwards;pointer-events:none;white-space:nowrap;box-shadow:var(--shadow)}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes tOut{from{opacity:1}to{opacity:0}}
+
+/* ─── ADMIN STATS ──────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-card{padding:14px;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-sm);text-align:center}
+.stat-card .stat-val{font-size:24px;font-weight:700;color:var(--txt)}
+.stat-card .stat-lbl{font-size:10px;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+
+/* ─── RESPONSIVE ───────────────────────────── */
+@media(min-width:769px){.menu-btn{display:none}.sb-toggle-desktop{display:flex}}
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:270px;min-width:270px;transform:translateX(-110%);box-shadow:10px 0 40px rgba(0,0,0,.8);transition:transform .28s var(--transition)}
+  .sidebar.mobile-open{transform:translateX(0)}
+  .sb-toggle-desktop{display:none}.menu-btn{display:flex}
+  .msg-user{max-width:92%}
+  .chat-msgs{padding:54px 14px 14px}
+  .input-area{padding:10px 14px calc(10px + var(--safe))}
+  .welcome-logo{font-size:44px}
+  .stat-grid{grid-template-columns:1fr}
+}
+
+/* ─── SVG ICONS ────────────────────────────── */
+.icon-sm{width:16px;height:16px}.icon-md{width:20px;height:20px}.icon-lg{width:24px;height:24px}
+.icon-stroke{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon-filled{fill:currentColor;stroke:none}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div class="sb-overlay" id="sbOverlay"></div>
-<button class="menu-btn" id="menuBtn">☰</button>
-<button class="sb-toggle-desktop" id="sbToggleDesktop">◀</button>
 
-<div id="authModal" class="modal-overlay"><div class="modal"><h2>👌 CAPITAN AI</h2><p>Sign in or create an account.</p><div class="pill-tabs"><button class="pill-tab active" data-tab="login">Login</button><button class="pill-tab" data-tab="register">Sign Up</button></div><div id="loginForm"><input type="email" id="loginEmail" placeholder="Email"><input type="password" id="loginPassword" placeholder="Password"><button class="modal-btn" id="loginBtn">Login</button></div><div id="registerForm" style="display:none"><input type="text" id="regName" placeholder="Your name"><input type="email" id="regEmail" placeholder="Email"><input type="password" id="regPassword" placeholder="Password (6+ chars)"><button class="modal-btn" id="registerBtn">Create Account</button></div><button class="modal-btn sec" id="closeAuth">Close</button></div></div>
+<!-- Mobile Menu Button -->
+<button class="menu-btn" id="menuBtn" aria-label="Menu">
+  <svg class="icon-md icon-stroke" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+</button>
 
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade</h2><div class="tier-card" id="tierFree"><h3>🔹 Free</h3><div class="price">$0</div><ul><li>10 messages/day</li></ul></div><div class="tier-card" id="tierPlus"><h3>🔶 Plus · $8/mo</h3><ul><li>30 messages/day</li><li>Coding · Quant · Work Area (5 seats)</li></ul></div><div class="tier-card" id="tierPro"><h3>💎 Pro · $17/mo</h3><ul><li>Unlimited messages</li><li>Live Markets · Work Area (16 seats)</li><li>Shared Notes · AI Commands</li></ul></div><div class="payment-section" id="paymentSection"><div class="pill-tabs"><button class="pill-tab active" data-coin="BTC">BTC</button><button class="pill-tab" data-coin="ETH">ETH</button></div><div class="wallet-display" id="walletAddr">Loading...</div><input type="text" id="txidInput" placeholder="TXID"><button class="modal-btn" id="verifyUpgrade">✅ Activate</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
+<!-- Desktop Sidebar Toggle -->
+<button class="sb-toggle-desktop" id="sbToggleDesktop" aria-label="Toggle sidebar">
+  <svg class="icon-sm icon-stroke" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
 
-<div id="founderModal" class="modal-overlay"><div class="modal"><h2>🔐 Founder</h2><input type="password" id="founderCode" placeholder="Code"><button class="modal-btn" id="verifyFounder">Activate</button><button class="modal-btn sec" id="closeFounder">Close</button></div></div>
+<!-- Upgrade Modal -->
+<div id="upgradeModal" class="modal-overlay">
+  <div class="modal">
+    <h2>⚡ Upgrade CAPITAN</h2>
+    <p>Unlock the full power of elite intelligence.</p>
+    <div class="tier-card" id="tierFree">
+      <h3>🔹 Free</h3>
+      <div class="price">$0</div>
+      <ul><li>10 messages/day</li><li>Fast AI responses</li><li>Basic chat & library</li></ul>
+    </div>
+    <div class="tier-card" id="tierPlus">
+      <h3>🔶 Plus · $8/mo</h3>
+      <div class="price">$8<span>/month</span></div>
+      <ul><li>30 messages/day</li><li>Smart AI model</li><li>Work Area (5 seats)</li><li>Coding & Quant tools</li><li>African Finance</li><li>File uploads (10MB)</li></ul>
+    </div>
+    <div class="tier-card" id="tierPro">
+      <h3>💎 Pro · $17/mo</h3>
+      <div class="price">$17<span>/month</span></div>
+      <ul><li>Unlimited messages</li><li>Deep AI (Claude 3.5 / GPT-4o)</li><li>Work Area (16 seats)</li><li>Live market data</li><li>@CAPITAN in Work Area</li><li>File uploads (50MB)</li><li>All Plus features</li></ul>
+    </div>
+    <div class="payment-section" id="paymentSection">
+      <div class="pill-tabs">
+        <button class="pill-tab active" data-coin="BTC">BTC</button>
+        <button class="pill-tab" data-coin="ETH">ETH</button>
+      </div>
+      <div class="wallet-display" id="walletAddr">Loading...</div>
+      <input type="text" id="txidInput" placeholder="Transaction hash (TXID)">
+      <button class="modal-btn" id="verifyUpgrade">✅ Activate Upgrade</button>
+    </div>
+    <button class="modal-btn sec" id="closeUpgrade">Close</button>
+  </div>
+</div>
 
-<div id="adminModal" class="modal-overlay"><div class="modal" style="width:500px"><h2>🛠️ Admin</h2><div id="adminContent"></div><button class="modal-btn sec" id="closeAdmin" style="margin-top:8px">Close</button></div></div>
+<!-- Founder Modal -->
+<div id="founderModal" class="modal-overlay">
+  <div class="modal">
+    <h2>🔐 Founder Access</h2>
+    <p>Enter the founder code to unlock unlimited everything.</p>
+    <input type="password" id="founderCode" placeholder="Founder code" autocomplete="off">
+    <button class="modal-btn" id="verifyFounder">👑 Activate Founder</button>
+    <button class="modal-btn sec" id="closeFounder">Close</button>
+  </div>
+</div>
 
-<div id="libraryModal" class="modal-overlay"><div class="modal"><h2>📁 Library</h2><div id="libraryList" style="max-height:200px;overflow-y:auto;margin-bottom:10px"></div><input type="text" id="libName" placeholder="Name"><textarea id="libContent" placeholder="Content..." style="min-height:60px;resize:vertical"></textarea><button class="modal-btn" id="libSave">Save</button><button class="modal-btn sec" id="closeLibrary" style="margin-top:4px">Close</button></div></div>
+<!-- Admin Modal -->
+<div id="adminModal" class="modal-overlay">
+  <div class="modal" style="width:520px">
+    <h2>🛠️ Admin Dashboard</h2>
+    <div id="adminContent"></div>
+    <button class="modal-btn sec" id="closeAdmin" style="margin-top:8px">Close</button>
+  </div>
+</div>
 
-<div id="workspaceModal" class="modal-overlay"><div class="modal" style="width:500px"><h2>🗂️ Work Area</h2><p style="font-size:10px;color:var(--txt3)">Create → share code → collaborate</p><div class="pill-tabs"><button class="pill-tab active" id="wsTabCreate">Create</button><button class="pill-tab" id="wsTabJoin">Join</button><button class="pill-tab" id="wsTabChat">Chat</button></div>
-<div id="wsCreatePanel"><button class="modal-btn" id="wsCreateBtn">✨ Create Room</button><div id="wsRoomDisplay" style="display:none;text-align:center;margin-top:10px;padding:12px;background:var(--bg2);border-radius:var(--r-sm)"><div style="font-size:9px;color:var(--txt3);margin-bottom:4px">ROOM CODE</div><div style="font-size:24px;font-weight:700;letter-spacing:.12em;font-family:monospace" id="wsRoomCode">—</div></div></div>
-<div id="wsJoinPanel" style="display:none"><input type="text" id="wsJoinInput" placeholder="Room code" style="text-transform:uppercase"><button class="modal-btn" id="wsJoinBtn">Join</button></div>
-<div id="wsChatPanel" style="display:none"><div id="wsNotesDisplay" class="ws-note-box" style="display:none"></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;color:var(--txt3)">Shared Notes:</span><button id="wsEditNote" style="background:none;border:1px solid var(--bdr);color:var(--txt2);padding:3px 8px;border-radius:4px;font-size:9px;cursor:pointer;font-family:inherit">Edit</button></div><div style="max-height:160px;overflow-y:auto;margin-bottom:8px" id="wsMessages"></div><div style="display:flex;gap:6px"><input type="text" id="wsMessageInput" placeholder="Message or @CAPITAN..." style="flex:1;margin-bottom:0"><button class="modal-btn" id="wsSendBtn" style="width:auto;margin-top:0;padding:8px 14px;font-size:11px">Send</button></div><div style="display:flex;gap:4px;margin-top:8px"><button class="pill-tab" onclick="wsAICommand('Summarize this work area')">📝 Summarize</button><button class="pill-tab" onclick="wsAICommand('Create action items from this discussion')">✅ Tasks</button></div></div>
-<button class="modal-btn sec" id="closeWorkspace" style="margin-top:8px">Close</button></div></div>
+<!-- Library Modal -->
+<div id="libraryModal" class="modal-overlay">
+  <div class="modal">
+    <h2>📁 Library</h2>
+    <p style="font-size:var(--fs-sm);color:var(--txt3)">Your saved notes and documents.</p>
+    <div id="libraryList" style="max-height:220px;overflow-y:auto;margin-bottom:10px"></div>
+    <input type="text" id="libName" placeholder="Note name">
+    <textarea id="libContent" placeholder="Content..." style="min-height:70px;resize:vertical"></textarea>
+    <button class="modal-btn" id="libSave">💾 Save Note</button>
+    <button class="modal-btn sec" id="closeLibrary" style="margin-top:4px">Close</button>
+  </div>
+</div>
 
-<div id="profileModal" class="modal-overlay"><div class="modal"><h2>👤 Profile</h2><input type="text" id="profName" placeholder="Display name"><select id="profLang" style="width:100%;background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);padding:10px;border-radius:var(--r-sm);font-size:var(--fs-xs);margin-bottom:8px;font-family:inherit"><option value="en">English</option><option value="fr">Français</option><option value="ar">العربية</option><option value="pt">Português</option></select><input type="text" id="profTz" placeholder="Timezone (e.g. Africa/Accra)"><button class="modal-btn" id="saveProfile">Save</button><button class="modal-btn sec" id="closeProfile" style="margin-top:4px">Close</button></div></div>
+<!-- Workspace Modal -->
+<div id="workspaceModal" class="modal-overlay">
+  <div class="modal" style="width:540px">
+    <h2>🗂️ Work Area</h2>
+    <p style="font-size:var(--fs-sm);color:var(--txt3)">Professional collaboration hub. Create a room, share the code, work together with AI.</p>
+    <div class="pill-tabs">
+      <button class="pill-tab active" id="wsTabCreate">✨ Create</button>
+      <button class="pill-tab" id="wsTabJoin">🚀 Join</button>
+      <button class="pill-tab" id="wsTabChat">💬 Chat</button>
+    </div>
+    <div id="wsCreatePanel">
+      <button class="modal-btn" id="wsCreateBtn">✨ Create New Room</button>
+      <div id="wsRoomDisplay" style="display:none;text-align:center;margin-top:12px;padding:16px;background:var(--bg2);border-radius:var(--r-sm);border:1px solid var(--bdr)">
+        <div style="font-size:10px;color:var(--txt4);margin-bottom:6px;letter-spacing:.1em">YOUR ROOM CODE</div>
+        <div style="font-size:28px;font-weight:700;letter-spacing:.14em;font-family:monospace;color:var(--txt)" id="wsRoomCode">—</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:6px">Share this code with your team to join</div>
+      </div>
+    </div>
+    <div id="wsJoinPanel" style="display:none">
+      <input type="text" id="wsJoinInput" placeholder="Enter room code (e.g. CAP-XXXX-XXXX)" style="text-transform:uppercase">
+      <button class="modal-btn" id="wsJoinBtn">🚀 Join Room</button>
+    </div>
+    <div id="wsChatPanel" style="display:none">
+      <div id="wsNotesDisplay" style="background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-sm);padding:12px;margin-bottom:10px;max-height:120px;overflow-y:auto;font-size:var(--fs-xs);color:var(--txt2);line-height:var(--lh);display:none"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--txt4);font-weight:600">📝 Shared Notes</span>
+        <button id="wsEditNote" style="background:none;border:1px solid var(--bdr);color:var(--txt3);padding:4px 10px;border-radius:var(--r-xs);font-size:10px;cursor:pointer;font-family:inherit;transition:all .15s">Edit</button>
+      </div>
+      <textarea id="wsNotesEditor" placeholder="Write shared notes..." style="min-height:60px;resize:vertical;display:none;margin-bottom:8px"></textarea>
+      <button id="wsSaveNote" class="modal-btn" style="display:none;margin-bottom:8px">💾 Save Notes</button>
+      <div style="max-height:200px;overflow-y:auto;margin-bottom:10px;padding:8px;background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r-sm)" id="wsMessages"></div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="wsMessageInput" placeholder="Message or @CAPITAN for AI help..." style="flex:1;margin-bottom:0">
+        <button class="modal-btn" id="wsSendBtn" style="width:auto;margin-top:0;padding:9px 16px;font-size:var(--fs-sm)">Send</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
+        <button class="pill-tab" onclick="sendWorkspaceAICommand('Summarize this work area')" style="flex:none;padding:6px 14px;font-size:11px">📝 Summarize</button>
+        <button class="pill-tab" onclick="sendWorkspaceAICommand('Create action items from this discussion')" style="flex:none;padding:6px 14px;font-size:11px">✅ Actions</button>
+        <button class="pill-tab" onclick="sendWorkspaceAICommand('Generate a report from our work')" style="flex:none;padding:6px 14px;font-size:11px">📄 Report</button>
+      </div>
+    </div>
+    <button class="modal-btn sec" id="closeWorkspace" style="margin-top:10px">Close</button>
+  </div>
+</div>
 
-<div id="privacyModal" class="modal-overlay"><div class="modal"><h2>🔒 Privacy</h2><div style="font-size:11px;color:var(--txt2);line-height:1.7"><p>CAPITAN AI by CLOSEAI Technologies.</p><p>Data stored securely. Never sold. Contact: closeaitechnologies@protonmail.com</p></div><button class="modal-btn sec" id="closePrivacy" style="margin-top:8px">Close</button></div></div>
+<!-- Privacy Modal -->
+<div id="privacyModal" class="modal-overlay">
+  <div class="modal">
+    <h2>🔒 Privacy Policy</h2>
+    <div style="font-size:var(--fs-sm);color:var(--txt2);line-height:1.7">
+      <p><strong>CAPITAN AI</strong> by CLOSEAI Technologies.</p>
+      <p>We do not permanently store user conversations. We do not use user content for model training, advertising, or commercial resale unless the user provides explicit consent.</p>
+      <p>Only message counts and payment records are stored for service delivery.</p>
+      <p>Your privacy is our foundation.</p>
+      <p>Contact: closeaitechnologies@protonmail.com</p>
+    </div>
+    <button class="modal-btn sec" id="closePrivacy" style="margin-top:10px">Close</button>
+  </div>
+</div>
 
 <script>
-var API='https://goldquantum0-capitan-ai-1.onrender.com';
-var S={messages:[],chatId:null,chats:[],streaming:!1,userId:null,email:null,name:null,tier:'free',token:null,theme:'dark',sidebarDesktopOpen:!0,selectedTier:null,selectedCoin:'BTC',founderClicks:0,library:[],workspace:{roomId:null,roomCode:null,messages:[],members:[],notes:[],tab:'Create'},marketData:{},wallets:{},emailDismissed:!1,profLang:'en',profTz:'UTC'};
+// ═══════════════════════════════════════════════════════════════
+// CAPITAN AI — Frontend Engine v22.0
+// CLOSEAI Technologies | Privacy-First Architecture
+// Logo: 👌 | Deployed Backend: https://goldquantum0-capitan-ai-1.onrender.com
+// ═══════════════════════════════════════════════════════════════
 
-function init(){
-  var u=localStorage.getItem('cap_user');if(u){var d=JSON.parse(u);S.userId=d.userId;S.email=d.email;S.name=d.name;S.tier=d.tier||'free';S.token=d.token;S.profLang=d.language||'en';S.profTz=d.timezone||'UTC'}
-  var sb=localStorage.getItem('cap_sidebar');if(sb!==null)S.sidebarDesktopOpen=sb==='1';
-  S.theme=localStorage.getItem('cap_theme')||'dark';S.emailDismissed=localStorage.getItem('cap_email_dismissed')==='1';
-  if(S.token){loadChats();loadLibrary()}
-  if(!S.userId)document.getElementById('authModal').classList.add('open');
-  fetchPaymentConfig();render();
-  if(S.tier==='pro'||S.tier==='founder'){fetchMarketData();setInterval(fetchMarketData,30000)}
-}
-function applyTheme(){document.documentElement.classList.toggle('light',S.theme==='light')}
-function toast(m,t){var e=document.querySelector('.toast');if(e)e.remove();var n=document.createElement('div');n.className='toast';n.textContent=m;document.body.appendChild(n);setTimeout(function(){n.remove()},t||2400)}
-function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
-function fmt(s){if(!s)return'';s=esc(s);s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,l,c){return'<pre><code>'+c.trim()+'</code></pre>'});s=s.replace(/\n/g,'<br>');s=s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');s=s.replace(/`(.*?)`/g,'<code>$1</code>');return s}
-function greet(){var h=new Date().getHours();if(h<6)return'Good evening';if(h<12)return'Good morning';if(h<17)return'Good afternoon';return'Good evening'}
-function ah(){var h={'Content-Type':'application/json'};if(S.token)h['Authorization']='Bearer '+S.token;return h}
-async function api(ep,m,b){try{var o={method:m||'GET',headers:ah()};if(b)o.body=JSON.stringify(b);var r=await fetch(API+ep,o);return await r.json()}catch(e){return{error:'Connection failed'}}}
+const CONFIG = {
+    API_BASE: 'https://goldquantum0-capitan-ai-1.onrender.com',
+    CHAT_REFRESH: 5000,
+    WORKSPACE_POLL: 3000,
+    MARKET_REFRESH: 60000,
+    HEALTH_CHECK: 30000,
+    MAX_MSG_LEN: 4000,
+    TIER_EMOJI: { free:'🔹', plus:'🔶', pro:'💎', founder:'👑' }
+};
 
-async function fetchPaymentConfig(){try{var r=await fetch(API+'/api/payment-config');if(r.ok){var d=await r.json();S.wallets=d.wallets||{};updateWallet()}}catch(e){}}
-function updateWallet(){var a=S.wallets[S.selectedCoin];if(a)document.getElementById('walletAddr').textContent=a}
-async function fetchMarketData(){try{var r=await fetch(API+'/api/markets');if(r.ok){S.marketData=r.prices||{};updateMarketSection()}}catch(e){}}
-function updateMarketSection(){var el=document.getElementById('marketsBody');if(!el)return;var h='';var kk=[{k:'S&P 500',n:'S&P 500'},{k:'NASDAQ',n:'NASDAQ'},{k:'Apple',n:'AAPL'},{k:'Nvidia',n:'NVDA'},{k:'Gold',n:'Gold'}];kk.forEach(function(x){var d=S.marketData[x.k];if(d)h+='<div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:10px"><span>'+x.n+'</span><span style="color:'+(d.change>=0?'#4caf50':'#f44336')+'">'+(d.change>=0?'▲':'▼')+' '+Math.abs(d.change).toFixed(1)+'%</span></div>'});el.innerHTML=h}
+const STATE = {
+    session: null, token: null, tier: 'free',
+    loading: false, thinking: false,
+    sidebarOpen: window.innerWidth > 768,
+    connected: 'checking',
+    chats: [], activeChat: null, messages: [],
+    library: [], payConfig: null, markets: null, health: null,
+    workspace: { roomCode:null, roomId:null, messages:[], members:[], notes:[], timer:null },
+    draft: '', wsDraft: '', adminData: null
+};
 
-async function loadChats(){var d=await api('/api/chats');if(d.chats)S.chats=d.chats}
-async function loadLibrary(){var d=await api('/api/library');if(d.items)S.library=d.items}
-
-async function doLogin(){var e=document.getElementById('loginEmail')?.value?.trim(),p=document.getElementById('loginPassword')?.value?.trim();if(!e||!p){toast('Fill all fields');return}var d=await api('/api/auth/login','POST',{email:e,password:p});if(d.token){setUser(d);document.getElementById('authModal').classList.remove('open');toast('Welcome!');loadChats();loadLibrary();render()}else toast(d.error||'Failed')}
-async function doRegister(){var n=document.getElementById('regName')?.value?.trim(),e=document.getElementById('regEmail')?.value?.trim(),p=document.getElementById('regPassword')?.value?.trim();if(!n||!e||!p){toast('Fill all fields');return}if(p.length<6){toast('Password: 6+ chars');return}var d=await api('/api/auth/register','POST',{name:n,email:e,password:p});if(d.token){setUser(d);document.getElementById('authModal').classList.remove('open');toast('Created! 👌');loadChats();loadLibrary();render()}else toast(d.error||'Failed')}
-function setUser(d){S.userId=d.user.id;S.email=d.user.email;S.name=d.user.name;S.tier=d.user.tier;S.token=d.token;S.profLang=d.user.language||'en';S.profTz=d.user.timezone||'UTC';localStorage.setItem('cap_user',JSON.stringify({userId:S.userId,email:S.email,name:S.name,tier:S.tier,token:S.token,language:S.profLang,timezone:S.profTz}))}
-
-async function sendMessage(content){
-  var input=document.getElementById('chatInput'),text=content||(input?input.value.trim():'');if(!text||S.streaming)return;
-  S.messages.push({role:'user',content:text});var ai={role:'assistant',content:''};S.messages.push(ai);S.streaming=!0;if(input){input.value='';input.blur()}renderMessages();
-  var clean=S.messages.filter(function(m){return m.content&&m.content.trim()}).slice(0,-1).map(function(m){return{role:m.role,content:m.content}});
-  var d=await api('/api/chat','POST',{messages:clean,chat_id:S.chatId});
-  if(d.error){ai.content=d.error;if(d.error.includes('limit')||d.error.includes('Upgrade'))document.getElementById('upgradeModal').classList.add('open')}else{ai.content=d.content||'No response.';S.chatId=d.chat_id;loadChats()}
-  S.streaming=!1;renderMessages()
-}
-
-async function selectChat(chatId){var d=await api('/api/chats/'+chatId);if(d.messages){S.messages=d.messages;S.chatId=chatId;renderMessages()}mobileClose()}
-async function deleteChat(chatId){await api('/api/chats/'+chatId,'DELETE');S.chats=S.chats.filter(function(c){return c.id!==chatId});if(S.chatId===chatId){S.messages=[];S.chatId=null;renderMessages()}render()}
-function newChat(){S.messages=[];S.chatId=null;renderMessages()}
-
-function selectTier(t){S.selectedTier=t;['Free','Plus','Pro'].forEach(function(x){var c=document.getElementById('tier'+x);if(c)c.classList.toggle('selected',x.toLowerCase()===t)});if(t==='free'){document.getElementById('paymentSection').classList.remove('open');return}updateWallet();document.getElementById('paymentSection').classList.add('open')}
-function switchCoin(c){S.selectedCoin=c;updateWallet();document.querySelectorAll('#upgradeModal .pill-tab').forEach(function(t){t.classList.toggle('active',t.dataset.coin===c)})}
-async function upgradeTier(){var t=document.getElementById('txidInput'),tx=t?t.value.trim():'';if(!tx){toast('Enter TXID');return}if(!S.selectedTier||S.selectedTier==='free'){toast('Select plan');return}var d=await api('/api/upgrade','POST',{tier:S.selectedTier,txid:tx,currency:S.selectedCoin});if(d.verified){S.tier=d.tier;S.token=d.token;localStorage.setItem('cap_user',JSON.stringify({userId:S.userId,email:S.email,name:S.name,tier:S.tier,token:S.token}));document.getElementById('upgradeModal').classList.remove('open');document.getElementById('paymentSection').classList.remove('open');toast('Upgraded! 🎉');render()}else toast(d.message||'Failed')}
-async function activateFounder(){var c=document.getElementById('founderCode'),v=c?c.value.trim():'';if(!v){toast('Enter code');return}var d=await api('/api/founder','POST',{code:v});if(d.verified){S.tier='founder';S.token=d.token;localStorage.setItem('cap_user',JSON.stringify({userId:S.userId,email:S.email,name:S.name,tier:'founder',token:S.token}));document.getElementById('founderModal').classList.remove('open');toast('👑 Founder!');render()}}
-async function loadAdmin(){var d=await api('/api/admin','POST',{});if(d.error){document.getElementById('adminContent').innerHTML='<p>Access denied</p>';return}var h='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'+[['Users',d.total_users],['Paid',d.paid_users],['Msgs',d.total_messages],['Waitlist',d.waitlist],['Work Areas',d.workspaces]].map(function(x){return'<div style="background:var(--bg2);padding:8px;border-radius:6px"><div style="font-size:8px;color:var(--txt3)">'+x[0]+'</div><div style="font-size:18px;font-weight:700">'+(x[1]||0)+'</div></div>'}).join('')+'</div>';h+='<div style="max-height:200px;overflow-y:auto;font-size:10px">';(d.users||[]).forEach(function(u){h+='<div style="padding:4px 0;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between">'+esc(u.email||'')+'<span style="color:var(--txt3)">'+u.tier+'</span></div>'});h+='</div>';document.getElementById('adminContent').innerHTML=h}
-
-async function saveLib(){var n=document.getElementById('libName')?.value?.trim(),c=document.getElementById('libContent')?.value?.trim();if(!n){toast('Enter name');return}var d=await api('/api/library','POST',{name:n,type:'note',content:c});if(d.id){loadLibrary();document.getElementById('libName').value='';document.getElementById('libContent').value='';renderLibraryList();toast('Saved')}}
-async function deleteLib(id){await api('/api/library/'+id,'DELETE');loadLibrary();renderLibraryList()}
-function renderLibraryList(){var el=document.getElementById('libraryList');if(!el)return;if(!S.library.length){el.innerHTML='<p style="font-size:10px;color:var(--txt3);text-align:center;padding:16px">Empty</p>';return}el.innerHTML=S.library.map(function(i){return'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:10px"><span>'+esc(i.name)+'</span><button onclick="deleteLib(\''+i.id+'\')" style="background:none;border:none;color:var(--txt3);cursor:pointer">✕</button></div>'}).join('')}
-
-var wsPoll=null;
-function wsShowTab(t){S.workspace.tab=t;['Create','Join','Chat'].forEach(function(x){var p=document.getElementById('ws'+x+'Panel'),b=document.getElementById('wsTab'+x);if(p)p.style.display=x===t?'block':'none';if(b)b.classList.toggle('active',x===t)});if(t==='Chat'){renderWsMessages();loadWsNotes()}}
-async function wsCreate(){var c='CAP-'+Math.random().toString(36).substring(2,6).toUpperCase()+'-'+Math.random().toString(36).substring(2,6).toUpperCase();var d=await api('/api/workspace/create','POST',{room_code:c,max_members:S.tier==='pro'||S.tier==='founder'?16:5});if(d.created){S.workspace.roomId=d.room_id;S.workspace.roomCode=c;document.getElementById('wsRoomDisplay').style.display='block';document.getElementById('wsRoomCode').textContent=c;toast('Room created!')}}
-async function wsJoin(){var c=document.getElementById('wsJoinInput')?.value?.trim().toUpperCase();if(!c||!c.startsWith('CAP-')){toast('Enter valid code');return}var d=await api('/api/workspace/join','POST',{room_code:c});if(d.joined){S.workspace.roomId=d.room_id;S.workspace.roomCode=c;S.workspace.members=d.members;S.workspace.messages=d.messages;wsShowTab('Chat');pollWs();toast('Joined!')}}
-async function wsSend(){var t=document.getElementById('wsMessageInput')?.value?.trim();if(!t||!S.workspace.roomCode)return;document.getElementById('wsMessageInput').value='';var d=await api('/api/workspace/message','POST',{room_code:S.workspace.roomCode,message:t});if(d.sent){S.workspace.messages=d.messages;renderWsMessages()}}
-function wsAICommand(cmd){document.getElementById('wsMessageInput').value='@CAPITAN '+cmd;wsSend()}
-function pollWs(){if(wsPoll)clearInterval(wsPoll);wsPoll=setInterval(async function(){if(!S.workspace.roomCode)return;var d=await api('/api/workspace/messages?room_code='+S.workspace.roomCode);if(d.messages){S.workspace.messages=d.messages;S.workspace.members=d.members;renderWsMessages()}},3000)}
-function renderWsMessages(){var el=document.getElementById('wsMessages');if(!el)return;if(!S.workspace.messages.length){el.innerHTML='<p style="font-size:10px;color:var(--txt3);text-align:center;padding:16px">Say hello 👋</p>';return}el.innerHTML=S.workspace.messages.map(function(m){return'<div style="margin-bottom:8px;font-size:10px"><span style="font-size:8px;color:var(--txt3);font-weight:700">'+esc(m.author||m.user_id)+(m.is_ai?' 🤖':'')+'</span><br><span style="color:'+(m.is_ai?'var(--accent)':'var(--txt2)')+'">'+esc(m.message)+'</span></div>'}).join('');el.scrollTop=el.scrollHeight}
-async function loadWsNotes(){var d=await api('/api/workspace/notes?room_code='+S.workspace.roomCode);if(d.notes&&d.notes.length){S.workspace.notes=d.notes;var el=document.getElementById('wsNotesDisplay');if(el){el.style.display='block';el.textContent=d.notes[0].content}}}
-async function saveWsNote(){var c=prompt('Edit shared notes:',S.workspace.notes[0]?.content||'');if(c!==null){var d=await api('/api/workspace/notes','POST',{room_code:S.workspace.roomCode,content:c});if(d.saved){S.workspace.notes=d.notes;var el=document.getElementById('wsNotesDisplay');if(el){el.style.display='block';el.textContent=c}}}}
-
-function toggleDesktopSidebar(){S.sidebarDesktopOpen=!S.sidebarDesktopOpen;localStorage.setItem('cap_sidebar',S.sidebarDesktopOpen?'1':'0');var sb=document.querySelector('.sidebar');if(sb)sb.classList.toggle('collapsed',!S.sidebarDesktopOpen);updateSbToggle()}
-function mobileOpen(){var sb=document.querySelector('.sidebar');if(sb)sb.classList.add('mobile-open');document.getElementById('sbOverlay').classList.add('visible')}
-function mobileClose(){var sb=document.querySelector('.sidebar');if(sb)sb.classList.remove('mobile-open');document.getElementById('sbOverlay').classList.remove('visible')}
-function updateSbToggle(){var b=document.getElementById('sbToggleDesktop');if(b){b.textContent=S.sidebarDesktopOpen?'◀':'▶';b.classList.toggle('shifted',S.sidebarDesktopOpen)}}
-async function subscribeEmail(){var e=document.getElementById('subEmail')?.value?.trim();if(!e||!e.includes('@')){toast('Enter valid email');return}var d=await api('/api/waitlist','POST',{email:e});if(d.subscribed){S.emailDismissed=!0;localStorage.setItem('cap_email_dismissed','1');toast('Subscribed!');render()}}
-function dismissEmail(){S.emailDismissed=!0;localStorage.setItem('cap_email_dismissed','1');render()}
-async function saveProfile(){var n=document.getElementById('profName')?.value?.trim(),l=document.getElementById('profLang')?.value,t=document.getElementById('profTz')?.value?.trim();var d=await api('/api/auth/profile','PATCH',{name:n,language:l,timezone:t});if(d.updated){S.name=n||S.name;S.profLang=l;S.profTz=t;document.getElementById('profileModal').classList.remove('open');toast('Profile updated');render()}}
-
-function render(){
-  applyTheme();var app=document.getElementById('app');app.innerHTML='';var t=S.tier,isPro=t==='pro'||t==='founder',isPlus=t==='plus'||isPro,isFounder=t==='founder';
-  var sb=document.createElement('aside');sb.className='sidebar'+(S.sidebarDesktopOpen?'':' collapsed');
-  var h='<div class="sb-sec"><div class="sb-logo" id="logoClick">👌</div><div class="sb-logo-text">CAPITAN AI</div><button class="btn-new" id="btnNewChat">✨ New chat</button></div>';
-  h+='<div class="sb-sec"><div class="sb-label open" data-section="chats">💬 Chats <span class="arrow">▶</span></div><div class="sb-body" id="chatsBody" style="max-height:400px">';
-  if(S.chats.length)S.chats.slice(0,10).forEach(function(c){h+='<div class="sb-chat-item"><span onclick="selectChat(\''+c.id+'\')">'+esc(c.title||'Chat')+'</span><button class="sb-chat-del" onclick="event.stopPropagation();deleteChat(\''+c.id+'\')">✕</button></div>'});else h+='<div style="font-size:10px;color:var(--txt3);padding:8px">No chats</div>';
-  h+='</div></div>';
-  h+='<div class="sb-sec"><div class="sb-label open" data-section="library">📁 Library <span class="arrow">▶</span></div><div class="sb-body" id="libraryBody" style="max-height:200px"><div class="sb-item" id="btnLibrary">📂 Open library</div></div></div>';
-  if(isPlus){h+='<div class="sb-item" id="btnWorkspace">🗂️ Work Area <span class="sb-badge">'+(isPro?'16':'5')+'</span></div>';h+='<div class="sb-item" id="btnCoding">💻 Coding</div>';h+='<div class="sb-item" id="btnFinance">🌍 Finance</div>'}
-  if(isPro){h+='<div class="sb-sec"><div class="sb-label open" data-section="markets">📈 Markets <span class="arrow">▶</span></div><div class="sb-body" id="marketsBody" style="max-height:250px"></div></div>'}
-  h+='<div class="sb-sec"><div class="sb-label open" data-section="settings">Settings <span class="arrow">▶</span></div><div class="sb-body" id="settingsBody" style="max-height:250px">';
-  h+='<div class="sb-item" id="btnProfile">👤 Profile</div>';
-  h+='<div class="sb-item" id="btnTheme">'+(S.theme==='dark'?'☀️ Light mode':'🌙 Dark mode')+'</div>';
-  h+='<div class="sb-item" id="btnPrivacy">🔒 Privacy</div>';
-  h+='<div class="sb-item" id="btnContact">📧 Contact</div>';
-  if(isFounder)h+='<div class="sb-item" id="btnAdmin">🛠️ Admin</div>';
-  h+='</div></div>';
-  var initials=S.name?S.name.charAt(0).toUpperCase():(S.email?S.email.charAt(0).toUpperCase():'?');
-  var tl={free:'🔹 Free',plus:'🔶 Plus',pro:'💎 Pro',founder:'👑 Founder'};
-  h+='<div class="sb-user" id="btnUser"><div class="sb-avatar">'+initials+'</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(S.name||S.email||'Sign in')+'</div><div style="font-size:9px;color:var(--txt3)">'+(tl[t]||t)+'</div></div>'+(t==='free'?'<span style="font-size:9px;color:var(--accent);white-space:nowrap;font-weight:600;cursor:pointer">Upgrade</span>':'')+'</div>';
-  h+='<div class="sb-footer">CLOSEAI Technologies</div>';
-  sb.innerHTML=h;app.appendChild(sb);
-
-  var main=document.createElement('main');main.className='main';
-  var showEmail=!S.userId&&!S.emailDismissed;
-  var emailBar=showEmail?'<div class="email-bar" id="emailBar"><span>👌 Stay updated</span><input type="email" id="subEmail" placeholder="you@email.com"><button onclick="subscribeEmail()">Subscribe</button><button style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:14px;padding:0 4px" onclick="dismissEmail()">✕</button></div>':'';
-  var limitLine=isPro?'♾️ Unlimited':(isPlus?'🔶 Limited daily':'🔹 Limited daily · <span id="upgradeLink" style="color:var(--txt2);cursor:pointer;text-decoration:underline">Upgrade</span>');
-  main.innerHTML='<div class="chat-wrap"><div class="chat-msgs" id="chatMsgs"></div><div class="input-area">'+emailBar+'<div class="input-box"><input class="input-field" type="text" id="chatInput" placeholder="Message CAPITAN..." '+(S.streaming?'disabled':'')+' autocomplete="off" enterkeyhint="send"><button class="send-btn" id="sendBtn" '+(S.streaming?'disabled':'')+'>↑</button></div><div style="text-align:center;font-size:9px;color:var(--txt3);padding:4px 0">'+limitLine+'</div></div></div>';
-  app.appendChild(main);bindEvents();renderMessages();updateSbToggle();updateMarketSection();
+// ─── API CLIENT ──────────────────────────────────────────────
+class API {
+    constructor(base) { this.base = base; this.tries = 0; this.maxTries = 3; }
+    
+    async req(path, opts = {}) {
+        const h = { ...opts.headers };
+        if (!(opts.body instanceof FormData)) h['Content-Type'] = 'application/json';
+        if (STATE.token) h['Authorization'] = `Bearer ${STATE.token}`;
+        
+        try {
+            const r = await fetch(`${this.base}${path}`, { ...opts, headers: h });
+            if (r.status === 401) { localStorage.removeItem('capitan_token'); STATE.token = null; await this.createSession(); throw new Error('Session refreshed. Retry.'); }
+            if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.detail || `Error ${r.status}`); }
+            const ct = r.headers.get('content-type');
+            return ct && ct.includes('json') ? await r.json() : await r.text();
+        } catch (e) {
+            if (this.tries < this.maxTries && e.message.includes('500')) { this.tries++; await new Promise(r=>setTimeout(r,1000*this.tries)); return this.req(path,opts); }
+            this.tries = 0; throw e;
+        }
+    }
+    
+    async createSession() { const d = await this.req('/api/session'); STATE.session = { id:d.id, tier:d.tier, count:d.msg_count||0, window:d.msg_window }; STATE.tier = d.tier; STATE.token = d.token; localStorage.setItem('capitan_token', d.token); return d; }
+    async getSession() { return this.req('/api/session'); }
+    async getChats() { return this.req('/api/chats'); }
+    async getChat(id) { return this.req(`/api/chats/${id}`); }
+    async sendMsg(msgs, chatId) { return this.req('/api/chat', { method:'POST', body:JSON.stringify({ messages:msgs, chat_id:chatId }) }); }
+    async delChat(id) { return this.req(`/api/chats/${id}`, { method:'DELETE' }); }
+    async getLib() { return this.req('/api/library'); }
+    async createLib(name, type, content) { return this.req('/api/library', { method:'POST', body:JSON.stringify({ name, type, content }) }); }
+    async delLib(id) { return this.req(`/api/library/${id}`, { method:'DELETE' }); }
+    async upload(file) { const fd = new FormData(); fd.append('file', file); return this.req('/api/upload', { method:'POST', body:fd }); }
+    async getPayConfig() { return this.req('/api/payment-config'); }
+    async upgrade(tier, txid, coin) { return this.req('/api/upgrade', { method:'POST', body:JSON.stringify({ tier, txid, currency:coin }) }); }
+    async founder(code) { return this.req('/api/founder', { method:'POST', body:JSON.stringify({ code }) }); }
+    async admin() { return this.req('/api/admin', { method:'POST' }); }
+    async getMarkets() { return this.req('/api/markets'); }
+    async health() { return this.req('/health'); }
+    async wsCreate(code, max) { return this.req('/api/workspace/create', { method:'POST', body:JSON.stringify({ room_code:code, max_members:max }) }); }
+    async wsJoin(code) { return this.req('/api/workspace/join', { method:'POST', body:JSON.stringify({ room_code:code }) }); }
+    async wsMsg(code, msg) { return this.req('/api/workspace/message', { method:'POST', body:JSON.stringify({ room_code:code, message:msg }) }); }
+    async wsGetMsgs(code) { return this.req(`/api/workspace/messages?room_code=${encodeURIComponent(code)}`); }
+    async wsSaveNotes(code, content) { return this.req('/api/workspace/notes', { method:'POST', body:JSON.stringify({ room_code:code, content }) }); }
+    async wsGetNotes(code) { return this.req(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`); }
 }
 
-function renderMessages(){
-  var el=document.getElementById('chatMsgs');if(!el)return;
-  if(!S.messages.length){el.innerHTML='<div class="welcome"><div class="welcome-logo">👌</div><h1>'+greet()+'</h1><div class="welcome-pills"><div class="wp-pill" onclick="sendMessage(\'Analyze financial markets\')">📊 Finance</div><div class="wp-pill" onclick="sendMessage(\'Write production code\')">💻 Coding</div><div class="wp-pill" onclick="sendMessage(\'Explain quantitative methods\')">📐 Quant</div><div class="wp-pill" onclick="document.getElementById(\'workspaceModal\').classList.add(\'open\')">🗂️ Work Area</div></div></div>';return}
-  var near=el.scrollHeight-el.scrollTop-el.clientHeight<100,h='';S.messages.forEach(function(m){
-    if(m.role==='user')h+='<div class="msg user"><div class="msg-user">'+esc(m.content)+'</div></div>';
-    else{var c=m.content||'',isLast=m===S.messages[S.messages.length-1];h+='<div class="msg ai"><div class="msg-ai-label">👌 CAPITAN AI</div>';
-      if(isLast&&!c)h+='<div class="think"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div></div>';
-      else h+='<div class="msg-ai-body">'+fmt(c)+'</div><div class="msg-acts"><button class="msg-act" onclick="copyMsg(this)">Copy</button><button class="msg-act" onclick="retryMsg()">Retry</button></div>';h+='</div>'}
-  });el.innerHTML=h;if(near||S.streaming)el.scrollTop=el.scrollHeight
-}
-function copyMsg(b){var t=b.closest('.msg.ai')?.querySelector('.msg-ai-body')?.textContent||'';navigator.clipboard.writeText(t).then(function(){toast('Copied')}).catch(function(){})}
-function retryMsg(){if(S.streaming||S.messages.length<2)return;var last=S.messages[S.messages.length-2];S.messages=S.messages.slice(0,-2);if(last&&last.role==='user')sendMessage(last.content)}
+const api = new API(CONFIG.API_BASE);
 
-function bindEvents(){
-  var el;
-  el=document.getElementById('menuBtn');if(el)el.addEventListener('click',mobileOpen);
-  el=document.getElementById('sbOverlay');if(el)el.addEventListener('click',mobileClose);
-  el=document.getElementById('sbToggleDesktop');if(el)el.addEventListener('click',toggleDesktopSidebar);
-  el=document.getElementById('logoClick');if(el)el.addEventListener('click',function(){S.founderClicks++;if(S.founderClicks>=5){S.founderClicks=0;if(S.tier!=='founder')document.getElementById('founderModal').classList.add('open')}setTimeout(function(){S.founderClicks=0},2000)});
-  el=document.getElementById('btnNewChat');if(el)el.addEventListener('click',newChat);
-  el=document.getElementById('btnLibrary');if(el)el.addEventListener('click',function(){renderLibraryList();document.getElementById('libraryModal').classList.add('open')});
-  el=document.getElementById('libSave');if(el)el.addEventListener('click',saveLib);
-  el=document.getElementById('closeLibrary');if(el)el.addEventListener('click',function(){document.getElementById('libraryModal').classList.remove('open')});
-  el=document.getElementById('btnWorkspace');if(el)el.addEventListener('click',function(){document.getElementById('workspaceModal').classList.add('open');wsShowTab(S.workspace.tab||'Create');if(S.workspace.roomId){document.getElementById('wsRoomDisplay').style.display='block';document.getElementById('wsRoomCode').textContent=S.workspace.roomCode}});
-  el=document.getElementById('btnCoding');if(el)el.addEventListener('click',function(){sendMessage('Write production-quality code.');mobileClose()});
-  el=document.getElementById('btnFinance');if(el)el.addEventListener('click',function(){sendMessage('Analyze African financial markets.');mobileClose()});
-  el=document.getElementById('btnProfile');if(el)el.addEventListener('click',function(){document.getElementById('profName').value=S.name||'';document.getElementById('profLang').value=S.profLang||'en';document.getElementById('profTz').value=S.profTz||'UTC';document.getElementById('profileModal').classList.add('open')});
-  el=document.getElementById('saveProfile');if(el)el.addEventListener('click',saveProfile);
-  el=document.getElementById('closeProfile');if(el)el.addEventListener('click',function(){document.getElementById('profileModal').classList.remove('open')});
-  el=document.getElementById('btnTheme');if(el)el.addEventListener('click',function(){S.theme=S.theme==='dark'?'light':'dark';localStorage.setItem('cap_theme',S.theme);render()});
-  el=document.getElementById('btnUser');if(el)el.addEventListener('click',function(){if(!S.userId)document.getElementById('authModal').classList.add('open');else document.getElementById('upgradeModal').classList.add('open')});
-  el=document.getElementById('upgradeLink');if(el)el.addEventListener('click',function(){document.getElementById('upgradeModal').classList.add('open')});
-  el=document.getElementById('btnContact');if(el)el.addEventListener('click',function(){toast('📧 closeaitechnologies@protonmail.com',3500)});
-  el=document.getElementById('btnPrivacy');if(el)el.addEventListener('click',function(){document.getElementById('privacyModal').classList.add('open')});
-  el=document.getElementById('closePrivacy');if(el)el.addEventListener('click',function(){document.getElementById('privacyModal').classList.remove('open')});
-  el=document.getElementById('btnAdmin');if(el)el.addEventListener('click',function(){loadAdmin();document.getElementById('adminModal').classList.add('open')});
-  el=document.getElementById('closeAdmin');if(el)el.addEventListener('click',function(){document.getElementById('adminModal').classList.remove('open')});
-  el=document.getElementById('chatInput');if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});
-  el=document.getElementById('sendBtn');if(el)el.addEventListener('click',function(){sendMessage()});
-  document.querySelectorAll('#authTabs .pill-tab').forEach(function(t){t.addEventListener('click',function(){var tab=t.dataset.tab;document.querySelectorAll('#authTabs .pill-tab').forEach(function(x){x.classList.toggle('active',x.dataset.tab===tab)});document.getElementById('loginForm').style.display=tab==='login'?'block':'none';document.getElementById('registerForm').style.display=tab==='register'?'block':'none'})});
-  el=document.getElementById('loginBtn');if(el)el.addEventListener('click',doLogin);
-  el=document.getElementById('registerBtn');if(el)el.addEventListener('click',doRegister);
-  el=document.getElementById('closeAuth');if(el)el.addEventListener('click',function(){document.getElementById('authModal').classList.remove('open')});
-  el=document.getElementById('tierFree');if(el)el.addEventListener('click',function(){selectTier('free')});
-  el=document.getElementById('tierPlus');if(el)el.addEventListener('click',function(){selectTier('plus')});
-  el=document.getElementById('tierPro');if(el)el.addEventListener('click',function(){selectTier('pro')});
-  document.querySelectorAll('#upgradeModal .pill-tab').forEach(function(t){t.addEventListener('click',function(){switchCoin(t.dataset.coin)})});
-  el=document.getElementById('verifyUpgrade');if(el)el.addEventListener('click',upgradeTier);
-  el=document.getElementById('closeUpgrade');if(el)el.addEventListener('click',function(){document.getElementById('upgradeModal').classList.remove('open');document.getElementById('paymentSection').classList.remove('open')});
-  el=document.getElementById('verifyFounder');if(el)el.addEventListener('click',activateFounder);
-  el=document.getElementById('closeFounder');if(el)el.addEventListener('click',function(){document.getElementById('founderModal').classList.remove('open')});
-  el=document.getElementById('wsTabCreate');if(el)el.addEventListener('click',function(){wsShowTab('Create')});el=document.getElementById('wsTabJoin');if(el)el.addEventListener('click',function(){wsShowTab('Join')});el=document.getElementById('wsTabChat');if(el)el.addEventListener('click',function(){wsShowTab('Chat')});
-  el=document.getElementById('wsCreateBtn');if(el)el.addEventListener('click',wsCreate);el=document.getElementById('wsJoinBtn');if(el)el.addEventListener('click',wsJoin);
-  el=document.getElementById('wsSendBtn');if(el)el.addEventListener('click',wsSend);
-  el=document.getElementById('wsEditNote');if(el)el.addEventListener('click',saveWsNote);
-  el=document.getElementById('closeWorkspace');if(el)el.addEventListener('click',function(){document.getElementById('workspaceModal').classList.remove('open')});
-  document.querySelectorAll('.sb-label').forEach(function(l){l.addEventListener('click',function(){var s=l.dataset.section,b=document.getElementById(s+'Body');if(b){var o=b.style.maxHeight!=='0px'&&b.style.maxHeight!=='';b.style.maxHeight=o?'0px':'800px';l.classList.toggle('open',!o)}})});
-  ['upgradeModal','authModal','founderModal','workspaceModal','libraryModal','profileModal','privacyModal'].forEach(function(id){var m=document.getElementById(id);if(m)m.addEventListener('click',function(e){if(e.target.id===id){m.classList.remove('open');if(id==='upgradeModal')document.getElementById('paymentSection').classList.remove('open')}})});
-  var ts=0;document.querySelector('.main')?.addEventListener('touchstart',function(e){ts=e.touches[0].clientX},{passive:!0});document.querySelector('.main')?.addEventListener('touchend',function(e){if(e.changedTouches[0].clientX-ts>60&&ts<30)mobileOpen()});
+// ─── INIT ────────────────────────────────────────────────────
+async function init() {
+    console.log('👌 CAPITAN AI v22.0 Initializing...');
+    console.log('CLOSEAI Technologies | Backend:', CONFIG.API_BASE);
+    
+    await checkHealth();
+    
+    const saved = localStorage.getItem('capitan_token');
+    if (saved) { STATE.token = saved; try { const s = await api.getSession(); STATE.session = s; STATE.tier = s.tier; } catch(e) { localStorage.removeItem('capitan_token'); await api.createSession(); } }
+    else { await api.createSession(); }
+    
+    await Promise.allSettled([loadChats(), loadPayConfig(), loadMarkets()]);
+    
+    renderApp(); setupListeners(); startTasks();
+    
+    if (window.innerWidth > 768) { STATE.sidebarOpen = true; updateSidebar(); }
+    
+    console.log(`✅ Ready — Tier: ${STATE.tier.toUpperCase()} — ${CONFIG.TIER_EMOJI[STATE.tier]}`);
 }
 
-init();
+async function checkHealth() {
+    try { STATE.health = await api.health(); STATE.connected = STATE.health.ai === 'connected' ? 'online' : 'degraded'; }
+    catch(e) { STATE.connected = 'offline'; STATE.health = { status:'error', ai:'disconnected' }; }
+    updateConnDot();
+}
+
+function startTasks() {
+    setInterval(async () => { if (!STATE.loading) await loadChats(); }, CONFIG.CHAT_REFRESH);
+    setInterval(checkHealth, CONFIG.HEALTH_CHECK);
+    setInterval(async () => { if (STATE.tier === 'pro' || STATE.tier === 'founder') await loadMarkets(); }, CONFIG.MARKET_REFRESH);
+    setInterval(saveDrafts, 5000);
+}
+
+// ─── DATA LOADING ────────────────────────────────────────────
+async function loadChats() { try { const d = await api.getChats(); STATE.chats = d.chats||[]; renderSidebarChats(); } catch(e) { console.error(e); } }
+async function loadPayConfig() { try { STATE.payConfig = await api.getPayConfig(); } catch(e) {} }
+async function loadMarkets() { try { STATE.markets = await api.getMarkets(); } catch(e) {} }
+async function loadLib() { try { const d = await api.getLib(); STATE.library = d.items||[]; renderLibList(); } catch(e) {} }
+
+// ─── RENDER ──────────────────────────────────────────────────
+function renderApp() {
+    const app = document.getElementById('app');
+    const tierEmoji = CONFIG.TIER_EMOJI[STATE.tier] || '🔹';
+    const tierName = STATE.tier.toUpperCase();
+    const sid = STATE.session?.id || '...';
+    const dotClass = STATE.connected;
+    
+    app.innerHTML = `
+        <div style="position:fixed;top:10px;right:16px;z-index:200;font-size:10px;color:var(--txt4);display:flex;align-items:center;gap:6px" id="connDot">
+            <span class="conn-dot ${dotClass}"></span>${dotClass === 'online' ? 'Connected' : dotClass === 'degraded' ? 'Limited' : 'Offline'}
+        </div>
+        
+        <aside class="sidebar ${window.innerWidth <= 768 ? '' : (STATE.sidebarOpen ? '' : 'collapsed')}" id="sidebar">
+            <div class="sb-sec">
+                <div class="sb-logo" onclick="newChat()">👌</div>
+                <div class="sb-logo-text">CAPITAN AI v22</div>
+                <button class="btn-new" onclick="newChat()">
+                    <svg class="icon-sm icon-stroke" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New Chat
+                </button>
+            </div>
+            
+            <div class="sb-sec">
+                <div class="sb-label" onclick="toggleSec('chats')">📨 Chats <span style="font-size:10px;color:var(--txt4)">${STATE.chats.length}</span><span class="arrow">▶</span></div>
+                <div class="sb-body" id="chatsSec" style="max-height:45vh;overflow-y:auto"><div id="chatsList">${renderChatsHTML()}</div></div>
+            </div>
+            
+            <div class="sb-sec">
+                <div class="sb-label" onclick="toggleSec('tools')">🧰 Tools<span class="arrow">▶</span></div>
+                <div class="sb-body" id="toolsSec">
+                    <div class="sb-item" onclick="openLib()"><span>📁</span> Library <span class="sb-badge">${STATE.library.length}</span></div>
+                    <div class="sb-item" onclick="openWS()"><span>🗂️</span> Work Area</div>
+                    <div class="sb-item" onclick="uploadFile()"><span>📎</span> Upload File</div>
+                    <div class="sb-item" onclick="openMarkets()"><span>📈</span> Markets ${STATE.markets ? '🟢' : ''}</div>
+                    <div class="sb-item" onclick="openUpgrade()"><span>⚡</span> Upgrade <span class="sb-badge">${tierName}</span></div>
+                </div>
+            </div>
+            
+            <div class="sb-sec">
+                <div class="sb-label" onclick="toggleSec('settings')">⚙️ Settings<span class="arrow">▶</span></div>
+                <div class="sb-body" id="settingsSec">
+                    <div class="sb-item" onclick="toggleTheme()"><span>${document.documentElement.classList.contains('light')?'🌙':'☀️'}</span> ${document.documentElement.classList.contains('light')?'Dark':'Light'} Mode</div>
+                    <div class="sb-item" onclick="openPrivacy()"><span>🔒</span> Privacy Policy</div>
+                    <div class="sb-item" onclick="openFounder()"><span>🔐</span> Founder Access</div>
+                    ${STATE.tier==='founder'?`<div class="sb-item" onclick="openAdmin()"><span>🛠️</span> Admin Dashboard</div>`:''}
+                    <div class="sb-item" onclick="exportData()"><span>💾</span> Export Data</div>
+                </div>
+            </div>
+            
+            <div class="sb-user" onclick="openUpgrade()">
+                <div class="sb-avatar">${tierEmoji}</div>
+                <div><div style="font-weight:600;font-size:13px">${tierName} Tier</div><div style="font-size:10px;color:var(--txt3)">Session ${sid}</div></div>
+            </div>
+            <div class="sb-footer">CLOSEAI TECHNOLOGIES © 2026</div>
+        </aside>
+        
+        <main class="main">
+            <div class="chat-wrap">
+                <div class="chat-msgs" id="chatMsgs">${STATE.activeChat ? renderMsgsHTML() : welcomeHTML()}</div>
+                <div class="input-area">
+                    <div class="input-box">
+                        <input type="text" class="input-field" id="msgInput" placeholder="${STATE.tier==='free'?'Message CAPITAN AI (10/day)':'Message CAPITAN AI...'}" autocomplete="off" maxlength="${CONFIG.MAX_MSG_LEN}" value="${STATE.draft}" ${STATE.loading?'disabled':''}/>
+                        <button class="send-btn" id="sendBtn" ${STATE.loading?'disabled':''} onclick="sendMsg()" title="Send (Enter)">
+                            <svg class="icon-sm icon-stroke" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </div>
+                    <div class="status-bar"><span>${STATE.thinking?'👌 CAPITAN is thinking...':'Ready'}</span><span>${STATE.session?`${STATE.session.count||0} msgs`:''}</span></div>
+                </div>
+            </div>
+        </main>
+    `;
+    
+    updateSidebarToggle();
+    if (STATE.sidebarOpen && window.innerWidth <= 768) { document.getElementById('sidebar').classList.add('mobile-open'); document.getElementById('sbOverlay').classList.add('visible'); }
+    if (STATE.messages.length > 0) scrollBottom();
+}
+
+function welcomeHTML() {
+    return `
+        <div class="welcome">
+            <div class="welcome-logo">👌</div>
+            <h1>CAPITAN AI</h1>
+            <p class="welcome-sub">Enterprise Intelligence by CLOSEAI Technologies</p>
+            <div class="welcome-pills">
+                <div class="wp-pill" onclick="quickSend('Explain a DCF valuation model with step-by-step calculations')">💰 DCF Valuation</div>
+                <div class="wp-pill" onclick="quickSend('Write a production-ready Python function for binary search with error handling')">🐍 Binary Search</div>
+                <div class="wp-pill" onclick="quickSend('Explain the Black-Scholes option pricing model with mathematical derivation')">📊 Black-Scholes</div>
+                <div class="wp-pill" onclick="quickSend('Design a scalable microservice architecture for a fintech platform')">🏗️ Fintech Architecture</div>
+                <div class="wp-pill" onclick="quickSend('Analyze current African fintech market trends and opportunities')">🌍 African Fintech</div>
+                <div class="wp-pill" onclick="quickSend('Explain portfolio optimization using Markowitz mean-variance framework')">📈 Portfolio Theory</div>
+            </div>
+            ${STATE.connected !== 'online' ? `<div style="margin-top:24px;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--bdr);font-size:12px;color:var(--txt3)">⚠️ AI models in ${STATE.connected==='degraded'?'fallback mode':'maintenance'}. Responses may be limited.</div>` : ''}
+        </div>`;
+}
+
+function renderChatsHTML() {
+    if (!STATE.chats.length) return '<div style="padding:12px;font-size:11px;color:var(--txt4);text-align:center">No conversations yet</div>';
+    return STATE.chats.map(c => `
+        <div class="sb-chat-item ${STATE.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'Untitled')}">
+            <span>${esc(c.title||'Untitled')}</span>
+            <button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')" title="Delete">✕</button>
+        </div>`).join('');
+}
+
+function renderMsgsHTML() {
+    return STATE.messages.map((m,i) => m.role==='user' 
+        ? `<div class="msg user" id="m-${i}"><div class="msg-user">${esc(m.content)}</div></div>`
+        : `<div class="msg" id="m-${i}"><div class="msg-ai-label">CAPITAN AI ${m.model?`· ${fmtModel(m.model)}`:''}${m.model==='fallback'?' ⚠️':''}</div><div class="msg-ai-body">${fmtMD(m.content)}</div><div class="msg-acts"><button class="msg-act" onclick="copyText('${escAttr(m.content)}')">📋 Copy</button><button class="msg-act" onclick="regen()">🔄 Regenerate</button><button class="msg-act" onclick="continueChat()">💬 Continue</button></div></div>`
+    ).join('');
+}
+
+function thinkHTML() {
+    return `<div class="msg" id="thinkInd"><div class="think"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div><span style="font-size:12px;color:var(--txt4)">CAPITAN is analyzing...</span></div></div>`;
+}
+
+// ─── CHAT ────────────────────────────────────────────────────
+async function sendMsg() {
+    const inp = document.getElementById('msgInput'); if (!inp) return;
+    const msg = inp.value.trim(); if (!msg || STATE.loading) return;
+    inp.value = ''; STATE.draft = ''; STATE.loading = true; STATE.thinking = true; updateBtn(); updateStatus();
+    
+    STATE.messages.push({ role:'user', content:msg });
+    renderMsgs();
+    document.getElementById('chatMsgs').insertAdjacentHTML('beforeend', thinkHTML());
+    scrollBottom();
+    
+    try {
+        const r = await api.sendMsg(STATE.messages, STATE.activeChat);
+        document.getElementById('thinkInd')?.remove();
+        STATE.messages.push({ role:'assistant', content:r.content, model:r.model });
+        STATE.activeChat = r.chat_id;
+        STATE.session.count = (STATE.session.count||0) + 1;
+        await loadChats(); renderMsgs(); scrollBottom();
+        if (r.remaining !== 'unlimited' && r.remaining <= 3) toast(`⚠️ ${r.remaining} messages remaining today. Upgrade for more.`, 'warning');
+    } catch(e) {
+        document.getElementById('thinkInd')?.remove();
+        STATE.messages.push({ role:'assistant', content:`I apologize — ${e.message}\n\nPlease try again or contact closeaitechnologies@protonmail.com`, model:'error' });
+        renderMsgs(); toast(e.message, 'error');
+    } finally { STATE.loading = false; STATE.thinking = false; updateBtn(); updateStatus(); }
+}
+
+async function quickSend(p) { const inp = document.getElementById('msgInput'); if (inp) { inp.value = p; await sendMsg(); } }
+async function regen() { if (STATE.messages.length < 2) return; STATE.messages.pop(); renderMsgs(); STATE.loading = true; STATE.thinking = true; updateBtn(); document.getElementById('chatMsgs').insertAdjacentHTML('beforeend', thinkHTML()); scrollBottom();
+    try { const r = await api.sendMsg(STATE.messages, STATE.activeChat); document.getElementById('thinkInd')?.remove(); STATE.messages.push({ role:'assistant', content:r.content, model:r.model }); renderMsgs(); scrollBottom(); }
+    catch(e) { document.getElementById('thinkInd')?.remove(); toast('Failed: '+e.message, 'error'); }
+    finally { STATE.loading = false; STATE.thinking = false; updateBtn(); }
+}
+async function continueChat() { const inp = document.getElementById('msgInput'); if (inp) { inp.value = 'Please continue, elaborate further with more details and depth.'; await sendMsg(); } }
+async function loadChat(id) { STATE.activeChat = id; STATE.messages = []; try { const c = await api.getChat(id); STATE.messages = c.messages||[]; renderMsgs(); renderSidebarChats(); scrollBottom(); } catch(e) { toast('Failed: '+e.message, 'error'); } }
+async function delChat(id) { if (!confirm('Delete this conversation?')) return; try { await api.delChat(id); STATE.chats = STATE.chats.filter(c=>c.id!==id); if (STATE.activeChat===id) newChat(); renderSidebarChats(); toast('Deleted', 'success'); } catch(e) { toast('Failed: '+e.message, 'error'); } }
+function newChat() { STATE.activeChat = null; STATE.messages = []; renderApp(); if (window.innerWidth <= 768) closeSidebar(); }
+
+// ─── WORKSPACE ───────────────────────────────────────────────
+function genRoomCode() { const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const s1=Array.from({length:3},()=>ch[Math.floor(Math.random()*ch.length)]).join(''); const s2=Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join(''); return `CAP-${s1}-${s2}`; }
+async function wsCreate() {
+    if (STATE.tier==='free') { toast('Work Area requires Plus or Pro tier', 'warning'); openUpgrade(); return; }
+    const code = genRoomCode(); const max = { free:0, plus:5, pro:16, founder:999 }[STATE.tier]||5;
+    try { const r = await api.wsCreate(code, max); STATE.workspace = { roomCode:code, roomId:r.room_id, messages:[], members:[], notes:[], timer:null }; document.getElementById('wsRoomCode').textContent = code; document.getElementById('wsRoomDisplay').style.display = 'block'; toast('Created! Share the code.', 'success'); wsStartPoll(); }
+    catch(e) { toast('Failed: '+e.message, 'error'); }
+}
+async function wsJoin() {
+    if (STATE.tier==='free') { toast('Work Area requires Plus or Pro tier', 'warning'); openUpgrade(); return; }
+    const code = document.getElementById('wsJoinInput')?.value.trim().toUpperCase(); if (!code) { toast('Enter a room code', 'warning'); return; }
+    try { const r = await api.wsJoin(code); STATE.workspace = { ...STATE.workspace, roomCode:code, roomId:r.room_id, messages:r.messages||[], members:r.members||[] }; switchWSTab('chat'); renderWSMsgs(); toast(`Joined! ${r.members.length} members`, 'success'); wsStartPoll(); }
+    catch(e) { toast('Failed: '+e.message, 'error'); }
+}
+async function wsSend() {
+    const inp = document.getElementById('wsMessageInput'); if (!inp) return;
+    const msg = inp.value.trim(); if (!msg || !STATE.workspace.roomCode) return;
+    inp.value = ''; STATE.wsDraft = '';
+    try { const r = await api.wsMsg(STATE.workspace.roomCode, msg); STATE.workspace.messages = r.messages||[]; renderWSMsgs(); }
+    catch(e) { toast('Failed: '+e.message, 'error'); }
+}
+async function sendWorkspaceAICommand(cmd) { const inp = document.getElementById('wsMessageInput'); if (inp) { inp.value = `@CAPITAN ${cmd}`; await wsSend(); } }
+async function wsSaveNotes() {
+    const content = document.getElementById('wsNotesEditor')?.value; if (!content || !STATE.workspace.roomCode) return;
+    try { const r = await api.wsSaveNotes(STATE.workspace.roomCode, content); STATE.workspace.notes = r.notes||[]; renderWSNotes(); toast('Notes saved!', 'success'); }
+    catch(e) { toast('Failed: '+e.message, 'error'); }
+}
+function wsStartPoll() {
+    if (STATE.workspace.timer) clearInterval(STATE.workspace.timer);
+    STATE.workspace.timer = setInterval(async () => {
+        if (!STATE.workspace.roomCode) { clearInterval(STATE.workspace.timer); return; }
+        try { const [md, nd] = await Promise.all([api.wsGetMsgs(STATE.workspace.roomCode), api.wsGetNotes(STATE.workspace.roomCode)]); STATE.workspace.messages = md.messages||[]; STATE.workspace.members = md.members||[]; STATE.workspace.notes = nd.notes||[]; renderWSMsgs(); renderWSNotes(); } catch(e) {}
+    }, CONFIG.WORKSPACE_POLL);
+}
+function renderWSMsgs() {
+    const c = document.getElementById('wsMessages'); if (!c) return;
+    if (!STATE.workspace.messages.length) { c.innerHTML = '<div style="padding:12px;font-size:11px;color:var(--txt4);text-align:center">No messages yet</div>'; return; }
+    c.innerHTML = STATE.workspace.messages.map(m => `<div style="padding:8px;border-bottom:1px solid var(--bdr);font-size:12px;animation:fIn .2s ease"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;color:${m.is_ai?'var(--accent)':'var(--txt)'}">${esc(m.author)} ${m.is_ai?'🤖':'👤'}</span><span style="font-size:9px;color:var(--txt4)">${new Date(m.created).toLocaleTimeString()}</span></div><div style="color:var(--txt2);line-height:1.5">${fmtMD(m.message)}</div></div>`).join('');
+    c.scrollTop = c.scrollHeight;
+}
+function renderWSNotes() {
+    const c = document.getElementById('wsNotesDisplay'); if (!c) return;
+    if (!STATE.workspace.notes.length) { c.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--txt4)">No shared notes</div>'; c.style.display = 'block'; return; }
+    c.style.display = 'block';
+    c.innerHTML = STATE.workspace.notes.map(n => `<div style="padding:8px;font-size:12px;color:var(--txt2);line-height:1.5"><div style="font-size:9px;color:var(--txt4);margin-bottom:4px">By ${esc(n.author)} · ${new Date(n.updated).toLocaleString()}</div>${fmtMD(n.content)}</div>`).join('');
+}
+function switchWSTab(t) {
+    ['create','join','chat'].forEach(k => { const p = document.getElementById(`ws${k.charAt(0).toUpperCase()+k.slice(1)}Panel`); if (p) p.style.display = k===t?'block':'none'; });
+    document.querySelectorAll('#workspaceModal .pill-tab').forEach(b => b.classList.remove('active'));
+    const tb = document.getElementById(`wsTab${t.charAt(0).toUpperCase()+t.slice(1)}`); if (tb) tb.classList.add('active');
+}
+
+// ─── LIBRARY ─────────────────────────────────────────────────
+function openLib() { document.getElementById('libraryModal').classList.add('open'); loadLib(); }
+function renderLibList() {
+    const c = document.getElementById('libraryList'); if (!c) return;
+    if (!STATE.library.length) { c.innerHTML = '<div style="padding:12px;font-size:11px;color:var(--txt4);text-align:center">No saved notes</div>'; return; }
+    c.innerHTML = STATE.library.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--bdr)"><div style="flex:1;cursor:pointer" onclick="viewLib('${i.id}')"><div style="font-weight:600;font-size:13px;color:var(--txt)">${esc(i.name)}</div><div style="font-size:10px;color:var(--txt3)">${i.type} · ${i.size}B · ${new Date(i.created).toLocaleDateString()}</div></div><button onclick="delLib('${i.id}')" style="background:none;border:none;color:var(--txt4);cursor:pointer;font-size:14px" title="Delete">🗑️</button></div>`).join('');
+}
+function viewLib(id) { const i = STATE.library.find(x=>x.id===id); if (!i) return; document.getElementById('libName').value = i.name; document.getElementById('libContent').value = i.content; toast(`Loaded: ${i.name}`, 'info'); }
+async function saveLib() {
+    const n = document.getElementById('libName')?.value.trim(); const c = document.getElementById('libContent')?.value.trim();
+    if (!n||!c) { toast('Name and content required', 'warning'); return; }
+    try { await api.createLib(n, 'note', c); document.getElementById('libName').value = ''; document.getElementById('libContent').value = ''; await loadLib(); toast('Saved! 📁', 'success'); }
+    catch(e) { toast('Failed: '+e.message, 'error'); }
+}
+async function delLib(id) { if (!confirm('Delete?')) return; try { await api.delLib(id); await loadLib(); toast('Deleted', 'success'); } catch(e) { toast('Failed: '+e.message, 'error'); } }
+
+// ─── UPGRADE & PAYMENTS ──────────────────────────────────────
+let selTier = null; let selCoin = 'BTC';
+function openUpgrade() {
+    document.getElementById('upgradeModal').classList.add('open');
+    document.querySelectorAll('.tier-card').forEach(c=>c.classList.remove('selected'));
+    const cc = document.getElementById(`tier${STATE.tier.charAt(0).toUpperCase()+STATE.tier.slice(1)}`); if (cc) cc.classList.add('selected');
+    document.getElementById('tierPlus').onclick = ()=>selUp('plus');
+    document.getElementById('tierPro').onclick = ()=>selUp('pro');
+    document.querySelectorAll('#paymentSection .pill-tab').forEach(t=>{ t.onclick = ()=>{ document.querySelectorAll('#paymentSection .pill-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); selCoin = t.dataset.coin; updateWallet(); }; });
+    document.getElementById('verifyUpgrade').onclick = verifyUp;
+    updateWallet();
+}
+function selUp(t) { selTier = t; document.querySelectorAll('.tier-card').forEach(c=>c.classList.remove('selected')); document.getElementById(`tier${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.add('selected'); document.getElementById('paymentSection').classList.add('open'); updateWallet(); }
+function updateWallet() { const el = document.getElementById('walletAddr'); if (!el) return; const ws = STATE.payConfig?.wallets||{BTC:'Loading...',ETH:'Loading...'}; el.textContent = ws[selCoin]||'Unavailable'; el.onclick = ()=>{ navigator.clipboard.writeText(el.textContent); toast('Address copied!', 'success'); }; }
+async function verifyUp() {
+    const txid = document.getElementById('txidInput')?.value.trim();
+    if (!selTier) { toast('Select a tier', 'warning'); return; }
+    if (!txid) { toast('Enter TXID', 'warning'); return; }
+    try { const r = await api.upgrade(selTier, txid, selCoin); STATE.tier = r.tier; STATE.token = r.token; STATE.session.tier = r.tier; localStorage.setItem('capitan_token', r.token); document.getElementById('upgradeModal').classList.remove('open'); renderApp(); toast(`🎉 Upgraded to ${r.tier.toUpperCase()}!`, 'success'); }
+    catch(e) { toast('Failed: '+e.message, 'error'); }
+}
+
+// ─── FOUNDER ─────────────────────────────────────────────────
+async function verifyFounder() {
+    const code = document.getElementById('founderCode')?.value;
+    if (!code) { toast('Enter founder code', 'warning'); return; }
+    try { const r = await api.founder(code); STATE.tier = 'founder'; STATE.token = r.token; STATE.session.tier = 'founder'; localStorage.setItem('capitan_token', r.token); document.getElementById('founderModal').classList.remove('open'); renderApp(); toast('👑 Founder access granted!', 'success'); }
+    catch(e) { toast('Invalid code', 'error'); }
+}
+
+// ─── ADMIN ───────────────────────────────────────────────────
+async function openAdmin() {
+    if (STATE.tier !== 'founder') { toast('Founder only', 'warning'); return; }
+    document.getElementById('adminModal').classList.add('open');
+    document.getElementById('adminContent').innerHTML = '<div style="text-align:center;padding:20px;">Loading...</div>';
+    try { const d = await api.admin(); STATE.adminData = d;
+        document.getElementById('adminContent').innerHTML = `
+            <div class="stat-grid">
+                <div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Total Sessions</div></div>
+                <div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid Users</div></div>
+                <div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Total Messages</div></div>
+                <div class="stat-card"><div class="stat-val">${d.workspaces}</div><div class="stat-lbl">Workspaces</div></div>
+            </div>
+            <h3 style="font-size:13px;margin-bottom:8px">Recent Sessions</h3>
+            <div style="max-height:120px;overflow-y:auto;margin-bottom:12px">${d.sessions.map(s=>`<div style="padding:6px;border-bottom:1px solid var(--bdr);font-size:11px;display:flex;justify-content:space-between"><span>${s.id}</span><span style="color:var(--accent)">${s.tier}</span><span>${s.msg_count} msgs</span></div>`).join('')}</div>
+            <h3 style="font-size:13px;margin-bottom:8px">Recent Payments</h3>
+            <div style="max-height:120px;overflow-y:auto">${(d.payments||[]).map(p=>`<div style="padding:6px;border-bottom:1px solid var(--bdr);font-size:11px"><div>${p.session_id} · ${p.tier} · ${p.amount} ${p.currency}</div><div style="color:var(--txt3);font-size:9px">${p.txid} · ${p.created}</div></div>`).join('')}</div>`; }
+    catch(e) { document.getElementById('adminContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--red)">Failed: ${e.message}</div>`; }
+}
+
+// ─── MARKETS ─────────────────────────────────────────────────
+async function openMarkets() {
+    if (STATE.tier !== 'pro' && STATE.tier !== 'founder') { toast('Pro tier required for live markets', 'warning'); openUpgrade(); return; }
+    await loadMarkets();
+    if (!STATE.markets?.prices) { toast('Market data unavailable', 'error'); return; }
+    const prices = STATE.markets.prices;
+    let h = `<div class="modal-overlay open" id="marketsOverlay"><div class="modal" style="max-width:500px"><h2>📈 Live Markets</h2><p style="font-size:11px;color:var(--txt3);margin-bottom:12px">Real-time · Refreshes 60s</p><div style="max-height:400px;overflow-y:auto">`;
+    for (const [n,i] of Object.entries(prices)) {
+        const clr = i.change >= 0 ? 'var(--green)' : 'var(--red)'; const arr = i.change >= 0 ? '▲' : '▼';
+        h += `<div style="padding:10px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:13px">${esc(n)}</span><div style="text-align:right"><div style="font-weight:700;font-size:16px">${i.price.toLocaleString()}</div><div style="color:${clr};font-size:12px">${arr} ${Math.abs(i.change).toFixed(2)}%</div></div></div>`;
+    }
+    h += `</div><button class="modal-btn sec" onclick="document.getElementById('marketsOverlay').remove()" style="margin-top:12px">Close</button></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', h);
+    document.getElementById('marketsOverlay').onclick = function(e) { if (e.target===this) this.remove(); };
+}
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────
+async function uploadFile() {
+    if (STATE.tier === 'free') { toast('Upload requires Plus or Pro tier', 'warning'); openUpgrade(); return; }
+    const inp = document.createElement('input'); inp.type = 'file';
+    const max = STATE.tier==='founder'?500:STATE.tier==='pro'?50:10;
+    inp.onchange = async e => {
+        const f = e.target.files[0]; if (!f) return;
+        if (f.size/(1024*1024) > max) { toast(`Max ${max}MB for ${STATE.tier} tier`, 'error'); return; }
+        toast(`Uploading ${f.name}...`, 'info');
+        try { const r = await api.upload(f); toast(`Uploaded! ${r.filename} (${r.size_mb}MB)`, 'success'); if (STATE.activeChat) { STATE.messages.push({ role:'user', content:`[Uploaded: ${f.name} (${r.size_mb}MB)]` }); renderMsgs(); } }
+        catch(e) { toast('Failed: '+e.message, 'error'); }
+    };
+    inp.click();
+}
+
+// ─── MODALS ──────────────────────────────────────────────────
+function openPrivacy() { document.getElementById('privacyModal').classList.add('open'); }
+function openFounder() { document.getElementById('founderModal').classList.add('open'); }
+function openWS() {
+    if (STATE.tier === 'free') { toast('Work Area requires Plus or Pro tier', 'warning'); openUpgrade(); return; }
+    document.getElementById('workspaceModal').classList.add('open'); switchWSTab('create');
+}
+function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open')); }
+
+// ─── UTILS ───────────────────────────────────────────────────
+function toggleTheme() { document.documentElement.classList.toggle('light'); localStorage.setItem('cap_theme', document.documentElement.classList.contains('light')?'light':'dark'); renderApp(); }
+function toggleSidebar() { STATE.sidebarOpen = !STATE.sidebarOpen; updateSidebar(); }
+function updateSidebar() {
+    const s = document.getElementById('sidebar'); const o = document.getElementById('sbOverlay'); if (!s) return;
+    if (window.innerWidth <= 768) { STATE.sidebarOpen ? (s.classList.add('mobile-open'), o?.classList.add('visible')) : (s.classList.remove('mobile-open'), o?.classList.remove('visible')); }
+    else { STATE.sidebarOpen ? s.classList.remove('collapsed') : s.classList.add('collapsed'); updateSidebarToggle(); }
+}
+function closeSidebar() { STATE.sidebarOpen = false; updateSidebar(); }
+function updateSidebarToggle() { const t = document.getElementById('sbToggleDesktop'); if (t && window.innerWidth > 768) { STATE.sidebarOpen ? t.classList.add('shifted') : t.classList.remove('shifted'); } }
+function toggleSec(name) {
+    const body = document.getElementById(`${name}Sec`); const label = document.querySelector(`[onclick="toggleSec('${name}')"]`); if (!body||!label) return;
+    if (body.style.maxHeight && body.style.maxHeight !== '0px') { body.style.maxHeight = '0px'; label.classList.remove('open'); }
+    else { body.style.maxHeight = body.scrollHeight + 'px'; label.classList.add('open'); }
+}
+function updateBtn() { const b = document.getElementById('sendBtn'); const i = document.getElementById('msgInput'); if (b) { b.disabled = STATE.loading || !i?.value.trim(); } }
+function updateStatus() { const s = document.querySelector('.status-bar'); if (s) s.innerHTML = `<span>${STATE.thinking?'👌 CAPITAN is thinking...':'Ready'}</span><span>${STATE.session?`${STATE.session.count||0} msgs`:''}</span>`; }
+function updateConnDot() { const d = document.getElementById('connDot'); if (d) { const cls = STATE.connected; d.innerHTML = `<span class="conn-dot ${cls}"></span>${cls==='online'?'Connected':cls==='degraded'?'Limited':'Offline'}`; } }
+function scrollBottom() { setTimeout(()=>{ const c = document.getElementById('chatMsgs'); if (c) c.scrollTop = c.scrollHeight; }, 100); }
+function toast(msg, type='info') {
+    const ex = document.querySelector('.toast'); if (ex) ex.remove();
+    const colors = { success:'var(--green)', error:'var(--red)', warning:'#f59e0b', info:'var(--txt)' };
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+    t.style.background = type==='info' ? 'var(--txt)' : 'var(--bg2)'; t.style.color = type==='info' ? 'var(--bg)' : colors[type]||'var(--txt)'; t.style.border = `1px solid ${colors[type]||'var(--bdr)'}`;
+    document.body.appendChild(t); setTimeout(()=>t.remove(), 3000);
+}
+function copyText(text) { navigator.clipboard.writeText(text).then(()=>toast('Copied! 📋','success')).catch(()=>toast('Failed','error')); }
+function fmtMD(text) {
+    if (!text) return '';
+    text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_,lang,code)=>`<pre><code>${esc(code.trim())}</code></pre>`);
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    text = text.replace(/\$\$(.*?)\$\$/g, '<div style="padding:8px;overflow-x:auto;font-style:italic">$$$1$$</div>');
+    text = text.replace(/\$(.*?)\$/g, '<em>$1</em>');
+    text = text.replace(/\n/g, '<br>');
+    text = text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--accent)">$1</a>');
+    return text;
+}
+function fmtModel(m) { const n={ 'anthropic/claude-3.5-sonnet':'Claude 3.5 Sonnet','openai/gpt-4o':'GPT-4o','google/gemini-flash-1.5':'Gemini Flash','mistral/mistral-7b-instruct':'Mistral 7B','deepseek/deepseek-chat':'DeepSeek','meta-llama/llama-3.1-8b-instruct':'Llama 3.1','openai/gpt-3.5-turbo':'GPT-3.5 Turbo',fallback:'Fallback',error:'Error' }; return n[m]||m; }
+function esc(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+function escAttr(text) { return text.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n'); }
+function saveDrafts() { STATE.draft = document.getElementById('msgInput')?.value||''; STATE.wsDraft = document.getElementById('wsMessageInput')?.value||''; localStorage.setItem('cap_draft', STATE.draft); localStorage.setItem('cap_ws_draft', STATE.wsDraft); }
+function exportData() {
+    const data = { session:STATE.session, tier:STATE.tier, chats:STATE.chats.length, messages:STATE.messages.length, library:STATE.library.length, exportDate:new Date().toISOString(), version:'22.0' };
+    const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `capitan-export-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url); toast('Exported!', 'success');
+}
+function renderMsgs() { const c = document.getElementById('chatMsgs'); if (c) c.innerHTML = STATE.activeChat ? renderMsgsHTML() : welcomeHTML(); scrollBottom(); }
+function renderSidebarChats() { const c = document.getElementById('chatsList'); if (c) c.innerHTML = renderChatsHTML(); }
+
+// ─── EVENT LISTENERS ─────────────────────────────────────────
+function setupListeners() {
+    document.getElementById('menuBtn')?.addEventListener('click', toggleSidebar);
+    document.getElementById('sbToggleDesktop')?.addEventListener('click', toggleSidebar);
+    document.getElementById('sbOverlay')?.addEventListener('click', closeSidebar);
+    
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const a = document.activeElement;
+            if (a?.id === 'msgInput') { e.preventDefault(); sendMsg(); }
+            else if (a?.id === 'wsMessageInput') { e.preventDefault(); wsSend(); }
+        }
+        if (e.key === 'Escape') { closeModals(); if (window.innerWidth <= 768) closeSidebar(); }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); newChat(); }
+        if ((e.ctrlKey || e.metaKey) && e.key === '/') { e.preventDefault(); toggleSidebar(); }
+    });
+    
+    document.querySelectorAll('.modal-overlay').forEach(o => { o.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); }); });
+    
+    document.getElementById('closeUpgrade')?.addEventListener('click', ()=>document.getElementById('upgradeModal').classList.remove('open'));
+    document.getElementById('closeFounder')?.addEventListener('click', ()=>document.getElementById('founderModal').classList.remove('open'));
+    document.getElementById('closeLibrary')?.addEventListener('click', ()=>document.getElementById('libraryModal').classList.remove('open'));
+    document.getElementById('closeWorkspace')?.addEventListener('click', ()=>{ document.getElementById('workspaceModal').classList.remove('open'); if (STATE.workspace.timer) { clearInterval(STATE.workspace.timer); STATE.workspace.timer = null; } });
+    document.getElementById('closePrivacy')?.addEventListener('click', ()=>document.getElementById('privacyModal').classList.remove('open'));
+    document.getElementById('closeAdmin')?.addEventListener('click', ()=>document.getElementById('adminModal').classList.remove('open'));
+    
+    document.getElementById('libSave')?.addEventListener('click', saveLib);
+    document.getElementById('wsCreateBtn')?.addEventListener('click', wsCreate);
+    document.getElementById('wsJoinBtn')?.addEventListener('click', wsJoin);
+    document.getElementById('wsSendBtn')?.addEventListener('click', wsSend);
+    document.getElementById('wsEditNote')?.addEventListener('click', ()=>{
+        const nc = STATE.workspace.notes.map(n=>n.content).join('\n');
+        const ed = document.getElementById('wsNotesEditor'); const sb = document.getElementById('wsSaveNote');
+        if (ed) { ed.value = nc; ed.style.display = 'block'; }
+        if (sb) sb.style.display = 'block';
+    });
+    document.getElementById('wsSaveNote')?.addEventListener('click', wsSaveNotes);
+    document.getElementById('wsTabCreate')?.addEventListener('click', ()=>switchWSTab('create'));
+    document.getElementById('wsTabJoin')?.addEventListener('click', ()=>switchWSTab('join'));
+    document.getElementById('wsTabChat')?.addEventListener('click', ()=>switchWSTab('chat'));
+    document.getElementById('verifyFounder')?.addEventListener('click', verifyFounder);
+    
+    document.getElementById('msgInput')?.addEventListener('input', function() { STATE.draft = this.value; updateBtn(); });
+    document.getElementById('wsMessageInput')?.addEventListener('input', function() { STATE.wsDraft = this.value; });
+    
+    window.addEventListener('resize', () => { if (window.innerWidth > 768) { document.getElementById('sidebar')?.classList.remove('mobile-open'); document.getElementById('sbOverlay')?.classList.remove('visible'); } updateSidebarToggle(); });
+    window.addEventListener('beforeunload', saveDrafts);
+}
+
+// ─── START ───────────────────────────────────────────────────
+STATE.draft = localStorage.getItem('cap_draft') || '';
+STATE.wsDraft = localStorage.getItem('cap_ws_draft') || '';
+document.addEventListener('DOMContentLoaded', init);
+
+window.CAPITAN = { STATE, api, init, sendMsg, newChat, toggleTheme, toggleSidebar };
+console.log('👌 CAPITAN AI v22.0 Frontend Loaded');
+console.log('CLOSEAI Technologies | Backend:', CONFIG.API_BASE);
 </script>
 </body>
 </html>
