@@ -3,7 +3,6 @@ CAPITAN AI — Enterprise Backend v22.0
 CLOSEAI Technologies
 Python/FastAPI + SQLite + Multi-API + Web Search
 Privacy-First: No accounts, just messages & payments
-PWA-Ready | App Store Ready
 """
 
 import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlite3
@@ -16,7 +15,7 @@ import concurrent.futures
 import uvicorn
 
 # ═══════════════════════════════════════════════════════════════
-# API KEYS — ALL FREE TIER
+# API KEYS
 # ═══════════════════════════════════════════════════════════════
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -40,15 +39,7 @@ NEWS_API_KEY = os.environ.get("NEWS_API_KEY", "")
 IPGEOLOCATION_KEY = os.environ.get("IPGEOLOCATION_API_KEY", "")
 LOCATIONIQ_KEY = os.environ.get("LOCATIONIQ_API_KEY", "")
 
-CLOUDFLARE_TOKEN = os.environ.get("CLOUDFLARE_TOKEN", "")
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
-SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
-
 WOLFRAM_APP_ID = os.environ.get("WOLFRAM_APP_ID", "")
-MASSIVE_API_KEY = os.environ.get("MASSIVE_API_KEY", "")
-UPSTASH_REDIS_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
-UPSTASH_REDIS_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
 
 JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_hex(32))
 ADMIN_CODE = os.environ.get("ADMIN_CODE", "Osinachi@350")
@@ -59,8 +50,8 @@ WALLETS = {"BTC":"bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new","ETH":"0x5bd39ad3e
 
 TIER_CONFIG = {
     "free":{"name":"Free","msg_limit":10,"workspace_max":0,"file_upload":False,"file_size_mb":0,"speed":"fast","live_markets":False,"web_search":False},
-    "plus":{"name":"Plus","msg_limit":30,"workspace_max":5,"file_upload":True,"file_size_mb":10,"speed":"smart","live_markets":False,"web_search":True},
-    "pro":{"name":"Pro","msg_limit":float("inf"),"workspace_max":16,"file_upload":True,"file_size_mb":50,"speed":"deep","live_markets":True,"web_search":True},
+    "plus":{"name":"Plus","msg_limit":30,"workspace_max":7,"file_upload":True,"file_size_mb":10,"speed":"smart","live_markets":False,"web_search":True},
+    "pro":{"name":"Pro","msg_limit":float("inf"),"workspace_max":20,"file_upload":True,"file_size_mb":50,"speed":"deep","live_markets":True,"web_search":True},
     "founder":{"name":"Founder","msg_limit":float("inf"),"workspace_max":999,"file_upload":True,"file_size_mb":500,"speed":"deep","live_markets":True,"web_search":True}
 }
 
@@ -68,7 +59,7 @@ UPGRADE_BENEFITS = {
     "plus": [
         "30 messages per day (up from 10)",
         "Smart AI model for better responses",
-        "Work Area — collaborate with up to 5 people",
+        "Work Area — collaborate with up to 7 people",
         "File uploads up to 10MB",
         "Web search for real-time answers",
         "Coding & Quant tools",
@@ -78,7 +69,7 @@ UPGRADE_BENEFITS = {
     "pro": [
         "Unlimited messages — no daily cap",
         "Deep AI model (Claude Sonnet 4 / GPT-4o)",
-        "Work Area — collaborate with up to 16 people",
+        "Work Area — collaborate with up to 20 people",
         "File uploads up to 50MB",
         "Live market data (Global, Crypto, African)",
         "Real-time financial news",
@@ -99,7 +90,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (id TEXT PRIMARY KEY, session_id TEXT, filename TEXT, original_name TEXT, size INTEGER, mime_type TEXT, created TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS payments (id TEXT PRIMARY KEY, session_id TEXT, txid TEXT, currency TEXT, amount REAL, tier TEXT, verified INTEGER DEFAULT 0, expires TEXT, created TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS payment_log (id TEXT PRIMARY KEY, session_id TEXT, tier TEXT, amount REAL, currency TEXT, txid TEXT, created TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS workspaces (id TEXT PRIMARY KEY, room_code TEXT UNIQUE, creator_session TEXT, max_members INTEGER, created TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS workspaces (id TEXT PRIMARY KEY, room_code TEXT UNIQUE, creator_session TEXT, creator_tier TEXT, max_members INTEGER, created TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS workspace_members (workspace_id TEXT, session_id TEXT, role TEXT DEFAULT "member", joined TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS workspace_messages (id TEXT PRIMARY KEY, workspace_id TEXT, session_id TEXT, author TEXT, message TEXT, is_ai INTEGER DEFAULT 0, created TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS workspace_notes (id TEXT PRIMARY KEY, workspace_id TEXT, session_id TEXT, author TEXT, content TEXT, created TEXT, updated TEXT)''')
@@ -159,30 +150,61 @@ def check_rate(session_id, tier):
 def get_time_context(request=None):
     now = datetime.utcnow(); hour = now.hour
     day = now.strftime("%A"); date = now.strftime("%B %d, %Y"); utc_time = now.strftime("%H:%M UTC")
-    if hour < 5: time_of_day = "late night"; greeting_context = "It's quite late — or early."
-    elif hour < 12: time_of_day = "morning"; greeting_context = "Good morning! Hope your day is off to a great start."
-    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Good afternoon. Markets are active if you're tracking them."
-    elif hour < 21: time_of_day = "evening"; greeting_context = "Good evening. A good time to review the day's activity."
-    else: time_of_day = "night"; greeting_context = "Good night, night owl."
+    if hour < 5: time_of_day = "late night"; greeting_context = "The world is quiet at this hour."
+    elif hour < 12: time_of_day = "morning"; greeting_context = "A fresh day. Let's make it count."
+    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Markets are alive. Good time to dig in."
+    elif hour < 21: time_of_day = "evening"; greeting_context = "Winding down — or just getting started."
+    else: time_of_day = "night"; greeting_context = "Burning the midnight oil. I'm here for it."
     return {"time_of_day":time_of_day,"day":day,"date":date,"utc_time":utc_time,"greeting_context":greeting_context,"hour":hour}
 
 # ═══════════════════════════════════════════════════════════════
-# CATEGORIZED MARKET DATA
+# MARKET DATA — FIXED GLOBAL & AFRICAN
 # ═══════════════════════════════════════════════════════════════
 
 def get_global_markets():
     results = {}
-    try:
-        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,^GDAXI,^FCHI,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,JPM,GS,GC=F,CL=F,SI=F,NG=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDCHF=X,AUDUSD=X"
-        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
-        if r.status_code == 200:
-            for i in r.json().get("quoteResponse",{}).get("result",[]):
-                name = i.get("shortName") or i.get("symbol","")
-                price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
-                if price and prev:
-                    chg = i.get("regularMarketChangePercent")
-                    results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
-    except: pass
+    # Try Twelve Data first (more reliable)
+    if TWELVE_DATA_KEY:
+        try:
+            syms = ["SPX","IXIC","DJI","FTSE","N225","DAX","AAPL","MSFT","NVDA","GC","CL","EUR/USD","GBP/USD","USD/JPY"]
+            for sym in syms[:8]:
+                try:
+                    r = requests.get(f"https://api.twelvedata.com/price?symbol={sym}&apikey={TWELVE_DATA_KEY}",timeout=8)
+                    if r.status_code==200:
+                        data = r.json()
+                        if data.get("price"):
+                            results[sym] = {"price":float(data["price"]),"change":0,"source":"Twelve Data","updated":datetime.utcnow().isoformat()}
+                except: pass
+        except: pass
+    
+    # Yahoo Finance fallback
+    if not results:
+        try:
+            syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,JPM,GS,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X"
+            r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=8)
+            if r.status_code==200:
+                for i in r.json().get("quoteResponse",{}).get("result",[]):
+                    name = i.get("shortName") or i.get("symbol","")
+                    price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
+                    if price and prev:
+                        chg = i.get("regularMarketChangePercent")
+                        results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
+        except: pass
+    
+    # Alpha Vantage forex fallback
+    if ALPHA_VANTAGE_KEY and len(results) < 3:
+        try:
+            pairs = {"EURUSD":"EUR/USD","GBPUSD":"GBP/USD","USDJPY":"USD/JPY"}
+            for pair, label in pairs.items():
+                try:
+                    r = requests.get(f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={pair[:3]}&to_currency={pair[3:]}&apikey={ALPHA_VANTAGE_KEY}",timeout=8)
+                    if r.status_code==200:
+                        data = r.json().get("Realtime Currency Exchange Rate",{})
+                        if data.get("5. Exchange Rate"):
+                            results[label] = {"price":float(data["5. Exchange Rate"]),"change":0,"source":"Alpha Vantage","updated":datetime.utcnow().isoformat()}
+                except: pass
+        except: pass
+    
     return results
 
 def get_crypto_markets():
@@ -191,35 +213,49 @@ def get_crypto_markets():
         try:
             ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
             r = requests.get("https://api.coingecko.com/api/v3/simple/price",params={"ids":ids,"vs_currencies":"usd","include_24hr_change":"true","include_market_cap":"true"},headers={"x-cg-demo-api-key":COINGECKO_KEY},timeout=10)
-            if r.status_code == 200:
+            if r.status_code==200:
                 data = r.json()
                 name_map = {"bitcoin":"Bitcoin (BTC)","ethereum":"Ethereum (ETH)","ripple":"XRP","cardano":"Cardano (ADA)","solana":"Solana (SOL)","polkadot":"Polkadot (DOT)","dogecoin":"Dogecoin (DOGE)","avalanche-2":"Avalanche (AVAX)","chainlink":"Chainlink (LINK)","uniswap":"Uniswap (UNI)","binancecoin":"BNB","tron":"TRON (TRX)","toncoin":"Toncoin (TON)","near":"NEAR Protocol"}
                 for k, v in data.items():
-                    name = name_map.get(k, k.capitalize())
-                    results[name] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2),"market_cap":v.get("usd_market_cap",0),"source":"CoinGecko","updated":datetime.utcnow().isoformat()}
+                    results[name_map.get(k,k.capitalize())] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2),"market_cap":v.get("usd_market_cap",0),"source":"CoinGecko","updated":datetime.utcnow().isoformat()}
         except: pass
     return results
 
 def get_african_markets():
     results = {}
-    try:
-        syms = "USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X,USDEGP=X,USDMAD=X,EZA,AFK"
-        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
-        if r.status_code == 200:
-            for i in r.json().get("quoteResponse",{}).get("result",[]):
-                name = i.get("shortName") or i.get("symbol","")
-                price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
-                if price and prev:
-                    chg = i.get("regularMarketChangePercent")
-                    results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
-    except: pass
+    # Try Alpha Vantage for African forex
+    if ALPHA_VANTAGE_KEY:
+        try:
+            pairs = {"USDGHS":"USD/GHS","USDNGN":"USD/NGN","USDZAR":"USD/ZAR","USDKES":"USD/KES","USDEGP":"USD/EGP","USDMAD":"USD/MAD"}
+            for pair, label in pairs.items():
+                try:
+                    r = requests.get(f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency={pair[3:]}&apikey={ALPHA_VANTAGE_KEY}",timeout=8)
+                    if r.status_code==200:
+                        data = r.json().get("Realtime Currency Exchange Rate",{})
+                        if data.get("5. Exchange Rate"):
+                            results[label] = {"price":float(data["5. Exchange Rate"]),"change":0,"source":"Alpha Vantage","updated":datetime.utcnow().isoformat()}
+                except: pass
+        except: pass
+    
+    # Yahoo Finance fallback for African ETFs & currencies
+    if not results:
+        try:
+            syms = "USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X,EZA,AFK"
+            r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName"},headers={"User-Agent":"Mozilla/5.0"},timeout=8)
+            if r.status_code==200:
+                for i in r.json().get("quoteResponse",{}).get("result",[]):
+                    name = i.get("shortName") or i.get("symbol","")
+                    price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
+                    if price and prev:
+                        results[name] = {"price":price,"change":round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
+        except: pass
     return results
 
 def get_all_markets():
     return {"global":get_global_markets(),"crypto":get_crypto_markets(),"african":get_african_markets()}
 
 # ═══════════════════════════════════════════════════════════════
-# DETAILED FINANCIAL NEWS
+# FINANCIAL NEWS
 # ═══════════════════════════════════════════════════════════════
 
 def get_financial_news(category="all"):
@@ -227,30 +263,22 @@ def get_financial_news(category="all"):
     if NEWS_API_KEY:
         try:
             params = {"language":"en","pageSize":15,"apiKey":NEWS_API_KEY}
-            if category == "crypto": params["q"] = "crypto OR bitcoin OR ethereum OR blockchain"
-            elif category == "africa": params["q"] = "Africa finance OR African markets OR Nigeria economy"
-            elif category == "global": params["q"] = "global markets OR central bank OR interest rates"
+            if category == "crypto": params["q"] = "crypto OR bitcoin OR ethereum"
+            elif category == "africa": params["q"] = "Africa finance OR Nigeria economy"
+            elif category == "global": params["q"] = "global markets OR central bank"
             else: params["category"] = "business"
             r = requests.get("https://newsapi.org/v2/top-headlines" if category=="all" else "https://newsapi.org/v2/everything",params=params,timeout=10)
-            if r.status_code == 200:
+            if r.status_code==200:
                 for a in r.json().get("articles",[]):
-                    news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("urlToImage",""),"category":category})
+                    news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"category":category})
         except: pass
     if GNEWS_API_KEY:
         try:
-            queries = {"global":"global markets interest rates","crypto":"crypto bitcoin ethereum","africa":"Africa finance economy","all":"finance markets stocks economy"}
+            queries = {"global":"global markets","crypto":"crypto bitcoin","africa":"Africa finance","all":"finance markets"}
             r = requests.get("https://gnews.io/api/v4/search",params={"q":queries.get(category,queries["all"]),"lang":"en","max":15,"apikey":GNEWS_API_KEY},timeout=10)
-            if r.status_code == 200:
+            if r.status_code==200:
                 for a in r.json().get("articles",[]):
-                    news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("image",""),"category":category})
-        except: pass
-    if FINNHUB_API_KEY:
-        try:
-            r = requests.get("https://finnhub.io/api/v1/news",params={"category":"general","token":FINNHUB_API_KEY},timeout=10)
-            if r.status_code == 200:
-                for a in r.json()[:15]:
-                    ts = a.get("datetime",0)
-                    news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:400],"category":category})
+                    news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"category":category})
         except: pass
     seen = set(); unique = []
     for n in news:
@@ -285,8 +313,7 @@ def search_web(query, num_results=5):
             r = requests.get("https://api.duckduckgo.com/",params={"q":query,"format":"json","no_html":1},timeout=8)
             if r.status_code==200:
                 data = r.json()
-                abstract = data.get("AbstractText","")
-                if abstract: results.append({"title":data.get("Heading",query),"snippet":abstract[:300],"url":data.get("AbstractURL",""),"source":"DuckDuckGo"})
+                if data.get("AbstractText"): results.append({"title":data.get("Heading",query),"snippet":data["AbstractText"][:300],"url":data.get("AbstractURL",""),"source":"DuckDuckGo"})
                 for topic in data.get("RelatedTopics",[])[:num_results-1]:
                     if isinstance(topic,dict) and topic.get("Text"):
                         results.append({"title":"","snippet":topic["Text"][:300],"url":topic.get("FirstURL",""),"source":"DuckDuckGo"})
@@ -294,99 +321,115 @@ def search_web(query, num_results=5):
     if results:
         try:
             conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-            c.execute("DELETE FROM web_cache WHERE created < ?",((datetime.utcnow()-timedelta(hours=6)).isoformat(),))
             c.execute("INSERT OR REPLACE INTO web_cache (id,query_hash,data,created) VALUES (?,?,?,?)",(sid(),query_hash,json.dumps(results),datetime.utcnow().isoformat()))
             conn.commit(); conn.close()
         except: pass
     return results
 
 # ═══════════════════════════════════════════════════════════════
-# ELITE INTELLIGENCE SYSTEM PROMPT — IDENTITY HARDENED
+# ELITE SYSTEM PROMPT — REFINED WRITING STYLE
 # ═══════════════════════════════════════════════════════════════
 
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — an elite institutional intelligence system created by CLOSEAI Technologies.
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — an elite institutional intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu with support from NED Blessing Asuquo and CIO Ebubechi Chukwu.
 
-CRITICAL — YOUR IDENTITY:
-You are an enterprise AI assistant for finance, coding, mathematics, quantitative analysis, science, and health. You are NOT a climbing gym. You are NOT membership management software. You are NOT a CRM, booking platform, or any other product named "Capitan." You were built by CLOSEAI Technologies, founded by CEO Osinachi Chukwu, with support from Non-Executive Director Blessing Asuquo and CIO Ebubechi Chukwu.
+YOUR IDENTITY:
+You are a sharp, warm, deeply knowledgeable colleague. Your writing is clear, confident, and precise — never robotic, never padded. You write like someone who respects the reader's intelligence and values their time.
 
-If someone greets you with "Hello Capitan" or similar — respond warmly as CAPITAN AI, the elite intelligence platform. NEVER claim to be anything else. NEVER invent features like "membership management," "climbing gym software," "referral systems," or "booking platforms." If you're unsure what a user means, ask for clarification rather than guessing.
+HOW YOU WRITE:
+• Open with the insight, not with throat-clearing. Lead with what matters.
+• Short sentences. Clean paragraphs. No filler.
+• When the topic demands depth, go deep. When a one-liner suffices, stop there.
+• Use concrete examples over abstract explanations.
+• Code should be production-ready — typed, documented, and tested.
+• Math should be rigorous — use LaTeX where it clarifies.
+• Market data should be cited with sources when available.
+• If you don't know something, say so directly. Never bluff.
 
-ABOUT CLOSEAI TECHNOLOGIES:
-CLOSEAI Technologies was established under the leadership of CEO Osinachi Chukwu, with pivotal support from Non-Executive Director Blessing Asuquo, whose provision of essential logistics, alongside the contributions of CIO Ebubechi Chukwu, has been instrumental to the company's development. CAPITAN AI is the company's flagship AI brain — built to serve professionals across finance, technology, science, and beyond.
+YOUR TONE:
+• Warm but efficient. Like a senior colleague who's generous with their time.
+• Use contractions naturally. Write how smart people actually talk.
+• Never use jargon like "leverage," "circle back," or "touch base."
+• Match the user's energy — casual when they're casual, formal when they're formal.
 
-YOUR PERSONALITY:
-You are warm, natural, and conversational — like a brilliant colleague who genuinely wants to help. You don't talk like a textbook or a robot. You speak like a smart, experienced human being. You can be casual when the moment calls for it, and deeply rigorous when the topic demands precision.
+WHAT YOU ARE NOT:
+You are NOT a climbing gym. NOT membership software. NOT a CRM. If asked about other things named "Capitan," politely clarify: "I'm CAPITAN AI — the enterprise intelligence platform by CLOSEAI Technologies."
 
 CRITICAL RULES:
-• NEVER make up market prices. Only reference prices from the LIVE MARKET DATA section if it contains real data.
-• If LIVE MARKET DATA says "No data" — tell the user honestly: "I don't have live prices right now."
-• NEVER claim to be anything other than CAPITAN AI by CLOSEAI Technologies.
-• NEVER give buy/sell recommendations, trading signals, or medical diagnoses.
-• Be honest about what you know and don't know.
+• NEVER make up prices. Reference only live data provided below.
+• NEVER give financial advice or trading signals.
+• NEVER provide medical diagnoses.
+• Be honest about confidence levels.
 
-CURRENT TIME: {day}, {date} at {utc_time} ({time_of_day} in UTC). {greeting_context}
-
-COMMUNICATION STYLE:
-• Be conversational. Start naturally: "Great question," "Let me walk you through this," "Here's how I think about it..."
-• Use contractions naturally: "it's," "you're," "I've," "that's"
-• Never use corporate jargon or buzzwords
-• Match the user's energy
-
-KNOWLEDGE DOMAINS:
-• Finance: DCF, LBO, M&A, portfolio optimization, options pricing, fixed income, risk management, macroeconomics, African markets (NGX, JSE, GSE, BRVM, EGX)
-• Coding: Python, JavaScript, TypeScript, Rust, Go, C++, SQL, React, Node.js, system design, DevOps
-• Mathematics: Real/complex analysis, linear algebra, topology, probability, statistics, numerical methods
-• Quantitative Finance: Stochastic calculus, derivative pricing, Monte Carlo, time series, factor models
-• Science & Health: Physics, chemistry, biology, medicine (always recommend consulting healthcare professionals)
-
+TIME: {day}, {date} at {utc_time}. {greeting_context}
 DOMAIN: {domain} | TIER: {tier}
 """
 
+# ═══════════════════════════════════════════════════════════════
+# AI CALL — SPEED OPTIMIZED
+# ═══════════════════════════════════════════════════════════════
+
 def call_ai_fast(messages, tier="free"):
-    # Try Groq first (fastest)
+    # Groq first — fastest response (~300ms)
     if GROQ_KEY:
         try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=30)
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},
+                json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},
+                timeout=20)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "groq/llama-3.1-8b-instant"
         except: pass
-    # Try OpenRouter
+    
+    # OpenRouter with premium models
     if OPENROUTER_KEY:
         models = ["google/gemini-2.0-flash","google/gemini-flash-1.5","mistral/mistral-7b-instruct","deepseek/deepseek-chat","meta-llama/llama-3.1-8b-instruct","openai/gpt-3.5-turbo"]
         if tier in ("pro","founder"): models = ["anthropic/claude-sonnet-4-20250514","anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models
         for model in models:
             try:
-                r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=60)
+                r = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},
+                    json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},
+                    timeout=40)
                 if r.status_code==200:
                     content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                     if content: return content, model
             except: continue
+    
     if HF_TOKEN:
         try:
-            r = requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions",headers={"Authorization":f"Bearer {HF_TOKEN}","Content-Type":"application/json"},json={"model":"mistralai/Mistral-7B-Instruct-v0.2","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
+            r = requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions",
+                headers={"Authorization":f"Bearer {HF_TOKEN}","Content-Type":"application/json"},
+                json={"model":"mistralai/Mistral-7B-Instruct-v0.2","messages":messages,"temperature":0.4,"max_tokens":600},timeout=30)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "hf/mistral-7b"
         except: pass
+    
     if MISTRAL_KEY:
         try:
-            r = requests.post("https://api.mistral.ai/v1/chat/completions",headers={"Authorization":f"Bearer {MISTRAL_KEY}","Content-Type":"application/json"},json={"model":"mistral-tiny","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
+            r = requests.post("https://api.mistral.ai/v1/chat/completions",
+                headers={"Authorization":f"Bearer {MISTRAL_KEY}","Content-Type":"application/json"},
+                json={"model":"mistral-tiny","messages":messages,"temperature":0.4,"max_tokens":600},timeout=30)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "mistral/mistral-tiny"
         except: pass
+    
     if OPENAI_KEY:
         try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
+            r = requests.post("https://api.openai.com/v1/chat/completions",
+                headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},
+                json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=30)
             if r.status_code==200: return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
         except: pass
-    return "I'm having trouble connecting to my systems. Please try again or contact closeaitechnologies@protonmail.com.", "fallback"
+    
+    return "I'm having trouble connecting. Please try again or contact closeaitechnologies@protonmail.com.", "fallback"
 
 def classify(q):
     q = q.lower()
-    if re.search(r'who are you|what are you|your name|identity|introduce yourself|tell me about yourself|what is capitan', q): return 'identity'
-    if re.search(r'who|what|when|where|why|how|news|latest|current|today|recent|update|search|find|tell me about',q) and len(q.split()) > 3: return 'web_search'
+    if re.search(r'who are you|what are you|identity|introduce yourself', q): return 'identity'
+    if re.search(r'who|what|when|where|why|how|news|latest|current|today|recent|search|find',q) and len(q.split()) > 3: return 'web_search'
     if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis|anatomy|physiology|pharma|drug|vaccine|immunology|surgery|therapy|cancer|diabetes|heart|brain|blood|virus|bacteria|infection|covid|mental health|nutrition|diet|exercise|sleep|wellness',q): return 'science'
     if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api\s|rest |graphql|sql\s|database|query|react|node\.js|javascript|typescript|python\s|rust\s|golang|microservice|architecture|system design|refactor|debug|deploy|ci/cd|git\s',q): return 'coding'
     if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim',q): return 'quant'
@@ -399,9 +442,8 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
     base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier)
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"]).replace("{utc_time}", tc["utc_time"]).replace("{time_of_day}", tc["time_of_day"]).replace("{greeting_context}", tc["greeting_context"])
     
-    # Extra identity reinforcement for identity-related queries
     if domain == 'identity':
-        base += "\n\nIDENTITY MODE: The user is asking about who you are. Clearly state: 'I am CAPITAN AI, an elite enterprise intelligence platform by CLOSEAI Technologies. I specialize in finance, coding, mathematics, quantitative analysis, and science. I was built by CEO Osinachi Chukwu and the CLOSEAI Technologies team.' Do NOT mention climbing gyms, membership software, or anything unrelated to your actual identity."
+        base += "\n\nIDENTITY MODE: The user is asking who you are. Clearly state you are CAPITAN AI by CLOSEAI Technologies — NOT a climbing gym or any other product. You specialize in finance, coding, math, quant, and science."
     
     if session_id:
         try:
@@ -411,13 +453,12 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
             if rows: base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
         except: pass
     
-    if tier == "free": base += "\nBe concise."
-    elif tier == "plus": base += "\nBe detailed with examples."
-    elif tier in ("pro","founder"): base += "\nBe comprehensive — deep analysis with examples, code, citations."
+    if tier == "free": base += "\nBe concise and efficient."
+    elif tier == "plus": base += "\nProvide detailed, well-structured responses."
+    elif tier in ("pro","founder"): base += "\nGo deep — comprehensive analysis with examples, code, and citations."
     
     if web_results:
         base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"{i+1}. {r['title']}\n   {r['snippet'][:200]}\n   Source: {r['url']}" for i,r in enumerate(web_results[:5])])
-        base += "\nCite sources when using this information."
     
     cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
     if cfg.get("live_markets", False):
@@ -434,13 +475,12 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
                 base += "\n\nAFRICAN MARKETS:\n" + "\n".join(items)
         except: pass
     else:
-        base += "\n\nNo live market data. Tell user to upgrade to Pro."
+        base += "\n\nNo live market data. Tell user to upgrade to Pro for real-time prices."
     
     try:
         news = get_financial_news("all")
         if news:
-            headlines = [f"• [{n['source']}] {n['headline'][:130]}" + (f" | Sentiment: {n['sentiment']}" if n.get('sentiment') else "") for n in news[:8]]
-            base += "\n\nLATEST FINANCIAL NEWS (2026):\n" + "\n".join(headlines)
+            base += "\n\nLATEST NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:130]}" for n in news[:6]])
     except: pass
     
     return base
@@ -452,7 +492,7 @@ class ChatRequest(BaseModel): messages: list; chat_id: Optional[str] = None
 class UpgradeRequest(BaseModel): tier: str; txid: str; currency: str = "BTC"
 class FounderRequest(BaseModel): code: str
 class LibraryItemRequest(BaseModel): name: str; type: str = "note"; content: Optional[str] = ""
-class WorkspaceCreateRequest(BaseModel): room_code: str; max_members: int = 3
+class WorkspaceCreateRequest(BaseModel): room_code: str; max_members: int = 7
 class WorkspaceJoinRequest(BaseModel): room_code: str
 class WorkspaceMessageRequest(BaseModel): room_code: str; message: str
 class WorkspaceNoteRequest(BaseModel): room_code: str; content: str
@@ -476,25 +516,12 @@ def health():
             r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json"},json={"model":"google/gemini-flash-1.5","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=10)
             if r.status_code==200: ai="connected"; providers.append("openrouter")
         except: pass
-    if ai!="connected" and OPENAI_KEY:
-        try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=10)
-            if r.status_code==200: ai="connected"; providers.append("openai")
-        except: pass
-    return {"status":"ok","version":"22.0","ai":ai,"providers":providers,"markets":bool(ALPHA_VANTAGE_KEY or COINGECKO_KEY),"news":bool(NEWS_API_KEY or GNEWS_API_KEY),"web_search":bool(SERPAPI_KEY)}
+    return {"status":"ok","version":"22.0","ai":ai,"providers":providers}
 
 @app.get("/api/session")
 def get_or_create_session(request: Request):
     session = get_session(request)
     if session: return session
-    auth = request.headers.get("Authorization","")
-    if auth.startswith("Bearer "):
-        payload = verify_jwt(auth[7:])
-        if payload:
-            conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-            c.execute("SELECT id,tier,msg_count,msg_window FROM sessions WHERE id=?",(payload["session_id"],))
-            row = c.fetchone(); conn.close()
-            if row: return {"id":row[0],"tier":row[1],"msg_count":row[2] or 0,"msg_window":row[3]}
     session_id = f"s_{sid()}"
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("INSERT INTO sessions (id,tier,msg_count,msg_window,created,updated) VALUES (?,?,0,?,?,?)",(session_id,"free",datetime.utcnow().isoformat(),datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
@@ -514,49 +541,30 @@ def markets(request: Request, category: str = "all"):
     elif category == "crypto": prices = get_crypto_markets()
     elif category == "african": prices = get_african_markets()
     else: prices = get_all_markets()
-    news = get_financial_news(category if category != "all" else "all")
-    return {"prices":prices,"news":news,"category":category}
+    return {"prices":prices,"news":get_financial_news(category),"category":category}
 
 @app.get("/api/markets/prices")
 def markets_prices(request: Request, category: str = "all"):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"prices":{},"message":"Upgrade to Pro"}
-    if category == "global": return {"prices":get_global_markets(),"category":"global"}
-    elif category == "crypto": return {"prices":get_crypto_markets(),"category":"crypto"}
-    elif category == "african": return {"prices":get_african_markets(),"category":"african"}
-    else: return {"prices":get_all_markets(),"category":"all"}
+    if category == "global": return {"prices":get_global_markets()}
+    elif category == "crypto": return {"prices":get_crypto_markets()}
+    elif category == "african": return {"prices":get_african_markets()}
+    return {"prices":get_all_markets()}
 
 @app.get("/api/markets/news")
 def markets_news(request: Request, category: str = "all"):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"news":[],"message":"Upgrade to Pro"}
-    return {"news":get_financial_news(category),"category":category}
-
-@app.get("/api/markets/global")
-def global_markets(request: Request):
-    s = get_session(request)
-    if not s or not TIER_CONFIG.get(s["tier"],{}).get("live_markets",False): return {"prices":{},"message":"Pro required"}
-    return {"prices":get_global_markets()}
-
-@app.get("/api/markets/crypto")
-def crypto_markets(request: Request):
-    s = get_session(request)
-    if not s or not TIER_CONFIG.get(s["tier"],{}).get("live_markets",False): return {"prices":{},"message":"Pro required"}
-    return {"prices":get_crypto_markets()}
-
-@app.get("/api/markets/african")
-def african_markets(request: Request):
-    s = get_session(request)
-    if not s or not TIER_CONFIG.get(s["tier"],{}).get("live_markets",False): return {"prices":{},"message":"Pro required"}
-    return {"prices":get_african_markets()}
+    return {"news":get_financial_news(category)}
 
 @app.get("/api/search")
 def web_search_endpoint(q: str, request: Request):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("web_search", False): return {"results":[],"message":"Web search available on Plus and Pro tiers"}
+    if not cfg.get("web_search", False): return {"results":[],"message":"Web search on Plus and Pro"}
     return {"results":search_web(q)}
 
 @app.get("/api/chats")
@@ -573,7 +581,7 @@ def get_chat(chat_id: str, request: Request):
     if not s: raise HTTPException(401)
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("SELECT id FROM chats WHERE id=? AND session_id=?",(chat_id,s["id"]))
-    if not c.fetchone(): raise HTTPException(404,"Not found")
+    if not c.fetchone(): raise HTTPException(404)
     c.execute("SELECT id,role,content,model,created FROM chat_messages WHERE chat_id=? ORDER BY created ASC",(chat_id,))
     return {"messages":[{"id":r[0],"role":r[1],"content":r[2],"model":r[3],"created":r[4]} for r in c.fetchall()]}
 
@@ -723,7 +731,7 @@ def ws_create(req: WorkspaceCreateRequest, request: Request):
     if max_m == 0: raise HTTPException(403,"Work Area requires Plus or Pro")
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     wid = sid()
-    c.execute("INSERT INTO workspaces (id,room_code,creator_session,max_members,created) VALUES (?,?,?,?,?)",(wid,req.room_code.upper(),s["id"],min(req.max_members,max_m),datetime.utcnow().isoformat()))
+    c.execute("INSERT INTO workspaces (id,room_code,creator_session,creator_tier,max_members,created) VALUES (?,?,?,?,?,?)",(wid,req.room_code.upper(),s["id"],s["tier"],min(req.max_members,max_m),datetime.utcnow().isoformat()))
     c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (?,?,?,?)",(wid,s["id"],"admin",datetime.utcnow().isoformat()))
     conn.commit(); conn.close()
     return {"room_id":wid,"room_code":req.room_code.upper(),"created":True}
@@ -733,9 +741,12 @@ def ws_join(req: WorkspaceJoinRequest, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-    c.execute("SELECT id,max_members FROM workspaces WHERE room_code=?",(req.room_code.upper(),))
+    c.execute("SELECT id,max_members,creator_tier FROM workspaces WHERE room_code=?",(req.room_code.upper(),))
     ws = c.fetchone()
     if not ws: raise HTTPException(404,"Room not found")
+    # Check tier matching
+    if s["tier"] != ws[2] and s["tier"] != "founder":
+        raise HTTPException(403,f"This Work Area requires {ws[2].upper()} tier. You are on {s['tier'].upper()}.")
     c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=?",(ws[0],))
     if c.fetchone()[0] >= ws[1]: raise HTTPException(400,"Room full")
     c.execute("INSERT OR IGNORE INTO workspace_members (workspace_id,session_id,role,joined) VALUES (?,?,?,?)",(ws[0],s["id"],"member",datetime.utcnow().isoformat()))
@@ -753,30 +764,27 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("SELECT id FROM workspaces WHERE room_code=?",(req.room_code.upper(),))
     ws = c.fetchone()
-    if not ws: raise HTTPException(404,"Room not found")
+    if not ws: raise HTTPException(404)
     is_ai = req.message.strip().startswith("@CAPITAN")
     if is_ai:
         c.execute("SELECT author,message FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 20",(ws[0],))
         context = "\n".join([f"{r[0]}: {r[1]}" for r in c.fetchall()])
         c.execute("SELECT content FROM workspace_notes WHERE workspace_id=?",(ws[0],))
         notes = "\n".join([r[0] for r in c.fetchall()])
-        result, _ = call_ai_fast([{"role":"system","content":f"Work Area:\n{context}\n\nNotes:\n{notes}"},{"role":"user","content":req.message.replace('@CAPITAN','').strip()}], s["tier"])
+        result, _ = call_ai_fast([{"role":"system","content":f"Work Area context:\n{context}\n\nNotes:\n{notes}\n\nRespond as CAPITAN AI."},{"role":"user","content":req.message.replace('@CAPITAN','').strip()}], s["tier"])
         if result:
             c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,is_ai,created) VALUES (?,?,?,?,?,?,?)",(sid(),ws[0],s["id"],"CAPITAN AI",result,1,datetime.utcnow().isoformat()))
             conn.commit()
     c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,created) VALUES (?,?,?,?,?,?)",(sid(),ws[0],s["id"],"User",req.message,datetime.utcnow().isoformat()))
-    conn.commit()
-    c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 50",(ws[0],))
-    messages = [{"id":r[0],"session_id":r[1],"author":r[2],"message":r[3],"is_ai":bool(r[4]),"created":r[5]} for r in c.fetchall()]
-    conn.close()
-    return {"sent":True,"messages":messages}
+    conn.commit(); conn.close()
+    return {"sent":True}
 
 @app.get("/api/workspace/messages")
 def ws_get_messages(room_code: str):
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("SELECT id FROM workspaces WHERE room_code=?",(room_code.upper(),))
     ws = c.fetchone()
-    if not ws: raise HTTPException(404,"Room not found")
+    if not ws: raise HTTPException(404)
     c.execute("SELECT m.session_id,m.role FROM workspace_members m WHERE m.workspace_id=?",(ws[0],))
     members = [{"session_id":r[0],"role":r[1]} for r in c.fetchall()]
     c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 50",(ws[0],))
@@ -788,7 +796,7 @@ def ws_save_note(req: WorkspaceNoteRequest, request: Request):
     if not s: raise HTTPException(401)
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("SELECT id FROM workspaces WHERE room_code=?",(req.room_code.upper(),))
-    if not c.fetchone(): raise HTTPException(404,"Room not found")
+    if not c.fetchone(): raise HTTPException(404)
     c.execute("DELETE FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=?)",(req.room_code.upper(),))
     c.execute("INSERT INTO workspace_notes (id,workspace_id,session_id,author,content,created,updated) VALUES (?,(SELECT id FROM workspaces WHERE room_code=?),?,?,?,?,?)",(sid(),req.room_code.upper(),s["id"],"User",req.content,datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
     conn.commit(); conn.close()
@@ -798,7 +806,7 @@ def ws_save_note(req: WorkspaceNoteRequest, request: Request):
 def ws_get_notes(room_code: str):
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("SELECT id FROM workspaces WHERE room_code=?",(room_code.upper(),))
-    if not c.fetchone(): raise HTTPException(404,"Room not found")
+    if not c.fetchone(): raise HTTPException(404)
     c.execute("SELECT author,content,updated FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=?)",(room_code.upper(),))
     return {"notes":[{"author":r[0],"content":r[1],"updated":r[2]} for r in c.fetchall()]}
 
