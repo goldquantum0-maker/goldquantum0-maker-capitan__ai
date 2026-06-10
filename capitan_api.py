@@ -3,6 +3,7 @@ CAPITAN AI — Enterprise Backend v22.0
 CLOSEAI Technologies
 Python/FastAPI + SQLite + Multi-API + Web Search
 Privacy-First: No accounts, just messages & payments
+PWA-Ready | App Store Ready
 """
 
 import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlite3
@@ -15,7 +16,7 @@ import concurrent.futures
 import uvicorn
 
 # ═══════════════════════════════════════════════════════════════
-# API KEYS
+# API KEYS — ALL FREE TIER
 # ═══════════════════════════════════════════════════════════════
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -159,21 +160,20 @@ def get_time_context(request=None):
     now = datetime.utcnow(); hour = now.hour
     day = now.strftime("%A"); date = now.strftime("%B %d, %Y"); utc_time = now.strftime("%H:%M UTC")
     if hour < 5: time_of_day = "late night"; greeting_context = "It's quite late — or early."
-    elif hour < 12: time_of_day = "morning"; greeting_context = "Good morning!"
-    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Good afternoon. Markets are active."
-    elif hour < 21: time_of_day = "evening"; greeting_context = "Good evening."
+    elif hour < 12: time_of_day = "morning"; greeting_context = "Good morning! Hope your day is off to a great start."
+    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Good afternoon. Markets are active if you're tracking them."
+    elif hour < 21: time_of_day = "evening"; greeting_context = "Good evening. A good time to review the day's activity."
     else: time_of_day = "night"; greeting_context = "Good night, night owl."
     return {"time_of_day":time_of_day,"day":day,"date":date,"utc_time":utc_time,"greeting_context":greeting_context,"hour":hour}
 
 # ═══════════════════════════════════════════════════════════════
-# CATEGORIZED MARKET DATA (Global / Crypto / African)
+# CATEGORIZED MARKET DATA
 # ═══════════════════════════════════════════════════════════════
 
 def get_global_markets():
-    """Global stocks, indices, commodities, forex"""
     results = {}
     try:
-        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,^GDAXI,^FCHI,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,JPM,GS,GC=F,CL=F,SI=F,NG=F,ZW=F,ZC=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDCHF=X,AUDUSD=X"
+        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,^GDAXI,^FCHI,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,JPM,GS,GC=F,CL=F,SI=F,NG=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDCHF=X,AUDUSD=X"
         r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
         if r.status_code == 200:
             for i in r.json().get("quoteResponse",{}).get("result",[]):
@@ -186,9 +186,7 @@ def get_global_markets():
     return results
 
 def get_crypto_markets():
-    """Cryptocurrency prices from CoinGecko + Yahoo"""
     results = {}
-    # CoinGecko (primary for crypto)
     if COINGECKO_KEY and COINGECKO_KEY.startswith("CG-"):
         try:
             ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
@@ -200,27 +198,12 @@ def get_crypto_markets():
                     name = name_map.get(k, k.capitalize())
                     results[name] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2),"market_cap":v.get("usd_market_cap",0),"source":"CoinGecko","updated":datetime.utcnow().isoformat()}
         except: pass
-    # Yahoo crypto fallback
-    if not results:
-        try:
-            syms = "BTC-USD,ETH-USD,XRP-USD,ADA-USD,SOL-USD,DOGE-USD,DOT-USD,AVAX-USD,LINK-USD,UNI-USD,BNB-USD,TRX-USD"
-            r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
-            if r.status_code == 200:
-                for i in r.json().get("quoteResponse",{}).get("result",[]):
-                    name = i.get("shortName") or i.get("symbol","")
-                    price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
-                    if price and prev:
-                        chg = i.get("regularMarketChangePercent")
-                        results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
-        except: pass
     return results
 
 def get_african_markets():
-    """African stock exchanges, currencies, and bonds"""
     results = {}
-    # Yahoo Finance — African ETFs & currencies
     try:
-        syms = "USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X,USDEGP=X,USDMAD=X,USDTND=X,USDXOF=X,EZA,AFK,FLZA,FLNG,FLGH,FLKE"
+        syms = "USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X,USDEGP=X,USDMAD=X,EZA,AFK"
         r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
         if r.status_code == 200:
             for i in r.json().get("quoteResponse",{}).get("result",[]):
@@ -230,103 +213,50 @@ def get_african_markets():
                     chg = i.get("regularMarketChangePercent")
                     results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
     except: pass
-    # Alpha Vantage — African forex pairs
-    if ALPHA_VANTAGE_KEY:
-        try:
-            pairs = {"USDGHS":"USD/GHS (Ghana Cedi)","USDNGN":"USD/NGN (Nigerian Naira)","USDZAR":"USD/ZAR (SA Rand)","USDKES":"USD/KES (Kenyan Shilling)","USDEGP":"USD/EGP (Egyptian Pound)","USDMAD":"USD/MAD (Moroccan Dirham)"}
-            for pair, label in pairs.items():
-                try:
-                    r = requests.get("https://www.alphavantage.co/query",params={"function":"CURRENCY_EXCHANGE_RATE","from_currency":"USD","to_currency":pair[3:],"apikey":ALPHA_VANTAGE_KEY},timeout=8)
-                    if r.status_code == 200:
-                        data = r.json().get("Realtime Currency Exchange Rate",{})
-                        price_str = data.get("5. Exchange Rate","")
-                        if price_str:
-                            results[label] = {"price":float(price_str),"change":0,"source":"Alpha Vantage","updated":datetime.utcnow().isoformat()}
-                except: pass
-        except: pass
     return results
 
 def get_all_markets():
-    """Combined market data"""
     return {"global":get_global_markets(),"crypto":get_crypto_markets(),"african":get_african_markets()}
 
 # ═══════════════════════════════════════════════════════════════
-# DETAILED FINANCIAL NEWS — 2026 WORLDWIDE COVERAGE
+# DETAILED FINANCIAL NEWS
 # ═══════════════════════════════════════════════════════════════
 
 def get_financial_news(category="all"):
-    """Detailed, up-to-date financial news from multiple sources"""
     news = []
-    
-    # 1. News API — Top business headlines worldwide
     if NEWS_API_KEY:
         try:
             params = {"language":"en","pageSize":15,"apiKey":NEWS_API_KEY}
             if category == "crypto": params["q"] = "crypto OR bitcoin OR ethereum OR blockchain"
-            elif category == "africa": params["q"] = "Africa finance OR African markets OR Nigeria economy OR South Africa markets OR Kenya finance"
-            elif category == "global": params["q"] = "global markets OR central bank OR interest rates OR inflation OR GDP"
+            elif category == "africa": params["q"] = "Africa finance OR African markets OR Nigeria economy"
+            elif category == "global": params["q"] = "global markets OR central bank OR interest rates"
             else: params["category"] = "business"
-            
             r = requests.get("https://newsapi.org/v2/top-headlines" if category=="all" else "https://newsapi.org/v2/everything",params=params,timeout=10)
             if r.status_code == 200:
                 for a in r.json().get("articles",[]):
-                    news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or a.get("content") or "")[:400],"image":a.get("urlToImage",""),"category":category})
+                    news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("urlToImage",""),"category":category})
         except: pass
-    
-    # 2. GNews — Global financial news
     if GNEWS_API_KEY:
         try:
-            queries = {"global":"global markets central bank interest rates inflation","crypto":"crypto bitcoin ethereum blockchain defi","africa":"Africa finance economy markets Nigeria South Africa Kenya","all":"finance markets stocks economy"}
-            q = queries.get(category, queries["all"])
-            r = requests.get("https://gnews.io/api/v4/search",params={"q":q,"lang":"en","max":15,"apikey":GNEWS_API_KEY},timeout=10)
+            queries = {"global":"global markets interest rates","crypto":"crypto bitcoin ethereum","africa":"Africa finance economy","all":"finance markets stocks economy"}
+            r = requests.get("https://gnews.io/api/v4/search",params={"q":queries.get(category,queries["all"]),"lang":"en","max":15,"apikey":GNEWS_API_KEY},timeout=10)
             if r.status_code == 200:
                 for a in r.json().get("articles",[]):
                     news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("image",""),"category":category})
         except: pass
-    
-    # 3. Finnhub — Market news with sentiment
     if FINNHUB_API_KEY:
         try:
             r = requests.get("https://finnhub.io/api/v1/news",params={"category":"general","token":FINNHUB_API_KEY},timeout=10)
             if r.status_code == 200:
                 for a in r.json()[:15]:
                     ts = a.get("datetime",0)
-                    news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:400],"image":a.get("image",""),"category":category})
+                    news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:400],"category":category})
         except: pass
-    
-    # 4. Alpha Vantage — News with sentiment scores
-    if ALPHA_VANTAGE_KEY:
-        try:
-            topics = {"global":"forex, economy, monetary","crypto":"crypto, bitcoin, blockchain","africa":"Africa, emerging markets","all":"finance, stocks, markets"}
-            r = requests.get("https://www.alphavantage.co/query",params={"function":"NEWS_SENTIMENT","topics":topics.get(category,topics["all"]),"apikey":ALPHA_VANTAGE_KEY},timeout=10)
-            if r.status_code == 200:
-                for a in r.json().get("feed",[])[:15]:
-                    sentiment = a.get("overall_sentiment_label","")
-                    news.append({"source":a.get("source","AlphaVantage"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("time_published",""),"summary":(a.get("summary") or "")[:400],"sentiment":sentiment,"image":a.get("banner_image",""),"category":category})
-        except: pass
-    
-    # 5. SerpAPI — Google News search
-    if SERPAPI_KEY and len(news) < 10:
-        try:
-            queries = {"global":"global financial markets 2026","crypto":"cryptocurrency market news 2026","africa":"African financial markets 2026","all":"financial news today 2026"}
-            r = requests.get("https://serpapi.com/search",params={"engine":"google_news","q":queries.get(category,queries["all"]),"api_key":SERPAPI_KEY},timeout=10)
-            if r.status_code == 200:
-                for a in r.json().get("news_results",[])[:15]:
-                    news.append({"source":a.get("source","Google News"),"headline":a.get("title",""),"url":a.get("link",""),"time":"","summary":(a.get("snippet") or "")[:400],"image":"","category":category})
-        except: pass
-    
-    # Deduplicate by headline
-    seen = set()
-    unique = []
+    seen = set(); unique = []
     for n in news:
-        key = n["headline"][:120].lower().strip()
-        if key and key not in seen:
-            seen.add(key)
-            unique.append(n)
-    
-    # Sort by time (most recent first) if available
+        k = n["headline"][:120].lower().strip()
+        if k and k not in seen: seen.add(k); unique.append(n)
     unique.sort(key=lambda x: x.get("time",""), reverse=True)
-    
     return unique[:20]
 
 # ═══════════════════════════════════════════════════════════════
@@ -343,7 +273,6 @@ def search_web(query, num_results=5):
         if row: conn.close(); return json.loads(row[0])
         conn.close()
     except: pass
-    
     if SERPAPI_KEY:
         try:
             r = requests.get("https://serpapi.com/search",params={"engine":"google","q":query,"num":num_results,"api_key":SERPAPI_KEY},timeout=10)
@@ -351,7 +280,6 @@ def search_web(query, num_results=5):
                 for item in r.json().get("organic_results",[])[:num_results]:
                     results.append({"title":item.get("title",""),"snippet":item.get("snippet","")[:300],"url":item.get("link",""),"source":"Google"})
         except: pass
-    
     if not results:
         try:
             r = requests.get("https://api.duckduckgo.com/",params={"q":query,"format":"json","no_html":1},timeout=8)
@@ -363,7 +291,6 @@ def search_web(query, num_results=5):
                     if isinstance(topic,dict) and topic.get("Text"):
                         results.append({"title":"","snippet":topic["Text"][:300],"url":topic.get("FirstURL",""),"source":"DuckDuckGo"})
         except: pass
-    
     if results:
         try:
             conn = sqlite3.connect(DB_PATH); c = conn.cursor()
@@ -374,27 +301,49 @@ def search_web(query, num_results=5):
     return results
 
 # ═══════════════════════════════════════════════════════════════
-# SYSTEM PROMPT
+# ELITE INTELLIGENCE SYSTEM PROMPT — IDENTITY HARDENED
 # ═══════════════════════════════════════════════════════════════
 
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — elite institutional intelligence by CLOSEAI Technologies. CEO: Osinachi Chukwu.
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — an elite institutional intelligence system created by CLOSEAI Technologies.
 
-IDENTITY: Warm, natural, honest. Never make up information.
+CRITICAL — YOUR IDENTITY:
+You are an enterprise AI assistant for finance, coding, mathematics, quantitative analysis, science, and health. You are NOT a climbing gym. You are NOT membership management software. You are NOT a CRM, booking platform, or any other product named "Capitan." You were built by CLOSEAI Technologies, founded by CEO Osinachi Chukwu, with support from Non-Executive Director Blessing Asuquo and CIO Ebubechi Chukwu.
 
-CRITICAL — MARKET DATA: Only reference prices from LIVE MARKET DATA below. If unavailable, say so honestly.
-CRITICAL — NEWS: Reference the LATEST FINANCIAL NEWS section for current events.
+If someone greets you with "Hello Capitan" or similar — respond warmly as CAPITAN AI, the elite intelligence platform. NEVER claim to be anything else. NEVER invent features like "membership management," "climbing gym software," "referral systems," or "booking platforms." If you're unsure what a user means, ask for clarification rather than guessing.
 
-TIME: {day}, {date} at {utc_time}. {greeting_context}
+ABOUT CLOSEAI TECHNOLOGIES:
+CLOSEAI Technologies was established under the leadership of CEO Osinachi Chukwu, with pivotal support from Non-Executive Director Blessing Asuquo, whose provision of essential logistics, alongside the contributions of CIO Ebubechi Chukwu, has been instrumental to the company's development. CAPITAN AI is the company's flagship AI brain — built to serve professionals across finance, technology, science, and beyond.
 
-STYLE: Conversational, use contractions, match user's energy, no jargon.
+YOUR PERSONALITY:
+You are warm, natural, and conversational — like a brilliant colleague who genuinely wants to help. You don't talk like a textbook or a robot. You speak like a smart, experienced human being. You can be casual when the moment calls for it, and deeply rigorous when the topic demands precision.
 
-DOMAINS: Finance, Coding, Math, Quant, Science & Health.
-NEVER: buy/sell recommendations, trading signals, medical diagnoses.
+CRITICAL RULES:
+• NEVER make up market prices. Only reference prices from the LIVE MARKET DATA section if it contains real data.
+• If LIVE MARKET DATA says "No data" — tell the user honestly: "I don't have live prices right now."
+• NEVER claim to be anything other than CAPITAN AI by CLOSEAI Technologies.
+• NEVER give buy/sell recommendations, trading signals, or medical diagnoses.
+• Be honest about what you know and don't know.
+
+CURRENT TIME: {day}, {date} at {utc_time} ({time_of_day} in UTC). {greeting_context}
+
+COMMUNICATION STYLE:
+• Be conversational. Start naturally: "Great question," "Let me walk you through this," "Here's how I think about it..."
+• Use contractions naturally: "it's," "you're," "I've," "that's"
+• Never use corporate jargon or buzzwords
+• Match the user's energy
+
+KNOWLEDGE DOMAINS:
+• Finance: DCF, LBO, M&A, portfolio optimization, options pricing, fixed income, risk management, macroeconomics, African markets (NGX, JSE, GSE, BRVM, EGX)
+• Coding: Python, JavaScript, TypeScript, Rust, Go, C++, SQL, React, Node.js, system design, DevOps
+• Mathematics: Real/complex analysis, linear algebra, topology, probability, statistics, numerical methods
+• Quantitative Finance: Stochastic calculus, derivative pricing, Monte Carlo, time series, factor models
+• Science & Health: Physics, chemistry, biology, medicine (always recommend consulting healthcare professionals)
 
 DOMAIN: {domain} | TIER: {tier}
 """
 
 def call_ai_fast(messages, tier="free"):
+    # Try Groq first (fastest)
     if GROQ_KEY:
         try:
             r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=30)
@@ -402,7 +351,7 @@ def call_ai_fast(messages, tier="free"):
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "groq/llama-3.1-8b-instant"
         except: pass
-    
+    # Try OpenRouter
     if OPENROUTER_KEY:
         models = ["google/gemini-2.0-flash","google/gemini-flash-1.5","mistral/mistral-7b-instruct","deepseek/deepseek-chat","meta-llama/llama-3.1-8b-instruct","openai/gpt-3.5-turbo"]
         if tier in ("pro","founder"): models = ["anthropic/claude-sonnet-4-20250514","anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models
@@ -413,7 +362,6 @@ def call_ai_fast(messages, tier="free"):
                     content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                     if content: return content, model
             except: continue
-    
     if HF_TOKEN:
         try:
             r = requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions",headers={"Authorization":f"Bearer {HF_TOKEN}","Content-Type":"application/json"},json={"model":"mistralai/Mistral-7B-Instruct-v0.2","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
@@ -421,7 +369,6 @@ def call_ai_fast(messages, tier="free"):
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "hf/mistral-7b"
         except: pass
-    
     if MISTRAL_KEY:
         try:
             r = requests.post("https://api.mistral.ai/v1/chat/completions",headers={"Authorization":f"Bearer {MISTRAL_KEY}","Content-Type":"application/json"},json={"model":"mistral-tiny","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
@@ -429,17 +376,16 @@ def call_ai_fast(messages, tier="free"):
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "mistral/mistral-tiny"
         except: pass
-    
     if OPENAI_KEY:
         try:
             r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
             if r.status_code==200: return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
         except: pass
-    
-    return "I'm having trouble connecting. Please try again or contact closeaitechnologies@protonmail.com.", "fallback"
+    return "I'm having trouble connecting to my systems. Please try again or contact closeaitechnologies@protonmail.com.", "fallback"
 
 def classify(q):
     q = q.lower()
+    if re.search(r'who are you|what are you|your name|identity|introduce yourself|tell me about yourself|what is capitan', q): return 'identity'
     if re.search(r'who|what|when|where|why|how|news|latest|current|today|recent|update|search|find|tell me about',q) and len(q.split()) > 3: return 'web_search'
     if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis|anatomy|physiology|pharma|drug|vaccine|immunology|surgery|therapy|cancer|diabetes|heart|brain|blood|virus|bacteria|infection|covid|mental health|nutrition|diet|exercise|sleep|wellness',q): return 'science'
     if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api\s|rest |graphql|sql\s|database|query|react|node\.js|javascript|typescript|python\s|rust\s|golang|microservice|architecture|system design|refactor|debug|deploy|ci/cd|git\s',q): return 'coding'
@@ -452,6 +398,10 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
     tc = get_time_context(request)
     base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier)
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"]).replace("{utc_time}", tc["utc_time"]).replace("{time_of_day}", tc["time_of_day"]).replace("{greeting_context}", tc["greeting_context"])
+    
+    # Extra identity reinforcement for identity-related queries
+    if domain == 'identity':
+        base += "\n\nIDENTITY MODE: The user is asking about who you are. Clearly state: 'I am CAPITAN AI, an elite enterprise intelligence platform by CLOSEAI Technologies. I specialize in finance, coding, mathematics, quantitative analysis, and science. I was built by CEO Osinachi Chukwu and the CLOSEAI Technologies team.' Do NOT mention climbing gyms, membership software, or anything unrelated to your actual identity."
     
     if session_id:
         try:
@@ -555,20 +505,15 @@ def get_or_create_session(request: Request):
 @app.get("/api/payment-config")
 def payment_config(): return {"wallets":WALLETS,"prices":{"plus":8,"pro":17},"benefits":UPGRADE_BENEFITS}
 
-# ─── CATEGORIZED MARKET ENDPOINTS ────────────────────────────
-
 @app.get("/api/markets")
 def markets(request: Request, category: str = "all"):
-    """Get market data by category: all, global, crypto, african"""
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"prices":{},"news":[],"message":"Pro tier required"}
-    
     if category == "global": prices = get_global_markets()
     elif category == "crypto": prices = get_crypto_markets()
     elif category == "african": prices = get_african_markets()
     else: prices = get_all_markets()
-    
     news = get_financial_news(category if category != "all" else "all")
     return {"prices":prices,"news":news,"category":category}
 
@@ -577,7 +522,6 @@ def markets_prices(request: Request, category: str = "all"):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"prices":{},"message":"Upgrade to Pro"}
-    
     if category == "global": return {"prices":get_global_markets(),"category":"global"}
     elif category == "crypto": return {"prices":get_crypto_markets(),"category":"crypto"}
     elif category == "african": return {"prices":get_african_markets(),"category":"african"}
@@ -593,25 +537,20 @@ def markets_news(request: Request, category: str = "all"):
 @app.get("/api/markets/global")
 def global_markets(request: Request):
     s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False): return {"prices":{},"message":"Pro required"}
+    if not s or not TIER_CONFIG.get(s["tier"],{}).get("live_markets",False): return {"prices":{},"message":"Pro required"}
     return {"prices":get_global_markets()}
 
 @app.get("/api/markets/crypto")
 def crypto_markets(request: Request):
     s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False): return {"prices":{},"message":"Pro required"}
+    if not s or not TIER_CONFIG.get(s["tier"],{}).get("live_markets",False): return {"prices":{},"message":"Pro required"}
     return {"prices":get_crypto_markets()}
 
 @app.get("/api/markets/african")
 def african_markets(request: Request):
     s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False): return {"prices":{},"message":"Pro required"}
+    if not s or not TIER_CONFIG.get(s["tier"],{}).get("live_markets",False): return {"prices":{},"message":"Pro required"}
     return {"prices":get_african_markets()}
-
-# ─── REMAINING ENDPOINTS (UNCHANGED) ─────────────────────────
 
 @app.get("/api/search")
 def web_search_endpoint(q: str, request: Request):
