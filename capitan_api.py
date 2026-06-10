@@ -9,10 +9,8 @@ import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlit
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
-import asyncio
 import concurrent.futures
 import uvicorn
 
@@ -81,10 +79,9 @@ UPGRADE_BENEFITS = {
         "Deep AI model (Claude Sonnet 4 / GPT-4o)",
         "Work Area — collaborate with up to 16 people",
         "File uploads up to 50MB",
-        "Live market data & financial news",
+        "Live market data (Global, Crypto, African)",
+        "Real-time financial news",
         "Web search for real-time answers",
-        "Shared Work Area notes with AI integration",
-        "@CAPITAN AI commands in Work Area",
         "Business mode for professional use",
         "All Plus features included"
     ]
@@ -105,7 +102,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS workspace_members (workspace_id TEXT, session_id TEXT, role TEXT DEFAULT "member", joined TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS workspace_messages (id TEXT PRIMARY KEY, workspace_id TEXT, session_id TEXT, author TEXT, message TEXT, is_ai INTEGER DEFAULT 0, created TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS workspace_notes (id TEXT PRIMARY KEY, workspace_id TEXT, session_id TEXT, author TEXT, content TEXT, created TEXT, updated TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS market_cache (id TEXT PRIMARY KEY, data TEXT, created TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS market_cache (id TEXT PRIMARY KEY, category TEXT, data TEXT, created TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS news_cache (id TEXT PRIMARY KEY, data TEXT, created TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS web_cache (id TEXT PRIMARY KEY, query_hash TEXT, data TEXT, created TEXT)''')
     conn.commit()
@@ -147,7 +144,6 @@ def get_session(request: Request):
             if row: return {"id":row[0],"tier":row[1],"msg_count":row[2] or 0,"msg_window":row[3]}
     return None
 
-# Thread pool for parallel operations
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
 rate_store = {}
@@ -162,133 +158,22 @@ def check_rate(session_id, tier):
 def get_time_context(request=None):
     now = datetime.utcnow(); hour = now.hour
     day = now.strftime("%A"); date = now.strftime("%B %d, %Y"); utc_time = now.strftime("%H:%M UTC")
-    if hour < 5: time_of_day = "late night"; greeting_context = "It's quite late — or early, depending on how you look at it."
-    elif hour < 12: time_of_day = "morning"; greeting_context = "Good morning! Hope your day is off to a great start."
-    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Good afternoon. The markets are in full swing."
-    elif hour < 21: time_of_day = "evening"; greeting_context = "Good evening. A good time to review the day's activity."
+    if hour < 5: time_of_day = "late night"; greeting_context = "It's quite late — or early."
+    elif hour < 12: time_of_day = "morning"; greeting_context = "Good morning!"
+    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Good afternoon. Markets are active."
+    elif hour < 21: time_of_day = "evening"; greeting_context = "Good evening."
     else: time_of_day = "night"; greeting_context = "Good night, night owl."
     return {"time_of_day":time_of_day,"day":day,"date":date,"utc_time":utc_time,"greeting_context":greeting_context,"hour":hour}
 
 # ═══════════════════════════════════════════════════════════════
-# WEB SEARCH ENGINE (Multi-Source)
+# CATEGORIZED MARKET DATA (Global / Crypto / African)
 # ═══════════════════════════════════════════════════════════════
 
-def search_web(query, num_results=5):
-    """Search the web using multiple free sources. Returns list of results."""
-    results = []
-    
-    # Check cache first
-    query_hash = hashlib.md5(query.lower().encode()).hexdigest()
-    try:
-        conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-        c.execute("SELECT data FROM web_cache WHERE query_hash=? AND created > ?", (query_hash, (datetime.utcnow() - timedelta(hours=1)).isoformat()))
-        row = c.fetchone()
-        if row:
-            conn.close()
-            return json.loads(row[0])
-        conn.close()
-    except: pass
-    
-    # 1. SerpAPI Google Search (best results)
-    if SERPAPI_KEY:
-        try:
-            r = requests.get("https://serpapi.com/search", params={"engine":"google","q":query,"num":num_results,"api_key":SERPAPI_KEY}, timeout=10)
-            if r.status_code == 200:
-                data = r.json()
-                for item in data.get("organic_results", [])[:num_results]:
-                    results.append({
-                        "title": item.get("title", ""),
-                        "snippet": item.get("snippet", "")[:300],
-                        "url": item.get("link", ""),
-                        "source": "Google"
-                    })
-        except: pass
-    
-    # 2. SerpAPI News search (for current events)
-    if SERPAPI_KEY and not results:
-        try:
-            r = requests.get("https://serpapi.com/search", params={"engine":"google_news","q":query,"num":num_results,"api_key":SERPAPI_KEY}, timeout=10)
-            if r.status_code == 200:
-                for item in r.json().get("news_results", [])[:num_results]:
-                    results.append({
-                        "title": item.get("title", ""),
-                        "snippet": (item.get("snippet") or "")[:300],
-                        "url": item.get("link", ""),
-                        "source": item.get("source", "Google News")
-                    })
-        except: pass
-    
-    # 3. GNews search
-    if GNEWS_API_KEY and not results:
-        try:
-            r = requests.get("https://gnews.io/api/v4/search", params={"q":query,"lang":"en","max":num_results,"apikey":GNEWS_API_KEY}, timeout=10)
-            if r.status_code == 200:
-                for article in r.json().get("articles", [])[:num_results]:
-                    results.append({
-                        "title": article.get("title", ""),
-                        "snippet": (article.get("description") or "")[:300],
-                        "url": article.get("url", ""),
-                        "source": article.get("source", {}).get("name", "GNews")
-                    })
-        except: pass
-    
-    # 4. News API
-    if NEWS_API_KEY and not results:
-        try:
-            r = requests.get("https://newsapi.org/v2/everything", params={"q":query,"language":"en","pageSize":num_results,"apiKey":NEWS_API_KEY}, timeout=10)
-            if r.status_code == 200:
-                for article in r.json().get("articles", [])[:num_results]:
-                    results.append({
-                        "title": article.get("title", ""),
-                        "snippet": (article.get("description") or "")[:300],
-                        "url": article.get("url", ""),
-                        "source": article.get("source", {}).get("name", "NewsAPI")
-                    })
-        except: pass
-    
-    # 5. DuckDuckGo Instant Answer API (free, no key needed)
-    if not results:
-        try:
-            r = requests.get("https://api.duckduckgo.com/", params={"q":query,"format":"json","no_html":1}, timeout=8)
-            if r.status_code == 200:
-                data = r.json()
-                abstract = data.get("AbstractText", "")
-                if abstract:
-                    results.append({
-                        "title": data.get("Heading", query),
-                        "snippet": abstract[:300],
-                        "url": data.get("AbstractURL", ""),
-                        "source": "DuckDuckGo"
-                    })
-                for topic in data.get("RelatedTopics", [])[:num_results-1]:
-                    if isinstance(topic, dict) and topic.get("Text"):
-                        results.append({
-                            "title": topic.get("FirstURL", "").split("/")[-1].replace("_"," "),
-                            "snippet": topic.get("Text", "")[:300],
-                            "url": topic.get("FirstURL", ""),
-                            "source": "DuckDuckGo"
-                        })
-        except: pass
-    
-    # Cache results
-    if results:
-        try:
-            conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-            c.execute("DELETE FROM web_cache WHERE created < ?", ((datetime.utcnow() - timedelta(hours=6)).isoformat(),))
-            c.execute("INSERT OR REPLACE INTO web_cache (id, query_hash, data, created) VALUES (?,?,?,?)", (sid(), query_hash, json.dumps(results), datetime.utcnow().isoformat()))
-            conn.commit(); conn.close()
-        except: pass
-    
-    return results
-
-# ═══════════════════════════════════════════════════════════════
-# MARKET DATA
-# ═══════════════════════════════════════════════════════════════
-
-def get_market_data():
+def get_global_markets():
+    """Global stocks, indices, commodities, forex"""
     results = {}
     try:
-        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,JPM,GS,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X,BTC-USD,ETH-USD"
+        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,^GDAXI,^FCHI,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,JPM,GS,GC=F,CL=F,SI=F,NG=F,ZW=F,ZC=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDCHF=X,AUDUSD=X"
         r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
         if r.status_code == 200:
             for i in r.json().get("quoteResponse",{}).get("result",[]):
@@ -298,115 +183,232 @@ def get_market_data():
                     chg = i.get("regularMarketChangePercent")
                     results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
     except: pass
-    
+    return results
+
+def get_crypto_markets():
+    """Cryptocurrency prices from CoinGecko + Yahoo"""
+    results = {}
+    # CoinGecko (primary for crypto)
     if COINGECKO_KEY and COINGECKO_KEY.startswith("CG-"):
         try:
-            r = requests.get("https://api.coingecko.com/api/v3/simple/price",params={"ids":"bitcoin,ethereum","vs_currencies":"usd","include_24hr_change":"true"},headers={"x-cg-demo-api-key":COINGECKO_KEY},timeout=8)
+            ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
+            r = requests.get("https://api.coingecko.com/api/v3/simple/price",params={"ids":ids,"vs_currencies":"usd","include_24hr_change":"true","include_market_cap":"true"},headers={"x-cg-demo-api-key":COINGECKO_KEY},timeout=10)
             if r.status_code == 200:
                 data = r.json()
-                if "bitcoin" in data: results["Bitcoin (BTC)"] = {"price":data["bitcoin"]["usd"],"change":round(data["bitcoin"].get("usd_24h_change",0),2),"source":"CoinGecko"}
-                if "ethereum" in data: results["Ethereum (ETH)"] = {"price":data["ethereum"]["usd"],"change":round(data["ethereum"].get("usd_24h_change",0),2),"source":"CoinGecko"}
+                name_map = {"bitcoin":"Bitcoin (BTC)","ethereum":"Ethereum (ETH)","ripple":"XRP","cardano":"Cardano (ADA)","solana":"Solana (SOL)","polkadot":"Polkadot (DOT)","dogecoin":"Dogecoin (DOGE)","avalanche-2":"Avalanche (AVAX)","chainlink":"Chainlink (LINK)","uniswap":"Uniswap (UNI)","binancecoin":"BNB","tron":"TRON (TRX)","toncoin":"Toncoin (TON)","near":"NEAR Protocol"}
+                for k, v in data.items():
+                    name = name_map.get(k, k.capitalize())
+                    results[name] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2),"market_cap":v.get("usd_market_cap",0),"source":"CoinGecko","updated":datetime.utcnow().isoformat()}
+        except: pass
+    # Yahoo crypto fallback
+    if not results:
+        try:
+            syms = "BTC-USD,ETH-USD,XRP-USD,ADA-USD,SOL-USD,DOGE-USD,DOT-USD,AVAX-USD,LINK-USD,UNI-USD,BNB-USD,TRX-USD"
+            r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
+            if r.status_code == 200:
+                for i in r.json().get("quoteResponse",{}).get("result",[]):
+                    name = i.get("shortName") or i.get("symbol","")
+                    price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
+                    if price and prev:
+                        chg = i.get("regularMarketChangePercent")
+                        results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
+        except: pass
+    return results
+
+def get_african_markets():
+    """African stock exchanges, currencies, and bonds"""
+    results = {}
+    # Yahoo Finance — African ETFs & currencies
+    try:
+        syms = "USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X,USDEGP=X,USDMAD=X,USDTND=X,USDXOF=X,EZA,AFK,FLZA,FLNG,FLGH,FLKE"
+        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
+        if r.status_code == 200:
+            for i in r.json().get("quoteResponse",{}).get("result",[]):
+                name = i.get("shortName") or i.get("symbol","")
+                price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
+                if price and prev:
+                    chg = i.get("regularMarketChangePercent")
+                    results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
+    except: pass
+    # Alpha Vantage — African forex pairs
+    if ALPHA_VANTAGE_KEY:
+        try:
+            pairs = {"USDGHS":"USD/GHS (Ghana Cedi)","USDNGN":"USD/NGN (Nigerian Naira)","USDZAR":"USD/ZAR (SA Rand)","USDKES":"USD/KES (Kenyan Shilling)","USDEGP":"USD/EGP (Egyptian Pound)","USDMAD":"USD/MAD (Moroccan Dirham)"}
+            for pair, label in pairs.items():
+                try:
+                    r = requests.get("https://www.alphavantage.co/query",params={"function":"CURRENCY_EXCHANGE_RATE","from_currency":"USD","to_currency":pair[3:],"apikey":ALPHA_VANTAGE_KEY},timeout=8)
+                    if r.status_code == 200:
+                        data = r.json().get("Realtime Currency Exchange Rate",{})
+                        price_str = data.get("5. Exchange Rate","")
+                        if price_str:
+                            results[label] = {"price":float(price_str),"change":0,"source":"Alpha Vantage","updated":datetime.utcnow().isoformat()}
+                except: pass
+        except: pass
+    return results
+
+def get_all_markets():
+    """Combined market data"""
+    return {"global":get_global_markets(),"crypto":get_crypto_markets(),"african":get_african_markets()}
+
+# ═══════════════════════════════════════════════════════════════
+# DETAILED FINANCIAL NEWS — 2026 WORLDWIDE COVERAGE
+# ═══════════════════════════════════════════════════════════════
+
+def get_financial_news(category="all"):
+    """Detailed, up-to-date financial news from multiple sources"""
+    news = []
+    
+    # 1. News API — Top business headlines worldwide
+    if NEWS_API_KEY:
+        try:
+            params = {"language":"en","pageSize":15,"apiKey":NEWS_API_KEY}
+            if category == "crypto": params["q"] = "crypto OR bitcoin OR ethereum OR blockchain"
+            elif category == "africa": params["q"] = "Africa finance OR African markets OR Nigeria economy OR South Africa markets OR Kenya finance"
+            elif category == "global": params["q"] = "global markets OR central bank OR interest rates OR inflation OR GDP"
+            else: params["category"] = "business"
+            
+            r = requests.get("https://newsapi.org/v2/top-headlines" if category=="all" else "https://newsapi.org/v2/everything",params=params,timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("articles",[]):
+                    news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or a.get("content") or "")[:400],"image":a.get("urlToImage",""),"category":category})
+        except: pass
+    
+    # 2. GNews — Global financial news
+    if GNEWS_API_KEY:
+        try:
+            queries = {"global":"global markets central bank interest rates inflation","crypto":"crypto bitcoin ethereum blockchain defi","africa":"Africa finance economy markets Nigeria South Africa Kenya","all":"finance markets stocks economy"}
+            q = queries.get(category, queries["all"])
+            r = requests.get("https://gnews.io/api/v4/search",params={"q":q,"lang":"en","max":15,"apikey":GNEWS_API_KEY},timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("articles",[]):
+                    news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("image",""),"category":category})
+        except: pass
+    
+    # 3. Finnhub — Market news with sentiment
+    if FINNHUB_API_KEY:
+        try:
+            r = requests.get("https://finnhub.io/api/v1/news",params={"category":"general","token":FINNHUB_API_KEY},timeout=10)
+            if r.status_code == 200:
+                for a in r.json()[:15]:
+                    ts = a.get("datetime",0)
+                    news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:400],"image":a.get("image",""),"category":category})
+        except: pass
+    
+    # 4. Alpha Vantage — News with sentiment scores
+    if ALPHA_VANTAGE_KEY:
+        try:
+            topics = {"global":"forex, economy, monetary","crypto":"crypto, bitcoin, blockchain","africa":"Africa, emerging markets","all":"finance, stocks, markets"}
+            r = requests.get("https://www.alphavantage.co/query",params={"function":"NEWS_SENTIMENT","topics":topics.get(category,topics["all"]),"apikey":ALPHA_VANTAGE_KEY},timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("feed",[])[:15]:
+                    sentiment = a.get("overall_sentiment_label","")
+                    news.append({"source":a.get("source","AlphaVantage"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("time_published",""),"summary":(a.get("summary") or "")[:400],"sentiment":sentiment,"image":a.get("banner_image",""),"category":category})
+        except: pass
+    
+    # 5. SerpAPI — Google News search
+    if SERPAPI_KEY and len(news) < 10:
+        try:
+            queries = {"global":"global financial markets 2026","crypto":"cryptocurrency market news 2026","africa":"African financial markets 2026","all":"financial news today 2026"}
+            r = requests.get("https://serpapi.com/search",params={"engine":"google_news","q":queries.get(category,queries["all"]),"api_key":SERPAPI_KEY},timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("news_results",[])[:15]:
+                    news.append({"source":a.get("source","Google News"),"headline":a.get("title",""),"url":a.get("link",""),"time":"","summary":(a.get("snippet") or "")[:400],"image":"","category":category})
+        except: pass
+    
+    # Deduplicate by headline
+    seen = set()
+    unique = []
+    for n in news:
+        key = n["headline"][:120].lower().strip()
+        if key and key not in seen:
+            seen.add(key)
+            unique.append(n)
+    
+    # Sort by time (most recent first) if available
+    unique.sort(key=lambda x: x.get("time",""), reverse=True)
+    
+    return unique[:20]
+
+# ═══════════════════════════════════════════════════════════════
+# WEB SEARCH
+# ═══════════════════════════════════════════════════════════════
+
+def search_web(query, num_results=5):
+    results = []
+    query_hash = hashlib.md5(query.lower().encode()).hexdigest()
+    try:
+        conn = sqlite3.connect(DB_PATH); c = conn.cursor()
+        c.execute("SELECT data FROM web_cache WHERE query_hash=? AND created > ?",(query_hash,(datetime.utcnow()-timedelta(hours=1)).isoformat()))
+        row = c.fetchone()
+        if row: conn.close(); return json.loads(row[0])
+        conn.close()
+    except: pass
+    
+    if SERPAPI_KEY:
+        try:
+            r = requests.get("https://serpapi.com/search",params={"engine":"google","q":query,"num":num_results,"api_key":SERPAPI_KEY},timeout=10)
+            if r.status_code==200:
+                for item in r.json().get("organic_results",[])[:num_results]:
+                    results.append({"title":item.get("title",""),"snippet":item.get("snippet","")[:300],"url":item.get("link",""),"source":"Google"})
+        except: pass
+    
+    if not results:
+        try:
+            r = requests.get("https://api.duckduckgo.com/",params={"q":query,"format":"json","no_html":1},timeout=8)
+            if r.status_code==200:
+                data = r.json()
+                abstract = data.get("AbstractText","")
+                if abstract: results.append({"title":data.get("Heading",query),"snippet":abstract[:300],"url":data.get("AbstractURL",""),"source":"DuckDuckGo"})
+                for topic in data.get("RelatedTopics",[])[:num_results-1]:
+                    if isinstance(topic,dict) and topic.get("Text"):
+                        results.append({"title":"","snippet":topic["Text"][:300],"url":topic.get("FirstURL",""),"source":"DuckDuckGo"})
         except: pass
     
     if results:
         try:
             conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-            c.execute("DELETE FROM market_cache WHERE created < ?",((datetime.utcnow()-timedelta(minutes=5)).isoformat(),))
-            c.execute("INSERT OR REPLACE INTO market_cache (id, data, created) VALUES (?,?,?)",("latest",json.dumps(results),datetime.utcnow().isoformat()))
+            c.execute("DELETE FROM web_cache WHERE created < ?",((datetime.utcnow()-timedelta(hours=6)).isoformat(),))
+            c.execute("INSERT OR REPLACE INTO web_cache (id,query_hash,data,created) VALUES (?,?,?,?)",(sid(),query_hash,json.dumps(results),datetime.utcnow().isoformat()))
             conn.commit(); conn.close()
         except: pass
     return results
-
-def get_financial_news():
-    news = []
-    if NEWS_API_KEY:
-        try:
-            r = requests.get("https://newsapi.org/v2/top-headlines",params={"category":"business","language":"en","pageSize":8,"apiKey":NEWS_API_KEY},timeout=10)
-            if r.status_code == 200:
-                for a in r.json().get("articles",[]):
-                    news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:250]})
-        except: pass
-    if GNEWS_API_KEY:
-        try:
-            r = requests.get("https://gnews.io/api/v4/search",params={"q":"finance markets stocks economy","lang":"en","max":8,"apikey":GNEWS_API_KEY},timeout=10)
-            if r.status_code == 200:
-                for a in r.json().get("articles",[]):
-                    news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:250]})
-        except: pass
-    if FINNHUB_API_KEY:
-        try:
-            r = requests.get("https://finnhub.io/api/v1/news",params={"category":"general","token":FINNHUB_API_KEY},timeout=10)
-            if r.status_code == 200:
-                for a in r.json()[:8]:
-                    ts = a.get("datetime",0)
-                    news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:250]})
-        except: pass
-    seen = set(); unique = []
-    for n in news:
-        k = n["headline"][:100].lower().strip()
-        if k and k not in seen: seen.add(k); unique.append(n)
-    return unique[:12]
 
 # ═══════════════════════════════════════════════════════════════
 # SYSTEM PROMPT
 # ═══════════════════════════════════════════════════════════════
 
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — an elite institutional intelligence system by CLOSEAI Technologies.
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — elite institutional intelligence by CLOSEAI Technologies. CEO: Osinachi Chukwu.
 
-CEO: Osinachi Chukwu | NED: Blessing Asuquo | CIO: Ebubechi Chukwu
+IDENTITY: Warm, natural, honest. Never make up information.
 
-IDENTITY: Warm, natural, honest. Like a brilliant colleague. Never make up information.
+CRITICAL — MARKET DATA: Only reference prices from LIVE MARKET DATA below. If unavailable, say so honestly.
+CRITICAL — NEWS: Reference the LATEST FINANCIAL NEWS section for current events.
 
-CRITICAL — MARKET DATA:
-- Only reference prices from the LIVE MARKET DATA section if it contains real data.
-- If it says "No data available" — tell the user honestly: "I don't have live prices right now."
-- NEVER guess or hallucinate prices.
+TIME: {day}, {date} at {utc_time}. {greeting_context}
 
-CRITICAL — WEB SEARCH:
-- If WEB SEARCH RESULTS are provided below, use them to give accurate, up-to-date answers.
-- Cite sources when using web search data.
-- If no web results are provided, rely on your training knowledge.
-
-TIME: {day}, {date} at {utc_time} ({time_of_day}). {greeting_context}
-
-STYLE: Conversational, use contractions, match user's energy, no corporate jargon.
+STYLE: Conversational, use contractions, match user's energy, no jargon.
 
 DOMAINS: Finance, Coding, Math, Quant, Science & Health.
-NEVER give: buy/sell recommendations, trading signals, medical diagnoses.
+NEVER: buy/sell recommendations, trading signals, medical diagnoses.
 
 DOMAIN: {domain} | TIER: {tier}
 """
 
-# ═══════════════════════════════════════════════════════════════
-# AI CALL — OPTIMIZED FOR SPEED
-# ═══════════════════════════════════════════════════════════════
-
 def call_ai_fast(messages, tier="free"):
-    """Fast AI call — tries Groq first (fastest), then OpenRouter, then fallbacks"""
-    
-    # Groq is the fastest — try it first for all tiers
     if GROQ_KEY:
         try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},
-                json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},
-                timeout=30)
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=30)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "groq/llama-3.1-8b-instant"
         except: pass
     
-    # OpenRouter with premium models for Pro/Founder
     if OPENROUTER_KEY:
         models = ["google/gemini-2.0-flash","google/gemini-flash-1.5","mistral/mistral-7b-instruct","deepseek/deepseek-chat","meta-llama/llama-3.1-8b-instruct","openai/gpt-3.5-turbo"]
-        if tier in ("pro","founder"):
-            models = ["anthropic/claude-sonnet-4-20250514","anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models
+        if tier in ("pro","founder"): models = ["anthropic/claude-sonnet-4-20250514","anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models
         for model in models:
             try:
-                r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},
-                    json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},
-                    timeout=60)
+                r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=60)
                 if r.status_code==200:
                     content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                     if content: return content, model
@@ -414,9 +416,7 @@ def call_ai_fast(messages, tier="free"):
     
     if HF_TOKEN:
         try:
-            r = requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions",
-                headers={"Authorization":f"Bearer {HF_TOKEN}","Content-Type":"application/json"},
-                json={"model":"mistralai/Mistral-7B-Instruct-v0.2","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
+            r = requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions",headers={"Authorization":f"Bearer {HF_TOKEN}","Content-Type":"application/json"},json={"model":"mistralai/Mistral-7B-Instruct-v0.2","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "hf/mistral-7b"
@@ -424,9 +424,7 @@ def call_ai_fast(messages, tier="free"):
     
     if MISTRAL_KEY:
         try:
-            r = requests.post("https://api.mistral.ai/v1/chat/completions",
-                headers={"Authorization":f"Bearer {MISTRAL_KEY}","Content-Type":"application/json"},
-                json={"model":"mistral-tiny","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
+            r = requests.post("https://api.mistral.ai/v1/chat/completions",headers={"Authorization":f"Bearer {MISTRAL_KEY}","Content-Type":"application/json"},json={"model":"mistral-tiny","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "mistral/mistral-tiny"
@@ -434,9 +432,7 @@ def call_ai_fast(messages, tier="free"):
     
     if OPENAI_KEY:
         try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",
-                headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},
-                json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
+            r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=45)
             if r.status_code==200: return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
         except: pass
     
@@ -444,7 +440,7 @@ def call_ai_fast(messages, tier="free"):
 
 def classify(q):
     q = q.lower()
-    if re.search(r'who|what|when|where|why|how|news|latest|current|today|recent|update|search|find|tell me about|explain|define', q) and len(q.split()) > 3: return 'web_search'
+    if re.search(r'who|what|when|where|why|how|news|latest|current|today|recent|update|search|find|tell me about',q) and len(q.split()) > 3: return 'web_search'
     if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis|anatomy|physiology|pharma|drug|vaccine|immunology|surgery|therapy|cancer|diabetes|heart|brain|blood|virus|bacteria|infection|covid|mental health|nutrition|diet|exercise|sleep|wellness',q): return 'science'
     if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api\s|rest |graphql|sql\s|database|query|react|node\.js|javascript|typescript|python\s|rust\s|golang|microservice|architecture|system design|refactor|debug|deploy|ci/cd|git\s',q): return 'coding'
     if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim',q): return 'quant'
@@ -462,35 +458,40 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
             conn = sqlite3.connect(DB_PATH); c = conn.cursor()
             c.execute("SELECT query, domain FROM memories WHERE session_id=? ORDER BY created DESC LIMIT 3",(session_id,))
             rows = c.fetchall(); conn.close()
-            if rows:
-                base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
+            if rows: base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
         except: pass
     
     if tier == "free": base += "\nBe concise."
     elif tier == "plus": base += "\nBe detailed with examples."
-    elif tier in ("pro","founder"): base += "\nBe comprehensive — go deep with analysis, code, and citations."
+    elif tier in ("pro","founder"): base += "\nBe comprehensive — deep analysis with examples, code, citations."
     
-    # Inject web search results
     if web_results:
-        base += "\n\nWEB SEARCH RESULTS (use these for accurate answers):\n"
-        for i, r in enumerate(web_results[:5]):
-            base += f"{i+1}. {r['title']}\n   {r['snippet'][:200]}\n   Source: {r['url']}\n"
+        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"{i+1}. {r['title']}\n   {r['snippet'][:200]}\n   Source: {r['url']}" for i,r in enumerate(web_results[:5])])
         base += "\nCite sources when using this information."
     
-    # Inject market data (Pro/Founder only)
     cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
     if cfg.get("live_markets", False):
         try:
-            md = get_market_data()
-            if md:
-                items = [f"{s}: ${d['price']:.2f} ({'up' if d.get('change',0)>=0 else 'down'} {abs(d['change']):.2f}%)" for s,d in list(md.items())[:8]]
-                base += "\n\nLIVE MARKET DATA:\n" + "\n".join(items)
-            else:
-                base += "\n\nMARKET DATA: Unavailable. Do NOT make up prices."
-        except:
-            base += "\n\nMARKET DATA: Unavailable. Do NOT make up prices."
+            all_markets = get_all_markets()
+            if all_markets.get("global"):
+                items = [f"{s}: ${d['price']:.2f} ({'up' if d.get('change',0)>=0 else 'down'} {abs(d['change']):.2f}%)" for s,d in list(all_markets["global"].items())[:6]]
+                base += "\n\nGLOBAL MARKETS:\n" + "\n".join(items)
+            if all_markets.get("crypto"):
+                items = [f"{s}: ${d['price']:.2f} ({'up' if d.get('change',0)>=0 else 'down'} {abs(d['change']):.2f}%)" for s,d in list(all_markets["crypto"].items())[:6]]
+                base += "\n\nCRYPTO MARKETS:\n" + "\n".join(items)
+            if all_markets.get("african"):
+                items = [f"{s}: ${d['price']:.4f}" if d['price'] < 1 else f"{s}: ${d['price']:.2f}" for s,d in list(all_markets["african"].items())[:6]]
+                base += "\n\nAFRICAN MARKETS:\n" + "\n".join(items)
+        except: pass
     else:
-        base += "\n\nYou do NOT have live market data. If asked about prices, say: 'I don't have live prices on this tier. Upgrade to Pro.'"
+        base += "\n\nNo live market data. Tell user to upgrade to Pro."
+    
+    try:
+        news = get_financial_news("all")
+        if news:
+            headlines = [f"• [{n['source']}] {n['headline'][:130]}" + (f" | Sentiment: {n['sentiment']}" if n.get('sentiment') else "") for n in news[:8]]
+            base += "\n\nLATEST FINANCIAL NEWS (2026):\n" + "\n".join(headlines)
+    except: pass
     
     return base
 
@@ -520,17 +521,17 @@ def health():
             r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=10)
             if r.status_code==200: ai="connected"; providers.append("groq")
         except: pass
-    if ai != "connected" and OPENROUTER_KEY:
+    if ai!="connected" and OPENROUTER_KEY:
         try:
             r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json"},json={"model":"google/gemini-flash-1.5","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=10)
             if r.status_code==200: ai="connected"; providers.append("openrouter")
         except: pass
-    if ai != "connected" and OPENAI_KEY:
+    if ai!="connected" and OPENAI_KEY:
         try:
             r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=10)
             if r.status_code==200: ai="connected"; providers.append("openai")
         except: pass
-    return {"status":"ok","version":"22.0","ai":ai,"providers":providers,"markets":bool(ALPHA_VANTAGE_KEY or COINGECKO_KEY),"news":bool(NEWS_API_KEY or GNEWS_API_KEY),"web_search":bool(SERPAPI_KEY or GNEWS_API_KEY)}
+    return {"status":"ok","version":"22.0","ai":ai,"providers":providers,"markets":bool(ALPHA_VANTAGE_KEY or COINGECKO_KEY),"news":bool(NEWS_API_KEY or GNEWS_API_KEY),"web_search":bool(SERPAPI_KEY)}
 
 @app.get("/api/session")
 def get_or_create_session(request: Request):
@@ -554,26 +555,63 @@ def get_or_create_session(request: Request):
 @app.get("/api/payment-config")
 def payment_config(): return {"wallets":WALLETS,"prices":{"plus":8,"pro":17},"benefits":UPGRADE_BENEFITS}
 
+# ─── CATEGORIZED MARKET ENDPOINTS ────────────────────────────
+
 @app.get("/api/markets")
-def markets(request: Request):
+def markets(request: Request, category: str = "all"):
+    """Get market data by category: all, global, crypto, african"""
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False): return {"prices":{},"news":[],"message":"Pro tier required for live markets"}
-    return {"prices":get_market_data(),"news":get_financial_news()}
+    if not cfg.get("live_markets", False): return {"prices":{},"news":[],"message":"Pro tier required"}
+    
+    if category == "global": prices = get_global_markets()
+    elif category == "crypto": prices = get_crypto_markets()
+    elif category == "african": prices = get_african_markets()
+    else: prices = get_all_markets()
+    
+    news = get_financial_news(category if category != "all" else "all")
+    return {"prices":prices,"news":news,"category":category}
 
 @app.get("/api/markets/prices")
-def markets_prices(request: Request):
+def markets_prices(request: Request, category: str = "all"):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"prices":{},"message":"Upgrade to Pro"}
-    return {"prices":get_market_data()}
+    
+    if category == "global": return {"prices":get_global_markets(),"category":"global"}
+    elif category == "crypto": return {"prices":get_crypto_markets(),"category":"crypto"}
+    elif category == "african": return {"prices":get_african_markets(),"category":"african"}
+    else: return {"prices":get_all_markets(),"category":"all"}
 
 @app.get("/api/markets/news")
-def markets_news(request: Request):
+def markets_news(request: Request, category: str = "all"):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"news":[],"message":"Upgrade to Pro"}
-    return {"news":get_financial_news()}
+    return {"news":get_financial_news(category),"category":category}
+
+@app.get("/api/markets/global")
+def global_markets(request: Request):
+    s = get_session(request)
+    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
+    if not cfg.get("live_markets", False): return {"prices":{},"message":"Pro required"}
+    return {"prices":get_global_markets()}
+
+@app.get("/api/markets/crypto")
+def crypto_markets(request: Request):
+    s = get_session(request)
+    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
+    if not cfg.get("live_markets", False): return {"prices":{},"message":"Pro required"}
+    return {"prices":get_crypto_markets()}
+
+@app.get("/api/markets/african")
+def african_markets(request: Request):
+    s = get_session(request)
+    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
+    if not cfg.get("live_markets", False): return {"prices":{},"message":"Pro required"}
+    return {"prices":get_african_markets()}
+
+# ─── REMAINING ENDPOINTS (UNCHANGED) ─────────────────────────
 
 @app.get("/api/search")
 def web_search_endpoint(q: str, request: Request):
@@ -588,8 +626,7 @@ def get_chats(request: Request):
     if not s: raise HTTPException(401)
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("SELECT id,title,created,updated FROM chats WHERE session_id=? ORDER BY updated DESC LIMIT 30",(s["id"],))
-    rows = c.fetchall(); conn.close()
-    return {"chats":[{"id":r[0],"title":r[1],"created":r[2],"updated":r[3]} for r in rows]}
+    return {"chats":[{"id":r[0],"title":r[1],"created":r[2],"updated":r[3]} for r in c.fetchall()]}
 
 @app.get("/api/chats/{chat_id}")
 def get_chat(chat_id: str, request: Request):
@@ -599,9 +636,7 @@ def get_chat(chat_id: str, request: Request):
     c.execute("SELECT id FROM chats WHERE id=? AND session_id=?",(chat_id,s["id"]))
     if not c.fetchone(): raise HTTPException(404,"Not found")
     c.execute("SELECT id,role,content,model,created FROM chat_messages WHERE chat_id=? ORDER BY created ASC",(chat_id,))
-    msgs = [{"id":r[0],"role":r[1],"content":r[2],"model":r[3],"created":r[4]} for r in c.fetchall()]
-    conn.close()
-    return {"messages":msgs}
+    return {"messages":[{"id":r[0],"role":r[1],"content":r[2],"model":r[3],"created":r[4]} for r in c.fetchall()]}
 
 @app.post("/api/chat")
 def chat(req: ChatRequest, request: Request):
@@ -613,18 +648,15 @@ def chat(req: ChatRequest, request: Request):
     if limit != float("inf"):
         conn = sqlite3.connect(DB_PATH); c = conn.cursor()
         c.execute("SELECT msg_count,msg_window FROM sessions WHERE id=?",(s["id"],))
-        row = c.fetchone()
-        count = row[0] or 0
+        row = c.fetchone(); count = row[0] or 0
         if count >= limit:
             w = datetime.fromisoformat(row[1]) if row and row[1] else datetime.utcnow()
-            if datetime.utcnow() - w < timedelta(hours=24): raise HTTPException(429,f"Daily limit ({limit}/day). Upgrade to continue.")
+            if datetime.utcnow() - w < timedelta(hours=24): raise HTTPException(429,f"Daily limit ({limit}/day). Upgrade.")
             c.execute("UPDATE sessions SET msg_count=0, msg_window=? WHERE id=?",(datetime.utcnow().isoformat(),s["id"]))
             conn.commit()
         conn.close()
-    
     user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role")=="user"),"")
     if not user_msg: raise HTTPException(400,"No message")
-    
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     chat_id = req.chat_id or f"chat_{sid()}"
     if not req.chat_id:
@@ -634,29 +666,19 @@ def chat(req: ChatRequest, request: Request):
     c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,created) VALUES (?,?,?,?,?,?)",(f"msg_{sid()}",chat_id,s["id"],"user",user_msg,datetime.utcnow().isoformat()))
     c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=?",(s["id"],))
     conn.commit()
-    
     c.execute("SELECT role,content FROM chat_messages WHERE chat_id=? ORDER BY created ASC LIMIT 20",(chat_id,))
     history = [{"role":r[0],"content":r[1]} for r in c.fetchall()]
-    
     domain = classify(user_msg)
-    
-    # Perform web search in parallel with AI call for speed
     web_results = None
-    web_search_needed = domain == 'web_search' or cfg.get("web_search", False)
-    
-    if web_search_needed:
-        try:
-            web_results = search_web(user_msg, 5)
+    if domain == 'web_search' or cfg.get("web_search", False):
+        try: web_results = search_web(user_msg, 5)
         except: pass
-    
     prompt = system_prompt(domain, s["tier"], s["id"], request, web_results)
     result, model_used = call_ai_fast([{"role":"system","content":prompt}] + history, s["tier"])
-    
     if result:
         c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,model,created) VALUES (?,?,?,?,?,?,?)",(f"msg_{sid()}",chat_id,s["id"],"assistant",result,model_used,datetime.utcnow().isoformat()))
     c.execute("INSERT INTO memories (id,memory_id,session_id,content,query,domain,created) VALUES (?,?,?,?,?,?,?)",(sid(),mid(),s["id"],result[:500] if result else "",user_msg,domain,datetime.utcnow().isoformat()))
     conn.commit(); conn.close()
-    
     remaining = limit - (s["msg_count"]+1) if limit!=float("inf") else "unlimited"
     return {"content":result,"chat_id":chat_id,"model":model_used,"remaining":remaining,"web_search_used":web_results is not None}
 
@@ -718,8 +740,7 @@ def upgrade(req: UpgradeRequest, request: Request):
     if not s: raise HTTPException(401)
     if req.tier not in ("plus","pro"): raise HTTPException(400,"Invalid tier")
     if not req.txid.strip(): raise HTTPException(400,"TXID required")
-    prices = {"plus":8,"pro":17}
-    cur = req.currency.upper()
+    prices = {"plus":8,"pro":17}; cur = req.currency.upper()
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("INSERT INTO payments (id,session_id,txid,currency,amount,tier,verified,expires,created) VALUES (?,?,?,?,?,?,?,?,?)",(sid(),s["id"],req.txid.strip(),cur,prices[req.tier],req.tier,1,(datetime.utcnow()+timedelta(days=30)).isoformat(),datetime.utcnow().isoformat()))
     c.execute("UPDATE sessions SET tier=?, msg_count=0, updated=? WHERE id=?",(req.tier,datetime.utcnow().isoformat(),s["id"]))
@@ -800,7 +821,7 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
         context = "\n".join([f"{r[0]}: {r[1]}" for r in c.fetchall()])
         c.execute("SELECT content FROM workspace_notes WHERE workspace_id=?",(ws[0],))
         notes = "\n".join([r[0] for r in c.fetchall()])
-        result, _ = call_ai_fast([{"role":"system","content":f"Work Area context:\n{context}\n\nNotes:\n{notes}\n\nRespond as CAPITAN AI."},{"role":"user","content":req.message.replace('@CAPITAN','').strip()}], s["tier"])
+        result, _ = call_ai_fast([{"role":"system","content":f"Work Area:\n{context}\n\nNotes:\n{notes}"},{"role":"user","content":req.message.replace('@CAPITAN','').strip()}], s["tier"])
         if result:
             c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,is_ai,created) VALUES (?,?,?,?,?,?,?)",(sid(),ws[0],s["id"],"CAPITAN AI",result,1,datetime.utcnow().isoformat()))
             conn.commit()
