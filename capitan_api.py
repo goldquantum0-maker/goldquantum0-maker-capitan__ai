@@ -43,7 +43,7 @@ UPGRADE_BENEFITS = {
     ],
     "pro": [
         "Unlimited messages — no daily cap",
-        "Deep AI model (Claude 3.5 Sonnet / GPT-4o)",
+        "Deep AI model (Claude Sonnet 4 / Claude 3.5 / GPT-4o)",
         "Work Area — collaborate with up to 16 people",
         "File uploads up to 50MB",
         "Live market data & financial news",
@@ -263,13 +263,13 @@ USER TIER: {tier}
 """
 
 # ═══════════════════════════════════════════════════════════════
-# AI CALL FUNCTION — MULTI-PROVIDER WITH GROQ FALLBACK
+# AI CALL FUNCTION — MULTI-PROVIDER WITH CLAUDE SONNET 4 + GROQ
 # ═══════════════════════════════════════════════════════════════
 
 def call_ai(messages, tier="free"):
     """
     Try AI providers in order:
-    1. OpenRouter (Claude, GPT-4o, Gemini, Mistral, DeepSeek, Llama, GPT-3.5)
+    1. OpenRouter (Claude Sonnet 4, Claude 3.5, GPT-4o, Gemini, Mistral, DeepSeek, Llama, GPT-3.5)
     2. Groq (Llama 3.1 8B Instant — free, fast, reliable)
     3. Direct OpenAI (GPT-3.5 Turbo)
     4. Fallback message
@@ -279,16 +279,19 @@ def call_ai(messages, tier="free"):
     if OPENROUTER_KEY:
         if tier in ("pro", "founder"):
             models_to_try = [
-                "anthropic/claude-3.5-sonnet",
-                "openai/gpt-4o",
-                "google/gemini-flash-1.5",
-                "mistral/mistral-7b-instruct",
-                "deepseek/deepseek-chat",
-                "meta-llama/llama-3.1-8b-instruct",
-                "openai/gpt-3.5-turbo"
+                "anthropic/claude-sonnet-4-20250514",   # Claude Sonnet 4 (latest)
+                "anthropic/claude-3.5-sonnet",           # Claude 3.5 Sonnet
+                "openai/gpt-4o",                          # GPT-4o
+                "google/gemini-2.0-flash",                # Gemini 2.0 Flash
+                "google/gemini-flash-1.5",                # Gemini 1.5 Flash
+                "mistral/mistral-7b-instruct",            # Mistral 7B
+                "deepseek/deepseek-chat",                  # DeepSeek V3
+                "meta-llama/llama-3.1-8b-instruct",       # Llama 3.1
+                "openai/gpt-3.5-turbo"                    # GPT-3.5
             ]
         else:
             models_to_try = [
+                "google/gemini-2.0-flash",
                 "google/gemini-flash-1.5",
                 "mistral/mistral-7b-instruct",
                 "deepseek/deepseek-chat",
