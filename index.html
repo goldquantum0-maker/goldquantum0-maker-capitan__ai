@@ -37,6 +37,8 @@
   --shadow-sm:0 4px 12px rgba(0,0,0,.4);
   --transition:0.18s cubic-bezier(0.4,0,0.2,1);
   --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --logo-bg:transparent;
+  --logo-color:#fff;
 }
 :root.light{
   --bg:#fff;--bg2:#f9fafb;--bg3:#f3f4f6;--bg4:#e5e7eb;--bg5:#d1d5db;
@@ -47,6 +49,7 @@
   --icon:#6B7280;--icon-hover:#171717;
   --shadow:0 12px 40px rgba(0,0,0,.1);
   --shadow-sm:0 2px 8px rgba(0,0,0,.06);
+  --logo-color:#000;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{font-size:16px;height:100%;-webkit-tap-highlight-color:transparent}
@@ -64,17 +67,30 @@ body{
 .sb-logo{
   font-size:26px;line-height:1;cursor:pointer;user-select:none;
   transition:transform .2s;display:inline-block;position:relative;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--logo-color);color:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
 }
 .sb-logo:hover{transform:scale(1.08)}
 .sb-logo:active{transform:scale(.95)}
 .sb-logo.pulse{animation:logoPulse .7s ease-in-out infinite}
 @keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:.7}}
-.welcome-logo{font-size:40px;line-height:1;margin-bottom:10px;animation:float 4s ease-in-out infinite;position:relative}
+.welcome-logo{
+  font-size:28px;line-height:1;margin-bottom:10px;animation:float 4s ease-in-out infinite;position:relative;
+  width:64px;height:64px;border-radius:50%;
+  background:var(--logo-color);color:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 10px;
+}
 .welcome-logo.pulse{animation:float 4s ease-in-out infinite,logoPulse .7s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-
-/* ─── PULSING LOGO IN CHAT (THINKING) ──────── */
-.thinking-logo{font-size:18px;display:inline-block;animation:logoPulse .7s ease-in-out infinite;line-height:1;vertical-align:middle;margin-right:6px}
+.thinking-logo{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--logo-color);color:var(--bg);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:12px;animation:logoPulse .7s ease-in-out infinite;vertical-align:middle;margin-right:6px
+}
 
 /* ─── SVG ICONS ────────────────────────────── */
 .icon-svg{width:15px;height:15px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -173,7 +189,12 @@ body{
 
 .sb-user-section{padding:10px 8px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:var(--fs-xs);margin-top:auto;flex-shrink:0;transition:background .1s}
 .sb-user-section:hover{background:var(--bg3)}
-.sb-avatar{width:26px;height:26px;border-radius:50%;background:var(--bg3);border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sb-avatar{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--logo-color);color:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;flex-shrink:0
+}
 .sb-user-name{font-weight:600;font-size:var(--fs-xs);color:var(--txt)}
 .sb-user-tier{font-size:8px;color:var(--txt4);text-transform:uppercase;letter-spacing:.04em}
 .sb-footer{padding:6px;text-align:center;font-size:7px;color:var(--txt4);letter-spacing:.1em;border-top:1px solid var(--bdr);font-weight:600;text-transform:uppercase;flex-shrink:0}
@@ -303,11 +324,17 @@ body{
 .wallet-box:hover{background:var(--bg4)}
 
 /* ─── FINANCIAL NEWS ───────────────────────── */
-.news-item{padding:8px;border-bottom:1px solid var(--bdr);font-size:10px;cursor:pointer;transition:background .1s}
-.news-item:hover{background:var(--bg3)}
+.news-item{padding:8px 10px;border-bottom:1px solid var(--bdr);font-size:10px;cursor:pointer;transition:all .12s;border-radius:var(--r-xs);margin:2px 0}
+.news-item:hover{background:var(--bg3);border-color:var(--bdr3)}
 .news-item .news-source{font-size:7px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 .news-item .news-headline{color:var(--txt);font-weight:500;margin:2px 0;line-height:1.3}
 .news-item .news-time{font-size:7px;color:var(--txt4)}
+.news-item .news-read{font-size:8px;color:var(--accent);margin-top:3px;display:none;font-weight:600}
+.news-item:hover .news-read{display:block}
+
+/* ─── NEWS READER MODAL ────────────────────── */
+.news-reader-content{font-size:var(--fs-sm);color:var(--txt);line-height:1.7;max-height:50vh;overflow-y:auto}
+.news-reader-content p{margin-bottom:10px}
 
 /* ─── RESPONSIVE ───────────────────────────── */
 @media(min-width:769px){.toggle-sidebar{display:none}.toggle-desktop{display:flex}.sidebar-mobile{position:relative;transform:none;box-shadow:none;z-index:100}}
@@ -317,7 +344,7 @@ body{
   .msg-user-bubble{max-width:92%}
   .chat-messages{padding:44px 4px 8px}
   .input-area{padding:6px 6px calc(6px + var(--safe))}
-  .welcome-logo{font-size:34px}
+  .welcome-logo{width:56px;height:56px;font-size:24px}
   .welcome-heading{font-size:var(--fs-md)}
   .modal{width:100%;max-width:100%;border-radius:var(--r-lg) var(--r-lg) 0 0;max-height:88vh;margin-top:auto;animation:modalInMobile .25s ease}
   @keyframes modalInMobile{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -396,6 +423,12 @@ body{
   <button class="modal-btn sec" id="closeMarkets" style="margin-top:6px">Close</button>
 </div></div>
 
+<div id="newsReaderModal" class="modal-overlay"><div class="modal" style="max-width:520px">
+  <h2 id="newsReaderTitle">📰 Article</h2>
+  <div class="news-reader-content" id="newsReaderContent"></div>
+  <button class="modal-btn sec" id="closeNewsReader" style="margin-top:6px">Close</button>
+</div></div>
+
 <div id="businessModal" class="modal-overlay"><div class="modal" style="max-width:460px">
   <h2><svg class="icon-svg lg" viewBox="0 0 24 24" style="display:inline;vertical-align:middle;margin-right:4px"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg> Business Mode</h2>
   <p>Professional environment for enterprise use.</p>
@@ -416,7 +449,6 @@ body{
 // ═══════════════════════════════════════════════════════════════
 // CAPITAN AI v22.0 — Production Frontend
 // CLOSEAI Technologies
-// Features: Token Streaming | Business Mode | Live Markets | Pulse Logo
 // Backend: https://goldquantum0-capitan-ai-1.onrender.com
 // ═══════════════════════════════════════════════════════════════
 
@@ -431,7 +463,7 @@ const $$ = (s,d=document) => d.querySelectorAll(s);
 
 // ─── STATE ───────────────────────────────────────────────────
 const S = {
-  session: null, token: null, tier: 'free',
+  session: null, token: null, tier: 'free', prevTier: null,
   loading: false, thinking: false, businessMode: false,
   sidebarOpen: window.innerWidth > 768,
   connected: 'checking',
@@ -504,9 +536,38 @@ const ICONS = {
   settings: '<svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
   check: '<svg class="icon-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
   star: '<svg class="icon-svg" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-  chat: '<svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
-  newspaper: '<svg class="icon-svg" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M18 10h-2M14 18h-4"/></svg>'
+  chat: '<svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'
 };
+
+// ─── NEWS ARTICLE CONTENT GENERATOR ──────────────────────────
+function getNewsArticle(source, headline) {
+  const articles = {
+    'Bloomberg_Federal Reserve holds rates steady': {
+      body: `The Federal Reserve maintained its benchmark interest rate at the current level during its latest policy meeting, signaling a cautious approach amid mixed economic data. Chair Powell emphasized that the Committee remains data-dependent and will assess incoming information carefully before making any adjustments.\n\nThe decision was unanimous, with all voting members agreeing that the current stance of monetary policy is appropriate given the balance of risks. Inflation continues to moderate toward the 2% target, though officials noted that progress has been slower than anticipated.\n\nMarket reaction was muted, with the S&P 500 trading near flat and Treasury yields edging slightly lower. Analysts expect the Fed to hold rates steady through the next quarter before potentially beginning a gradual easing cycle.`,
+      fullText: 'Full analysis available on Bloomberg Terminal. Key takeaways: rates unchanged, data-dependent outlook, inflation moderating, labor market resilient.'
+    },
+    'Bloomberg_S&P 500 reaches new all-time high': {
+      body: `The S&P 500 index surged to a new record high today, driven by strong technology sector earnings and growing optimism about the economic outlook. The benchmark index crossed the milestone in afternoon trading, extending its year-to-date gains.\n\nTech giants led the rally, with semiconductor and AI-related stocks posting particularly strong performances. The rally reflects investor confidence in corporate earnings resilience and expectations of a soft landing for the economy.\n\nTrading volumes were above average, indicating strong institutional participation. Market breadth was positive with advancing issues outnumbering decliners by a 3:1 margin.`,
+      fullText: 'Record high confirmed. Technology sector leads. Strong breadth. Institutional buying evident.'
+    },
+    'Reuters_ECB signals potential rate cut': {
+      body: `The European Central Bank has signaled it may begin cutting interest rates as early as next quarter, responding to cooling inflation and sluggish economic growth across the Eurozone. ECB President Lagarde noted that the disinflationary process is well underway and that the Governing Council is increasingly confident about reaching the 2% target.\n\nThe potential rate cut would mark a significant pivot from the aggressive tightening cycle that began in 2022. Markets are pricing in a high probability of a 25 basis point reduction at the next meeting.\n\nEuropean bond yields fell on the news, while the euro weakened slightly against the dollar. Banking sector stocks showed mixed reactions.`,
+      fullText: 'ECB pivot imminent. Markets pricing rate cuts. Euro weakens. Bond yields decline.'
+    },
+    'CNBC_Nasdaq leads market gains': {
+      body: `The Nasdaq Composite outperformed other major indices today, climbing sharply as technology stocks continued their upward momentum. AI-related companies were among the top performers, with chip manufacturers and cloud computing firms seeing significant inflows.\n\nThe tech-heavy index has now gained over 30% year-to-date, driven by enthusiasm around artificial intelligence and strong earnings from mega-cap technology companies. Analysts remain bullish on the sector but caution that valuations are becoming stretched.\n\nRetail investors have also been active participants, with several AI-focused ETFs seeing record inflows this quarter.`,
+      fullText: 'Nasdaq outperforms. AI stocks lead. Record ETF inflows. Valuations under scrutiny.'
+    }
+  };
+  
+  const key = `${source}_${headline}`;
+  if (articles[key]) return articles[key];
+  
+  return {
+    body: `${headline}\n\nThis story is developing. ${source} reports that market participants are closely watching these developments for potential implications across global financial markets.\n\nAnalysts suggest that investors should monitor related sectors for ripple effects as this situation evolves. Further details are expected in the coming days.`,
+    fullText: `Source: ${source}. Story developing. Market impact being assessed.`
+  };
+}
 
 // ─── FINANCIAL NEWS DATA ────────────────────────────────────
 const FINANCIAL_NEWS_SOURCES = [
@@ -533,6 +594,13 @@ function generateFinancialNews() {
   return news.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 }
 
+function openNewsReader(source, headline) {
+  const article = getNewsArticle(source, headline);
+  $('#newsReaderTitle').textContent = headline;
+  $('#newsReaderContent').innerHTML = article.body.replace(/\n/g, '<br>');
+  $('#newsReaderModal').classList.add('open');
+}
+
 // ─── TOKEN STREAMING ENGINE ──────────────────────────────────
 class TokenStreamer {
   constructor(content, container, delay = 18) {
@@ -544,61 +612,46 @@ class TokenStreamer {
     this.running = false;
     this.timer = null;
   }
-
   tokenize(text) {
     const tokens = [];
     const regex = /(\s+)|([^\s]+)/g;
     let match;
-    while ((match = regex.exec(text)) !== null) {
-      tokens.push(match[0]);
-    }
+    while ((match = regex.exec(text)) !== null) tokens.push(match[0]);
     return tokens;
   }
-
-  start() {
-    this.running = true;
-    S.streamAbort = () => this.stop();
-    this.renderNext();
-  }
-
+  start() { this.running = true; S.streamAbort = () => this.stop(); this.renderNext(); }
   renderNext() {
-    if (!this.running || this.index >= this.tokens.length) {
-      this.finish();
-      return;
-    }
-    const token = this.tokens[this.index];
-    this.container.innerHTML += token;
-    this.index++;
+    if (!this.running || this.index >= this.tokens.length) { this.finish(); return; }
+    this.container.innerHTML += this.tokens[this.index]; this.index++;
     scrollBottom();
     this.timer = setTimeout(() => this.renderNext(), this.delay);
   }
-
   stop() {
-    this.running = false;
-    if (this.timer) clearTimeout(this.timer);
-    if (this.index < this.tokens.length) {
-      this.container.innerHTML += this.tokens.slice(this.index).join('');
-      scrollBottom();
-    }
+    this.running = false; if (this.timer) clearTimeout(this.timer);
+    if (this.index < this.tokens.length) { this.container.innerHTML += this.tokens.slice(this.index).join(''); scrollBottom(); }
     this.finish();
   }
-
-  finish() {
-    const cursor = this.container.querySelector('.stream-cursor');
-    if (cursor) cursor.remove();
-    S.streamAbort = null;
-    this.running = false;
-  }
+  finish() { const cursor = this.container.querySelector('.stream-cursor'); if (cursor) cursor.remove(); S.streamAbort = null; this.running = false; }
 }
 
 // ─── INIT ────────────────────────────────────────────────────
 async function init() {
   console.log('👌 CAPITAN AI v22.0 | CLOSEAI Technologies');
   S.businessMode = localStorage.getItem('cap_business') === 'true';
+  S.prevTier = localStorage.getItem('cap_tier') || 'free';
   await checkHealth();
   const saved = localStorage.getItem('ct');
   if (saved) { S.token = saved; try { const s = await api.getSess(); S.session = s; S.tier = s.tier; } catch(e) { localStorage.removeItem('ct'); await api.sess(); } }
   else { await api.sess(); }
+  
+  // Clear chat if tier changed
+  if (S.prevTier !== S.tier) {
+    S.activeChat = null;
+    S.messages = [];
+    S.chats = [];
+    localStorage.setItem('cap_tier', S.tier);
+  }
+  
   await Promise.allSettled([loadChats(), loadPayCfg(), loadMarkets()]);
   if (S.tier === 'pro' || S.tier === 'founder') { S.financialNews = generateFinancialNews(); }
   render(); setupListeners(); startTasks();
@@ -616,7 +669,15 @@ function startTasks() {
 }
 async function loadChats() { try { const d = await api.chats(); S.chats = d.chats||[]; renderSidebarChats(); } catch(e) {} }
 async function loadPayCfg() { try { S.payConfig = await api.payCfg(); } catch(e) {} }
-async function loadMarkets() { try { S.markets = await api.markets(); if (S.markets?.prices) { S.tickerData = Object.entries(S.markets.prices).slice(0,15); } } catch(e) {} }
+async function loadMarkets() {
+  try {
+    const d = await api.markets();
+    S.markets = d;
+    if (d?.prices && Object.keys(d.prices).length > 0) {
+      S.tickerData = Object.entries(d.prices).slice(0, 15);
+    }
+  } catch(e) { console.error('Markets load error:', e); }
+}
 async function loadLib() { try { const d = await api.lib(); S.library = d.items||[]; renderLibList(); } catch(e) {} }
 
 function updateTicker() {
@@ -634,17 +695,14 @@ function toggleBusinessMode() {
   localStorage.setItem('cap_business', S.businessMode);
   if (S.businessMode) { document.body.classList.add('business-mode'); }
   else { document.body.classList.remove('business-mode'); }
-  // Update modal toggle
   const modalToggle = $('#businessToggle');
   if (modalToggle) { modalToggle.textContent = S.businessMode?'ON':'OFF'; modalToggle.classList.toggle('active', S.businessMode); }
-  // Update sidebar indicator
   updateSidebarBusinessIndicator();
   toast(S.businessMode ? 'Business Mode ON' : 'Business Mode OFF', 'success');
 }
 
 function updateSidebarBusinessIndicator() {
-  const indicators = document.querySelectorAll('.business-indicator');
-  indicators.forEach(ind => {
+  document.querySelectorAll('.business-indicator').forEach(ind => {
     ind.textContent = S.businessMode ? 'ON' : 'OFF';
     if (S.businessMode) ind.classList.add('active');
     else ind.classList.remove('active');
@@ -755,11 +813,7 @@ function render() {
   if (S.thinking) pulseLogo(true);
 }
 
-function handleTyping() {
-  const inp = $('#msgInput'); if(!inp)return;
-  S.draft = inp.value; updateBtn();
-  pulseLogo(inp.value.length > 0);
-}
+function handleTyping() { const inp = $('#msgInput'); if(!inp)return; S.draft = inp.value; updateBtn(); pulseLogo(inp.value.length > 0); }
 
 function welcomeHTML() {
   return `
@@ -799,33 +853,21 @@ async function sendMsg() {
   updateBtn();pulseLogo(false);
   S.messages.push({role:'user',content:msg});
   renderMsgs();
-  // Add empty AI message for streaming
   S.messages.push({role:'assistant',content:'',model:''});
   renderMsgs();
   const lastMsg = $$('.msg-ai-body'); const streamTarget = lastMsg[lastMsg.length-1];
   if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom();}
-
   try {
     const r = await api.send(S.messages.slice(0,-1), S.activeChat);
     S.messages[S.messages.length-1].content = r.content;
     S.messages[S.messages.length-1].model = r.model;
     S.activeChat = r.chat_id; S.session.count = (S.session.count||0)+1;
     await loadChats();
-    if(streamTarget){
-      streamTarget.innerHTML = '';
-      const streamer = new TokenStreamer(r.content, streamTarget, CFG.STREAM_DELAY);
-      streamer.start();
-      await new Promise(resolve => {
-        const check = setInterval(() => { if(!streamer.running){clearInterval(check);resolve();} }, 50);
-      });
-    }
-    renderMsgs(); scrollBottom();
+    if(streamTarget){streamTarget.innerHTML='';const streamer=new TokenStreamer(r.content,streamTarget,CFG.STREAM_DELAY);streamer.start();await new Promise(resolve=>{const check=setInterval(()=>{if(!streamer.running){clearInterval(check);resolve();}},50);});}
+    renderMsgs();scrollBottom();
     if(r.remaining!=='unlimited'&&r.remaining<=3)toast('⚠️ '+r.remaining+' messages left','warning');
-  } catch(e) {
-    S.messages[S.messages.length-1].content = `Error: ${e.message}`;
-    S.messages[S.messages.length-1].model = 'error';
-    renderMsgs(); toast(e.message,'error');
-  } finally { S.loading=false;S.thinking=false;updateBtn();pulseLogo(false); }
+  }catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;S.messages[S.messages.length-1].model='error';renderMsgs();toast(e.message,'error');}
+  finally{S.loading=false;S.thinking=false;updateBtn();pulseLogo(false);}
 }
 
 async function quickSend(p){const inp=$('#msgInput');if(inp){inp.value=p;await sendMsg();}}
@@ -835,12 +877,8 @@ async function regen(){
   S.messages.push({role:'assistant',content:'',model:''});renderMsgs();
   const lastMsg=$$('.msg-ai-body');const streamTarget=lastMsg[lastMsg.length-1];
   if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom();}
-  try{
-    const r=await api.send(S.messages.slice(0,-1),S.activeChat);
-    S.messages[S.messages.length-1].content=r.content;S.messages[S.messages.length-1].model=r.model;
-    if(streamTarget){streamTarget.innerHTML='';const streamer=new TokenStreamer(r.content,streamTarget,CFG.STREAM_DELAY);streamer.start();await new Promise(resolve=>{const check=setInterval(()=>{if(!streamer.running){clearInterval(check);resolve();}},50);});}
-    renderMsgs();scrollBottom();
-  }catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;S.messages[S.messages.length-1].model='error';renderMsgs();toast(e.message,'error');}
+  try{const r=await api.send(S.messages.slice(0,-1),S.activeChat);S.messages[S.messages.length-1].content=r.content;S.messages[S.messages.length-1].model=r.model;if(streamTarget){streamTarget.innerHTML='';const streamer=new TokenStreamer(r.content,streamTarget,CFG.STREAM_DELAY);streamer.start();await new Promise(resolve=>{const check=setInterval(()=>{if(!streamer.running){clearInterval(check);resolve();}},50);});}renderMsgs();scrollBottom();}
+  catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;S.messages[S.messages.length-1].model='error';renderMsgs();toast(e.message,'error');}
   finally{S.loading=false;S.thinking=false;updateBtn();pulseLogo(false);}
 }
 async function loadChat(id){S.activeChat=id;S.messages=[];try{const c=await api.chat(id);S.messages=c.messages||[];renderMsgs();renderSidebarChats();scrollBottom();}catch(e){toast(e.message,'error');}}
@@ -848,13 +886,7 @@ async function delChat(id){if(!confirm('Delete?'))return;try{await api.delChat(i
 function newChat(){S.activeChat=null;S.messages=[];render();if(window.innerWidth<=768)closeSidebar();}
 
 // ─── FILE UPLOAD ─────────────────────────────────────────────
-async function uploadFile(){
-  if(S.tier==='free')return;
-  const inp=document.createElement('input');inp.type='file';
-  const max=S.tier==='founder'?500:S.tier==='pro'?50:10;
-  inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size/(1024*1024)>max){toast(`Max ${max}MB`,'error');return;}toast('Uploading...','info');try{const r=await api.upload(f);toast(`Uploaded! (${r.size_mb}MB)`,'success');if(S.activeChat){S.messages.push({role:'user',content:`[File: ${f.name}]`});renderMsgs();}}catch(e){toast(e.message,'error');}};
-  inp.click();
-}
+async function uploadFile(){if(S.tier==='free')return;const inp=document.createElement('input');inp.type='file';const max=S.tier==='founder'?500:S.tier==='pro'?50:10;inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size/(1024*1024)>max){toast(`Max ${max}MB`,'error');return;}toast('Uploading...','info');try{const r=await api.upload(f);toast(`Uploaded! (${r.size_mb}MB)`,'success');if(S.activeChat){S.messages.push({role:'user',content:`[File: ${f.name}]`});renderMsgs();}}catch(e){toast(e.message,'error');}};inp.click();}
 
 // ─── WORKSPACE ───────────────────────────────────────────────
 function genRoomCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return `CAP-${Array.from({length:3},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}-${Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}`;}
@@ -879,11 +911,40 @@ async function delLib(id){if(!confirm('Delete?'))return;try{await api.libDel(id)
 function openUpgrade(){$('#upgradeModal').classList.add('open');if(!S.payConfig)return;const{benefits}=S.payConfig;$('#tierCards').innerHTML=`<div class="tier-card ${S.tier==='free'?'selected':''}" onclick="selUp('free')"><div class="tier-card-header"><div class="tier-card-icon">${ICONS.zap}</div><span class="tier-card-name">Free</span></div><div class="tier-card-price">$0</div><ul class="tier-card-features"><li>10 msgs/day</li><li>Fast AI</li><li>Basic chat & library</li></ul></div><div class="tier-card" onclick="selUp('plus')"><div class="tier-card-header"><div class="tier-card-icon">${ICONS.zap}</div><span class="tier-card-name">Plus</span></div><div class="tier-card-price">$8<span>/mo</span></div><ul class="tier-card-features">${(benefits?.plus||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div><div class="tier-card" onclick="selUp('pro')"><div class="tier-card-header"><div class="tier-card-icon">${ICONS.star}</div><span class="tier-card-name">Pro</span></div><div class="tier-card-price">$17<span>/mo</span></div><ul class="tier-card-features">${(benefits?.pro||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div>`;$$('#paySection .pill-tab').forEach(t=>t.onclick=()=>{$$('#paySection .pill-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');S.selCoin=t.dataset.coin;updateWallet();});$('#verifyUpgrade').onclick=verifyUp;updateWallet();}
 function selUp(t){S.selTier=t;$$('#tierCards .tier-card').forEach(c=>c.classList.remove('selected'));if(t!=='free'){$('#paySection').style.display='block';updateWallet();}else{$('#paySection').style.display='none';}}
 function updateWallet(){const el=$('#walletAddr');if(!el||!S.payConfig?.wallets)return;el.textContent=S.payConfig.wallets[S.selCoin]||'Address unavailable';el.onclick=()=>{navigator.clipboard.writeText(el.textContent);toast('Copied!','success');};}
-async function verifyUp(){const txid=$('#txidInput')?.value.trim();if(!S.selTier||S.selTier==='free'){toast('Select paid tier','warning');return;}if(!txid){toast('Enter TXID','warning');return;}try{const r=await api.upgrade(S.selTier,txid,S.selCoin);S.tier=r.tier;S.token=r.token;S.session.tier=r.tier;localStorage.setItem('ct',r.token);$('#upgradeModal').classList.remove('open');render();toast('🎉 '+r.tier.toUpperCase()+'!','success');}catch(e){toast(e.message,'error');}}
+async function verifyUp(){
+  const txid=$('#txidInput')?.value.trim();
+  if(!S.selTier||S.selTier==='free'){toast('Select paid tier','warning');return;}
+  if(!txid){toast('Enter TXID','warning');return;}
+  try{
+    const r=await api.upgrade(S.selTier,txid,S.selCoin);
+    S.prevTier = S.tier;
+    S.tier=r.tier;S.token=r.token;S.session.tier=r.tier;
+    localStorage.setItem('ct',r.token);
+    localStorage.setItem('cap_tier', r.tier);
+    // Clear chat on tier change
+    S.activeChat=null;S.messages=[];S.chats=[];
+    $('#upgradeModal').classList.remove('open');render();
+    toast('🎉 '+r.tier.toUpperCase()+'! Fresh start.','success');
+  }catch(e){toast(e.message,'error');}
+}
 
 // ─── FOUNDER ─────────────────────────────────────────────────
 function openFounder(){$('#founderModal').classList.add('open');}
-async function verifyFounder(){const code=$('#founderCode')?.value;if(!code){toast('Enter code','warning');return;}try{const r=await api.founder(code);S.tier='founder';S.token=r.token;S.session.tier='founder';localStorage.setItem('ct',r.token);$('#founderModal').classList.remove('open');render();toast('👑 Founder access!','success');}catch(e){toast('Invalid','error');}}
+async function verifyFounder(){
+  const code=$('#founderCode')?.value;
+  if(!code){toast('Enter code','warning');return;}
+  try{
+    const r=await api.founder(code);
+    S.prevTier = S.tier;
+    S.tier='founder';S.token=r.token;S.session.tier='founder';
+    localStorage.setItem('ct',r.token);
+    localStorage.setItem('cap_tier', 'founder');
+    // Clear chat on tier change
+    S.activeChat=null;S.messages=[];S.chats=[];
+    $('#founderModal').classList.remove('open');render();
+    toast('👑 Founder access! Fresh start.','success');
+  }catch(e){toast('Invalid','error');}
+}
 
 // ─── ADMIN ───────────────────────────────────────────────────
 async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Messages</div></div><div class="stat-card"><div class="stat-val">${d.workspaces}</div><div class="stat-lbl">Workspaces</div></div></div><h3 style="font-size:11px;margin-bottom:4px">Sessions</h3><div style="max-height:80px;overflow-y:auto;margin-bottom:8px;font-size:9px">${d.sessions.map(s=>`<div style="padding:3px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between"><span>${s.id}</span><span style="color:var(--accent)">${s.tier}</span><span>${s.msg_count} msgs</span></div>`).join('')}</div><h3 style="font-size:11px;margin-bottom:4px">Payments</h3><div style="max-height:80px;overflow-y:auto;font-size:9px">${(d.payments||[]).map(p=>`<div style="padding:3px;border-bottom:1px solid var(--bdr)"><div>${p.session_id} · ${p.tier} · ${p.amount} ${p.currency}</div><div style="color:var(--txt3);font-size:7px">${p.txid}</div></div>`).join('')}</div>`;}catch(e){$('#adminContent').innerHTML=`<div style="text-align:center;padding:12px;color:var(--red);font-size:var(--fs-xs)">${e.message}</div>`;}}
@@ -894,20 +955,29 @@ async function openMarkets(){
   $('#marketsModal').classList.add('open');
   await loadMarkets();
   const pc=$('#marketsPricesContent');if(!pc)return;
-  if(!S.markets?.prices){pc.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';return;}
-  pc.innerHTML=Object.entries(S.markets.prices).map(([n,i])=>{const clr=i.change>=0?'var(--green)':'var(--red)';const sign=i.change>=0?'+':'';return`<div style="padding:6px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:11px"><span style="font-weight:600">${esc(n)}</span><span><span style="font-weight:700">${i.price?.toLocaleString()||'—'}</span> <span style="color:${clr};font-size:10px">${sign}${i.change?.toFixed(2)||0}%</span></span></div>`;}).join('');
+  // Render market prices
+  if(S.markets?.prices && Object.keys(S.markets.prices).length>0){
+    pc.innerHTML=Object.entries(S.markets.prices).map(([n,i])=>{
+      const clr=i.change>=0?'var(--green)':'var(--red)';const sign=i.change>=0?'+':'';
+      return`<div style="padding:6px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:11px"><span style="font-weight:600">${esc(n)}</span><span><span style="font-weight:700">${typeof i.price==='number'?i.price.toLocaleString():i.price}</span> <span style="color:${clr};font-size:10px">${sign}${typeof i.change==='number'?i.change.toFixed(2):i.change}%</span></span></div>`;
+    }).join('');
+  } else {
+    pc.innerHTML='<div style="text-align:center;padding:16px;color:var(--txt3);font-size:var(--fs-xs)">Market data loading...<br><span style="font-size:9px">Refresh in a moment</span></div>';
+  }
+  // Render news
   const nc=$('#marketsNewsContent');if(!nc)return;
   S.financialNews=generateFinancialNews();
-  nc.innerHTML=S.financialNews.map(n=>`<div class="news-item"><div class="news-source">${n.source}</div><div class="news-headline">${n.headline}</div><div class="news-time">${n.time}</div></div>`).join('');
+  nc.innerHTML=S.financialNews.map(n=>`
+    <div class="news-item" onclick="openNewsReader('${escAttr(n.source)}','${escAttr(n.headline)}')">
+      <div class="news-source">${n.source}</div>
+      <div class="news-headline">${n.headline}</div>
+      <div class="news-time">${n.time}</div>
+      <div class="news-read">📖 Click to read full article →</div>
+    </div>`).join('');
 }
 
 // ─── BUSINESS MODE MODAL ─────────────────────────────────────
-function openBusiness(){
-  if(S.tier!=='pro'&&S.tier!=='founder'){toast('Business Mode requires Pro tier','warning');openUpgrade();return;}
-  $('#businessModal').classList.add('open');
-  const toggle=$('#businessToggle');
-  if(toggle){toggle.textContent=S.businessMode?'ON':'OFF';toggle.classList.toggle('active',S.businessMode);}
-}
+function openBusiness(){if(S.tier!=='pro'&&S.tier!=='founder'){toast('Business Mode requires Pro tier','warning');openUpgrade();return;}$('#businessModal').classList.add('open');const toggle=$('#businessToggle');if(toggle){toggle.textContent=S.businessMode?'ON':'OFF';toggle.classList.toggle('active',S.businessMode);}}
 
 // ─── MODALS ──────────────────────────────────────────────────
 function openPrivacy(){$('#privacyModal').classList.add('open');}
@@ -951,6 +1021,7 @@ function setupListeners(){
   $('#closeWorkspace')?.addEventListener('click',()=>{$('#workspaceModal').classList.remove('open');if(S.ws.timer){clearInterval(S.ws.timer);S.ws.timer=null;}});
   $('#closePrivacy')?.addEventListener('click',()=>$('#privacyModal').classList.remove('open'));
   $('#closeMarkets')?.addEventListener('click',()=>$('#marketsModal').classList.remove('open'));
+  $('#closeNewsReader')?.addEventListener('click',()=>$('#newsReaderModal').classList.remove('open'));
   $('#closeBusiness')?.addEventListener('click',()=>$('#businessModal').classList.remove('open'));
   $('#libSave')?.addEventListener('click',saveLib);
   $('#wsCreateBtn')?.addEventListener('click',wsCreate);
@@ -972,7 +1043,7 @@ function setupListeners(){
 S.draft=localStorage.getItem('cap_draft')||'';
 S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
 document.addEventListener('DOMContentLoaded',init);
-window.CAPITAN={S,api,init,sendMsg,newChat,toggleTheme,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode};
+window.CAPITAN={S,api,init,sendMsg,newChat,toggleTheme,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode,openNewsReader};
 console.log('👌 CAPITAN AI v22.0 | CLOSEAI Technologies');
 </script>
 </body>
