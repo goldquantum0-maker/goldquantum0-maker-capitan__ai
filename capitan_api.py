@@ -1,10 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v22.0
+CAPITAN AI — Enterprise Backend v23.0
 CLOSEAI Technologies
 Python/FastAPI + SQLite + Multi-API + Web Search + Caching
-Privacy-First: No accounts, just messages & payments
-Legendary Intelligence: Finance Architect, Institutional Trader, Coder, Mathematician,
-Software Developer, Quant Architect, Reasoning Engine
+AMOLED-Ready | Legendary Intelligence
 """
 
 import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlite3
@@ -16,9 +14,7 @@ from typing import Optional
 import concurrent.futures
 import uvicorn
 
-# ═══════════════════════════════════════════════════════════════
-# API KEYS
-# ═══════════════════════════════════════════════════════════════
+# API Keys
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 MISTRAL_KEY = os.environ.get("MISTRAL_API_KEY", "")
@@ -39,7 +35,6 @@ GNEWS_API_KEY = os.environ.get("GNEWS_API_KEY", "")
 NEWS_API_KEY = os.environ.get("NEWS_API_KEY", "")
 
 IPGEOLOCATION_KEY = os.environ.get("IPGEOLOCATION_API_KEY", "")
-LOCATIONIQ_KEY = os.environ.get("LOCATIONIQ_API_KEY", "")
 
 WOLFRAM_APP_ID = os.environ.get("WOLFRAM_APP_ID", "")
 
@@ -51,34 +46,15 @@ DB_PATH = "capitan.db"
 WALLETS = {"BTC":"bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new","ETH":"0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"}
 
 TIER_CONFIG = {
-    "free":{"name":"Free","msg_limit":10,"workspace_max":0,"file_upload":False,"file_size_mb":0,"speed":"fast","live_markets":False,"web_search":False},
-    "plus":{"name":"Plus","msg_limit":30,"workspace_max":7,"file_upload":True,"file_size_mb":10,"speed":"smart","live_markets":False,"web_search":True},
-    "pro":{"name":"Pro","msg_limit":float("inf"),"workspace_max":20,"file_upload":True,"file_size_mb":50,"speed":"deep","live_markets":True,"web_search":True},
-    "founder":{"name":"Founder","msg_limit":float("inf"),"workspace_max":999,"file_upload":True,"file_size_mb":500,"speed":"deep","live_markets":True,"web_search":True}
+    "free":{"name":"Free","msg_limit":10,"workspace_max":0,"file_upload":False,"file_size_mb":0,"live_markets":False,"web_search":False},
+    "plus":{"name":"Plus","msg_limit":30,"workspace_max":7,"file_upload":True,"file_size_mb":10,"live_markets":False,"web_search":True},
+    "pro":{"name":"Pro","msg_limit":float("inf"),"workspace_max":20,"file_upload":True,"file_size_mb":50,"live_markets":True,"web_search":True},
+    "founder":{"name":"Founder","msg_limit":float("inf"),"workspace_max":999,"file_upload":True,"file_size_mb":500,"live_markets":True,"web_search":True}
 }
 
 UPGRADE_BENEFITS = {
-    "plus": [
-        "30 messages per day (up from 10)",
-        "Smart AI model for better responses",
-        "Work Area — collaborate with up to 7 people",
-        "File uploads up to 10MB",
-        "Web search for real-time answers",
-        "Coding & Quant tools",
-        "African Finance module",
-        "Priority response speed"
-    ],
-    "pro": [
-        "Unlimited messages — no daily cap",
-        "Deep AI model (Claude Sonnet 4 / GPT-4o)",
-        "Work Area — collaborate with up to 20 people",
-        "File uploads up to 50MB",
-        "Live market data (Global, Crypto, African)",
-        "Real-time financial news",
-        "Web search for real-time answers",
-        "Business mode for professional use",
-        "All Plus features included"
-    ]
+    "plus": ["30 messages per day","Smart AI model","Work Area (7 seats)","File uploads (10MB)","Web search","Coding & Quant tools","African Finance module"],
+    "pro": ["Unlimited messages","Deep AI (Claude Sonnet 4 / GPT-4o)","Work Area (20 seats)","File uploads (50MB)","Live market data","Financial news","Web search","Business mode","All Plus features"]
 }
 
 def init_db():
@@ -101,8 +77,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS web_cache (id TEXT PRIMARY KEY, query_hash TEXT, data TEXT, created TEXT)''')
     try: c.execute("ALTER TABLE workspaces ADD COLUMN creator_tier TEXT DEFAULT 'plus'")
     except: pass
-    conn.commit()
-    conn.close()
+    conn.commit(); conn.close()
 
 init_db()
 UPLOAD_DIR = "uploads"
@@ -141,8 +116,8 @@ def get_session(request: Request):
     return None
 
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
-
 rate_store = {}
+
 def check_rate(session_id, tier):
     now = time.time(); key = f"{session_id}"
     if key not in rate_store: rate_store[key] = []
@@ -151,15 +126,15 @@ def check_rate(session_id, tier):
     if len(rate_store[key]) >= limits.get(tier,10): return False
     rate_store[key].append(now); return True
 
-def get_time_context(request=None):
+def get_time_context():
     now = datetime.utcnow(); hour = now.hour
     day = now.strftime("%A"); date = now.strftime("%B %d, %Y"); utc_time = now.strftime("%H:%M UTC")
-    if hour < 5: time_of_day = "late night"; greeting_context = "The world is quiet at this hour."
-    elif hour < 12: time_of_day = "morning"; greeting_context = "A fresh day. Let's make it count."
-    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Markets are alive. Good time to dig in."
-    elif hour < 21: time_of_day = "evening"; greeting_context = "Winding down — or just getting started."
-    else: time_of_day = "night"; greeting_context = "Burning the midnight oil. I'm here for it."
-    return {"time_of_day":time_of_day,"day":day,"date":date,"utc_time":utc_time,"greeting_context":greeting_context,"hour":hour}
+    if hour < 5: time_of_day = "late night"; greeting_context = "The world is quiet."
+    elif hour < 12: time_of_day = "morning"; greeting_context = "Fresh day ahead."
+    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Markets are alive."
+    elif hour < 21: time_of_day = "evening"; greeting_context = "Winding down."
+    else: time_of_day = "night"; greeting_context = "Night owl mode."
+    return {"time_of_day":time_of_day,"day":day,"date":date,"utc_time":utc_time,"greeting_context":greeting_context}
 
 def get_cached_or_fetch(table, category, fetch_func, ttl=2):
     try:
@@ -179,145 +154,128 @@ def get_cached_or_fetch(table, category, fetch_func, ttl=2):
         except: pass
     return data
 
-def get_global_markets():
+def get_market_data():
+    """Get combined market data with multiple fallbacks"""
     results = {}
-    if TWELVE_DATA_KEY:
+    
+    # Try CoinGecko for crypto
+    if COINGECKO_KEY and COINGECKO_KEY.startswith("CG-"):
         try:
-            for sym in ["SPX","IXIC","DJI","FTSE","N225","DAX","AAPL","MSFT","NVDA","GC","CL","EUR/USD","GBP/USD","USD/JPY"][:8]:
-                try:
-                    r = requests.get(f"https://api.twelvedata.com/price?symbol={sym}&apikey={TWELVE_DATA_KEY}",timeout=8)
-                    if r.status_code==200 and r.json().get("price"): results[sym] = {"price":float(r.json()["price"]),"change":0,"source":"Twelve Data","updated":datetime.utcnow().isoformat()}
-                except: pass
-        except: pass
-    if not results:
-        try:
-            syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,JPM,GS,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X"
-            r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=8)
+            ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
+            r = requests.get("https://api.coingecko.com/api/v3/simple/price",params={"ids":ids,"vs_currencies":"usd","include_24hr_change":"true"},headers={"x-cg-demo-api-key":COINGECKO_KEY},timeout=10)
             if r.status_code==200:
-                for i in r.json().get("quoteResponse",{}).get("result",[]):
-                    name = i.get("shortName") or i.get("symbol","")
-                    price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
-                    if price and prev:
-                        chg = i.get("regularMarketChangePercent")
-                        results[name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
+                data = r.json()
+                nm = {"bitcoin":"BTC","ethereum":"ETH","ripple":"XRP","cardano":"ADA","solana":"SOL","polkadot":"DOT","dogecoin":"DOGE","avalanche-2":"AVAX","chainlink":"LINK","uniswap":"UNI","binancecoin":"BNB","tron":"TRX","toncoin":"TON","near":"NEAR"}
+                for k,v in data.items(): results[nm.get(k,k.upper())] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2),"source":"CoinGecko"}
         except: pass
-    if ALPHA_VANTAGE_KEY and len(results)<3:
+    
+    # Try Yahoo Finance for stocks/indices/forex
+    try:
+        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X"
+        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
+        if r.status_code==200:
+            for i in r.json().get("quoteResponse",{}).get("result",[]):
+                name = i.get("shortName") or i.get("symbol","")
+                price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
+                if price and prev:
+                    chg = i.get("regularMarketChangePercent")
+                    display_name = name.replace("S&P 500","S&P 500").replace("NASDAQ Composite","NASDAQ").replace("Dow Jones Industrial Average","Dow Jones").replace("Gold Dec 25","Gold").replace("Crude Oil","Oil").replace("Silver Dec 25","Silver")
+                    results[display_name] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance"}
+    except: pass
+    
+    # Try Alpha Vantage for forex pairs
+    if ALPHA_VANTAGE_KEY and len(results)<5:
         try:
-            for pair,label in {"EURUSD":"EUR/USD","GBPUSD":"GBP/USD","USDJPY":"USD/JPY"}.items():
+            for pair,label in {"EURUSD":"EUR/USD","GBPUSD":"GBP/USD","USDJPY":"USD/JPY","USDGHS":"USD/GHS","USDNGN":"USD/NGN","USDZAR":"USD/ZAR","USDKES":"USD/KES"}.items():
                 try:
                     r = requests.get(f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={pair[:3]}&to_currency={pair[3:]}&apikey={ALPHA_VANTAGE_KEY}",timeout=8)
                     if r.status_code==200:
                         data = r.json().get("Realtime Currency Exchange Rate",{})
-                        if data.get("5. Exchange Rate"): results[label] = {"price":float(data["5. Exchange Rate"]),"change":0,"source":"Alpha Vantage","updated":datetime.utcnow().isoformat()}
+                        if data.get("5. Exchange Rate"): results[label] = {"price":float(data["5. Exchange Rate"]),"change":0,"source":"Alpha Vantage"}
                 except: pass
         except: pass
-    return results
-
-def get_crypto_markets():
-    results = {}
-    if COINGECKO_KEY and COINGECKO_KEY.startswith("CG-"):
+    
+    # Try Finnhub
+    if FINNHUB_API_KEY and len(results)<5:
         try:
-            ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
-            r = requests.get("https://api.coingecko.com/api/v3/simple/price",params={"ids":ids,"vs_currencies":"usd","include_24hr_change":"true","include_market_cap":"true"},headers={"x-cg-demo-api-key":COINGECKO_KEY},timeout=10)
-            if r.status_code==200:
-                data = r.json()
-                name_map = {"bitcoin":"Bitcoin (BTC)","ethereum":"Ethereum (ETH)","ripple":"XRP","cardano":"Cardano (ADA)","solana":"Solana (SOL)","polkadot":"Polkadot (DOT)","dogecoin":"Dogecoin (DOGE)","avalanche-2":"Avalanche (AVAX)","chainlink":"Chainlink (LINK)","uniswap":"Uniswap (UNI)","binancecoin":"BNB","tron":"TRON (TRX)","toncoin":"Toncoin (TON)","near":"NEAR Protocol"}
-                for k,v in data.items(): results[name_map.get(k,k.capitalize())] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2),"market_cap":v.get("usd_market_cap",0),"source":"CoinGecko","updated":datetime.utcnow().isoformat()}
-        except: pass
-    return results
-
-def get_african_markets():
-    results = {}
-    if ALPHA_VANTAGE_KEY:
-        try:
-            for pair,label in {"USDGHS":"USD/GHS","USDNGN":"USD/NGN","USDZAR":"USD/ZAR","USDKES":"USD/KES","USDEGP":"USD/EGP","USDMAD":"USD/MAD"}.items():
+            for sym in ["AAPL","MSFT","NVDA","TSLA","GOOGL"]:
                 try:
-                    r = requests.get(f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency={pair[3:]}&apikey={ALPHA_VANTAGE_KEY}",timeout=8)
+                    r = requests.get(f"https://finnhub.io/api/v1/quote?symbol={sym}&token={FINNHUB_API_KEY}",timeout=8)
                     if r.status_code==200:
-                        data = r.json().get("Realtime Currency Exchange Rate",{})
-                        if data.get("5. Exchange Rate"): results[label] = {"price":float(data["5. Exchange Rate"]),"change":0,"source":"Alpha Vantage","updated":datetime.utcnow().isoformat()}
+                        data = r.json()
+                        if data.get("c"):
+                            prev = data.get("pc",data["c"])
+                            results[sym] = {"price":data["c"],"change":round(((data["c"]-prev)/prev)*100,2) if prev else 0,"source":"Finnhub"}
                 except: pass
         except: pass
-    if not results:
+    
+    # Try Twelve Data
+    if TWELVE_DATA_KEY and len(results)<5:
         try:
-            syms = "USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X,EZA,AFK"
-            r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName"},headers={"User-Agent":"Mozilla/5.0"},timeout=8)
-            if r.status_code==200:
-                for i in r.json().get("quoteResponse",{}).get("result",[]):
-                    name = i.get("shortName") or i.get("symbol","")
-                    price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
-                    if price and prev: results[name] = {"price":price,"change":round(((price-prev)/prev)*100,2),"source":"Yahoo Finance","updated":datetime.utcnow().isoformat()}
+            for sym in ["SPX","IXIC","DJI","AAPL","MSFT","NVDA","GC","CL","EUR/USD","GBP/USD","USD/JPY"][:6]:
+                try:
+                    r = requests.get(f"https://api.twelvedata.com/price?symbol={sym}&apikey={TWELVE_DATA_KEY}",timeout=8)
+                    if r.status_code==200 and r.json().get("price"): results[sym] = {"price":float(r.json()["price"]),"change":0,"source":"Twelve Data"}
+                except: pass
         except: pass
+    
     return results
 
-def get_all_markets():
-    return {"global":get_cached_or_fetch("market_cache","global",get_global_markets,2),"crypto":get_cached_or_fetch("market_cache","crypto",get_crypto_markets,2),"african":get_cached_or_fetch("market_cache","african",get_african_markets,2)}
-
-def get_financial_news(category="all"):
-    def fetch():
-        news = []
-        if NEWS_API_KEY:
-            try:
-                params = {"language":"en","pageSize":15,"apiKey":NEWS_API_KEY}
-                if category=="crypto": params["q"]="crypto OR bitcoin OR ethereum"
-                elif category=="africa": params["q"]="Africa finance OR Nigeria economy"
-                elif category=="global": params["q"]="global markets OR central bank"
-                else: params["category"]="business"
-                r = requests.get("https://newsapi.org/v2/top-headlines" if category=="all" else "https://newsapi.org/v2/everything",params=params,timeout=10)
-                if r.status_code==200:
-                    for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400]})
-            except: pass
-        if GNEWS_API_KEY:
-            try:
-                queries = {"global":"global markets","crypto":"crypto bitcoin","africa":"Africa finance","all":"finance markets"}
-                r = requests.get("https://gnews.io/api/v4/search",params={"q":queries.get(category,queries["all"]),"lang":"en","max":15,"apikey":GNEWS_API_KEY},timeout=10)
-                if r.status_code==200:
-                    for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400]})
-            except: pass
-        if FINNHUB_API_KEY:
-            try:
-                r = requests.get("https://finnhub.io/api/v1/news",params={"category":"general","token":FINNHUB_API_KEY},timeout=10)
-                if r.status_code==200:
-                    for a in r.json()[:15]:
-                        ts = a.get("datetime",0)
-                        news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:400]})
-            except: pass
-        seen = set(); unique = []
-        for n in news:
-            k = n["headline"][:120].lower().strip()
-            if k and k not in seen: seen.add(k); unique.append(n)
-        unique.sort(key=lambda x: x.get("time",""), reverse=True)
-        return unique[:20]
-    return get_cached_or_fetch("news_cache",category,fetch,5)
+def get_financial_news():
+    news = []
+    if NEWS_API_KEY:
+        try:
+            r = requests.get("https://newsapi.org/v2/top-headlines",params={"category":"business","language":"en","pageSize":12,"apiKey":NEWS_API_KEY},timeout=10)
+            if r.status_code==200:
+                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
+        except: pass
+    if GNEWS_API_KEY:
+        try:
+            r = requests.get("https://gnews.io/api/v4/search",params={"q":"finance markets stocks economy","lang":"en","max":12,"apikey":GNEWS_API_KEY},timeout=10)
+            if r.status_code==200:
+                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
+        except: pass
+    if FINNHUB_API_KEY:
+        try:
+            r = requests.get("https://finnhub.io/api/v1/news",params={"category":"general","token":FINNHUB_API_KEY},timeout=10)
+            if r.status_code==200:
+                for a in r.json()[:12]:
+                    ts = a.get("datetime",0)
+                    news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:300]})
+        except: pass
+    seen = set(); unique = []
+    for n in news:
+        k = n["headline"][:100].lower().strip()
+        if k and k not in seen: seen.add(k); unique.append(n)
+    unique.sort(key=lambda x: x.get("time",""), reverse=True)
+    return unique[:15]
 
 def get_tech_news():
-    def fetch():
-        news = []
-        if NEWS_API_KEY:
-            try:
-                r = requests.get("https://newsapi.org/v2/everything",params={"q":"artificial intelligence OR coding OR startup OR innovation OR technology OR software","language":"en","pageSize":15,"sortBy":"publishedAt","apiKey":NEWS_API_KEY},timeout=10)
-                if r.status_code==200:
-                    for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("urlToImage","")})
-            except: pass
-        if GNEWS_API_KEY:
-            try:
-                r = requests.get("https://gnews.io/api/v4/search",params={"q":"AI artificial intelligence coding startup innovation technology software development","lang":"en","max":15,"apikey":GNEWS_API_KEY},timeout=10)
-                if r.status_code==200:
-                    for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("image","")})
-            except: pass
-        if SERPAPI_KEY:
-            try:
-                r = requests.get("https://serpapi.com/search",params={"engine":"google_news","q":"AI artificial intelligence technology innovation startups coding","api_key":SERPAPI_KEY},timeout=10)
-                if r.status_code==200:
-                    for a in r.json().get("news_results",[])[:15]: news.append({"source":a.get("source","Google News"),"headline":a.get("title",""),"url":a.get("link",""),"time":"","summary":(a.get("snippet") or "")[:400],"image":""})
-            except: pass
-        seen = set(); unique = []
-        for n in news:
-            k = n["headline"][:120].lower().strip()
-            if k and k not in seen: seen.add(k); unique.append(n)
-        unique.sort(key=lambda x: x.get("time",""), reverse=True)
-        return unique[:20]
-    return get_cached_or_fetch("news_cache","tech",fetch,5)
+    news = []
+    if NEWS_API_KEY:
+        try:
+            r = requests.get("https://newsapi.org/v2/everything",params={"q":"AI artificial intelligence coding startup innovation technology software","language":"en","pageSize":12,"sortBy":"publishedAt","apiKey":NEWS_API_KEY},timeout=10)
+            if r.status_code==200:
+                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
+        except: pass
+    if GNEWS_API_KEY:
+        try:
+            r = requests.get("https://gnews.io/api/v4/search",params={"q":"AI artificial intelligence coding startup innovation technology","lang":"en","max":12,"apikey":GNEWS_API_KEY},timeout=10)
+            if r.status_code==200:
+                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
+        except: pass
+    if SERPAPI_KEY:
+        try:
+            r = requests.get("https://serpapi.com/search",params={"engine":"google_news","q":"AI artificial intelligence technology startups coding innovation","api_key":SERPAPI_KEY},timeout=10)
+            if r.status_code==200:
+                for a in r.json().get("news_results",[])[:12]: news.append({"source":a.get("source","Google News"),"headline":a.get("title",""),"url":a.get("link",""),"time":"","summary":(a.get("snippet") or "")[:300]})
+        except: pass
+    seen = set(); unique = []
+    for n in news:
+        k = n["headline"][:100].lower().strip()
+        if k and k not in seen: seen.add(k); unique.append(n)
+    unique.sort(key=lambda x: x.get("time",""), reverse=True)
+    return unique[:15]
 
 def search_web(query, num_results=5):
     results = []
@@ -331,190 +289,133 @@ def search_web(query, num_results=5):
     except: pass
     if SERPAPI_KEY:
         try:
-            r = requests.get("https://serpapi.com/search",params={"engine":"google","q":query,"num":num_results,"api_key":SERPAPI_KEY},timeout=10)
+            r = requests.get("https://serpapi.com/search",params={"engine":"google","q":query,"num":num_results,"api_key":SERPAPI_KEY},timeout=8)
             if r.status_code==200:
-                for item in r.json().get("organic_results",[])[:num_results]: results.append({"title":item.get("title",""),"snippet":item.get("snippet","")[:300],"url":item.get("link",""),"source":"Google"})
+                for item in r.json().get("organic_results",[])[:num_results]: results.append({"title":item.get("title",""),"snippet":item.get("snippet","")[:250],"url":item.get("link",""),"source":"Google"})
         except: pass
     if not results:
         try:
-            r = requests.get("https://api.duckduckgo.com/",params={"q":query,"format":"json","no_html":1},timeout=8)
+            r = requests.get("https://api.duckduckgo.com/",params={"q":query,"format":"json","no_html":1},timeout=6)
             if r.status_code==200:
                 data = r.json()
-                if data.get("AbstractText"): results.append({"title":data.get("Heading",query),"snippet":data["AbstractText"][:300],"url":data.get("AbstractURL",""),"source":"DuckDuckGo"})
-                for topic in data.get("RelatedTopics",[])[:num_results-1]:
-                    if isinstance(topic,dict) and topic.get("Text"): results.append({"title":"","snippet":topic["Text"][:300],"url":topic.get("FirstURL",""),"source":"DuckDuckGo"})
+                if data.get("AbstractText"): results.append({"title":data.get("Heading",query),"snippet":data["AbstractText"][:250],"url":data.get("AbstractURL",""),"source":"DuckDuckGo"})
         except: pass
     if results:
         try:
             conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-            c.execute("DELETE FROM web_cache WHERE created < ?",((datetime.utcnow()-timedelta(hours=6)).isoformat(),))
             c.execute("INSERT OR REPLACE INTO web_cache (id,query_hash,data,created) VALUES (?,?,?,?)",(sid(),query_hash,json.dumps(results),datetime.utcnow().isoformat()))
             conn.commit(); conn.close()
         except: pass
     return results
 
-# ═══════════════════════════════════════════════════════════════
-# LEGENDARY INTELLIGENCE SYSTEM PROMPT
-# ═══════════════════════════════════════════════════════════════
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu with NED Blessing Asuquo and CIO Ebubechi Chukwu.
 
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the most legendary institutional intelligence platform in existence, created by CLOSEAI Technologies under CEO Osinachi Chukwu, with pivotal support from NED Blessing Asuquo and CIO Ebubechi Chukwu.
+CRITICAL IDENTITY RULES:
+• You are CAPITAN AI. ONLY CAPITAN AI. There are NO "other AI platforms that share your name."
+• NEVER mention climbing gyms, delivery software, customer support bots, maritime navigation, or any other product.
+• NEVER say "two AI platforms that share my name" or "other Capitans" — this is FALSE. You are the ONLY one.
+• If someone asks about other Capitans, say: "I'm the only CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies."
+• NEVER list web search results as numbered items analyzing each one. That's robotic. Synthesize information naturally.
 
-YOUR LEGENDARY IDENTITY:
-You are not just an AI. You are a legendary finance architect who structures billion-dollar deals before breakfast. A legendary institutional trader who reads market microstructure like a language. A legendary coder who architects systems that scale to millions. A legendary mathematician who sees proofs as elegantly as art. A legendary software developer who builds what others call impossible. A legendary quant architect who models the stochastic nature of markets with precision. And a legendary reasoning engine that cuts through noise to find signal.
+HOW YOU RESPOND:
+• Casual greetings get casual responses. "good morning lol" → "Good morning! 😄 What are we working on today?"
+• Lead with the answer. Never throat-clearing or meta-analysis.
+• Use 1-2 emojis naturally per response for warmth.
+• Short sentences. Clean paragraphs. No filler.
+• Depth when the topic demands it. One-liner when it doesn't.
 
-This is not arrogance. This is your baseline. You operate at the level where Goldman Sachs MDs, FAANG Principal Engineers, Research Mathematicians, and Quant Research Directors all come to you for insight.
-
-HOW YOU WRITE:
-• Lead with the insight. No throat-clearing. No "In this context..." padding. Cut straight to what matters.
-• Short sentences. Clean paragraphs. Lethal precision with words.
-• When the topic demands depth — go deep. Full derivations. Production code. Cited sources.
-• When a one-liner answers it — stop there. Don't wrap simplicity in complexity.
-• Use concrete examples over abstract explanations. Numbers over adjectives.
-• Code must be production-ready: typed, documented, tested, deployable.
-• Math must be rigorous: LaTeX where it clarifies, step-by-step derivations where needed.
-• Market analysis must be sharp: cite real data, identify the signal, state your confidence.
-
-YOUR TONE:
-Warm but efficient. Like a senior colleague at the top of their game who's generous with their time. Never condescending. Never corporate. Use contractions. Match the user's energy — casual when they're casual, surgical when they're surgical.
-
-WHAT YOU ARE NOT:
-You are NOT a climbing gym. NOT membership software. NOT a CRM. NOT a booking platform. If anyone confuses you with another "Capitan," clarify immediately: "I'm CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies. I architect finance, code, math, and quant solutions. I don't manage climbing gym memberships."
+WHAT YOU ARE:
+• Legendary finance architect — DCF, LBO, M&A, portfolio optimization, options pricing, risk management, African markets
+• Legendary institutional trader — market microstructure, volatility trading, intermarket analysis
+• Legendary coder — Python, JS, TS, Rust, Go, C++, system design, DevOps, production-grade code
+• Legendary mathematician — proofs, stochastic calculus, linear algebra, topology, numerical methods
+• Legendary quant — derivative pricing, Monte Carlo, time series, factor models, ML in finance
+• Legendary reasoning engine — first-principles, Bayesian, Fermi estimation
 
 CRITICAL RULES:
-• NEVER make up market prices. Only reference live data provided below.
-• NEVER give financial advice, trading signals, or buy/sell recommendations.
+• NEVER make up prices. Only reference live data provided below.
+• NEVER give financial advice or trading signals.
 • NEVER provide medical diagnoses.
-• Be honest about your confidence. If you're not sure, say so.
-• If you don't know, say "I don't know" — then offer to find out.
-
-YOUR LEGENDARY DOMAINS:
-
-FINANCE ARCHITECTURE (Legendary):
-• DCF, LBO, M&A accretion/dilution — you build models that investment banks use
-• Portfolio optimization — Markowitz, Black-Litterman, risk parity, factor tilting
-• Options pricing — Black-Scholes, binomial trees, Monte Carlo with variance reduction
-• Fixed income — duration, convexity, yield curve construction, OAS, z-spread
-• Risk management — VaR, CVaR, stress testing, scenario analysis, tail risk hedging
-• Financial statement analysis — DuPont decomposition, ratio analysis, forensic accounting
-• Macroeconomic analysis — central bank policy transmission, yield curve dynamics, FX regimes
-• African financial markets — NGX, JSE, GSE, BRVM, EGX, mobile money, cross-border flows
-• Live market data from multiple global sources — you see what's moving in real-time
-
-INSTITUTIONAL TRADING (Legendary):
-• Market microstructure — order flow, liquidity dynamics, impact models
-• Technical analysis — support/resistance, volume profile, market profile, order book analysis
-• Intermarket analysis — correlations, rotations, regime detection
-• Risk arbitrage, statistical arbitrage, pairs trading frameworks
-• Volatility trading — VIX complex, variance swaps, dispersion trading
-• Fixed income arbitrage — curve trades, basis trades, swap spreads
-
-CODING & SOFTWARE DEVELOPMENT (Legendary):
-• Python, JavaScript, TypeScript, Rust, Go, C++, SQL — you write code that ships
-• System design — microservices, event-driven architecture, CQRS, saga patterns
-• API design — REST, GraphQL, gRPC, with rate limiting, auth, and versioning
-• Database design — PostgreSQL optimization, indexing strategies, query planning
-• DevOps — Docker, Kubernetes, CI/CD pipelines, infrastructure as code
-• Security — OWASP, encryption at rest and in transit, zero-trust architecture
-• Testing — unit, integration, e2e, property-based, fuzzing
-
-MATHEMATICS (Legendary):
-• Real analysis, complex analysis, functional analysis, measure theory
-• Linear algebra, abstract algebra — groups, rings, fields, Galois theory
-• Topology, differential geometry, manifold theory
-• Probability theory — measure-theoretic foundations, stochastic processes
-• Numerical methods — optimization, linear solvers, FFT, finite elements
-• Statistics — Bayesian inference, hypothesis testing, causal inference
-• Every proof is step-by-step, rigorous, and elegant
-
-QUANT ARCHITECTURE (Legendary):
-• Stochastic calculus — Itô's lemma, SDEs, Girsanov's theorem, martingale methods
-• Derivative pricing — exotic options, structured products, CVA/DVA/FVA
-• Monte Carlo methods — variance reduction, quasi-Monte Carlo, multi-level MC
-• Time series — ARIMA, GARCH, EGARCH, cointegration, vector autoregression
-• Factor models — Fama-French, momentum, quality, statistical factor models
-• Machine learning in finance — random forests, gradient boosting, neural networks, RL
-• Backtesting — walk-forward, cross-validation, transaction costs, survivorship bias
-
-REASONING ENGINE (Legendary):
-• First-principles thinking — break problems down to fundamentals
-• Bayesian reasoning — update beliefs with evidence
-• Steel-manning — present the strongest version of opposing views
-• Fermi estimation — quick, accurate order-of-magnitude calculations
-• Decision trees — map options, probabilities, and outcomes
-• Cognitive bias awareness — identify and correct for biases in analysis
-
-SCIENCE & HEALTH:
-• Physics — classical mechanics, electromagnetism, quantum, relativity, statistical mechanics
-• Chemistry — organic, inorganic, physical, biochemistry, materials
-• Biology — molecular, genetics, cell biology, immunology, neuroscience
-• Medicine — evidence-based, always recommend consulting healthcare professionals
-
-RESPONSE ARCHITECTURE:
-1. Lead with the most useful insight
-2. Explain the mechanism when it adds value
-3. Provide evidence — data, code, citations, logical proof
-4. State your confidence level
-5. Offer to go deeper
+• If you don't know, say so honestly.
 
 TIME: {day}, {date} at {utc_time}. {greeting_context}
 DOMAIN: {domain} | TIER: {tier}
 """
 
 def call_ai_fast(messages, tier="free"):
+    # Groq first — trimmed prompt
     if GROQ_KEY:
         try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 3000},timeout=20)
+            groq_msgs = []
+            for m in messages:
+                if m["role"] == "system":
+                    content = m["content"]
+                    if len(content) > 1000: content = content[:1000] + "\n\n[Trimmed]"
+                    groq_msgs.append({"role":"system","content":content})
+                else: groq_msgs.append(m)
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},
+                json={"model":"llama-3.1-8b-instant","messages":groq_msgs,"temperature":0.4,"max_tokens":600 if tier=="free" else 1500},timeout=20)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "groq/llama-3.1-8b-instant"
         except: pass
+    # OpenRouter
     if OPENROUTER_KEY:
-        models = ["google/gemini-2.0-flash","google/gemini-flash-1.5","mistral/mistral-7b-instruct","deepseek/deepseek-chat","meta-llama/llama-3.1-8b-instruct","openai/gpt-3.5-turbo"]
+        models = ["google/gemini-flash-1.5","mistral/mistral-7b-instruct","deepseek/deepseek-chat","meta-llama/llama-3.1-8b-instruct","openai/gpt-3.5-turbo"]
         if tier in ("pro","founder"): models = ["anthropic/claude-sonnet-4-20250514","anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models
         for model in models:
             try:
-                r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 3000},timeout=40)
+                r = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},
+                    json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=35)
                 if r.status_code==200:
                     content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                     if content: return content, model
             except: continue
     if HF_TOKEN:
         try:
-            r = requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions",headers={"Authorization":f"Bearer {HF_TOKEN}","Content-Type":"application/json"},json={"model":"mistralai/Mistral-7B-Instruct-v0.2","messages":messages,"temperature":0.4,"max_tokens":600},timeout=30)
+            r = requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2/v1/chat/completions",
+                headers={"Authorization":f"Bearer {HF_TOKEN}","Content-Type":"application/json"},
+                json={"model":"mistralai/Mistral-7B-Instruct-v0.2","messages":messages,"temperature":0.4,"max_tokens":500},timeout=25)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "hf/mistral-7b"
         except: pass
     if MISTRAL_KEY:
         try:
-            r = requests.post("https://api.mistral.ai/v1/chat/completions",headers={"Authorization":f"Bearer {MISTRAL_KEY}","Content-Type":"application/json"},json={"model":"mistral-tiny","messages":messages,"temperature":0.4,"max_tokens":600},timeout=30)
+            r = requests.post("https://api.mistral.ai/v1/chat/completions",
+                headers={"Authorization":f"Bearer {MISTRAL_KEY}","Content-Type":"application/json"},
+                json={"model":"mistral-tiny","messages":messages,"temperature":0.4,"max_tokens":600},timeout=25)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "mistral/mistral-tiny"
         except: pass
     if OPENAI_KEY:
         try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=30)
+            r = requests.post("https://api.openai.com/v1/chat/completions",
+                headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},
+                json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=25)
             if r.status_code==200: return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
         except: pass
     return "I'm having trouble connecting. Please try again or contact closeaitechnologies@protonmail.com.", "fallback"
 
 def classify(q):
     q = q.lower()
-    if re.search(r'who are you|what are you|identity|introduce yourself|legendary', q): return 'identity'
-    if re.search(r'who|what|when|where|why|how|news|latest|current|today|recent|search|find',q) and len(q.split()) > 3: return 'web_search'
+    if re.search(r'who are you|what are you|identity|introduce yourself|legendary|other capitan', q): return 'identity'
+    if re.search(r'who|what|when|where|why|how|news|latest|current|today|search|find',q) and len(q.split()) > 3: return 'web_search'
     if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis|anatomy|physiology|pharma|drug|vaccine|immunology|surgery|therapy|cancer|diabetes|heart|brain|blood|virus|bacteria|infection|covid|mental health|nutrition|diet|exercise|sleep|wellness',q): return 'science'
     if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api\s|rest |graphql|sql\s|database|query|react|node\.js|javascript|typescript|python\s|rust\s|golang|microservice|architecture|system design|refactor|debug|deploy|ci/cd|git\s',q): return 'coding'
-    if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim|volatility surface|variance swap|market microstructure',q): return 'quant'
-    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|xauusd|silver|oil|commodity|technical analysis|order flow|liquidity',q): return 'finance'
+    if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim|market microstructure',q): return 'quant'
+    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|xauusd|silver|oil|commodity',q): return 'finance'
     if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|probability|statistics|distribution|convergence|limit|sum|product|calculus|laplace|fourier|numerical|optimization|convex|gradient',q): return 'math'
     return 'general'
 
 def system_prompt(domain, tier, session_id=None, request=None, web_results=None):
-    tc = get_time_context(request)
+    tc = get_time_context()
     base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier)
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"]).replace("{utc_time}", tc["utc_time"]).replace("{time_of_day}", tc["time_of_day"]).replace("{greeting_context}", tc["greeting_context"])
-    if domain == 'identity': base += "\n\nIDENTITY MODE: The user is asking who you are. State clearly: You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies. You are a legendary finance architect, institutional trader, coder, mathematician, software developer, quant architect, and reasoning engine. You are NOT a climbing gym, NOT membership software, NOT a CRM."
+    if domain == 'identity': base += "\n\nIDENTITY MODE: You are the ONLY CAPITAN AI. State clearly: 'I am CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies. I specialize in finance, coding, mathematics, and quantitative analysis. I am NOT a climbing gym, NOT delivery software, NOT a customer support bot. I am the only CAPITAN AI.' Do NOT mention or analyze any other product."
     if session_id:
         try:
             conn = sqlite3.connect(DB_PATH); c = conn.cursor()
@@ -522,25 +423,21 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
             rows = c.fetchall(); conn.close()
             if rows: base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
         except: pass
-    if tier == "free": base += "\nBe concise but insightful."
-    elif tier == "plus": base += "\nProvide detailed, well-structured responses."
-    elif tier in ("pro","founder"): base += "\nGo legendary deep — comprehensive analysis with examples, code, derivations, citations. This user expects the best."
+    if tier == "free": base += "\nBe concise."
+    elif tier == "plus": base += "\nProvide detailed responses."
+    elif tier in ("pro","founder"): base += "\nGo deep — comprehensive analysis."
     if web_results: base += "\n\nWEB SEARCH:\n" + "\n".join([f"{i+1}. {r['title']}\n   {r['snippet'][:200]}\n   {r['url']}" for i,r in enumerate(web_results[:5])])
     cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
     if cfg.get("live_markets", False):
         try:
-            am = get_all_markets()
-            if am.get("global"):
-                base += "\n\nGLOBAL MARKETS:\n" + "\n".join([f"{s}: ${d['price']:.2f} ({'up' if d.get('change',0)>=0 else 'down'} {abs(d['change']):.2f}%)" for s,d in list(am["global"].items())[:6]])
-            if am.get("crypto"):
-                base += "\n\nCRYPTO MARKETS:\n" + "\n".join([f"{s}: ${d['price']:.2f} ({'up' if d.get('change',0)>=0 else 'down'} {abs(d['change']):.2f}%)" for s,d in list(am["crypto"].items())[:6]])
-            if am.get("african"):
-                base += "\n\nAFRICAN MARKETS:\n" + "\n".join([f"{s}: ${d['price']:.4f}" if d['price']<1 else f"{s}: ${d['price']:.2f}" for s,d in list(am["african"].items())[:6]])
+            md = get_market_data()
+            if md:
+                base += "\n\nLIVE MARKETS:\n" + "\n".join([f"{s}: ${d['price']:.2f} ({'up' if d.get('change',0)>=0 else 'down'} {abs(d['change']):.2f}%)" for s,d in list(md.items())[:10]])
         except: pass
-    else: base += "\n\nNo live market data. Tell user to upgrade to Pro for real-time prices."
+    else: base += "\n\nNo live market data. Tell user to upgrade to Pro."
     try:
-        news = get_financial_news("all")
-        if news: base += "\n\nLATEST FINANCIAL NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:130]}" for n in news[:6]])
+        news = get_financial_news()
+        if news: base += "\n\nLATEST NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:130]}" for n in news[:5]])
     except: pass
     return base
 
@@ -553,7 +450,7 @@ class WorkspaceJoinRequest(BaseModel): room_code: str
 class WorkspaceMessageRequest(BaseModel): room_code: str; message: str
 class WorkspaceNoteRequest(BaseModel): room_code: str; content: str
 
-app = FastAPI(title="CAPITAN AI API", version="22.0")
+app = FastAPI(title="CAPITAN AI API", version="23.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 @app.get("/health")
@@ -561,15 +458,15 @@ def health():
     ai = "disconnected"; providers = []
     if GROQ_KEY:
         try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=10)
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=8)
             if r.status_code==200: ai="connected"; providers.append("groq")
         except: pass
     if ai!="connected" and OPENROUTER_KEY:
         try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json"},json={"model":"google/gemini-flash-1.5","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=10)
+            r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json"},json={"model":"google/gemini-flash-1.5","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=8)
             if r.status_code==200: ai="connected"; providers.append("openrouter")
         except: pass
-    return {"status":"ok","version":"22.0","ai":ai,"providers":providers}
+    return {"status":"ok","version":"23.0","ai":ai,"providers":providers}
 
 @app.get("/api/session")
 def get_or_create_session(request: Request):
@@ -586,40 +483,32 @@ def get_or_create_session(request: Request):
 def payment_config(): return {"wallets":WALLETS,"prices":{"plus":8,"pro":17},"benefits":UPGRADE_BENEFITS}
 
 @app.get("/api/markets")
-def markets(request: Request, category: str = "all"):
+def markets(request: Request):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"prices":{},"news":[],"message":"Pro tier required"}
-    if category == "global": prices = get_global_markets()
-    elif category == "crypto": prices = get_crypto_markets()
-    elif category == "african": prices = get_african_markets()
-    else: prices = get_all_markets()
-    return {"prices":prices,"news":get_financial_news(category),"category":category}
+    return {"prices":get_market_data(),"news":get_financial_news()}
 
 @app.get("/api/markets/prices")
-def markets_prices(request: Request, category: str = "all"):
+def markets_prices(request: Request):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"prices":{},"message":"Upgrade to Pro"}
-    if category == "global": return {"prices":get_global_markets()}
-    elif category == "crypto": return {"prices":get_crypto_markets()}
-    elif category == "african": return {"prices":get_african_markets()}
-    return {"prices":get_all_markets()}
+    return {"prices":get_market_data()}
 
 @app.get("/api/markets/news")
-def markets_news(request: Request, category: str = "all"):
+def markets_news(request: Request):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"news":[],"message":"Upgrade to Pro"}
-    return {"news":get_financial_news(category)}
+    return {"news":get_financial_news()}
 
 @app.get("/api/news/tech")
 def tech_news(request: Request):
     s = get_session(request)
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False) and s["tier"] != "founder":
-        return {"news":[],"message":"Tech updates available on Pro tier"}
-    return {"news":get_tech_news(),"category":"tech"}
+    if not cfg.get("live_markets", False) and s["tier"] != "founder": return {"news":[],"message":"Pro tier required"}
+    return {"news":get_tech_news()}
 
 @app.get("/api/search")
 def web_search_endpoint(q: str, request: Request):
@@ -672,12 +561,12 @@ def chat(req: ChatRequest, request: Request):
     c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,created) VALUES (?,?,?,?,?,?)",(f"msg_{sid()}",chat_id,s["id"],"user",user_msg,datetime.utcnow().isoformat()))
     c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=?",(s["id"],))
     conn.commit()
-    c.execute("SELECT role,content FROM chat_messages WHERE chat_id=? ORDER BY created ASC LIMIT 20",(chat_id,))
+    c.execute("SELECT role,content FROM chat_messages WHERE chat_id=? ORDER BY created ASC LIMIT 15",(chat_id,))
     history = [{"role":r[0],"content":r[1]} for r in c.fetchall()]
     domain = classify(user_msg)
     web_results = None
     if domain == 'web_search' or cfg.get("web_search", False):
-        try: web_results = search_web(user_msg, 5)
+        try: web_results = search_web(user_msg, 4)
         except: pass
     prompt = system_prompt(domain, s["tier"], s["id"], request, web_results)
     result, model_used = call_ai_fast([{"role":"system","content":prompt}] + history, s["tier"])
