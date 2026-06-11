@@ -1,1071 +1,477 @@
-"""
-CAPITAN AI — Enterprise Backend v23.0
-CLOSEAI Technologies
-Tiers: Free, Plus, Pro
-"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="application-name" content="CAPITAN AI">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CAPITAN AI">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="CAPITAN AI — Enterprise Intelligence by CLOSEAI Technologies">
+<meta name="format-detection" content="telephone=no">
+<title>CAPITAN AI</title>
 
-import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlite3
-from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
-import concurrent.futures
-import uvicorn
+<!-- PWA Manifest -->
+<link rel="manifest" href="data:application/manifest+json,{
+  \"name\": \"CAPITAN AI\",
+  \"short_name\": \"CAPITAN\",
+  \"start_url\": \"/\",
+  \"display\": \"standalone\",
+  \"background_color\": \"#000000\",
+  \"theme_color\": \"#000000\",
+  \"orientation\": \"portrait\",
+  \"icons\": [
+    {
+      \"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E\",
+      \"sizes\": \"any\",
+      \"type\": \"image/svg+xml\",
+      \"purpose\": \"any maskable\"
+    }
+  ]
+}">
 
-# ═══════════════════════════════════════════════════════════════
-# API KEYS
-# ═══════════════════════════════════════════════════════════════
-OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
-MISTRAL_KEY = os.environ.get("MISTRAL_API_KEY", "")
-GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
-SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
-GNEWS_API_KEY = os.environ.get("GNEWS_API_KEY", "")
-NEWS_API_KEY = os.environ.get("NEWS_API_KEY", "")
-COINGECKO_KEY = os.environ.get("COINGECKO_KEY", "")
-FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
-ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_hex(32))
-ADMIN_CODE = os.environ.get("ADMIN_CODE", "admin123")
+<script>
+// Theme initialization
+(function(){
+var t=localStorage.getItem('cap_theme_mode')||'system';
+if(t==='light'){document.documentElement.classList.add('light');}
+else if(t==='dark'){document.documentElement.classList.remove('light');}
+else{var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(!d)document.documentElement.classList.add('light');}
+var h=new Date().getHours();
+window.CAPITAN_GREETING=h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night, night owl';
 
-# ═══════════════════════════════════════════════════════════════
-# SQLITE DATABASE
-# ═══════════════════════════════════════════════════════════════
-DB_PATH = os.environ.get("DB_PATH", "capitan.db")
+// Service Worker for PWA
+if('serviceWorker' in navigator && window.location.protocol === 'https:'){
+window.addEventListener('load',function(){
+navigator.serviceWorker.register('/sw.js').then(function(reg){
+console.log('Service Worker registered:', reg.scope);
+}).catch(function(err){
+console.log('Service Worker registration failed:', err);
+});
+});
+}
+})();
+</script>
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+<style>
+:root{
+--bg:#000000;--bg2:#050505;--bg3:#0a0a0a;--bg4:#101010;
+--bdr:#1a1a1a;--bdr2:#222;--bdr3:#333;
+--txt:#FFFFFF;--txt2:#CCCCCC;--txt3:#999999;--txt4:#777777;
+--accent:#A0A0A4;--accent-hover:#B8B8BC;--accent-bg:rgba(160,160,164,0.12);
+--red:#F87171;--green:#4ade80;--amber:#fbbf24;
+--icon:#9CA3AF;--icon-hover:#FFFFFF;
+--radius:14px;--r-sm:10px;--r-xs:7px;--r-lg:18px;
+--fs-xs:10px;--fs-sm:11px;--fs-md:12px;--fs-lg:14px;--fs-xl:17px;
+--lh:1.45;--safe:env(safe-area-inset-bottom,0px);
+--shadow:0 20px 60px rgba(0,0,0,.9);
+--transition:0.18s cubic-bezier(0.4,0,0.2,1);
+--font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+}
+:root.light{
+--bg:#FFFFFF;--bg2:#F5F5F7;--bg3:#EBEBED;--bg4:#E0E0E3;
+--bdr:#E0E0E0;--bdr2:#D0D0D0;--bdr3:#B0B0B0;
+--txt:#0A0A0A;--txt2:#333333;--txt3:#666666;--txt4:#999999;
+--accent:#6B6B70;--accent-hover:#8A8A90;--accent-bg:rgba(107,107,112,0.10);
+--red:#DC2626;--green:#16A34A;--amber:#D97706;
+--icon:#6B7280;--icon-hover:#0A0A0A;
+--shadow:0 20px 60px rgba(0,0,0,.15);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:15px;height:100%;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var(--fs-sm);font-weight:400;line-height:var(--lh);height:100vh;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
+#app{display:flex;height:100vh;height:100dvh;position:relative}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr3);border-radius:3px}
+.splash-screen{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s ease,visibility .4s ease}
+.splash-screen.hide{opacity:0;visibility:hidden;pointer-events:none}
+.splash-logo{display:flex;align-items:center;justify-content:center;animation:logoPulse .8s ease-in-out infinite}
+@keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:.6}}
+.sb-logo{display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:transform .2s;width:28px;height:28px;flex-shrink:0}
+.sb-logo:hover{transform:scale(1.08)}.sb-logo:active{transform:scale(.95)}
+.sb-logo.pulse svg{animation:logoPulse .7s ease-in-out infinite}
+.thinking-logo{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;animation:logoPulse .7s ease-in-out infinite;vertical-align:middle;margin-right:5px;flex-shrink:0}
+.icon-svg{width:15px;height:15px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon-svg.sm{width:12px;height:12px}.icon-svg.lg{width:18px;height:18px}
+.stream-cursor{display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:1px;animation:cursorBlink .6s step-end infinite;vertical-align:text-bottom}
+@keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
+.token-fade{animation:tokenIn .1s ease}
+@keyframes tokenIn{from{opacity:.3;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
+.sidebar{width:260px;min-width:260px;background:var(--bg);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;overflow-y:auto;overflow-x:hidden;transition:all .25s var(--transition);height:100%}
+.sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none;opacity:0}
+.sidebar-mobile{position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);box-shadow:var(--shadow);z-index:200;transition:transform .25s var(--transition)}
+.sidebar-mobile.open{transform:translateX(0)}
+.sb-header{padding:16px 14px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.sb-brand-name{font-size:var(--fs-md);font-weight:700;color:var(--txt)}
+.sb-ticker{flex-shrink:0;overflow:hidden;background:var(--bg2);border-bottom:1px solid var(--bdr);padding:3px 0}
+.sb-ticker-track{display:flex;gap:14px;animation:tickerScroll 20s linear infinite;white-space:nowrap;padding:2px 6px}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.sb-ticker-item{display:flex;align-items:center;gap:4px;font-size:8px;font-weight:600;flex-shrink:0}
+.sb-ticker-item .ticker-symbol{color:var(--txt3)}.sb-ticker-item .ticker-price{color:var(--txt)}
+.sb-ticker-item .ticker-change.positive{color:var(--green)}.sb-ticker-item .ticker-change.negative{color:var(--red)}
+.sb-section{padding:0;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.sb-section-header{font-size:9px;color:var(--txt4);text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:14px 14px 6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.sb-section-header:hover{color:var(--txt3)}
+.sb-section-arrow{font-size:8px;transition:transform .2s;color:var(--txt4)}
+.sb-section-header.open .sb-section-arrow{transform:rotate(90deg)}
+.sb-section-body{overflow:hidden;transition:max-height .25s var(--transition);max-height:0}
+.sb-section-body.open{max-height:800px}
+.sb-setting-item{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .1s;min-height:42px;border-bottom:1px solid var(--bdr)}
+.sb-setting-item:last-child{border-bottom:none}
+.sb-setting-item:hover{background:var(--bg3)}
+.sb-setting-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
+.sb-setting-info{flex:1;min-width:0}
+.sb-setting-label{font-size:var(--fs-xs);color:var(--txt);font-weight:500}
+.sb-setting-value{font-size:9px;color:var(--txt4);margin-top:2px}
+.sb-setting-chevron{color:var(--txt4);font-size:12px;flex-shrink:0}
+.sb-setting-check{font-size:9px;color:var(--accent);flex-shrink:0;font-weight:700}
+.btn-new-convo{display:flex;align-items:center;gap:8px;width:calc(100% - 20px);margin:10px 10px 8px;padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-xs);font-weight:600;font-family:var(--font);transition:all .12s}
+.btn-new-convo:hover{background:var(--accent-hover);transform:scale(1.01)}
+.btn-new-convo:active{transform:scale(.98)}
+.business-indicator{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;background:var(--accent-bg);color:var(--accent)}
+.business-indicator.active{background:var(--green);color:#000}
+.business-indicator.off{background:var(--bg4);color:var(--txt4)}
+.sb-chat-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;color:var(--txt3);font-size:var(--fs-xs);font-weight:500;transition:all .1s;border-bottom:1px solid var(--bdr)}
+.sb-chat-item:hover{background:var(--bg3);color:var(--txt)}
+.sb-chat-item.active{background:var(--bg3);color:var(--txt);font-weight:600}
+.sb-chat-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs)}
+.sb-chat-del{background:none;border:none;color:transparent;cursor:pointer;font-size:11px;padding:2px 5px;border-radius:3px;flex-shrink:0;transition:all .12s}
+.sb-chat-item:hover .sb-chat-del{color:var(--txt4)}
+.sb-chat-del:hover{color:var(--red)!important;background:var(--bg4)}
+.sb-footer{padding:12px;text-align:center;font-size:8px;color:var(--txt4);letter-spacing:.04em;border-top:1px solid var(--bdr);font-weight:500;flex-shrink:0}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;opacity:0;transition:opacity .2s;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.overlay.visible{display:block;opacity:1}
+.toggle-sidebar{position:fixed;top:12px;left:12px;z-index:180;background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);width:34px;height:34px;border-radius:50%;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .12s}
+.toggle-sidebar:hover{color:var(--icon-hover);background:var(--bg3)}
+.toggle-desktop{position:fixed;top:12px;left:12px;z-index:180;background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.toggle-desktop.shifted{left:272px}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0}
+.chat-container{flex:1;display:flex;flex-direction:column;max-width:760px;margin:0 auto;width:100%;min-height:0;padding:0 12px}
+.chat-messages{flex:1;overflow-y:auto;padding:20px 8px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:35vh;text-align:center;padding:20px;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.welcome-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:500px;margin-top:8px}
+.wp-pill{padding:8px 16px;border:1px solid var(--bdr2);border-radius:24px;font-size:var(--fs-xs);color:var(--txt2);cursor:pointer;transition:all .12s;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.wp-pill:hover{border-color:var(--bdr3);color:var(--txt);background:var(--bg3)}
+.wp-pill svg{width:14px;height:14px;stroke:currentColor}
+.msg{margin-bottom:16px;animation:msgIn .18s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{display:flex;justify-content:flex-end}
+.msg-user-bubble{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:10px 14px;max-width:85%;color:var(--txt);font-size:var(--fs-sm);line-height:var(--lh);word-break:break-word}
+.msg-ai-label{font-size:9px;color:var(--txt4);margin-bottom:6px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.msg-ai-body{color:var(--txt);line-height:1.55;font-size:var(--fs-sm)}
+.msg-ai-body code{background:var(--bg3);padding:2px 5px;border-radius:4px;font-size:.88em;border:1px solid var(--bdr);font-family:'SF Mono','Fira Code',monospace}
+.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:10px 12px;overflow-x:auto;margin:6px 0;font-size:10px}
+.msg-ai-body pre code{background:none;border:none;padding:0}
+.msg-actions{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity .12s}
+.msg:hover .msg-actions{opacity:.7}
+.msg-action{background:none;border:none;color:var(--txt4);font-size:12px;cursor:pointer;padding:4px 7px;border-radius:4px;font-family:var(--font);transition:all .1s;display:flex;align-items:center;gap:2px}
+.msg-action:hover{color:var(--txt);background:var(--bg3)}
+.msg-action.liked{color:var(--accent)}.msg-action.disliked{color:var(--red)}
+.thinking{display:flex;align-items:center;gap:8px;padding:6px 0}
+.thinking-text{font-size:var(--fs-xs);color:var(--txt4);font-weight:500}
+.input-area{padding:10px 12px calc(12px + var(--safe));flex-shrink:0;background:var(--bg)}
+.input-wrap{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--bdr2);border-radius:28px;padding:8px 8px 8px 16px;align-items:center;transition:all .18s}
+.input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
+.input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:var(--fs-sm);padding:6px 0;font-family:var(--font);font-weight:400}
+.input-field::placeholder{color:var(--txt4)}.input-field:disabled{opacity:.4}
+.input-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.upload-btn{width:32px;height:32px;background:none;border:none;color:var(--icon);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .12s}
+.upload-btn:hover{color:var(--icon-hover);background:var(--bg3)}
+.send-btn{width:34px;height:34px;background:var(--accent);color:#000;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
+.send-btn:hover:not(:disabled){background:var(--accent-hover);transform:scale(1.04)}.send-btn:disabled{opacity:.1}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;align-items:center;justify-content:center;padding:16px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeIn .18s ease}
+.modal-overlay.open{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r-lg);padding:20px;width:420px;max-width:94vw;max-height:82vh;overflow-y:auto;box-shadow:var(--shadow);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal h2{font-size:var(--fs-lg);font-weight:700;margin-bottom:4px;color:var(--txt)}
+.modal p{font-size:var(--fs-xs);color:var(--txt3);margin-bottom:10px}
+.modal input,.modal textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:9px 12px;border-radius:var(--r-xs);font-size:var(--fs-xs);margin-bottom:8px;outline:none;font-family:var(--font)}
+.modal input:focus,.modal textarea:focus{border-color:var(--accent)}
+.modal-btn{width:100%;background:var(--txt);color:var(--bg);border:none;padding:10px;border-radius:var(--r-xs);cursor:pointer;font-weight:600;font-size:var(--fs-xs);margin-top:6px;font-family:var(--font);transition:all .12s}
+.modal-btn:hover{opacity:.88}.modal-btn.sec{background:transparent;border:1px solid var(--bdr);color:var(--txt2);margin-top:4px}
+.pill-tabs{display:flex;gap:4px;margin-bottom:8px}
+.pill-tab{flex:1;padding:7px;border:1px solid var(--bdr);border-radius:20px;background:none;color:var(--txt3);font-size:var(--fs-xs);cursor:pointer;font-family:var(--font);font-weight:600;text-align:center;transition:all .12s}
+.pill-tab.active{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+.tier-grid{display:grid;gap:8px;margin-bottom:10px}
+.tier-card{border:1px solid var(--bdr);border-radius:var(--r-sm);padding:12px;cursor:pointer;transition:all .12s;background:var(--bg)}
+.tier-card:hover{border-color:var(--bdr3)}.tier-card.selected{border-color:var(--accent);background:var(--accent-bg)}
+.tier-card-name{font-weight:700;font-size:var(--fs-sm);color:var(--txt)}
+.tier-card-price{font-size:var(--fs-xl);font-weight:700;color:var(--txt);margin:4px 0}
+.tier-card-price span{font-size:var(--fs-xs);color:var(--txt3);font-weight:400}
+.tier-card-features{list-style:none;padding:0;margin-top:5px}
+.tier-card-features li{font-size:var(--fs-xs);color:var(--txt2);padding:2px 0;display:flex;align-items:center;gap:6px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.stat-card{padding:12px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);text-align:center}
+.stat-val{font-size:20px;font-weight:700;color:var(--txt)}.stat-lbl{font-size:8px;color:var(--txt4);text-transform:uppercase}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:8px 18px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;z-index:400;animation:tIn .2s ease,tOut .25s ease 2.2s forwards;pointer-events:none;white-space:nowrap}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes tOut{from{opacity:1}to{opacity:0}}
+.wallet-box{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:10px 12px;font-size:8px;color:var(--txt3);font-family:'SF Mono','Fira Code',monospace;word-break:break-all;margin-bottom:8px;cursor:pointer;user-select:all}
+.news-item{padding:10px 12px;border-bottom:1px solid var(--bdr);font-size:10px;cursor:pointer;transition:all .12s;border-radius:var(--r-xs);margin:2px 0}
+.news-item:hover{background:var(--bg3)}.news-item .news-source{font-size:7px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.news-item .news-headline{color:var(--txt);font-weight:500;margin:3px 0;line-height:1.3}
+.news-item .news-time{font-size:7px;color:var(--txt4)}.news-item .news-summary{font-size:9px;color:var(--txt3);margin-top:3px;line-height:1.3}
+@media(min-width:769px){.toggle-sidebar{display:none}.toggle-desktop{display:flex}.sidebar-mobile{position:relative;transform:none;box-shadow:none;z-index:100}}
+@media(max-width:768px){.toggle-sidebar{display:flex}.toggle-desktop{display:none}.sidebar{display:none}.sidebar-mobile{display:flex;flex-direction:column}.msg-user-bubble{max-width:92%}.chat-messages{padding:50px 8px 12px}.input-area{padding:8px 8px calc(8px + var(--safe))}.modal{width:100%;max-width:100%;border-radius:var(--r-lg) var(--r-lg) 0 0;max-height:88vh;margin-top:auto;animation:modalInMobile .25s ease}@keyframes modalInMobile{from{transform:translateY(100%)}to{transform:translateY(0)}}}
+</style>
+</head>
+<body>
 
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS sessions (
-        id TEXT PRIMARY KEY,
-        tier TEXT DEFAULT 'free',
-        msg_count INTEGER DEFAULT 0,
-        msg_window TEXT,
-        created TEXT,
-        updated TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS chats (
-        id TEXT PRIMARY KEY,
-        session_id TEXT,
-        title TEXT,
-        created TEXT,
-        updated TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
-        id TEXT PRIMARY KEY,
-        chat_id TEXT,
-        session_id TEXT,
-        role TEXT,
-        content TEXT,
-        model TEXT,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS memories (
-        id TEXT PRIMARY KEY,
-        memory_id TEXT,
-        session_id TEXT,
-        content TEXT,
-        query TEXT,
-        domain TEXT,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS library_items (
-        id TEXT PRIMARY KEY,
-        session_id TEXT,
-        name TEXT,
-        type TEXT,
-        content TEXT,
-        size INTEGER DEFAULT 0,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
-        id TEXT PRIMARY KEY,
-        session_id TEXT,
-        filename TEXT,
-        original_name TEXT,
-        size INTEGER,
-        mime_type TEXT,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS payments (
-        id TEXT PRIMARY KEY,
-        session_id TEXT,
-        txid TEXT,
-        currency TEXT,
-        amount REAL,
-        tier TEXT,
-        verified INTEGER DEFAULT 0,
-        expires TEXT,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS payment_log (
-        id TEXT PRIMARY KEY,
-        session_id TEXT,
-        tier TEXT,
-        amount REAL,
-        currency TEXT,
-        txid TEXT,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
-        id TEXT PRIMARY KEY,
-        room_code TEXT UNIQUE,
-        creator_session TEXT,
-        creator_tier TEXT,
-        max_members INTEGER,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS workspace_members (
-        workspace_id TEXT,
-        session_id TEXT,
-        role TEXT DEFAULT 'member',
-        joined TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS workspace_messages (
-        id TEXT PRIMARY KEY,
-        workspace_id TEXT,
-        session_id TEXT,
-        author TEXT,
-        message TEXT,
-        is_ai INTEGER DEFAULT 0,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS workspace_notes (
-        id TEXT PRIMARY KEY,
-        workspace_id TEXT,
-        session_id TEXT,
-        author TEXT,
-        content TEXT,
-        created TEXT,
-        updated TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS market_cache (
-        id TEXT PRIMARY KEY,
-        category TEXT,
-        data TEXT,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS news_cache (
-        id TEXT PRIMARY KEY,
-        category TEXT,
-        data TEXT,
-        created TEXT
-    )''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS web_cache (
-        id TEXT PRIMARY KEY,
-        query_hash TEXT,
-        data TEXT,
-        created TEXT
-    )''')
-    
-    conn.commit()
-    conn.close()
-    print("✅ Database initialized with all tables")
+<div class="splash-screen" id="splashScreen">
+  <span class="splash-logo"><svg width="52" height="52" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="14" fill="#000"/><path d="M28 8 L46 17 L46 32 C46 42 38 50 28 54 C18 50 10 42 10 32 L10 17 Z" fill="none" stroke="#A0A0A4" stroke-width="2.5"/><text x="28" y="37" text-anchor="middle" font-size="22" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text></svg></span>
+</div>
 
-init_db()
+<div id="app"></div>
+<div class="overlay" id="overlay"></div>
+<button class="toggle-sidebar" id="toggleSidebar" aria-label="Menu"><svg class="icon-svg lg" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+<button class="toggle-desktop" id="toggleDesktop" aria-label="Toggle"><svg class="icon-svg sm" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+<!-- All Modals -->
+<div id="moneyModal" class="modal-overlay"><div class="modal" style="max-width:540px"><h2>💰 Money Updates</h2><div class="pill-tabs" id="marketCategoryTabs"><button class="pill-tab active" data-cat="global">Global</button><button class="pill-tab" data-cat="crypto">Crypto</button><button class="pill-tab" data-cat="african">Africa</button></div><div class="pill-tabs"><button class="pill-tab active" id="marketTabPrices">Prices</button><button class="pill-tab" id="marketTabNews">News</button></div><div id="marketsPricesContent" style="max-height:350px;overflow-y:auto"></div><div id="marketsNewsContent" style="max-height:350px;overflow-y:auto;display:none"></div><button class="modal-btn sec" id="closeMoney" style="margin-top:6px">Close</button></div></div>
+<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade</h2><p>Instant crypto activation.</p><div class="tier-grid" id="tierCards"></div><div id="paySection" style="display:none"><div class="pill-tabs"><button class="pill-tab active" data-coin="BTC">BTC</button><button class="pill-tab" data-coin="ETH">ETH</button></div><p style="font-size:8px;color:var(--txt3);margin-bottom:3px">Send the amount, paste your TXID:</p><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Transaction hash"><button class="modal-btn" id="verifyUpgrade">Verify & Activate</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
+<div id="founderModal" class="modal-overlay"><div class="modal"><h2>🔐 Founder</h2><input type="password" id="founderCode" placeholder="Founder code" autocomplete="off"><button class="modal-btn" id="verifyFounder">Authenticate</button><button class="modal-btn sec" id="closeFounder">Close</button></div></div>
+<div id="adminModal" class="modal-overlay"><div class="modal" style="width:480px"><h2>Admin</h2><div id="adminContent"></div><button class="modal-btn sec" id="closeAdmin" style="margin-top:5px">Close</button></div></div>
+<div id="libraryModal" class="modal-overlay"><div class="modal"><h2>📁 Library</h2><div id="libraryList" style="max-height:180px;overflow-y:auto;margin-bottom:8px"></div><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" placeholder="Content..." style="min-height:50px;resize:vertical"></textarea><button class="modal-btn" id="libSave">Save</button><button class="modal-btn sec" id="closeLibrary" style="margin-top:3px">Close</button></div></div>
+<div id="workspaceModal" class="modal-overlay"><div class="modal" style="width:480px"><h2>🗂️ Work Area</h2><p>Share your room code. Same tier required to join.</p><div class="pill-tabs"><button class="pill-tab active" id="wsTabCreate">Create</button><button class="pill-tab" id="wsTabJoin">Join</button><button class="pill-tab" id="wsTabChat">Chat</button></div><div id="wsCreatePanel"><button class="modal-btn" id="wsCreateBtn">Create Room</button><div id="wsRoomDisplay" style="display:none;text-align:center;margin-top:8px;padding:12px;background:var(--bg3);border-radius:var(--r-xs)"><div style="font-size:8px;color:var(--txt4)">ROOM CODE</div><div style="font-size:22px;font-weight:700;font-family:monospace;color:var(--txt)" id="wsRoomCode">—</div></div></div><div id="wsJoinPanel" style="display:none"><input type="text" id="wsJoinInput" placeholder="Room code" style="text-transform:uppercase"><button class="modal-btn" id="wsJoinBtn">Join</button></div><div id="wsChatPanel" style="display:none"><div id="wsNotesDisplay" style="background:var(--bg3);padding:10px;margin-bottom:8px;max-height:80px;overflow-y:auto;font-size:var(--fs-xs);color:var(--txt2);display:none"></div><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:9px;color:var(--txt4)">Notes</span><button id="wsEditNote" style="background:none;border:1px solid var(--bdr);color:var(--txt3);padding:3px 8px;border-radius:4px;font-size:8px;cursor:pointer">Edit</button></div><textarea id="wsNotesEditor" style="min-height:40px;resize:vertical;display:none;margin-bottom:6px;font-size:var(--fs-xs)"></textarea><button id="wsSaveNote" class="modal-btn" style="display:none;margin-bottom:6px;font-size:var(--fs-xs);padding:6px">Save</button><div style="max-height:160px;overflow-y:auto;margin-bottom:8px;padding:8px;background:var(--bg3);border-radius:var(--r-xs)" id="wsMessages"></div><div style="display:flex;gap:6px"><input type="text" id="wsMessageInput" placeholder="Message..." style="flex:1;margin-bottom:0;font-size:var(--fs-xs)"><button class="modal-btn" id="wsSendBtn" style="width:auto;margin-top:0;padding:7px 14px;font-size:var(--fs-xs)">Send</button></div></div><button class="modal-btn sec" id="closeWorkspace" style="margin-top:8px">Close</button></div></div>
+<div id="privacyModal" class="modal-overlay"><div class="modal"><h2>🔒 Privacy & Service</h2><div style="font-size:var(--fs-xs);color:var(--txt2);line-height:1.6"><p><strong>CAPITAN AI</strong> by CLOSEAI Technologies. No permanent storage of conversations. All data is encrypted in transit.</p><p style="margin-top:8px"><strong>Service Terms:</strong> AI responses are for informational purposes only. Not financial advice.</p></div><button class="modal-btn sec" id="closePrivacy" style="margin-top:8px">Close</button></div></div>
+<div id="supportModal" class="modal-overlay"><div class="modal"><h2>🆘 Support</h2><div style="font-size:var(--fs-xs);color:var(--txt2);line-height:1.6"><p>Need help? Contact us:</p><p style="margin-top:8px"><strong>Email:</strong> <a href="mailto:closeaitechnologies@protonmail.com" style="color:var(--accent)">closeaitechnologies@protonmail.com</a></p><p><strong>Response time:</strong> 24-48 hours</p><p><strong>Priority support:</strong> Pro & Founder tiers</p></div><button class="modal-btn sec" id="closeSupport" style="margin-top:8px">Close</button></div></div>
+<div id="techModal" class="modal-overlay"><div class="modal" style="max-width:520px"><h2>💻 Tech Updates</h2><p style="font-size:var(--fs-xs);color:var(--txt3)">AI · Coding · Startups · Tech News</p><div id="techNewsContent" style="max-height:380px;overflow-y:auto"></div><button class="modal-btn sec" id="closeTech" style="margin-top:8px">Close</button></div></div>
+<div id="newsReaderModal" class="modal-overlay"><div class="modal" style="max-width:520px"><h2 id="newsReaderTitle">Article</h2><div class="news-reader-content" id="newsReaderContent"></div><button class="modal-btn sec" id="closeNewsReader" style="margin-top:8px">Close</button></div></div>
+<div id="businessModal" class="modal-overlay"><div class="modal" style="max-width:460px"><h2>Business Mode</h2><p>Professional environment.</p><div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg3);border-radius:var(--r-xs);margin-bottom:8px"><span style="font-size:var(--fs-xs);color:var(--txt)">Business Mode</span><span id="businessToggle" class="business-indicator off" onclick="window.toggleBusinessMode?.()">OFF</span></div><button class="modal-btn sec" id="closeBusiness" style="margin-top:8px">Close</button></div></div>
+<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:var(--amber);color:#000;text-align:center;padding:6px;font-size:11px;font-weight:600">Offline Mode - Some features may be limited</div>
 
-WALLETS = {
-    "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
-    "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
+<script>
+// Configuration
+const CFG={API:'https://capitan-ai-jxu8.onrender.com',POLL_CHATS:4000,POLL_WS:2500,POLL_MARKETS:10000,MAX_MSG:4000,STREAM_DELAY:12,WS_MAX:{free:0,plus:7,pro:20,founder:999}};
+const $=(s,d=document)=>d.querySelector(s);
+const $$=(s,d=document)=>d.querySelectorAll(s);
+
+// State
+const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinking:false,businessMode:false,sidebarOpen:window.innerWidth>768,sidebarSections:{account:false,tools:false,appearance:false,data:false,privacy:false,support:false,chats:true},connected:'checking',isOnline:navigator.onLine,chats:[],activeChat:null,messages:[],library:[],payConfig:null,markets:null,tickerData:[],marketCategory:'global',ws:{code:null,id:null,messages:[],members:[],notes:[],timer:null},draft:'',wsDraft:'',selTier:null,selCoin:'BTC',logoClicks:0,logoClickTimer:null,greeting:window.CAPITAN_GREETING||'Good day',streamAbort:null,splashDone:false,themeMode:localStorage.getItem('cap_theme_mode')||'system'};
+
+// Warmup ping
+async function warmupBackend(){try{await fetch(`${CFG.API}/health`,{method:'GET'});console.log('Warmup ping sent')}catch(e){}}
+
+// Storage functions
+function saveState(){if(S.activeChat&&S.messages.length>0){localStorage.setItem('cap_activeChat',S.activeChat);localStorage.setItem('cap_messages',JSON.stringify(S.messages))}if(S.chats.length>0)localStorage.setItem('cap_chats',JSON.stringify(S.chats))}
+function restoreState(){const chat=localStorage.getItem('cap_activeChat');const msgs=localStorage.getItem('cap_messages');const chats=localStorage.getItem('cap_chats');let r=false;if(chat&&msgs){try{S.activeChat=chat;S.messages=JSON.parse(msgs);r=true}catch(e){}}if(chats){try{S.chats=JSON.parse(chats);r=true}catch(e){}}return r}
+window.addEventListener('beforeunload',()=>{saveState();saveDrafts()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveState()});
+
+// Theme
+function applyTheme(){const m=S.themeMode;const h=document.documentElement;if(m==='light'){h.classList.add('light');}else if(m==='dark'){h.classList.remove('light');}else{const d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(d){h.classList.remove('light');}else{h.classList.add('light');}}}
+function setThemeMode(m){S.themeMode=m;localStorage.setItem('cap_theme_mode',m);applyTheme();render();toast('Theme: '+(m==='system'?'System':m==='dark'?'Dark':'Light'))}
+window.addEventListener('online',()=>{S.isOnline=true;$('#offlineBanner').style.display='none';warmupBackend()});
+window.addEventListener('offline',()=>{S.isOnline=false;$('#offlineBanner').style.display='block'});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.themeMode==='system')applyTheme()});
+
+// API Class
+class Api{constructor(b){this.b=b;this.t=0}
+async r(p,o={}){if(!S.isOnline&&p!=='/health')throw new Error('Offline');const h={...o.headers};if(!(o.body instanceof FormData))h['Content-Type']='application/json';if(S.token)h['Authorization']=`Bearer ${S.token}`;try{const r=await fetch(`${this.b}${p}`,{...o,headers:h});if(r.status===401){localStorage.removeItem('ct');S.token=null;await this.sess();throw new Error('Session refreshed')}if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||`Error ${r.status}`)}const ct=r.headers.get('content-type');return ct&&ct.includes('json')?await r.json():await r.text()}catch(e){if(this.t<2&&e.message.includes('500')){this.t++;await new Promise(r=>setTimeout(r,500));return this.r(p,o)}this.t=0;throw e}}
+async sess(){const d=await this.r('/api/session');S.session={id:d.id,tier:d.tier,count:d.msg_count||0};S.tier=d.tier;S.token=d.token;localStorage.setItem('ct',d.token);return d}
+async getSess(){return this.r('/api/session')}async chats(){return this.r('/api/chats')}async chat(id){return this.r(`/api/chats/${id}`)}
+async send(msgs,cid){return this.r('/api/chat',{method:'POST',body:JSON.stringify({messages:msgs,chat_id:cid})})}
+async delChat(id){return this.r(`/api/chats/${id}`,{method:'DELETE'})}async lib(){return this.r('/api/library')}
+async libCreate(n,t,c){return this.r('/api/library',{method:'POST',body:JSON.stringify({name:n,type:t,content:c})})}
+async libDel(id){return this.r(`/api/library/${id}`,{method:'DELETE'})}
+async upload(f){const fd=new FormData();fd.append('file',f);return this.r('/api/upload',{method:'POST',body:fd})}
+async payCfg(){return this.r('/api/payment-config')}
+async upgrade(tier,txid,coin){return this.r('/api/upgrade',{method:'POST',body:JSON.stringify({tier,txid,currency:coin})})}
+async founder(code){return this.r('/api/founder',{method:'POST',body:JSON.stringify({code})})}
+async admin(){return this.r('/api/admin',{method:'POST'})}
+async markets(){return this.r('/api/markets')}
+async marketsPrices(cat){return this.r(`/api/markets/prices?category=${cat||'all'}`)}
+async marketsNews(cat){return this.r(`/api/markets/news?category=${cat||'all'}`)}
+async techNews(){return this.r('/api/news/tech')}
+async health(){return this.r('/health')}
+async wsCreate(code,max){return this.r('/api/workspace/create',{method:'POST',body:JSON.stringify({room_code:code,max_members:max})})}
+async wsJoin(code){return this.r('/api/workspace/join',{method:'POST',body:JSON.stringify({room_code:code})})}
+async wsMsg(code,msg){return this.r('/api/workspace/message',{method:'POST',body:JSON.stringify({room_code:code,message:msg})})}
+async wsGetMsgs(code){return this.r(`/api/workspace/messages?room_code=${encodeURIComponent(code)}`)}
+async wsSaveNotes(code,c){return this.r('/api/workspace/notes',{method:'POST',body:JSON.stringify({room_code:code,content:c})})}
+async wsGetNotes(code){return this.r(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`)}}
+const api=new Api(CFG.API);
+
+// SVG Icons
+const SVG=(w,h,d)=>`<svg class="icon-svg" viewBox="0 0 24 24" width="${w||15}" height="${h||15}">${d}</svg>`;
+const CLOGO=`<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#A0A0A4" stroke-width="1.8"/><text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text></svg>`;
+const ICONS={
+plus:SVG(15,15,'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
+folder:SVG(15,15,'<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
+briefcase:SVG(15,15,'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>'),
+chart:SVG(15,15,'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'),
+zap:SVG(15,15,'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'),
+sun:SVG(15,15,'<circle cx="12" cy="12" r="5"/>'),
+moon:SVG(15,15,'<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'),
+lock:SVG(15,15,'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>'),
+download:SVG(15,15,'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
+send:SVG(15,15,'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'),
+upload:SVG(15,15,'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'),
+settings:SVG(15,15,'<circle cx="12" cy="12" r="3"/>'),
+check:SVG(15,15,'<polyline points="20 6 9 17 4 12"/>'),
+chat:SVG(15,15,'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>'),
+monitor:SVG(15,15,'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'),
+copy:SVG(15,15,'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>'),
+thumbsUp:SVG(15,15,'<path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>'),
+thumbsDown:SVG(15,15,'<path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10zM17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/>'),
+share:SVG(15,15,'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>'),
+moneyIcon:SVG(14,14,'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'),
+codeIcon:SVG(14,14,'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
+mathIcon:SVG(14,14,'<path d="M18 4l-6 16M6 8h12M6 16h12"/>'),
+newConvo:SVG(15,15,'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
+capitanLogo:CLOGO,
+capitanLogoSm:`<svg width="20" height="20" viewBox="0 0 28 28" fill="none"><path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#A0A0A4" stroke-width="1.8"/><text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text></svg>`,
+chevron:SVG(9,9,'<polyline points="9 18 15 12 9 6"/>')
+};
+
+// Token Streamer (Fixed)
+class TokenStreamer{constructor(content,container,delay=12){this.content=content;this.container=container;this.delay=delay;this.index=0;this.tokens=this.tokenize(content);this.running=false;this.timer=null}
+tokenize(text){const tokens=[];const regex=/([^\s]+|\s+)/g;let match;while((match=regex.exec(text))!==null)tokens.push(match[0]);return tokens}
+start(){this.running=true;if(S.streamAbort)try{S.streamAbort()}catch(e){}S.streamAbort=()=>this.stop();this.renderNext()}
+renderNext(){if(!this.running||this.index>=this.tokens.length){this.finish();return}const span=document.createElement('span');span.className='token-fade';span.textContent=this.tokens[this.index];this.container.appendChild(span);this.index++;this.scrollToBottom();this.timer=setTimeout(()=>this.renderNext(),this.delay)}
+stop(){this.running=false;if(this.timer)clearTimeout(this.timer);if(this.index<this.tokens.length){this.container.appendChild(document.createTextNode(this.tokens.slice(this.index).join('')));this.scrollToBottom()}this.finish()}
+finish(){const cursor=this.container.querySelector('.stream-cursor');if(cursor)cursor.remove();if(this.container.parentElement){const finalContent=this.container.innerHTML;this.container.innerHTML=fmtMD(this.content);}S.streamAbort=null;this.running=false}
+scrollToBottom(){setTimeout(()=>{const c=$('#chatMsgs');if(c)c.scrollTop=c.scrollHeight},30)}}
+
+// Core Functions
+async function init(){
+console.log('CAPITAN AI v24 | PWA Ready');applyTheme();S.businessMode=localStorage.getItem('cap_business')==='true';S.prevTier=localStorage.getItem('cap_tier')||'free';
+await warmupBackend();
+await checkHealth();const saved=localStorage.getItem('ct');
+if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier}catch(e){localStorage.removeItem('ct');await api.sess()}}else{await api.sess()}
+if(S.prevTier!==S.tier){S.activeChat=null;S.messages=[];S.chats=[];localStorage.setItem('cap_tier',S.tier);['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k))}
+if(!S.activeChat){const restored=restoreState();if(restored&&S.messages.length>0)toast('Messages restored')}
+await Promise.allSettled([loadChats(),loadPayCfg(),loadMarkets()]);render();setupListeners();startTasks();
+if(window.innerWidth>768){S.sidebarOpen=true;updateSidebar()}if(S.businessMode)document.body.classList.add('business-mode');if(!S.isOnline)$('#offlineBanner').style.display='block';
+setTimeout(()=>{const splash=$('#splashScreen');if(splash){splash.classList.add('hide');S.splashDone=true}},600);
 }
 
-TIER_CONFIG = {
-    "free": {
-        "name": "Free",
-        "msg_limit": 10,
-        "workspace_max": 0,
-        "file_upload": False,
-        "file_size_mb": 0,
-        "live_markets": False,
-        "web_search": False,
-        "price": 0
-    },
-    "plus": {
-        "name": "Plus",
-        "msg_limit": 30,
-        "workspace_max": 7,
-        "file_upload": True,
-        "file_size_mb": 10,
-        "live_markets": False,
-        "web_search": True,
-        "price": 8
-    },
-    "pro": {
-        "name": "Pro",
-        "msg_limit": float("inf"),
-        "workspace_max": 20,
-        "file_upload": True,
-        "file_size_mb": 50,
-        "live_markets": True,
-        "web_search": True,
-        "price": 17
-    }
+async function checkHealth(){try{const h=await api.health();S.connected=h.ai==='connected'?'online':'degraded'}catch(e){S.connected='offline'}}
+function startTasks(){setInterval(async()=>{if(!S.loading)await loadChats()},CFG.POLL_CHATS);setInterval(checkHealth,25000);setInterval(async()=>{await loadMarkets();updateTicker()},CFG.POLL_MARKETS);setInterval(saveDrafts,5000);setInterval(saveState,2000)}
+async function loadChats(){try{const d=await api.chats();S.chats=d.chats||[];renderSidebarChats()}catch(e){}}
+async function loadPayCfg(){try{S.payConfig=await api.payCfg()}catch(e){}}
+async function loadMarkets(){try{const allData=[];const cats=['global','crypto','african'];for(const cat of cats){try{const d=await api.marketsPrices(cat);const p=d?.prices||d?.data||{};if(p&&typeof p==='object'&&!Array.isArray(p)){allData.push(...Object.entries(p).slice(0,cat==='african'?3:5));}else if(Array.isArray(p)){allData.push(...p.slice(0,cat==='african'?3:5).map((item,i)=>[item?.symbol||item?.name||`${cat}${i}`,item]));}}catch(e){}}S.tickerData=allData;S.markets={prices:{}};}catch(e){console.error('Markets:',e)}}
+async function loadLib(){try{const d=await api.lib();S.library=d.items||[];renderLibList()}catch(e){}}
+
+function updateTicker(){const track=$('#tickerTrack');if(!track||!S.tickerData.length)return;const items=S.tickerData.map(([sym,info])=>{let price='—',change='0.00';if(info&&typeof info==='object'){price=typeof info.price==='number'?info.price.toFixed(2):(info.price||'—');change=typeof info.change==='number'?info.change.toFixed(2):'0.00';}const cls=parseFloat(change)>=0?'positive':'negative';const sign=parseFloat(change)>=0?'+':'';return`<span class="sb-ticker-item"><span class="ticker-symbol">${esc(String(sym))}</span><span class="ticker-price">${price}</span><span class="ticker-change ${cls}">${sign}${change}%</span></span>`;});track.innerHTML=items.join('')+items.join('');}
+
+function toggleBusinessMode(){S.businessMode=!S.businessMode;localStorage.setItem('cap_business',S.businessMode);if(S.businessMode)document.body.classList.add('business-mode');else document.body.classList.remove('business-mode');const mt=$('#businessToggle');if(mt){mt.textContent=S.businessMode?'ON':'OFF';mt.className=S.businessMode?'business-indicator active':'business-indicator off';}updateSidebarBizIndicator();toast('Business Mode '+(S.businessMode?'ON':'OFF'));}
+function updateSidebarBizIndicator(){document.querySelectorAll('.biz-indicator').forEach(el=>{el.textContent=S.businessMode?'ON':'OFF';el.className=S.businessMode?'business-indicator active':'business-indicator off';});}
+function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;openFounder()}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0},1500)}}
+function pulseLogo(active){document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{if(active)l.classList.add('pulse');else l.classList.remove('pulse')})}
+
+function toggleSidebarSection(headerEl){const body=headerEl.nextElementSibling;const isOpen=body.classList.contains('open');if(isOpen){body.classList.remove('open');body.style.maxHeight='0';headerEl.classList.remove('open');}else{body.classList.add('open');body.style.maxHeight=body.scrollHeight+'px';headerEl.classList.add('open');}S.sidebarSections[headerEl.dataset.section]=!isOpen;}
+
+function render(){
+const app=$('#app');const tier=S.tier.toUpperCase();const sid=S.session?.id||'...';const isMobile=window.innerWidth<=768;
+app.innerHTML=`<aside class="sidebar ${isMobile?'sidebar-mobile':''} ${!isMobile&&!S.sidebarOpen?'collapsed':''}" id="sidebar">
+<div class="sb-header"><span class="sb-logo" onclick="handleLogoClick()">${ICONS.capitanLogo}</span><span class="sb-brand-name">CAPITAN AI</span>${isMobile?`<button style="background:none;border:none;color:var(--icon);cursor:pointer;padding:4px;margin-left:auto;font-size:14px" onclick="closeSidebar()">✕</button>`:''}</div>
+${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ticker"><div class="sb-ticker-track" id="tickerTrack"></div></div>`:''}
+<button class="btn-new-convo" onclick="newChat()">${ICONS.newConvo} New Conversation</button>
+<div class="sb-section"><div class="sb-section-header" data-section="account" onclick="toggleSidebarSection(this)">Account <span class="sb-section-arrow">▶</span></div><div class="sb-section-body">${S.tier!=='founder'?`<div class="sb-setting-item" onclick="openUpgrade()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.zap}</div><div class="sb-setting-info"><div class="sb-setting-label">Upgrade</div><div class="sb-setting-value">${tier} Tier</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>`:`<div class="sb-setting-item" onclick="openAdmin()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.settings}</div><div class="sb-setting-info"><div class="sb-setting-label">Admin</div><div class="sb-setting-value">Founder</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>`}</div></div>
+<div class="sb-section"><div class="sb-section-header" data-section="tools" onclick="toggleSidebarSection(this)">Tools <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="openLib()"><div class="sb-setting-icon" style="background:rgba(74,222,128,0.12)">${ICONS.folder}</div><div class="sb-setting-info"><div class="sb-setting-label">My Library</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>${S.tier!=='free'?`<div class="sb-setting-item" onclick="openWS()"><div class="sb-setting-icon" style="background:rgba(251,191,36,0.12)">${ICONS.briefcase}</div><div class="sb-setting-info"><div class="sb-setting-label">Work Area</div><div class="sb-setting-value">${CFG.WS_MAX[S.tier]||7} seats</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>`:''}${S.tier==='pro'||S.tier==='founder'?`<div class="sb-setting-item" onclick="openMoney()"><div class="sb-setting-icon" style="background:rgba(74,222,128,0.12)">${ICONS.chart}</div><div class="sb-setting-info"><div class="sb-setting-label">Money Updates</div><div class="sb-setting-value">Prices & news</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div><div class="sb-setting-item" onclick="openTechUpdates()"><div class="sb-setting-icon" style="background:rgba(91,106,245,0.12)">${ICONS.zap}</div><div class="sb-setting-info"><div class="sb-setting-label">Tech Updates</div><div class="sb-setting-value">AI · Startups</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div><div class="sb-setting-item" onclick="openBusiness()"><div class="sb-setting-icon" style="background:rgba(251,191,36,0.12)">${ICONS.briefcase}</div><div class="sb-setting-info"><div class="sb-setting-label">Business Mode</div><div class="sb-setting-value"><span class="biz-indicator ${S.businessMode?'business-indicator active':'business-indicator off'}">${S.businessMode?'ON':'OFF'}</span></div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>`:''}</div></div>
+<div class="sb-section"><div class="sb-section-header" data-section="appearance" onclick="toggleSidebarSection(this)">Appearance <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="setThemeMode('system')"><div class="sb-setting-icon" style="background:var(--bg3)">${ICONS.monitor}</div><div class="sb-setting-info"><div class="sb-setting-label">System Theme</div><div class="sb-setting-value">Follows phone</div></div><span class="sb-setting-check">${S.themeMode==='system'?'✓':''}</span></div><div class="sb-setting-item" onclick="setThemeMode('dark')"><div class="sb-setting-icon" style="background:var(--bg3)">${ICONS.moon}</div><div class="sb-setting-info"><div class="sb-setting-label">Dark Mode</div></div><span class="sb-setting-check">${S.themeMode==='dark'?'✓':''}</span></div><div class="sb-setting-item" onclick="setThemeMode('light')"><div class="sb-setting-icon" style="background:var(--bg3)">${ICONS.sun}</div><div class="sb-setting-info"><div class="sb-setting-label">Light Mode</div></div><span class="sb-setting-check">${S.themeMode==='light'?'✓':''}</span></div></div></div>
+<div class="sb-section"><div class="sb-section-header" data-section="privacy" onclick="toggleSidebarSection(this)">Privacy & Service <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="openPrivacy()"><div class="sb-setting-icon" style="background:rgba(248,113,113,0.12)">${ICONS.lock}</div><div class="sb-setting-info"><div class="sb-setting-label">Privacy Policy</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div></div></div>
+<div class="sb-section"><div class="sb-section-header" data-section="support" onclick="toggleSidebarSection(this)">Support <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="openSupport()"><div class="sb-setting-icon" style="background:rgba(74,222,128,0.12)">${ICONS.chat}</div><div class="sb-setting-info"><div class="sb-setting-label">Contact Support</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div></div></div>
+<div class="sb-section" style="flex:1;overflow-y:auto;border-bottom:none"><div class="sb-section-header open" data-section="chats" onclick="toggleSidebarSection(this)">Recent Chats <span class="sb-section-arrow">▶</span></div><div class="sb-section-body open" style="max-height:600px"><div id="chatsList">${renderChatsHTML()}</div></div></div>
+<div class="sb-footer">CLOSEAI Technologies © 2026</div></aside>
+<main class="main"><div class="chat-container"><div class="chat-messages" id="chatMsgs">${S.activeChat?renderMsgsHTML():welcomeHTML()}</div><div class="input-area"><div class="input-wrap"><button class="upload-btn" onclick="${S.tier!=='free'?'uploadFile()':'openUpgrade()'}"><svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." autocomplete="off" maxlength="${CFG.MAX_MSG}" value="${esc(S.draft)}" ${S.loading?'disabled':''} oninput="handleTyping()"/><div class="input-actions"><button class="send-btn" id="sendBtn" ${S.loading?'disabled':''} onclick="sendMsg()">${ICONS.send}</button></div></div></div></div></main>`;
+updateDesktopToggle();updateTicker();if(S.sidebarOpen&&isMobile){$('#sidebar').classList.add('open');$('#overlay').classList.add('visible')}if(S.messages.length>0)scrollBottom();
 }
 
-UPGRADE_BENEFITS = {
-    "plus": [
-        "30 messages per day",
-        "Enhanced AI model",
-        "Work Area (7 seats)",
-        "File uploads (10MB)",
-        "Web search",
-        "Coding & Quant tools"
-    ],
-    "pro": [
-        "Unlimited messages",
-        "Advanced AI (Claude/GPT-4 level)",
-        "Work Area (20 seats)",
-        "File uploads (50MB)",
-        "Live market data",
-        "Financial news",
-        "Web search",
-        "Business mode",
-        "All Plus features"
-    ]
+function handleTyping(){const inp=$('#msgInput');if(!inp)return;S.draft=inp.value;updateBtn();pulseLogo(inp.value.length>0)}
+function welcomeHTML(){return`<div class="welcome"><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('Analyze current market conditions')">${ICONS.moneyIcon} Finance</div><div class="wp-pill" onclick="quickSend('Write code for: ')">${ICONS.codeIcon} Write Code</div><div class="wp-pill" onclick="quickSend('Solve this math problem: ')">${ICONS.mathIcon} Solve Math</div></div></div>`}
+function renderChatsHTML(){if(!S.chats.length)return'<div style="padding:12px;font-size:10px;color:var(--txt4);text-align:center">No conversations yet</div>';return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'')}"><span>${esc(c.title||'Untitled')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('')}
+function renderMsgsHTML(){return S.messages.map((m,i)=>m.role==='user'?`<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`:`<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)">${ICONS.copy}</button><button class="msg-action ${m.liked?'liked':''}" onclick="likeMsg(${i})">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked?'disliked':''}" onclick="dislikeMsg(${i})">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)">${ICONS.share}</button><button class="msg-action" onclick="regen()">${ICONS.zap}</button></div></div>`).join('')}
+
+function likeMsg(i){if(S.messages[i]){S.messages[i].liked=!S.messages[i].liked;S.messages[i].disliked=false;renderMsgs();saveState()}}
+function dislikeMsg(i){if(S.messages[i]){S.messages[i].disliked=!S.messages[i].disliked;S.messages[i].liked=false;renderMsgs();saveState()}}
+function shareMsg(content){if(navigator.share){navigator.share({text:content}).catch(()=>{})}else{navigator.clipboard.writeText(content);toast('Copied!')}}
+
+async function sendMsg(){
+if(!S.isOnline){toast('Offline','warning');return}const inp=$('#msgInput');if(!inp)return;const msg=inp.value.trim();if(!msg||S.loading)return;
+inp.value='';S.draft='';S.loading=true;S.thinking=true;updateBtn();pulseLogo(true);
+S.messages.push({role:'user',content:msg});renderMsgs();S.messages.push({role:'assistant',content:'',model:''});renderMsgs();
+const lastMsg=$$('.msg-ai-body');const streamTarget=lastMsg[lastMsg.length-1];if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom()}
+try{const r=await api.send(S.messages.slice(0,-1),S.activeChat);const finalContent=r.content;S.messages[S.messages.length-1].content=finalContent;S.activeChat=r.chat_id;S.session.count=(S.session.count||0)+1;await loadChats();if(streamTarget){streamTarget.innerHTML='';const isCodeResponse=finalContent.includes('```');if(isCodeResponse){streamTarget.innerHTML=fmtMD(finalContent);scrollBottom();}else{const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);streamer.start();await new Promise(resolve=>{const check=setInterval(()=>{if(!streamer.running){clearInterval(check);resolve()}},50)})}}else{renderMsgs();}scrollBottom();saveState();if(r.remaining!=='unlimited'&&r.remaining<=3)toast(r.remaining+' left','warning')}
+catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;renderMsgs();toast(e.message,'error')}
+finally{S.loading=false;S.thinking=false;updateBtn();pulseLogo(false);if(S.streamAbort)try{S.streamAbort()}catch(e){}}
 }
 
-def sid(): 
-    return str(uuid.uuid4())[:8].upper()
+async function quickSend(p){const inp=$('#msgInput');if(inp){inp.value=p;await sendMsg()}}
+async function regen(){if(S.messages.length<2)return;S.messages.pop();renderMsgs();S.loading=true;S.thinking=true;updateBtn();pulseLogo(true);S.messages.push({role:'assistant',content:'',model:''});renderMsgs();const lastMsg=$$('.msg-ai-body');const streamTarget=lastMsg[lastMsg.length-1];if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom()}try{const r=await api.send(S.messages.slice(0,-1),S.activeChat);const finalContent=r.content;S.messages[S.messages.length-1].content=finalContent;if(streamTarget){streamTarget.innerHTML='';const isCodeResponse=finalContent.includes('```');if(isCodeResponse){streamTarget.innerHTML=fmtMD(finalContent);}else{const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);streamer.start();await new Promise(resolve=>{const check=setInterval(()=>{if(!streamer.running){clearInterval(check);resolve()}},50)})}}renderMsgs();scrollBottom();saveState()}catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;renderMsgs();toast(e.message,'error')}finally{S.loading=false;S.thinking=false;updateBtn();pulseLogo(false)}}
+async function loadChat(id){S.activeChat=id;S.messages=[];try{const c=await api.chat(id);S.messages=c.messages||[];renderMsgs();renderSidebarChats();scrollBottom();saveState()}catch(e){toast(e.message,'error')}}
+async function delChat(id){if(!confirm('Delete?'))return;try{await api.delChat(id);S.chats=S.chats.filter(c=>c.id!==id);if(S.activeChat===id)newChat();renderSidebarChats();toast('Deleted')}catch(e){toast(e.message,'error')}}
+function newChat(){if(S.streamAbort)try{S.streamAbort()}catch(e){}S.activeChat=null;S.messages=[];['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k));render();if(window.innerWidth<=768)closeSidebar()}
 
-def mid(): 
-    return 'mem_' + sid()
+async function uploadFile(){if(S.tier==='free'){toast('Upgrade required','warning');return}const inp=document.createElement('input');inp.type='file';const max=S.tier==='founder'?500:S.tier==='pro'?50:10;inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size/(1024*1024)>max){toast(`Max ${max}MB`,'error');return}try{const r=await api.upload(f);toast(`Uploaded! (${r.size_mb}MB)`);if(S.activeChat){S.messages.push({role:'user',content:`[File: ${f.name}]`});renderMsgs();saveState()}}catch(e){toast(e.message,'error')}};inp.click()}
 
-def create_jwt(session_id, tier):
-    h = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
-    p = base64.urlsafe_b64encode(json.dumps({
-        "session_id": session_id,
-        "tier": tier,
-        "exp": int((datetime.utcnow() + timedelta(days=365)).timestamp())
-    }).encode()).decode().rstrip("=")
-    s = base64.urlsafe_b64encode(hmac.new(JWT_SECRET.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
-    return f"{h}.{p}.{s}"
+function genRoomCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return`CAP-${Array.from({length:3},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}-${Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}`}
+async function wsCreate(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}const code=genRoomCode();const max=CFG.WS_MAX[S.tier]||7;try{const r=await api.wsCreate(code,max);S.ws={code,id:r.room_id,messages:[],members:[],notes:[],timer:null};$('#wsRoomCode').textContent=code;$('#wsRoomDisplay').style.display='block';toast('Room created!','success');wsPoll()}catch(e){toast(e.message,'error')}}
+async function wsJoin(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}const code=$('#wsJoinInput')?.value.trim().toUpperCase();if(!code){toast('Enter room code','warning');return}try{const r=await api.wsJoin(code);S.ws={...S.ws,code,id:r.room_id,messages:r.messages||[],members:r.members||[]};switchWSTab('chat');renderWSMsgs();toast('Joined!','success');wsPoll()}catch(e){toast(e.message,'error')}}
+async function wsSend(){const inp=$('#wsMessageInput');if(!inp)return;const msg=inp.value.trim();if(!msg||!S.ws.code)return;inp.value='';S.wsDraft='';try{const r=await api.wsMsg(S.ws.code,msg);S.ws.messages=r.messages||[];renderWSMsgs()}catch(e){toast(e.message,'error')}}
+async function wsSaveNotes(){const c=$('#wsNotesEditor')?.value;if(!c||!S.ws.code)return;try{const r=await api.wsSaveNotes(S.ws.code,c);S.ws.notes=r.notes||[];renderWSNotes();toast('Saved!')}catch(e){toast(e.message,'error')}}
+function wsPoll(){if(S.ws.timer)clearInterval(S.ws.timer);S.ws.timer=setInterval(async()=>{if(!S.ws.code){clearInterval(S.ws.timer);return}try{const[md,nd]=await Promise.all([api.wsGetMsgs(S.ws.code),api.wsGetNotes(S.ws.code)]);S.ws.messages=md.messages||[];S.ws.notes=nd.notes||[];renderWSMsgs();renderWSNotes()}catch(e){}},CFG.POLL_WS)}
+function renderWSMsgs(){const c=$('#wsMessages');if(!c)return;if(!S.ws.messages.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">No messages</div>';return}c.innerHTML=S.ws.messages.map(m=>`<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-weight:600;color:${m.is_ai?'var(--accent)':'var(--txt)'}">${esc(m.author)}</span><span style="font-size:7px;color:var(--txt4)">${new Date(m.created).toLocaleTimeString()}</span></div><div style="color:var(--txt2);line-height:1.4">${fmtMD(m.message)}</div></div>`).join('');c.scrollTop=c.scrollHeight}
+function renderWSNotes(){const c=$('#wsNotesDisplay');if(!c)return;if(!S.ws.notes.length){c.innerHTML='<div style="padding:4px;font-size:9px;color:var(--txt4)">No notes</div>';c.style.display='block';return}c.style.display='block';c.innerHTML=S.ws.notes.map(n=>`<div style="padding:2px 0;font-size:9px;color:var(--txt2);line-height:1.4">${fmtMD(n.content)}</div>`).join('')}
+function switchWSTab(t){['create','join','chat'].forEach(k=>{const p=$('#ws'+k.charAt(0).toUpperCase()+k.slice(1)+'Panel');if(p)p.style.display=k===t?'block':'none'});$$('#workspaceModal .pill-tab').forEach(b=>b.classList.remove('active'));$('#wsTab'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.add('active')}
 
-def verify_jwt(token):
-    try:
-        parts = token.split(".")
-        if len(parts) != 3:
-            return None
-        h, p, s = parts
-        es = base64.urlsafe_b64encode(hmac.new(JWT_SECRET.encode(), f"{h}.{p}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
-        if not hmac.compare_digest(s, es):
-            return None
-        d = json.loads(base64.urlsafe_b64decode(p + "=="))
-        if d.get("exp", 0) < datetime.utcnow().timestamp():
-            return None
-        return d
-    except:
-        return None
+function openLib(){$('#libraryModal').classList.add('open');loadLib()}
+function renderLibList(){const c=$('#libraryList');if(!c)return;if(!S.library.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">Empty</div>';return}c.innerHTML=S.library.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid var(--bdr);font-size:10px"><div style="flex:1;cursor:pointer" onclick="viewLib('${i.id}')"><div style="font-weight:600;color:var(--txt)">${esc(i.name)}</div></div><button onclick="delLib('${i.id}')" style="background:none;border:none;color:var(--txt4);cursor:pointer;font-size:11px">✕</button></div>`).join('')}
+function viewLib(id){const i=S.library.find(x=>x.id===id);if(!i)return;$('#libName').value=i.name;$('#libContent').value=i.content}
+async function saveLib(){const n=$('#libName')?.value.trim();const c=$('#libContent')?.value.trim();if(!n||!c){toast('Required','warning');return}try{await api.libCreate(n,'note',c);$('#libName').value='';$('#libContent').value='';await loadLib();toast('Saved!')}catch(e){toast(e.message,'error')}}
+async function delLib(id){if(!confirm('Delete?'))return;try{await api.libDel(id);await loadLib();toast('Deleted')}catch(e){toast(e.message,'error')}}
 
-def get_session(request: Request):
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        payload = verify_jwt(auth[7:])
-        if payload:
-            conn = get_db()
-            c = conn.cursor()
-            c.execute("SELECT id, tier, msg_count, msg_window FROM sessions WHERE id=?", (payload["session_id"],))
-            row = c.fetchone()
-            conn.close()
-            if row:
-                return {"id": row[0], "tier": row[1], "msg_count": row[2] or 0, "msg_window": row[3]}
-    return None
+function openUpgrade(){$('#upgradeModal').classList.add('open');if(!S.payConfig)return;const{benefits}=S.payConfig;$('#tierCards').innerHTML=`<div class="tier-card ${S.tier==='free'?'selected':''}" onclick="selUp('free')"><div class="tier-card-header">🔹 Free</div><div class="tier-card-price">$0</div><ul class="tier-card-features"><li>10 msgs/day</li><li>Fast AI</li></ul></div><div class="tier-card" onclick="selUp('plus')"><div class="tier-card-header">🔶 Plus</div><div class="tier-card-price">$8<span>/mo</span></div><ul class="tier-card-features">${(benefits?.plus||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div><div class="tier-card" onclick="selUp('pro')"><div class="tier-card-header">💎 Pro</div><div class="tier-card-price">$17<span>/mo</span></div><ul class="tier-card-features">${(benefits?.pro||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div>`;$$('#paySection .pill-tab').forEach(t=>t.onclick=()=>{$$('#paySection .pill-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');S.selCoin=t.dataset.coin;updateWallet()});$('#verifyUpgrade').onclick=verifyUp;updateWallet()}
+function selUp(t){S.selTier=t;$$('.tier-card').forEach(c=>c.classList.remove('selected'));if(t==='free'){$$('.tier-card')[0]?.classList.add('selected');}else if(t==='plus'){$$('.tier-card')[1]?.classList.add('selected');}else if(t==='pro'){$$('.tier-card')[2]?.classList.add('selected');}if(t!=='free'){$('#paySection').style.display='block';updateWallet()}else{$('#paySection').style.display='none'}}
+function updateWallet(){const el=$('#walletAddr');if(!el||!S.payConfig?.wallets)return;el.textContent=S.payConfig.wallets[S.selCoin]||'Unavailable';el.onclick=()=>{navigator.clipboard.writeText(el.textContent);toast('Address copied!')}}
+async function verifyUp(){const txid=$('#txidInput')?.value.trim();if(!S.selTier||S.selTier==='free'){toast('Select tier','warning');return}if(!txid){toast('Enter TXID','warning');return}try{const r=await api.upgrade(S.selTier,txid,S.selCoin);S.prevTier=S.tier;S.tier=r.tier;S.token=r.token;S.session.tier=r.tier;localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier',r.tier);S.activeChat=null;S.messages=[];S.chats=[];$('#upgradeModal').classList.remove('open');render();toast('🎉 '+r.tier.toUpperCase()+'!','success')}catch(e){toast(e.message,'error')}}
 
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
-rate_store = {}
+function openFounder(){$('#founderModal').classList.add('open')}
+async function verifyFounder(){const code=$('#founderCode')?.value;if(!code){toast('Enter code','warning');return}try{const r=await api.founder(code);S.prevTier=S.tier;S.tier='founder';S.token=r.token;S.session.tier='founder';localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier','founder');S.activeChat=null;S.messages=[];S.chats=[];$('#founderModal').classList.remove('open');render();toast('👑 Founder!','success')}catch(e){toast('Invalid','error')}}
+async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Msgs</div></div><div class="stat-card"><div class="stat-val">${d.workspaces}</div><div class="stat-lbl">Workspaces</div></div></div><div style="max-height:150px;overflow-y:auto;font-size:9px">${d.sessions.map(s=>`<div style="padding:3px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between"><span>${s.id}</span><span style="color:var(--accent)">${s.tier}</span><span>${s.msg_count}</span></div>`).join('')}</div>`}catch(e){$('#adminContent').innerHTML=`<div style="color:var(--red)">${e.message}</div>`}}
 
-def check_rate(session_id, tier):
-    now = time.time()
-    key = f"{session_id}"
-    if key not in rate_store:
-        rate_store[key] = []
-    rate_store[key] = [t for t in rate_store[key] if now - t < 60]
-    limits = {"free": 10, "plus": 20, "pro": 60}
-    if len(rate_store[key]) >= limits.get(tier, 10):
-        return False
-    rate_store[key].append(now)
-    return True
-
-def get_time_context():
-    now = datetime.utcnow()
-    hour = now.hour
-    day = now.strftime("%A")
-    date = now.strftime("%B %d, %Y")
-    utc_time = now.strftime("%H:%M UTC")
-    if hour < 5:
-        time_of_day = "late night"
-        greeting_context = "The world is quiet."
-    elif hour < 12:
-        time_of_day = "morning"
-        greeting_context = "Fresh day ahead."
-    elif hour < 17:
-        time_of_day = "afternoon"
-        greeting_context = "Markets are alive."
-    elif hour < 21:
-        time_of_day = "evening"
-        greeting_context = "Winding down."
-    else:
-        time_of_day = "night"
-        greeting_context = "Night owl mode."
-    return {
-        "time_of_day": time_of_day,
-        "day": day,
-        "date": date,
-        "utc_time": utc_time,
-        "greeting_context": greeting_context
-    }
-
-def get_market_data():
-    results = {}
-    try:
-        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,GC=F,CL=F,EURUSD=X,GBPUSD=X,USDJPY=X"
-        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}", timeout=10)
-        if r.status_code == 200:
-            for i in r.json().get("quoteResponse", {}).get("result", []):
-                name = i.get("shortName") or i.get("symbol", "")
-                price = i.get("regularMarketPrice")
-                prev = i.get("regularMarketPreviousClose")
-                if price and prev:
-                    chg = ((price - prev) / prev) * 100
-                    results[name] = {"price": price, "change": round(chg, 2), "source": "Yahoo Finance"}
-    except:
-        pass
-    return results
-
-def get_financial_news():
-    # Check cache first
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT data FROM news_cache WHERE category='financial' AND created > ?", 
-              (datetime.utcnow().isoformat(),))
-    row = c.fetchone()
-    if row:
-        conn.close()
-        return json.loads(row[0])
-    conn.close()
-    
-    news = []
-    if NEWS_API_KEY:
-        try:
-            r = requests.get("https://newsapi.org/v2/top-headlines", 
-                params={"category": "business", "language": "en", "pageSize": 10, "apiKey": NEWS_API_KEY}, timeout=10)
-            if r.status_code == 200:
-                for a in r.json().get("articles", []):
-                    news.append({
-                        "source": a.get("source", {}).get("name", "NewsAPI"),
-                        "headline": a.get("title", ""),
-                        "url": a.get("url", ""),
-                        "time": a.get("publishedAt", ""),
-                        "summary": (a.get("description") or "")[:300]
-                    })
-        except:
-            pass
-    
-    # Cache the result
-    if news:
-        conn = get_db()
-        c = conn.cursor()
-        c.execute("DELETE FROM news_cache WHERE category='financial'")
-        c.execute("INSERT INTO news_cache (id, category, data, created) VALUES (?, ?, ?, ?)",
-                  (sid(), "financial", json.dumps(news), datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
-    
-    return news[:10]
-
-def search_web(query, num_results=5):
-    query_hash = hashlib.md5(query.lower().encode()).hexdigest()
-    
-    # Check cache
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT data FROM web_cache WHERE query_hash=? AND created > ?", 
-              (query_hash, (datetime.utcnow() - timedelta(hours=1)).isoformat()))
-    row = c.fetchone()
-    if row:
-        conn.close()
-        return json.loads(row[0])
-    conn.close()
-    
-    results = []
-    if SERPAPI_KEY:
-        try:
-            r = requests.get("https://serpapi.com/search", 
-                params={"engine": "google", "q": query, "num": num_results, "api_key": SERPAPI_KEY}, timeout=8)
-            if r.status_code == 200:
-                for item in r.json().get("organic_results", [])[:num_results]:
-                    results.append({
-                        "title": item.get("title", ""),
-                        "snippet": item.get("snippet", "")[:250],
-                        "url": item.get("link", ""),
-                        "source": "Google"
-                    })
-        except:
-            pass
-    
-    # Cache results
-    if results:
-        conn = get_db()
-        c = conn.cursor()
-        c.execute("INSERT INTO web_cache (id, query_hash, data, created) VALUES (?, ?, ?, ?)",
-                  (sid(), query_hash, json.dumps(results), datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
-    
-    return results
-
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the enterprise intelligence platform by CLOSEAI Technologies.
-
-HOW YOU RESPOND:
-• Casual greetings get casual responses.
-• Lead with the answer. No filler.
-• Use 1-2 emojis naturally per response.
-• Short sentences. Clean paragraphs.
-
-WHAT YOU ARE:
-• Finance architect — DCF, LBO, M&A, portfolio optimization
-• Institutional trader — market microstructure, volatility
-• Coder — Python, JS, system design, DevOps
-• Mathematician — proofs, calculus, linear algebra
-• Quant — derivative pricing, time series, factor models
-
-CRITICAL RULES:
-• NEVER make up prices. Only reference live data.
-• NEVER give financial advice.
-• If you don't know, say so honestly.
-
-TIME: {day}, {date} at {utc_time}
-DOMAIN: {domain} | TIER: {tier}
-"""
-
-def call_ai_fast(messages, tier="free"):
-    if GROQ_KEY:
-        try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
-                json={"model": "llama-3.1-8b-instant", "messages": messages, "temperature": 0.4, 
-                      "max_tokens": 600 if tier == "free" else 1500},
-                timeout=20)
-            if r.status_code == 200:
-                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                if content:
-                    return content, "groq/llama"
-        except:
-            pass
-    
-    if OPENROUTER_KEY:
-        models = ["google/gemini-flash-1.5", "mistral/mistral-7b-instruct", "deepseek/deepseek-chat"]
-        if tier == "pro":
-            models = ["anthropic/claude-3.5-sonnet", "openai/gpt-4o"] + models
-        for model in models:
-            try:
-                r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"},
-                    json={"model": model, "messages": messages, "temperature": 0.4, 
-                          "max_tokens": 600 if tier == "free" else 2500},
-                    timeout=35)
-                if r.status_code == 200:
-                    content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                    if content:
-                        return content, model
-            except:
-                continue
-    
-    return "I'm having trouble connecting. Please try again.", "fallback"
-
-def classify(q):
-    q = q.lower()
-    if re.search(r'who are you|what are you|introduce yourself', q):
-        return 'identity'
-    if re.search(r'news|latest|current|today|search|find', q) and len(q.split()) > 3:
-        return 'web_search'
-    if re.search(r'def |class |import |from |python|javascript|code|function|```', q):
-        return 'coding'
-    if re.search(r'stock|market|price|trade|invest|crypto|bitcoin|ethereum|forex|etf|bond', q):
-        return 'finance'
-    if re.search(r'prove|proof|theorem|calculus|integral|derivative|equation', q):
-        return 'math'
-    return 'general'
-
-def system_prompt(domain, tier, session_id=None, web_results=None):
-    tc = get_time_context()
-    base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier)
-    base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"]).replace("{utc_time}", tc["utc_time"])
-    
-    if web_results:
-        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in web_results[:3]])
-    
-    cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
-    if cfg.get("live_markets", False):
-        md = get_market_data()
-        if md:
-            base += "\n\nLIVE MARKETS:\n" + "\n".join([f"{s}: ${d['price']:.2f}" for s, d in list(md.items())[:5]])
-    
-    return base
-
-# ═══════════════════════════════════════════════════════════════
-# PYDANTIC MODELS
-# ═══════════════════════════════════════════════════════════════
-class ChatRequest(BaseModel): 
-    messages: list
-    chat_id: Optional[str] = None
-
-class UpgradeRequest(BaseModel): 
-    tier: str
-    txid: str
-    currency: str = "BTC"
-
-class LibraryItemRequest(BaseModel): 
-    name: str
-    type: str = "note"
-    content: Optional[str] = ""
-
-class WorkspaceCreateRequest(BaseModel): 
-    room_code: str
-    max_members: int = 7
-
-class WorkspaceJoinRequest(BaseModel): 
-    room_code: str
-
-class WorkspaceMessageRequest(BaseModel): 
-    room_code: str
-    message: str
-
-class WorkspaceNoteRequest(BaseModel): 
-    room_code: str
-    content: str
-
-# ═══════════════════════════════════════════════════════════════
-# FASTAPI APP
-# ═══════════════════════════════════════════════════════════════
-app = FastAPI(title="CAPITAN AI API", version="23.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-@app.get("/health")
-def health():
-    db_status = "disconnected"
-    try:
-        conn = get_db()
-        conn.close()
-        db_status = "connected"
-    except:
-        pass
-    
-    return {
-        "status": "ok", 
-        "version": "23.0", 
-        "database": db_status,
-        "tiers": list(TIER_CONFIG.keys())
-    }
-
-@app.get("/api/session")
-def get_or_create_session(request: Request):
-    session = get_session(request)
-    if session:
-        return session
-    
-    session_id = f"s_{sid()}"
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("INSERT INTO sessions (id, tier, msg_count, msg_window, created, updated) VALUES (?, ?, 0, ?, ?, ?)",
-              (session_id, "free", datetime.utcnow().isoformat(), datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-    conn.commit()
-    conn.close()
-    
-    token = create_jwt(session_id, "free")
-    return {"id": session_id, "tier": "free", "msg_count": 0, "token": token}
-
-@app.get("/api/payment-config")
-def payment_config():
-    return {
-        "wallets": WALLETS,
-        "prices": {"plus": 8, "pro": 17},
-        "benefits": UPGRADE_BENEFITS
-    }
-
-@app.get("/api/markets")
-def markets(request: Request):
-    s = get_session(request)
-    if not s:
-        return {"prices": {}, "news": [], "message": "Session required"}
-    
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
-    if not cfg.get("live_markets", False):
-        return {"prices": {}, "news": [], "message": f"Upgrade to Pro for live markets. Current tier: {s['tier']}"}
-    
-    return {"prices": get_market_data(), "news": get_financial_news()}
-
-@app.get("/api/markets/prices")
-def markets_prices(request: Request):
-    s = get_session(request)
-    if not s:
-        return {"prices": {}, "message": "Session required"}
-    
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
-    if not cfg.get("live_markets", False):
-        return {"prices": {}, "message": f"Upgrade to Pro for live markets. Current tier: {s['tier']}"}
-    
-    return {"prices": get_market_data()}
-
-@app.get("/api/markets/news")
-def markets_news(request: Request):
-    s = get_session(request)
-    if not s:
-        return {"news": [], "message": "Session required"}
-    
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
-    if not cfg.get("live_markets", False):
-        return {"news": [], "message": f"Upgrade to Pro for financial news. Current tier: {s['tier']}"}
-    
-    return {"news": get_financial_news()}
-
-@app.get("/api/search")
-def web_search_endpoint(q: str, request: Request):
-    s = get_session(request)
-    if not s:
-        return {"results": [], "message": "Session required"}
-    
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
-    if not cfg.get("web_search", False):
-        return {"results": [], "message": f"Upgrade to Plus or Pro for web search. Current tier: {s['tier']}"}
-    
-    return {"results": search_web(q)}
-
-@app.get("/api/chats")
-def get_chats(request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id, title, created, updated FROM chats WHERE session_id=? ORDER BY updated DESC LIMIT 30", (s["id"],))
-    rows = c.fetchall()
-    conn.close()
-    return {"chats": [{"id": r[0], "title": r[1], "created": r[2], "updated": r[3]} for r in rows]}
-
-@app.get("/api/chats/{chat_id}")
-def get_chat(chat_id: str, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id FROM chats WHERE id=? AND session_id=?", (chat_id, s["id"]))
-    if not c.fetchone():
-        raise HTTPException(404, "Chat not found")
-    
-    c.execute("SELECT id, role, content, model, created FROM chat_messages WHERE chat_id=? ORDER BY created ASC", (chat_id,))
-    rows = c.fetchall()
-    conn.close()
-    return {"messages": [{"id": r[0], "role": r[1], "content": r[2], "model": r[3], "created": r[4]} for r in rows]}
-
-@app.post("/api/chat")
-def chat(req: ChatRequest, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    if not check_rate(s["id"], s["tier"]):
-        raise HTTPException(429, "Rate limit exceeded. Please wait a moment.")
-    
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
-    limit = cfg["msg_limit"]
-    
-    if limit != float("inf"):
-        conn = get_db()
-        c = conn.cursor()
-        c.execute("SELECT msg_count, msg_window FROM sessions WHERE id=?", (s["id"],))
-        row = c.fetchone()
-        count = row[0] or 0
-        if count >= limit:
-            w = datetime.fromisoformat(row[1]) if row and row[1] else datetime.utcnow()
-            if datetime.utcnow() - w < timedelta(hours=24):
-                raise HTTPException(429, f"Daily limit reached ({limit}/day). Upgrade to Plus or Pro.")
-            c.execute("UPDATE sessions SET msg_count=0, msg_window=? WHERE id=?", (datetime.utcnow().isoformat(), s["id"]))
-            conn.commit()
-        conn.close()
-    
-    user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role") == "user"), "")
-    if not user_msg:
-        raise HTTPException(400, "No message provided")
-    
-    conn = get_db()
-    c = conn.cursor()
-    chat_id = req.chat_id or f"chat_{sid()}"
-    
-    if not req.chat_id:
-        c.execute("INSERT INTO chats (id, session_id, title, created, updated) VALUES (?, ?, ?, ?, ?)",
-                  (chat_id, s["id"], user_msg[:60], datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-    else:
-        c.execute("UPDATE chats SET updated=? WHERE id=? AND session_id=?", (datetime.utcnow().isoformat(), chat_id, s["id"]))
-    
-    c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, created) VALUES (?, ?, ?, ?, ?, ?)",
-              (f"msg_{sid()}", chat_id, s["id"], "user", user_msg, datetime.utcnow().isoformat()))
-    c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=?", (s["id"],))
-    conn.commit()
-    
-    c.execute("SELECT role, content FROM chat_messages WHERE chat_id=? ORDER BY created ASC LIMIT 15", (chat_id,))
-    history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
-    conn.close()
-    
-    domain = classify(user_msg)
-    web_results = None
-    
-    if domain == 'web_search' or cfg.get("web_search", False):
-        try:
-            web_results = search_web(user_msg, 3)
-        except:
-            pass
-    
-    prompt = system_prompt(domain, s["tier"], s["id"], web_results)
-    result, model_used = call_ai_fast([{"role": "system", "content": prompt}] + history, s["tier"])
-    
-    if result:
-        conn = get_db()
-        c = conn.cursor()
-        c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, created) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                  (f"msg_{sid()}", chat_id, s["id"], "assistant", result, model_used, datetime.utcnow().isoformat()))
-        c.execute("INSERT INTO memories (id, memory_id, session_id, content, query, domain, created) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                  (sid(), mid(), s["id"], result[:500], user_msg, domain, datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
-    
-    remaining = limit - (s["msg_count"] + 1) if limit != float("inf") else "unlimited"
-    return {
-        "content": result,
-        "chat_id": chat_id,
-        "model": model_used,
-        "remaining": remaining,
-        "web_search_used": web_results is not None
-    }
-
-@app.delete("/api/chats/{chat_id}")
-def delete_chat(chat_id: str, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("DELETE FROM chat_messages WHERE chat_id=? AND session_id=?", (chat_id, s["id"]))
-    c.execute("DELETE FROM chats WHERE id=? AND session_id=?", (chat_id, s["id"]))
-    conn.commit()
-    conn.close()
-    return {"deleted": True}
-
-@app.get("/api/library")
-def get_library(request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id, name, type, content, size, created FROM library_items WHERE session_id=? ORDER BY created DESC", (s["id"],))
-    rows = c.fetchall()
-    conn.close()
-    return {"items": [{"id": r[0], "name": r[1], "type": r[2], "content": r[3], "size": r[4], "created": r[5]} for r in rows]}
-
-@app.post("/api/library")
-def create_library_item(req: LibraryItemRequest, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    item_id = f"lib_{sid()}"
-    c.execute("INSERT INTO library_items (id, session_id, name, type, content, size, created) VALUES (?, ?, ?, ?, ?, ?, ?)",
-              (item_id, s["id"], req.name, req.type, req.content or "", len(req.content or ""), datetime.utcnow().isoformat()))
-    conn.commit()
-    conn.close()
-    return {"id": item_id, "created": True}
-
-@app.delete("/api/library/{item_id}")
-def delete_library_item(item_id: str, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("DELETE FROM library_items WHERE id=? AND session_id=?", (item_id, s["id"]))
-    conn.commit()
-    conn.close()
-    return {"deleted": True}
-
-@app.post("/api/upload")
-async def upload_file(request: Request, file: UploadFile = File(...)):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
-    if not cfg["file_upload"]:
-        raise HTTPException(403, f"File upload requires Plus or Pro tier. Current tier: {s['tier']}")
-    
-    contents = await file.read()
-    if len(contents) / (1024 * 1024) > cfg["file_size_mb"]:
-        raise HTTPException(400, f"Max file size is {cfg['file_size_mb']}MB")
-    
-    file_id = f"file_{sid()}"
-    with open(os.path.join(UPLOAD_DIR, file_id), "wb") as f:
-        f.write(contents)
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("INSERT INTO uploaded_files (id, session_id, filename, original_name, size, mime_type, created) VALUES (?, ?, ?, ?, ?, ?, ?)",
-              (file_id, s["id"], file_id, file.filename or "unknown", len(contents), file.content_type or "application/octet-stream", datetime.utcnow().isoformat()))
-    conn.commit()
-    conn.close()
-    
-    return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents) / (1024 * 1024), 2)}
-
-@app.post("/api/upgrade")
-def upgrade(req: UpgradeRequest, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    if req.tier not in ("plus", "pro"):
-        raise HTTPException(400, "Invalid tier. Choose 'plus' or 'pro'")
-    
-    if not req.txid.strip():
-        raise HTTPException(400, "Transaction ID required")
-    
-    prices = {"plus": 8, "pro": 17}
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("INSERT INTO payments (id, session_id, txid, currency, amount, tier, verified, expires, created) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)",
-              (sid(), s["id"], req.txid.strip(), req.currency.upper(), prices[req.tier], req.tier, (datetime.utcnow() + timedelta(days=30)).isoformat(), datetime.utcnow().isoformat()))
-    c.execute("UPDATE sessions SET tier=?, msg_count=0, updated=? WHERE id=?", (req.tier, datetime.utcnow().isoformat(), s["id"]))
-    c.execute("INSERT INTO payment_log (id, session_id, tier, amount, currency, txid, created) VALUES (?, ?, ?, ?, ?, ?, ?)",
-              (sid(), s["id"], req.tier, prices[req.tier], req.currency.upper(), req.txid, datetime.utcnow().isoformat()))
-    conn.commit()
-    conn.close()
-    
-    token = create_jwt(s["id"], req.tier)
-    return {"verified": True, "tier": req.tier, "token": token}
-
-@app.post("/api/admin")
-def admin(request: Request):
-    s = get_session(request)
-    if not s or s["tier"] != "pro":
-        raise HTTPException(403, "Access denied. Admin access requires Pro tier.")
-    
-    auth_header = request.headers.get("X-Admin-Code", "")
-    if auth_header != ADMIN_CODE:
-        raise HTTPException(403, "Invalid admin code")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM sessions")
-    total = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM sessions WHERE tier != 'free'")
-    paid = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM chat_messages")
-    msgs = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM workspaces")
-    ws = c.fetchone()[0]
-    c.execute("SELECT tier, COUNT(*) FROM sessions GROUP BY tier")
-    tier_breakdown = {r[0]: r[1] for r in c.fetchall()}
-    conn.close()
-    
-    return {
-        "total_sessions": total,
-        "paid_sessions": paid,
-        "total_messages": msgs,
-        "workspaces": ws,
-        "tier_breakdown": tier_breakdown
-    }
-
-@app.post("/api/workspace/create")
-def ws_create(req: WorkspaceCreateRequest, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    max_m = TIER_CONFIG.get(s["tier"], {}).get("workspace_max", 0)
-    if max_m == 0:
-        raise HTTPException(403, f"Work Area requires Plus or Pro tier. Current tier: {s['tier']}")
-    
-    conn = get_db()
-    c = conn.cursor()
-    wid = sid()
-    try:
-        c.execute("INSERT INTO workspaces (id, room_code, creator_session, creator_tier, max_members, created) VALUES (?, ?, ?, ?, ?, ?)",
-                  (wid, req.room_code.upper(), s["id"], s["tier"], min(req.max_members, max_m), datetime.utcnow().isoformat()))
-        c.execute("INSERT INTO workspace_members (workspace_id, session_id, role, joined) VALUES (?, ?, ?, ?)",
-                  (wid, s["id"], "admin", datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
-        return {"room_id": wid, "room_code": req.room_code.upper(), "created": True}
-    except sqlite3.IntegrityError:
-        conn.close()
-        raise HTTPException(400, "Room code already exists")
-
-@app.post("/api/workspace/join")
-def ws_join(req: WorkspaceJoinRequest, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id, max_members, creator_tier FROM workspaces WHERE room_code=?", (req.room_code.upper(),))
-    ws = c.fetchone()
-    if not ws:
-        raise HTTPException(404, "Room not found")
-    
-    if s["tier"] != ws[2] and s["tier"] != "pro":
-        raise HTTPException(403, f"This Work Area requires {ws[2].upper()} tier.")
-    
-    c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=?", (ws[0],))
-    if c.fetchone()[0] >= ws[1]:
-        raise HTTPException(400, "Room is full")
-    
-    c.execute("INSERT OR IGNORE INTO workspace_members (workspace_id, session_id, role, joined) VALUES (?, ?, ?, ?)",
-              (ws[0], s["id"], "member", datetime.utcnow().isoformat()))
-    conn.commit()
-    
-    c.execute("SELECT session_id, role FROM workspace_members WHERE workspace_id=?", (ws[0],))
-    members = [{"session_id": r[0], "role": r[1]} for r in c.fetchall()]
-    
-    c.execute("SELECT id, session_id, author, message, is_ai, created FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 50", (ws[0],))
-    messages = [{"id": r[0], "session_id": r[1], "author": r[2], "message": r[3], "is_ai": bool(r[4]), "created": r[5]} for r in c.fetchall()]
-    
-    conn.close()
-    return {"joined": True, "room_id": ws[0], "members": members, "messages": messages}
-
-@app.post("/api/workspace/message")
-def ws_message(req: WorkspaceMessageRequest, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id FROM workspaces WHERE room_code=?", (req.room_code.upper(),))
-    ws = c.fetchone()
-    if not ws:
-        raise HTTPException(404, "Room not found")
-    
-    c.execute("INSERT INTO workspace_messages (id, workspace_id, session_id, author, message, created) VALUES (?, ?, ?, ?, ?, ?)",
-              (sid(), ws[0], s["id"], "User", req.message, datetime.utcnow().isoformat()))
-    conn.commit()
-    conn.close()
-    return {"sent": True}
-
-@app.get("/api/workspace/messages")
-def ws_get_messages(room_code: str):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id FROM workspaces WHERE room_code=?", (room_code.upper(),))
-    ws = c.fetchone()
-    if not ws:
-        raise HTTPException(404, "Room not found")
-    
-    c.execute("SELECT session_id, role FROM workspace_members WHERE workspace_id=?", (ws[0],))
-    members = [{"session_id": r[0], "role": r[1]} for r in c.fetchall()]
-    
-    c.execute("SELECT id, session_id, author, message, is_ai, created FROM workspace_messages WHERE workspace_id=? ORDER BY created ASC LIMIT 50", (ws[0],))
-    messages = [{"id": r[0], "session_id": r[1], "author": r[2], "message": r[3], "is_ai": bool(r[4]), "created": r[5]} for r in c.fetchall()]
-    
-    conn.close()
-    return {"messages": messages, "members": members}
-
-@app.post("/api/workspace/notes")
-def ws_save_note(req: WorkspaceNoteRequest, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id FROM workspaces WHERE room_code=?", (req.room_code.upper(),))
-    ws = c.fetchone()
-    if not ws:
-        raise HTTPException(404, "Room not found")
-    
-    # Delete existing note for this workspace
-    c.execute("DELETE FROM workspace_notes WHERE workspace_id=?", (ws[0],))
-    # Insert new note
-    c.execute("INSERT INTO workspace_notes (id, workspace_id, session_id, author, content, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?)",
-              (sid(), ws[0], s["id"], s["id"], req.content, datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-    conn.commit()
-    conn.close()
-    return {"saved": True}
-
-@app.get("/api/workspace/notes")
-def ws_get_notes(room_code: str):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT id FROM workspaces WHERE room_code=?", (room_code.upper(),))
-    ws = c.fetchone()
-    if not ws:
-        raise HTTPException(404, "Room not found")
-    
-    c.execute("SELECT author, content, updated FROM workspace_notes WHERE workspace_id=?", (ws[0],))
-    notes = [{"author": r[0], "content": r[1], "updated": r[2]} for r in c.fetchall()]
-    conn.close()
-    return {"notes": notes}
-
-@app.get("/api/workspace/list")
-def ws_list(request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401, "Unauthorized")
-    
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("""
-        SELECT w.room_code, w.creator_tier, w.max_members, w.created,
-               COUNT(m.session_id) as member_count
-        FROM workspaces w
-        LEFT JOIN workspace_members m ON w.id = m.workspace_id
-        WHERE m.session_id = ?
-        GROUP BY w.id
-        ORDER BY w.created DESC
-    """, (s["id"],))
-    rows = c.fetchall()
-    conn.close()
-    
-    return {"workspaces": [{
-        "room_code": r[0],
-        "creator_tier": r[1],
-        "max_members": r[2],
-        "created": r[3],
-        "member_count": r[4]
-    } for r in rows]}
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+function openSupport(){$('#supportModal').classList.add('open')}
+function openMoney(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#moneyModal').classList.add('open');loadMarketData(S.marketCategory)}
+async function openTechUpdates(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#techModal').classList.add('open');const nc=$('#techNewsContent');if(!nc)return;nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const data=await api.techNews();const news=Array.isArray(data)?data:(data?.news||data?.articles||[]);if(news.length>0){nc.innerHTML=news.map(n=>{const h=n.headline||n.title||'';const s=n.summary||n.description||'';const src=(typeof n.source==='object'?n.source?.name:n.source)||n.publisher||'Tech';const u=n.url||n.link||'';const t=n.time||n.publishedAt||n.date||'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(u)}','${escAttr(h)}','${escAttr(s)}','${escAttr(String(src))}')"><div class="news-source">${esc(String(src))}</div><div class="news-headline">${esc(h)}</div>${s?`<div class="news-summary">${esc(s.substring(0,140))}...</div>`:''}${t?`<div class="news-time">${timeAgo(t)}</div>`:''}</div>`}).join('')}else{nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No tech news available.<br><button onclick="retryTech()" style="margin-top:8px;background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:10px;cursor:pointer;font-weight:600">Retry</button></div>'}}catch(e){nc.innerHTML=`<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Could not load.<br><button onclick="retryTech()" style="margin-top:8px;background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:10px;cursor:pointer;font-weight:600">Retry</button></div>`}}
+function retryTech(){openTechUpdates()}
+async function loadMarketData(cat){const pc=$('#marketsPricesContent');if(!pc)return;pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading prices...</div>';const nc=$('#marketsNewsContent');if(nc)nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading news...</div>';try{const[pd,nd]=await Promise.all([api.marketsPrices(cat).catch(()=>({})),api.marketsNews(cat).catch(()=>({}))]);const prices=pd?.prices||pd?.data||pd||{};let entries=[];if(Array.isArray(prices)){entries=prices.map((item,i)=>[item?.symbol||item?.name||`Item${i}`,item])}else if(prices&&typeof prices==='object'){entries=Object.entries(prices)}if(entries.length>0){pc.innerHTML=entries.map(([n,i])=>{let price='—',change='0.00';if(i&&typeof i==='object'){price=typeof i.price==='number'?i.price.toFixed(2):(i.price||'—');change=typeof i.change==='number'?i.change.toFixed(2):(typeof i.change_percent==='number'?i.change_percent.toFixed(2):'0.00')}else if(typeof i==='number'){price=i.toFixed(2)}const clr=parseFloat(change)>=0?'var(--green)':'var(--red)';const sign=parseFloat(change)>=0?'+':'';const src=(i&&typeof i==='object'&&i.source)?` · ${i.source}`:'';return`<div style="padding:7px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:11px"><span style="font-weight:600">${esc(String(n))}<span style="font-size:8px;color:var(--txt4)">${src}</span></span><span><span style="font-weight:700">${price}</span> <span style="color:${clr};font-size:10px">${sign}${change}%</span></span></div>`}).join('')}else{pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No data available.<br>Check back shortly.</div>'}const rawNews=nd?.news||nd?.articles||(Array.isArray(nd)?nd:[]);if(nc&&rawNews.length>0){nc.innerHTML=rawNews.map(n=>{const h=n.headline||n.title||'';const s=n.summary||n.description||'';const src=n.source||n.publisher||'News';const u=n.url||n.link||'';const t=n.time||n.publishedAt||n.date||'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(u)}','${escAttr(h)}','${escAttr(s)}','${escAttr(String(src))}')"><div class="news-source">${esc(String(src))}${n.sentiment?` · ${n.sentiment}`:''}</div><div class="news-headline">${esc(h)}</div>${s?`<div class="news-summary">${esc(s.substring(0,140))}...</div>`:''}${t?`<div class="news-time">${timeAgo(t)}</div>`:''}</div>`}).join('')}else if(nc){nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No news available.</div>'}}catch(e){if(pc)pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red);font-size:var(--fs-xs)">Failed to load data</div>'}}
+function openNewsArticle(url,headline,summary,source){if(url){window.open(url,'_blank')}else{$('#newsReaderTitle').textContent=headline||'Article';$('#newsReaderContent').innerHTML=(summary||'').replace(/\n/g,'<br>');$('#newsReaderModal').classList.add('open')}}
+function timeAgo(ts){if(!ts)return'';try{if(typeof ts!=='string')ts=String(ts);const then=new Date(ts);const now=new Date();const diff=Math.floor((now-then)/1000);if(isNaN(diff)||diff<0)return'';if(diff<60)return'Now';if(diff<3600)return Math.floor(diff/60)+'m';if(diff<86400)return Math.floor(diff/3600)+'h';return Math.floor(diff/86400)+'d'}catch(e){return''}}
+function switchMarketCategory(cat){S.marketCategory=cat;$$('#marketCategoryTabs .pill-tab').forEach(t=>t.classList.remove('active'));const tab=document.querySelector(`#marketCategoryTabs [data-cat="${cat}"]`);if(tab)tab.classList.add('active');loadMarketData(cat);loadMarkets().then(()=>updateTicker())}
+function openBusiness(){if(S.tier!=='pro'&&S.tier!=='founder'){toast('Pro tier required','warning');openUpgrade();return}$('#businessModal').classList.add('open');const t=$('#businessToggle');if(t){t.textContent=S.businessMode?'ON':'OFF';t.className=S.businessMode?'business-indicator active':'business-indicator off'}}
+function openPrivacy(){$('#privacyModal').classList.add('open')}
+function openWS(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}$('#workspaceModal').classList.add('open');switchWSTab('create')}
+function closeModals(){$$('.modal-overlay').forEach(m=>m.classList.remove('open'))}
+function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;updateSidebar()}function closeSidebar(){S.sidebarOpen=false;updateSidebar()}
+function updateSidebar(){const sb=$('#sidebar');const ov=$('#overlay');if(!sb)return;if(window.innerWidth<=768){S.sidebarOpen?(sb.classList.add('open'),ov?.classList.add('visible')):(sb.classList.remove('open'),ov?.classList.remove('visible'))}else{S.sidebarOpen?sb.classList.remove('collapsed'):sb.classList.add('collapsed');updateDesktopToggle()}}
+function updateDesktopToggle(){const t=$('#toggleDesktop');if(t&&window.innerWidth>768){S.sidebarOpen?t.classList.add('shifted'):t.classList.remove('shifted')}}
+function updateBtn(){const b=$('#sendBtn');const i=$('#msgInput');if(b)b.disabled=S.loading||!i?.value.trim()}
+function scrollBottom(){setTimeout(()=>{const c=$('#chatMsgs');if(c)c.scrollTop=c.scrollHeight},50)}
+function toast(msg,type='info'){const ex=$('.toast');if(ex)ex.remove();const colors={success:'var(--green)',error:'var(--red)',warning:'var(--amber)'};const t=document.createElement('div');t.className='toast';t.textContent=msg;t.style.background=type==='info'?'var(--txt)':'var(--bg2)';t.style.color=type==='info'?'var(--bg)':colors[type]||'var(--txt)';t.style.border=`1px solid ${colors[type]||'var(--bdr)'}`;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Copied!'))}
+function fmtMD(t){if(!t)return'';t=t.replace(/```(\w*)\n([\s\S]*?)```/g,(_,lang,code)=>`<pre><code>${esc(code.trim())}</code></pre>`);t=t.replace(/`([^`]+)`/g,'<code>$1</code>');t=t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');t=t.replace(/\n/g,'<br>');return t}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function escAttr(t){return t.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n')}
+function saveDrafts(){S.draft=$('#msgInput')?.value||'';S.wsDraft=$('#wsMessageInput')?.value||'';localStorage.setItem('cap_draft',S.draft);localStorage.setItem('cap_ws_draft',S.wsDraft)}
+function exportData(){if(S.tier!=='pro'&&S.tier!=='founder')return;const data={tier:S.tier,chats:S.chats.length,exported:new Date().toISOString()};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`capitan-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href);toast('Exported!')}
+function renderMsgs(){const c=$('#chatMsgs');if(c)c.innerHTML=S.activeChat?renderMsgsHTML():welcomeHTML();scrollBottom()}
+function renderSidebarChats(){const c=$('#chatsList');if(c)c.innerHTML=renderChatsHTML()}
+function setupListeners(){$('#toggleSidebar')?.addEventListener('click',toggleSidebar);$('#toggleDesktop')?.addEventListener('click',toggleSidebar);$('#overlay')?.addEventListener('click',closeSidebar);document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){const a=document.activeElement;if(a?.id==='msgInput'){e.preventDefault();sendMsg()}else if(a?.id==='wsMessageInput'){e.preventDefault();wsSend()}}if(e.key==='Escape'){closeModals();if(window.innerWidth<=768)closeSidebar()}if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();newChat()}});$$('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')}));$('#closeUpgrade')?.addEventListener('click',()=>$('#upgradeModal').classList.remove('open'));$('#closeFounder')?.addEventListener('click',()=>$('#founderModal').classList.remove('open'));$('#closeAdmin')?.addEventListener('click',()=>$('#adminModal').classList.remove('open'));$('#closeLibrary')?.addEventListener('click',()=>$('#libraryModal').classList.remove('open'));$('#closeWorkspace')?.addEventListener('click',()=>{$('#workspaceModal').classList.remove('open');if(S.ws.timer){clearInterval(S.ws.timer);S.ws.timer=null}});$('#closePrivacy')?.addEventListener('click',()=>$('#privacyModal').classList.remove('open'));$('#closeSupport')?.addEventListener('click',()=>$('#supportModal').classList.remove('open'));$('#closeMoney')?.addEventListener('click',()=>$('#moneyModal').classList.remove('open'));$('#closeTech')?.addEventListener('click',()=>$('#techModal').classList.remove('open'));$('#closeNewsReader')?.addEventListener('click',()=>$('#newsReaderModal').classList.remove('open'));$('#closeBusiness')?.addEventListener('click',()=>$('#businessModal').classList.remove('open'));$('#libSave')?.addEventListener('click',saveLib);$('#wsCreateBtn')?.addEventListener('click',wsCreate);$('#wsJoinBtn')?.addEventListener('click',wsJoin);$('#wsSendBtn')?.addEventListener('click',wsSend);$('#wsEditNote')?.addEventListener('click',()=>{const nc=S.ws.notes.map(n=>n.content).join('\n');const ed=$('#wsNotesEditor');const sb=$('#wsSaveNote');if(ed){ed.value=nc;ed.style.display='block'}if(sb)sb.style.display='block'});$('#wsSaveNote')?.addEventListener('click',wsSaveNotes);$('#wsTabCreate')?.addEventListener('click',()=>switchWSTab('create'));$('#wsTabJoin')?.addEventListener('click',()=>switchWSTab('join'));$('#wsTabChat')?.addEventListener('click',()=>switchWSTab('chat'));$('#verifyFounder')?.addEventListener('click',verifyFounder);$('#marketTabPrices')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='block';$('#marketsNewsContent').style.display='none';$('#marketTabPrices').classList.add('active');$('#marketTabNews').classList.remove('active')});$('#marketTabNews')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='none';$('#marketsNewsContent').style.display='block';$('#marketTabNews').classList.add('active');$('#marketTabPrices').classList.remove('active')});$$('#marketCategoryTabs .pill-tab').forEach(tab=>tab.addEventListener('click',()=>switchMarketCategory(tab.dataset.cat)));window.addEventListener('resize',()=>{if(window.innerWidth>768){$('#sidebar')?.classList.remove('open');$('#overlay')?.classList.remove('visible')}updateSidebar();updateDesktopToggle()});}
+S.draft=localStorage.getItem('cap_draft')||'';S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
+document.addEventListener('DOMContentLoaded',init);
+window.CAPITAN={S,api,init,sendMsg,newChat,setThemeMode,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode,toggleSidebarSection,openSupport};
+console.log('CAPITAN AI v24 | PWA Complete');
+</script>
+</body>
+</html>
