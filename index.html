@@ -11,14 +11,36 @@
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="CAPITAN AI — Enterprise Intelligence by CLOSEAI Technologies">
+<meta name="format-detection" content="telephone=no">
 <title>CAPITAN AI</title>
-<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkNBUElUQU4gQUkiLAogICJzaG9ydF9uYW1lIjogIkNBUElUQU4iLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLAogICJlZGdlX3NpZGVfcGFuZWwiOiB7InByZWZlcnJlZF93aWR0aCI6NDAwfQp9">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000' rx='20'/><path d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/><text y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'>C</text></svg>">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000' rx='20'/><path d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/><text y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'>C</text></svg>">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="data:application/manifest+json,{
+  \"name\": \"CAPITAN AI\",
+  \"short_name\": \"CAPITAN\",
+  \"start_url\": \"/\",
+  \"display\": \"standalone\",
+  \"background_color\": \"#000000\",
+  \"theme_color\": \"#000000\",
+  \"orientation\": \"portrait\",
+  \"icons\": [
+    {
+      \"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E\",
+      \"sizes\": \"any\",
+      \"type\": \"image/svg+xml\",
+      \"purpose\": \"any maskable\"
+    }
+  ]
+}">
+
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <script>
+// Theme initialization
 (function(){
 var t=localStorage.getItem('cap_theme_mode')||'system';
 if(t==='light'){document.documentElement.classList.add('light');}
@@ -26,8 +48,20 @@ else if(t==='dark'){document.documentElement.classList.remove('light');}
 else{var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(!d)document.documentElement.classList.add('light');}
 var h=new Date().getHours();
 window.CAPITAN_GREETING=h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night, night owl';
+
+// Service Worker for PWA
+if('serviceWorker' in navigator && window.location.protocol === 'https:'){
+window.addEventListener('load',function(){
+navigator.serviceWorker.register('/sw.js').then(function(reg){
+console.log('Service Worker registered:', reg.scope);
+}).catch(function(err){
+console.log('Service Worker registration failed:', err);
+});
+});
+}
 })();
 </script>
+
 <style>
 :root{
 --bg:#000000;--bg2:#050505;--bg3:#0a0a0a;--bg4:#101010;
@@ -202,6 +236,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 <button class="toggle-sidebar" id="toggleSidebar" aria-label="Menu"><svg class="icon-svg lg" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
 <button class="toggle-desktop" id="toggleDesktop" aria-label="Toggle"><svg class="icon-svg sm" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
 
+<!-- All Modals -->
 <div id="moneyModal" class="modal-overlay"><div class="modal" style="max-width:540px"><h2>💰 Money Updates</h2><div class="pill-tabs" id="marketCategoryTabs"><button class="pill-tab active" data-cat="global">Global</button><button class="pill-tab" data-cat="crypto">Crypto</button><button class="pill-tab" data-cat="african">Africa</button></div><div class="pill-tabs"><button class="pill-tab active" id="marketTabPrices">Prices</button><button class="pill-tab" id="marketTabNews">News</button></div><div id="marketsPricesContent" style="max-height:350px;overflow-y:auto"></div><div id="marketsNewsContent" style="max-height:350px;overflow-y:auto;display:none"></div><button class="modal-btn sec" id="closeMoney" style="margin-top:6px">Close</button></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade</h2><p>Instant crypto activation.</p><div class="tier-grid" id="tierCards"></div><div id="paySection" style="display:none"><div class="pill-tabs"><button class="pill-tab active" data-coin="BTC">BTC</button><button class="pill-tab" data-coin="ETH">ETH</button></div><p style="font-size:8px;color:var(--txt3);margin-bottom:3px">Send the amount, paste your TXID:</p><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Transaction hash"><button class="modal-btn" id="verifyUpgrade">Verify & Activate</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
 <div id="founderModal" class="modal-overlay"><div class="modal"><h2>🔐 Founder</h2><input type="password" id="founderCode" placeholder="Founder code" autocomplete="off"><button class="modal-btn" id="verifyFounder">Authenticate</button><button class="modal-btn sec" id="closeFounder">Close</button></div></div>
@@ -213,31 +248,34 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 <div id="techModal" class="modal-overlay"><div class="modal" style="max-width:520px"><h2>💻 Tech Updates</h2><p style="font-size:var(--fs-xs);color:var(--txt3)">AI · Coding · Startups · Tech News</p><div id="techNewsContent" style="max-height:380px;overflow-y:auto"></div><button class="modal-btn sec" id="closeTech" style="margin-top:8px">Close</button></div></div>
 <div id="newsReaderModal" class="modal-overlay"><div class="modal" style="max-width:520px"><h2 id="newsReaderTitle">Article</h2><div class="news-reader-content" id="newsReaderContent"></div><button class="modal-btn sec" id="closeNewsReader" style="margin-top:8px">Close</button></div></div>
 <div id="businessModal" class="modal-overlay"><div class="modal" style="max-width:460px"><h2>Business Mode</h2><p>Professional environment.</p><div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg3);border-radius:var(--r-xs);margin-bottom:8px"><span style="font-size:var(--fs-xs);color:var(--txt)">Business Mode</span><span id="businessToggle" class="business-indicator off" onclick="window.toggleBusinessMode?.()">OFF</span></div><button class="modal-btn sec" id="closeBusiness" style="margin-top:8px">Close</button></div></div>
-<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:var(--amber);color:#000;text-align:center;padding:6px;font-size:11px;font-weight:600">Offline</div>
+<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:var(--amber);color:#000;text-align:center;padding:6px;font-size:11px;font-weight:600">Offline Mode - Some features may be limited</div>
 
 <script>
-// FIXED BACKEND URL - Updated to your working backend
+// Configuration
 const CFG={API:'https://capitan-ai-jxu8.onrender.com',POLL_CHATS:4000,POLL_WS:2500,POLL_MARKETS:10000,MAX_MSG:4000,STREAM_DELAY:12,WS_MAX:{free:0,plus:7,pro:20,founder:999}};
 const $=(s,d=document)=>d.querySelector(s);
 const $$=(s,d=document)=>d.querySelectorAll(s);
 
+// State
 const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinking:false,businessMode:false,sidebarOpen:window.innerWidth>768,sidebarSections:{account:false,tools:false,appearance:false,data:false,privacy:false,support:false,chats:true},connected:'checking',isOnline:navigator.onLine,chats:[],activeChat:null,messages:[],library:[],payConfig:null,markets:null,tickerData:[],marketCategory:'global',ws:{code:null,id:null,messages:[],members:[],notes:[],timer:null},draft:'',wsDraft:'',selTier:null,selCoin:'BTC',logoClicks:0,logoClickTimer:null,greeting:window.CAPITAN_GREETING||'Good day',streamAbort:null,splashDone:false,themeMode:localStorage.getItem('cap_theme_mode')||'system'};
 
-// Warmup ping to reduce cold start delay
+// Warmup ping
 async function warmupBackend(){try{await fetch(`${CFG.API}/health`,{method:'GET'});console.log('Warmup ping sent')}catch(e){}}
 
+// Storage functions
 function saveState(){if(S.activeChat&&S.messages.length>0){localStorage.setItem('cap_activeChat',S.activeChat);localStorage.setItem('cap_messages',JSON.stringify(S.messages))}if(S.chats.length>0)localStorage.setItem('cap_chats',JSON.stringify(S.chats))}
 function restoreState(){const chat=localStorage.getItem('cap_activeChat');const msgs=localStorage.getItem('cap_messages');const chats=localStorage.getItem('cap_chats');let r=false;if(chat&&msgs){try{S.activeChat=chat;S.messages=JSON.parse(msgs);r=true}catch(e){}}if(chats){try{S.chats=JSON.parse(chats);r=true}catch(e){}}return r}
 window.addEventListener('beforeunload',()=>{saveState();saveDrafts()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveState()});
 
+// Theme
 function applyTheme(){const m=S.themeMode;const h=document.documentElement;if(m==='light'){h.classList.add('light');}else if(m==='dark'){h.classList.remove('light');}else{const d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(d){h.classList.remove('light');}else{h.classList.add('light');}}}
 function setThemeMode(m){S.themeMode=m;localStorage.setItem('cap_theme_mode',m);applyTheme();render();toast('Theme: '+(m==='system'?'System':m==='dark'?'Dark':'Light'))}
 window.addEventListener('online',()=>{S.isOnline=true;$('#offlineBanner').style.display='none';warmupBackend()});
 window.addEventListener('offline',()=>{S.isOnline=false;$('#offlineBanner').style.display='block'});
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.themeMode==='system')applyTheme()});
 
-// API with better error handling
+// API Class
 class Api{constructor(b){this.b=b;this.t=0}
 async r(p,o={}){if(!S.isOnline&&p!=='/health')throw new Error('Offline');const h={...o.headers};if(!(o.body instanceof FormData))h['Content-Type']='application/json';if(S.token)h['Authorization']=`Bearer ${S.token}`;try{const r=await fetch(`${this.b}${p}`,{...o,headers:h});if(r.status===401){localStorage.removeItem('ct');S.token=null;await this.sess();throw new Error('Session refreshed')}if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||`Error ${r.status}`)}const ct=r.headers.get('content-type');return ct&&ct.includes('json')?await r.json():await r.text()}catch(e){if(this.t<2&&e.message.includes('500')){this.t++;await new Promise(r=>setTimeout(r,500));return this.r(p,o)}this.t=0;throw e}}
 async sess(){const d=await this.r('/api/session');S.session={id:d.id,tier:d.tier,count:d.msg_count||0};S.tier=d.tier;S.token=d.token;localStorage.setItem('ct',d.token);return d}
@@ -264,9 +302,9 @@ async wsSaveNotes(code,c){return this.r('/api/workspace/notes',{method:'POST',bo
 async wsGetNotes(code){return this.r(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`)}}
 const api=new Api(CFG.API);
 
+// SVG Icons
 const SVG=(w,h,d)=>`<svg class="icon-svg" viewBox="0 0 24 24" width="${w||15}" height="${h||15}">${d}</svg>`;
 const CLOGO=`<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#A0A0A4" stroke-width="1.8"/><text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text></svg>`;
-
 const ICONS={
 plus:SVG(15,15,'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
 folder:SVG(15,15,'<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
@@ -296,7 +334,7 @@ capitanLogoSm:`<svg width="20" height="20" viewBox="0 0 28 28" fill="none"><path
 chevron:SVG(9,9,'<polyline points="9 18 15 12 9 6"/>')
 };
 
-// FIXED TokenStreamer - better handling for code blocks
+// Token Streamer (Fixed)
 class TokenStreamer{constructor(content,container,delay=12){this.content=content;this.container=container;this.delay=delay;this.index=0;this.tokens=this.tokenize(content);this.running=false;this.timer=null}
 tokenize(text){const tokens=[];const regex=/([^\s]+|\s+)/g;let match;while((match=regex.exec(text))!==null)tokens.push(match[0]);return tokens}
 start(){this.running=true;if(S.streamAbort)try{S.streamAbort()}catch(e){}S.streamAbort=()=>this.stop();this.renderNext()}
@@ -305,8 +343,9 @@ stop(){this.running=false;if(this.timer)clearTimeout(this.timer);if(this.index<t
 finish(){const cursor=this.container.querySelector('.stream-cursor');if(cursor)cursor.remove();if(this.container.parentElement){const finalContent=this.container.innerHTML;this.container.innerHTML=fmtMD(this.content);}S.streamAbort=null;this.running=false}
 scrollToBottom(){setTimeout(()=>{const c=$('#chatMsgs');if(c)c.scrollTop=c.scrollHeight},30)}}
 
+// Core Functions
 async function init(){
-console.log('CAPITAN AI v24 | CLOSEAI');applyTheme();S.businessMode=localStorage.getItem('cap_business')==='true';S.prevTier=localStorage.getItem('cap_tier')||'free';
+console.log('CAPITAN AI v24 | PWA Ready');applyTheme();S.businessMode=localStorage.getItem('cap_business')==='true';S.prevTier=localStorage.getItem('cap_tier')||'free';
 await warmupBackend();
 await checkHealth();const saved=localStorage.getItem('ct');
 if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier}catch(e){localStorage.removeItem('ct');await api.sess()}}else{await api.sess()}
@@ -353,7 +392,6 @@ updateDesktopToggle();updateTicker();if(S.sidebarOpen&&isMobile){$('#sidebar').c
 function handleTyping(){const inp=$('#msgInput');if(!inp)return;S.draft=inp.value;updateBtn();pulseLogo(inp.value.length>0)}
 function welcomeHTML(){return`<div class="welcome"><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('Analyze current market conditions')">${ICONS.moneyIcon} Finance</div><div class="wp-pill" onclick="quickSend('Write code for: ')">${ICONS.codeIcon} Write Code</div><div class="wp-pill" onclick="quickSend('Solve this math problem: ')">${ICONS.mathIcon} Solve Math</div></div></div>`}
 function renderChatsHTML(){if(!S.chats.length)return'<div style="padding:12px;font-size:10px;color:var(--txt4);text-align:center">No conversations yet</div>';return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'')}"><span>${esc(c.title||'Untitled')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('')}
-function thinkHTML(){return`<div class="msg" id="thinkInd"><div class="thinking"><span class="thinking-logo">${ICONS.capitanLogoSm}</span><span class="thinking-text">Thinking...</span></div></div>`}
 function renderMsgsHTML(){return S.messages.map((m,i)=>m.role==='user'?`<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`:`<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)">${ICONS.copy}</button><button class="msg-action ${m.liked?'liked':''}" onclick="likeMsg(${i})">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked?'disliked':''}" onclick="dislikeMsg(${i})">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)">${ICONS.share}</button><button class="msg-action" onclick="regen()">${ICONS.zap}</button></div></div>`).join('')}
 
 function likeMsg(i){if(S.messages[i]){S.messages[i].liked=!S.messages[i].liked;S.messages[i].disliked=false;renderMsgs();saveState()}}
@@ -382,7 +420,6 @@ function genRoomCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return`CAP-${
 async function wsCreate(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}const code=genRoomCode();const max=CFG.WS_MAX[S.tier]||7;try{const r=await api.wsCreate(code,max);S.ws={code,id:r.room_id,messages:[],members:[],notes:[],timer:null};$('#wsRoomCode').textContent=code;$('#wsRoomDisplay').style.display='block';toast('Room created!','success');wsPoll()}catch(e){toast(e.message,'error')}}
 async function wsJoin(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}const code=$('#wsJoinInput')?.value.trim().toUpperCase();if(!code){toast('Enter room code','warning');return}try{const r=await api.wsJoin(code);S.ws={...S.ws,code,id:r.room_id,messages:r.messages||[],members:r.members||[]};switchWSTab('chat');renderWSMsgs();toast('Joined!','success');wsPoll()}catch(e){toast(e.message,'error')}}
 async function wsSend(){const inp=$('#wsMessageInput');if(!inp)return;const msg=inp.value.trim();if(!msg||!S.ws.code)return;inp.value='';S.wsDraft='';try{const r=await api.wsMsg(S.ws.code,msg);S.ws.messages=r.messages||[];renderWSMsgs()}catch(e){toast(e.message,'error')}}
-async function sendWSAI(cmd){const inp=$('#wsMessageInput');if(inp){inp.value=`@CAPITAN ${cmd}`;await wsSend()}}
 async function wsSaveNotes(){const c=$('#wsNotesEditor')?.value;if(!c||!S.ws.code)return;try{const r=await api.wsSaveNotes(S.ws.code,c);S.ws.notes=r.notes||[];renderWSNotes();toast('Saved!')}catch(e){toast(e.message,'error')}}
 function wsPoll(){if(S.ws.timer)clearInterval(S.ws.timer);S.ws.timer=setInterval(async()=>{if(!S.ws.code){clearInterval(S.ws.timer);return}try{const[md,nd]=await Promise.all([api.wsGetMsgs(S.ws.code),api.wsGetNotes(S.ws.code)]);S.ws.messages=md.messages||[];S.ws.notes=nd.notes||[];renderWSMsgs();renderWSNotes()}catch(e){}},CFG.POLL_WS)}
 function renderWSMsgs(){const c=$('#wsMessages');if(!c)return;if(!S.ws.messages.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">No messages</div>';return}c.innerHTML=S.ws.messages.map(m=>`<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-weight:600;color:${m.is_ai?'var(--accent)':'var(--txt)'}">${esc(m.author)}</span><span style="font-size:7px;color:var(--txt4)">${new Date(m.created).toLocaleTimeString()}</span></div><div style="color:var(--txt2);line-height:1.4">${fmtMD(m.message)}</div></div>`).join('');c.scrollTop=c.scrollHeight}
@@ -434,7 +471,7 @@ function setupListeners(){$('#toggleSidebar')?.addEventListener('click',toggleSi
 S.draft=localStorage.getItem('cap_draft')||'';S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
 document.addEventListener('DOMContentLoaded',init);
 window.CAPITAN={S,api,init,sendMsg,newChat,setThemeMode,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode,toggleSidebarSection,openSupport};
-console.log('CAPITAN AI v24 | CLOSEAI | Fixed');
+console.log('CAPITAN AI v24 | PWA Complete');
 </script>
 </body>
 </html>
