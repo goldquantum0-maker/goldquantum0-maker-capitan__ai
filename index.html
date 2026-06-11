@@ -36,7 +36,6 @@ navigator.serviceWorker.register(URL.createObjectURL(b)).then(r=>console.log('SW
 })();
 </script>
 <style>
-/* FIX: Reduced font sizes globally */
 :root{
 --bg:#000000;--bg2:#050505;--bg3:#0a0a0a;--bg4:#101010;
 --bdr:#1a1a1a;--bdr2:#222;--bdr3:#333;
@@ -79,7 +78,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
 .token-fade{animation:tokenIn .1s ease}
 @keyframes tokenIn{from{opacity:.3;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
-/* FIX: Sidebar narrower + collapsible sections */
 .sidebar{width:240px;min-width:240px;background:var(--bg);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;overflow-y:auto;overflow-x:hidden;transition:all .25s var(--transition);height:100%}
 .sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none;opacity:0}
 .sidebar-mobile{position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);box-shadow:var(--shadow);z-index:200;transition:transform .25s var(--transition)}
@@ -93,16 +91,16 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .sb-ticker-item .ticker-symbol{color:var(--txt3)}.sb-ticker-item .ticker-price{color:var(--txt)}
 .sb-ticker-item .ticker-change.positive{color:var(--green)}.sb-ticker-item .ticker-change.negative{color:var(--red)}
 
-/* FIX: Collapsible sidebar sections */
+/* FIX: Sidebar sections with proper spacing */
 .sb-section{padding:0;border-bottom:6px solid var(--bg2);flex-shrink:0}
 .sb-section:first-of-type{border-top:6px solid var(--bg2)}
-.sb-section-header{font-size:9px;color:var(--txt4);text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:10px 12px 3px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.sb-section-header{font-size:9px;color:var(--txt4);text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:12px 12px 4px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
 .sb-section-header:hover{color:var(--txt3)}
 .sb-section-arrow{font-size:8px;transition:transform .2s;color:var(--txt4)}
 .sb-section-header.open .sb-section-arrow{transform:rotate(90deg)}
 .sb-section-body{overflow:hidden;transition:max-height .25s var(--transition);max-height:0}
 .sb-section-body.open{max-height:600px}
-.sb-setting-item{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;transition:background .1s;min-height:38px;border-bottom:1px solid var(--bdr)}
+.sb-setting-item{display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;transition:background .1s;min-height:40px;border-bottom:1px solid var(--bdr)}
 .sb-setting-item:last-child{border-bottom:none}
 .sb-setting-item:hover{background:var(--bg3)}
 .sb-setting-icon{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
@@ -112,11 +110,16 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .sb-setting-chevron{color:var(--txt4);font-size:12px;flex-shrink:0}
 .sb-setting-check{font-size:9px;color:var(--accent);flex-shrink:0;font-weight:700}
 
+/* FIX: New Conversation button */
+.btn-new-convo{display:flex;align-items:center;gap:6px;width:calc(100% - 16px);margin:8px 8px 0;padding:9px 12px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-xs);cursor:pointer;font-size:var(--fs-xs);font-weight:600;font-family:var(--font);transition:all .12s}
+.btn-new-convo:hover{opacity:.9;transform:scale(1.01)}
+.btn-new-convo:active{transform:scale(.98)}
+
 .business-indicator{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;background:var(--accent-bg);color:var(--accent)}
 .business-indicator.active{background:var(--green);color:#000}
 .business-indicator.off{background:var(--bg4);color:var(--txt4)}
 
-.sb-chat-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;color:var(--txt3);font-size:var(--fs-xs);font-weight:500;transition:all .1s;border-bottom:1px solid var(--bdr)}
+.sb-chat-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;color:var(--txt3);font-size:var(--fs-xs);font-weight:500;transition:all .1s;border-bottom:1px solid var(--bdr)}
 .sb-chat-item:hover{background:var(--bg3);color:var(--txt)}
 .sb-chat-item.active{background:var(--bg3);color:var(--txt);font-weight:600}
 .sb-chat-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs)}
@@ -181,7 +184,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .tier-grid{display:grid;gap:6px;margin-bottom:7px}
 .tier-card{border:1px solid var(--bdr);border-radius:var(--r-sm);padding:11px;cursor:pointer;transition:all .12s;background:var(--bg)}
 .tier-card:hover{border-color:var(--bdr3)}.tier-card.selected{border-color:var(--accent);background:var(--accent-bg)}
-.tier-card-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .tier-card-name{font-weight:700;font-size:var(--fs-sm);color:var(--txt)}
 .tier-card-price{font-size:var(--fs-xl);font-weight:700;color:var(--txt);margin:3px 0}
 .tier-card-price span{font-size:var(--fs-xs);color:var(--txt3);font-weight:400}
@@ -205,9 +207,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 <body>
 
 <div class="splash-screen" id="splashScreen">
-  <span class="splash-logo">
-    <svg width="52" height="52" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="14" fill="#000"/><path d="M28 8 L46 17 L46 32 C46 42 38 50 28 54 C18 50 10 42 10 32 L10 17 Z" fill="none" stroke="#5b6af5" stroke-width="2.5"/><text x="28" y="37" text-anchor="middle" font-size="22" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text></svg>
-  </span>
+  <span class="splash-logo"><svg width="52" height="52" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="14" fill="#000"/><path d="M28 8 L46 17 L46 32 C46 42 38 50 28 54 C18 50 10 42 10 32 L10 17 Z" fill="none" stroke="#5b6af5" stroke-width="2.5"/><text x="28" y="37" text-anchor="middle" font-size="22" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text></svg></span>
 </div>
 
 <div id="app"></div>
@@ -232,19 +232,22 @@ const CFG={API:'https://capitan-ai-wkei.onrender.com',POLL_CHATS:4000,POLL_WS:25
 const $=(s,d=document)=>d.querySelector(s);
 const $$=(s,d=document)=>d.querySelectorAll(s);
 
-const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinking:false,businessMode:false,sidebarOpen:window.innerWidth>768,sidebarSections:{},connected:'checking',isOnline:navigator.onLine,chats:[],activeChat:null,messages:[],library:[],payConfig:null,markets:null,tickerData:[],marketCategory:'global',ws:{code:null,id:null,messages:[],members:[],notes:[],timer:null},draft:'',wsDraft:'',selTier:null,selCoin:'BTC',logoClicks:0,logoClickTimer:null,greeting:window.CAPITAN_GREETING||'Good day',streamAbort:null,splashDone:false,themeMode:localStorage.getItem('cap_theme_mode')||'system'};
+const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinking:false,businessMode:false,sidebarOpen:window.innerWidth>768,sidebarSections:{account:false,tools:false,appearance:false,data:false,chats:true},connected:'checking',isOnline:navigator.onLine,chats:[],activeChat:null,messages:[],library:[],payConfig:null,markets:null,tickerData:[],marketCategory:'global',ws:{code:null,id:null,messages:[],members:[],notes:[],timer:null},draft:'',wsDraft:'',selTier:null,selCoin:'BTC',logoClicks:0,logoClickTimer:null,greeting:window.CAPITAN_GREETING||'Good day',streamAbort:null,splashDone:false,themeMode:localStorage.getItem('cap_theme_mode')||'system'};
 
+// ─── PERSISTENCE ────────────────────────────────────────────
 function saveState(){if(S.activeChat&&S.messages.length>0){localStorage.setItem('cap_activeChat',S.activeChat);localStorage.setItem('cap_messages',JSON.stringify(S.messages))}if(S.chats.length>0)localStorage.setItem('cap_chats',JSON.stringify(S.chats))}
 function restoreState(){const chat=localStorage.getItem('cap_activeChat');const msgs=localStorage.getItem('cap_messages');const chats=localStorage.getItem('cap_chats');let r=false;if(chat&&msgs){try{S.activeChat=chat;S.messages=JSON.parse(msgs);r=true}catch(e){}}if(chats){try{S.chats=JSON.parse(chats);r=true}catch(e){}}return r}
 window.addEventListener('beforeunload',()=>{saveState();saveDrafts()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveState()});
 
+// ─── THEME SYSTEM ───────────────────────────────────────────
 function applyTheme(){const m=S.themeMode;const h=document.documentElement;if(m==='light'){h.classList.add('light');document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#FFFFFF');}else if(m==='dark'){h.classList.remove('light');document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#000000');}else{const d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(d){h.classList.remove('light');document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#000000');}else{h.classList.add('light');document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#FFFFFF');}}}
 function setThemeMode(m){S.themeMode=m;localStorage.setItem('cap_theme_mode',m);applyTheme();render();toast('Theme: '+(m==='system'?'System':m==='dark'?'Dark':'Light'))}
 window.addEventListener('online',()=>{S.isOnline=true;$('#offlineBanner').style.display='none'});
 window.addEventListener('offline',()=>{S.isOnline=false;$('#offlineBanner').style.display='block'});
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.themeMode==='system')applyTheme()});
 
+// ─── API ────────────────────────────────────────────────────
 class Api{constructor(b){this.b=b;this.t=0}
 async r(p,o={}){if(!S.isOnline&&p!=='/health')throw new Error('Offline');const h={...o.headers};if(!(o.body instanceof FormData))h['Content-Type']='application/json';if(S.token)h['Authorization']=`Bearer ${S.token}`;try{const r=await fetch(`${this.b}${p}`,{...o,headers:h});if(r.status===401){localStorage.removeItem('ct');S.token=null;await this.sess();throw new Error('Session refreshed')}if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||`Error ${r.status}`)}const ct=r.headers.get('content-type');return ct&&ct.includes('json')?await r.json():await r.text()}catch(e){if(this.t<2&&e.message.includes('500')){this.t++;await new Promise(r=>setTimeout(r,500));return this.r(p,o)}this.t=0;throw e}}
 async sess(){const d=await this.r('/api/session');S.session={id:d.id,tier:d.tier,count:d.msg_count||0};S.tier=d.tier;S.token=d.token;localStorage.setItem('ct',d.token);return d}
@@ -271,6 +274,7 @@ async wsSaveNotes(code,c){return this.r('/api/workspace/notes',{method:'POST',bo
 async wsGetNotes(code){return this.r(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`)}}
 const api=new Api(CFG.API);
 
+// ─── SVG ICONS ──────────────────────────────────────────────
 const SVG=(w,h,d)=>`<svg class="icon-svg" viewBox="0 0 24 24" width="${w||15}" height="${h||15}">${d}</svg>`;
 const CLOGO=`<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#5b6af5" stroke-width="1.8"/><text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text></svg>`;
 
@@ -297,11 +301,13 @@ share:SVG(15,15,'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><ci
 moneyIcon:SVG(14,14,'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'),
 codeIcon:SVG(14,14,'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
 mathIcon:SVG(14,14,'<path d="M18 4l-6 16M6 8h12M6 16h12"/>'),
+newConvo:SVG(15,15,'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
 capitanLogo:CLOGO,
 capitanLogoSm:`<svg width="20" height="20" viewBox="0 0 28 28" fill="none"><path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#5b6af5" stroke-width="1.8"/><text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text></svg>`,
 chevron:SVG(9,9,'<polyline points="9 18 15 12 9 6"/>')
 };
 
+// ─── TOKEN STREAMER ─────────────────────────────────────────
 class TokenStreamer{constructor(content,container,delay=8){this.content=content;this.container=container;this.delay=delay;this.index=0;this.tokens=this.tokenize(content);this.running=false;this.timer=null}
 tokenize(text){const tokens=[];const regex=/([^\s]+|\s+)/g;let match;while((match=regex.exec(text))!==null)tokens.push(match[0]);return tokens}
 start(){this.running=true;S.streamAbort=()=>this.stop();this.renderNext()}
@@ -309,6 +315,7 @@ renderNext(){if(!this.running||this.index>=this.tokens.length){this.finish();ret
 stop(){this.running=false;if(this.timer)clearTimeout(this.timer);if(this.index<this.tokens.length){this.container.appendChild(document.createTextNode(this.tokens.slice(this.index).join('')));scrollBottom()}this.finish()}
 finish(){const cursor=this.container.querySelector('.stream-cursor');if(cursor)cursor.remove();S.streamAbort=null;this.running=false}}
 
+// ─── INIT ────────────────────────────────────────────────────
 async function init(){
 console.log('CAPITAN AI v24 | CLOSEAI');applyTheme();S.businessMode=localStorage.getItem('cap_business')==='true';S.prevTier=localStorage.getItem('cap_tier')||'free';
 await checkHealth();const saved=localStorage.getItem('ct');
@@ -324,7 +331,6 @@ async function checkHealth(){try{const h=await api.health();S.connected=h.ai==='
 function startTasks(){setInterval(async()=>{if(!S.loading)await loadChats()},CFG.POLL_CHATS);setInterval(checkHealth,25000);setInterval(async()=>{await loadMarkets();updateTicker()},CFG.POLL_MARKETS);setInterval(saveDrafts,5000);setInterval(saveState,2000)}
 async function loadChats(){try{const d=await api.chats();S.chats=d.chats||[];renderSidebarChats()}catch(e){}}
 async function loadPayCfg(){try{S.payConfig=await api.payCfg()}catch(e){}}
-
 async function loadMarkets(){try{const allData=[];const cats=['global','crypto','african'];for(const cat of cats){try{const d=await api.marketsPrices(cat);const p=d?.prices||d?.data||{};if(p&&typeof p==='object'&&!Array.isArray(p)){allData.push(...Object.entries(p).slice(0,cat==='african'?3:5));}else if(Array.isArray(p)){allData.push(...p.slice(0,cat==='african'?3:5).map((item,i)=>[item?.symbol||item?.name||`${cat}${i}`,item]));}}catch(e){}}S.tickerData=allData;S.markets={prices:{}};}catch(e){console.error('Markets:',e)}}
 async function loadLib(){try{const d=await api.lib();S.library=d.items||[];renderLibList()}catch(e){}}
 
@@ -335,7 +341,7 @@ function updateSidebarBizIndicator(){document.querySelectorAll('.biz-indicator')
 function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;openFounder()}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0},1500)}}
 function pulseLogo(active){document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{if(active)l.classList.add('pulse');else l.classList.remove('pulse')})}
 
-/* FIX: Collapsible sidebar sections */
+// ─── COLLAPSIBLE SIDEBAR ────────────────────────────────────
 function toggleSidebarSection(headerEl){
   const body=headerEl.nextElementSibling;
   const isOpen=body.classList.contains('open');
@@ -344,22 +350,25 @@ function toggleSidebarSection(headerEl){
   S.sidebarSections[headerEl.dataset.section]=!isOpen;
 }
 
+// ─── RENDER ──────────────────────────────────────────────────
 function render(){
 const app=$('#app');const tier=S.tier.toUpperCase();const sid=S.session?.id||'...';const isMobile=window.innerWidth<=768;
 app.innerHTML=`<aside class="sidebar ${isMobile?'sidebar-mobile':''} ${!isMobile&&!S.sidebarOpen?'collapsed':''}" id="sidebar">
 <div class="sb-header"><span class="sb-logo" onclick="handleLogoClick()">${ICONS.capitanLogo}</span><span class="sb-brand-name">CAPITAN AI</span>${isMobile?`<button style="background:none;border:none;color:var(--icon);cursor:pointer;padding:4px;margin-left:auto;font-size:14px" onclick="closeSidebar()">✕</button>`:''}</div>
 ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ticker"><div class="sb-ticker-track" id="tickerTrack"></div></div>`:''}
 
-<!-- ACCOUNT SECTION - Collapsible -->
+<!-- FIX: New Conversation button restored -->
+<button class="btn-new-convo" onclick="newChat()">${ICONS.newConvo} New Conversation</button>
+
+<!-- ACCOUNT SECTION -->
 <div class="sb-section">
   <div class="sb-section-header" data-section="account" onclick="toggleSidebarSection(this)">Account <span class="sb-section-arrow">▶</span></div>
   <div class="sb-section-body">
-    <div class="sb-setting-item" onclick="newChat()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.plus}</div><div class="sb-setting-info"><div class="sb-setting-label">New Chat</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
     ${S.tier!=='founder'?`<div class="sb-setting-item" onclick="openUpgrade()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.zap}</div><div class="sb-setting-info"><div class="sb-setting-label">Upgrade</div><div class="sb-setting-value">${tier} Tier</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>`:`<div class="sb-setting-item" onclick="openAdmin()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.settings}</div><div class="sb-setting-info"><div class="sb-setting-label">Admin</div><div class="sb-setting-value">Founder</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>`}
   </div>
 </div>
 
-<!-- TOOLS SECTION - Collapsible -->
+<!-- TOOLS SECTION -->
 <div class="sb-section">
   <div class="sb-section-header" data-section="tools" onclick="toggleSidebarSection(this)">Tools <span class="sb-section-arrow">▶</span></div>
   <div class="sb-section-body">
@@ -370,7 +379,7 @@ ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ti
   </div>
 </div>
 
-<!-- APPEARANCE SECTION - Collapsible -->
+<!-- APPEARANCE SECTION -->
 <div class="sb-section">
   <div class="sb-section-header" data-section="appearance" onclick="toggleSidebarSection(this)">Appearance <span class="sb-section-arrow">▶</span></div>
   <div class="sb-section-body">
@@ -380,7 +389,7 @@ ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ti
   </div>
 </div>
 
-<!-- DATA SECTION - Collapsible -->
+<!-- DATA SECTION -->
 <div class="sb-section">
   <div class="sb-section-header" data-section="data" onclick="toggleSidebarSection(this)">Data & Privacy <span class="sb-section-arrow">▶</span></div>
   <div class="sb-section-body">
@@ -389,10 +398,10 @@ ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ti
   </div>
 </div>
 
-<!-- RECENT CHATS - Collapsible -->
+<!-- RECENT CHATS - Open by default -->
 <div class="sb-section" style="flex:1;overflow-y:auto;border-bottom:none">
-  <div class="sb-section-header" data-section="chats" onclick="toggleSidebarSection(this)">Recent Chats <span class="sb-section-arrow">▶</span></div>
-  <div class="sb-section-body"><div id="chatsList">${renderChatsHTML()}</div></div>
+  <div class="sb-section-header open" data-section="chats" onclick="toggleSidebarSection(this)">Recent Chats <span class="sb-section-arrow">▶</span></div>
+  <div class="sb-section-body open" style="max-height:600px"><div id="chatsList">${renderChatsHTML()}</div></div>
 </div>
 
 <div class="sb-footer">CLOSEAI Technologies © 2026</div></aside>
@@ -402,7 +411,7 @@ updateDesktopToggle();updateTicker();if(S.sidebarOpen&&isMobile){$('#sidebar').c
 
 function handleTyping(){const inp=$('#msgInput');if(!inp)return;S.draft=inp.value;updateBtn();pulseLogo(inp.value.length>0)}
 function welcomeHTML(){return`<div class="welcome"><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('Analyze current market conditions')">${ICONS.moneyIcon} Finance</div><div class="wp-pill" onclick="quickSend('Write code for: ')">${ICONS.codeIcon} Write Code</div><div class="wp-pill" onclick="quickSend('Solve this math problem: ')">${ICONS.mathIcon} Solve Math</div></div></div>`}
-function renderChatsHTML(){if(!S.chats.length)return'<div style="padding:12px;font-size:10px;color:var(--txt4);text-align:center">No conversations</div>';return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'')}"><span>${esc(c.title||'Untitled')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('')}
+function renderChatsHTML(){if(!S.chats.length)return'<div style="padding:12px;font-size:10px;color:var(--txt4);text-align:center">No conversations yet</div>';return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'')}"><span>${esc(c.title||'Untitled')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('')}
 function thinkHTML(){return`<div class="msg" id="thinkInd"><div class="thinking"><span class="thinking-logo">${ICONS.capitanLogoSm}</span><span class="thinking-text">Thinking...</span></div></div>`}
 function renderMsgsHTML(){return S.messages.map((m,i)=>m.role==='user'?`<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`:`<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)">${ICONS.copy}</button><button class="msg-action ${m.liked?'liked':''}" onclick="likeMsg(${i})">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked?'disliked':''}" onclick="dislikeMsg(${i})">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)">${ICONS.share}</button><button class="msg-action" onclick="regen()">${ICONS.zap}</button></div></div>`).join('')}
 
@@ -514,7 +523,7 @@ window.addEventListener('resize',()=>{if(window.innerWidth>768){$('#sidebar')?.c
 S.draft=localStorage.getItem('cap_draft')||'';S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
 document.addEventListener('DOMContentLoaded',init);
 window.CAPITAN={S,api,init,sendMsg,newChat,setThemeMode,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode,toggleSidebarSection};
-console.log('CAPITAN AI v24 | CLOSEAI | Collapsible Sidebar');
+console.log('CAPITAN AI v24 | CLOSEAI | Final');
 </script>
 </body>
 </html>
