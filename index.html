@@ -8,14 +8,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CAPITAN AI">
 <meta name="mobile-web-app-capable" content="yes">
-<!-- CHANGE: AMOLED black theme color -->
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="CAPITAN AI — Enterprise Intelligence by CLOSEAI Technologies">
 <title>CAPITAN AI</title>
+<!-- FIX: SVG logo in manifest and apple-touch-icon (C shield shape) -->
 <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkNBUElUQU4gQUkiLAogICJzaG9ydF9uYW1lIjogIkNBUElUQU4iLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLAogICJlZGdlX3NpZGVfcGFuZWwiOiB7InByZWZlcnJlZF93aWR0aCI6NDAwfQp9">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000' rx='20'/><text y='.8em' font-size='70' text-anchor='middle' x='50'>👌</text></svg>">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000' rx='20'/><text y='.8em' font-size='70' text-anchor='middle' x='50'>👌</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000' rx='20'/><path d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%235b6af5' stroke-width='4'/><text y='.78em' font-size='38' text-anchor='middle' x='50' fill='%235b6af5' font-family='Inter,sans-serif' font-weight='700'>C</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000' rx='20'/><path d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%235b6af5' stroke-width='4'/><text y='.78em' font-size='38' text-anchor='middle' x='50' fill='%235b6af5' font-family='Inter,sans-serif' font-weight='700'>C</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,13 +31,13 @@ if('serviceWorker' in navigator){
 window.addEventListener('load',function(){
 var swCode="const CACHE_NAME='capitan-v23';self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(['/'])));self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE_NAME).map(x=>caches.delete(x)))));self.clients.claim()});self.addEventListener('fetch',e=>{if(e.request.url.includes('/api/'))return;e.respondWith(fetch(e.request).then(r=>{if(r.status===200){var rc=r.clone();caches.open(CACHE_NAME).then(c=>c.put(e.request,rc))}return r}).catch(()=>caches.match(e.request)))});";
 var b=new Blob([swCode],{type:'application/javascript'});
-navigator.serviceWorker.register(URL.createObjectURL(b)).then(r=>console.log('👌 SW registered')).catch(e=>console.log('SW failed'));
+navigator.serviceWorker.register(URL.createObjectURL(b)).then(r=>console.log('C SW registered')).catch(e=>console.log('SW failed'));
 });
 }
 })();
 </script>
 <style>
-/* CHANGE: All backgrounds now pure AMOLED black #000000 */
+/* Dark mode (default) */
 :root{
 --bg:#000000;--bg2:#050505;--bg3:#0a0a0a;--bg4:#101010;
 --bdr:#1a1a1a;--bdr2:#222;--bdr3:#333;
@@ -52,14 +52,15 @@ navigator.serviceWorker.register(URL.createObjectURL(b)).then(r=>console.log('�
 --transition:0.18s cubic-bezier(0.4,0,0.2,1);
 --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
 }
-/* CHANGE: Light mode also uses AMOLED black for consistency */
+/* FIX: Light mode now has proper white/light variables */
 :root.light{
---bg:#000000;--bg2:#050505;--bg3:#0a0a0a;--bg4:#101010;
---bdr:#1a1a1a;--bdr2:#222;--bdr3:#333;
---txt:#FFFFFF;--txt2:#CCCCCC;--txt3:#999999;--txt4:#777777;
---accent:#5b6af5;--accent-bg:rgba(91,106,245,0.12);
---red:#F87171;--green:#4ade80;--amber:#fbbf24;
---icon:#9CA3AF;--icon-hover:#FFFFFF;
+--bg:#FFFFFF;--bg2:#F5F5F7;--bg3:#EBEBED;--bg4:#E0E0E3;
+--bdr:#E0E0E0;--bdr2:#D0D0D0;--bdr3:#B0B0B0;
+--txt:#0A0A0A;--txt2:#333333;--txt3:#666666;--txt4:#999999;
+--accent:#5b6af5;--accent-bg:rgba(91,106,245,0.10);
+--red:#DC2626;--green:#16A34A;--amber:#D97706;
+--icon:#6B7280;--icon-hover:#0A0A0A;
+--shadow:0 20px 60px rgba(0,0,0,.15);
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{font-size:16px;height:100%;-webkit-tap-highlight-color:transparent}
@@ -68,19 +69,20 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr3);border-radius:3px}
 .splash-screen{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s ease,visibility .4s ease}
 .splash-screen.hide{opacity:0;visibility:hidden;pointer-events:none}
-.splash-logo{font-size:56px;animation:logoPulse .8s ease-in-out infinite}
+/* FIX: splash logo now uses SVG animation */
+.splash-logo{display:flex;align-items:center;justify-content:center;animation:logoPulse .8s ease-in-out infinite}
 @keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:.6}}
-.sb-logo{font-size:28px;line-height:1;cursor:pointer;user-select:none;transition:transform .2s;display:inline-block}
+/* FIX: sb-logo now holds the SVG */
+.sb-logo{display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:transform .2s;width:32px;height:32px;flex-shrink:0}
 .sb-logo:hover{transform:scale(1.08)}.sb-logo:active{transform:scale(.95)}
-.sb-logo.pulse{animation:logoPulse .7s ease-in-out infinite}
-.thinking-logo{font-size:22px;display:inline-block;animation:logoPulse .7s ease-in-out infinite;line-height:1;vertical-align:middle;margin-right:6px}
+.sb-logo.pulse svg{animation:logoPulse .7s ease-in-out infinite}
+.thinking-logo{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;animation:logoPulse .7s ease-in-out infinite;vertical-align:middle;margin-right:6px;flex-shrink:0}
 .icon-svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .icon-svg.sm{width:14px;height:14px}.icon-svg.lg{width:20px;height:20px}
 .stream-cursor{display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:1px;animation:cursorBlink .6s step-end infinite;vertical-align:text-bottom}
 @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
 .token-fade{animation:tokenIn .1s ease}
 @keyframes tokenIn{from{opacity:.3;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
-/* CHANGE: Sidebar uses AMOLED black */
 .sidebar{width:260px;min-width:260px;background:var(--bg);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;overflow-y:auto;overflow-x:hidden;transition:all .25s var(--transition);height:100%}
 .sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none;opacity:0}
 .sidebar-mobile{position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);box-shadow:var(--shadow);z-index:200;transition:transform .25s var(--transition)}
@@ -115,13 +117,14 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .sb-chat-item:hover .sb-chat-del{color:var(--txt4)}
 .sb-chat-del:hover{color:var(--red)!important;background:var(--bg4)}
 .sb-user-section{padding:11px 9px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:9px;cursor:pointer;font-size:var(--fs-xs);margin-top:auto;flex-shrink:0;transition:background .1s}
-.sb-user-section:hover{background:var(--bg3)}.sb-avatar{font-size:22px;flex-shrink:0}
+.sb-user-section:hover{background:var(--bg3)}
+/* FIX: Avatar uses SVG */
+.sb-avatar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0}
 .sb-user-name{font-weight:600;font-size:var(--fs-xs);color:var(--txt)}
 .sb-user-tier{font-size:9px;color:var(--txt4);text-transform:uppercase;letter-spacing:.04em}
 .sb-footer{padding:7px;text-align:center;font-size:8px;color:var(--txt4);letter-spacing:.1em;border-top:1px solid var(--bdr);font-weight:600;text-transform:uppercase;flex-shrink:0}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;opacity:0;transition:opacity .2s;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
 .overlay.visible{display:block;opacity:1}
-/* CHANGE: Circular buttons for header */
 .toggle-sidebar{position:fixed;top:14px;left:14px;z-index:180;background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);width:38px;height:38px;border-radius:50%;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .12s}
 .toggle-sidebar:hover{color:var(--icon-hover);background:var(--bg3)}
 .toggle-desktop{position:fixed;top:14px;left:14px;z-index:180;background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
@@ -129,11 +132,9 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0}
 .chat-container{flex:1;display:flex;flex-direction:column;max-width:700px;margin:0 auto;width:100%;min-height:0;padding:0 6px}
 .chat-messages{flex:1;overflow-y:auto;padding:20px 6px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
-/* CHANGE: Minimal welcome - no logo, no greeting, just pills */
 .welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:35vh;text-align:center;padding:20px;animation:fadeUp .35s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .welcome-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:480px;margin-top:8px}
-/* CHANGE: Pill styling with SVG icons */
 .wp-pill{padding:10px 18px;border:1px solid var(--bdr2);border-radius:22px;font-size:var(--fs-xs);color:var(--txt2);cursor:pointer;transition:all .12s;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .wp-pill:hover{border-color:var(--bdr3);color:var(--txt);background:var(--bg3)}
 .wp-pill svg{width:16px;height:16px;stroke:currentColor}
@@ -145,7 +146,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .msg-ai-body{color:var(--txt);line-height:1.55;font-size:var(--fs-sm)}
 .msg-ai-body code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:.9em;border:1px solid var(--bdr);font-family:'SF Mono','Fira Code',monospace}
 .msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:9px 11px;overflow-x:auto;margin:5px 0;font-size:12px}
-/* CHANGE: Message action buttons - Copy, Like, Dislike, Share, Regenerate */
 .msg-actions{display:flex;gap:8px;margin-top:6px;opacity:0;transition:opacity .12s}
 .msg:hover .msg-actions{opacity:.7}
 .msg-action{background:none;border:none;color:var(--txt4);font-size:14px;cursor:pointer;padding:4px 8px;border-radius:4px;font-family:var(--font);transition:all .1s;display:flex;align-items:center;gap:3px}
@@ -155,7 +155,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .thinking{display:flex;align-items:center;gap:7px;padding:7px 0}
 .thinking-text{font-size:var(--fs-xs);color:var(--txt4);font-weight:500}
 .input-area{padding:10px 12px calc(10px + var(--safe));flex-shrink:0;background:var(--bg)}
-/* CHANGE: Pill-shaped input bar */
 .input-wrap{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--bdr2);border-radius:28px;padding:8px 8px 8px 16px;align-items:center;transition:all .18s}
 .input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
 .input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:var(--fs-sm);padding:6px 0;font-family:var(--font);font-weight:400}
@@ -163,7 +162,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .input-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .upload-btn{width:34px;height:34px;background:none;border:none;color:var(--icon);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .12s}
 .upload-btn:hover{color:var(--icon-hover);background:var(--bg3)}
-/* CHANGE: Send button uses accent color */
 .send-btn{width:36px;height:36px;background:var(--accent);color:#fff;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
 .send-btn:hover:not(:disabled){opacity:.9;transform:scale(1.04)}.send-btn:disabled{opacity:.1}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;align-items:center;justify-content:center;padding:14px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeIn .18s ease}
@@ -206,14 +204,22 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 </head>
 <body>
 
-<div class="splash-screen" id="splashScreen"><span class="splash-logo">👌</span></div>
+<div class="splash-screen" id="splashScreen">
+  <!-- FIX: SVG splash logo -->
+  <span class="splash-logo">
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="56" height="56" rx="14" fill="#000"/>
+      <path d="M28 8 L46 17 L46 32 C46 42 38 50 28 54 C18 50 10 42 10 32 L10 17 Z" fill="none" stroke="#5b6af5" stroke-width="2.5" stroke-linejoin="round"/>
+      <text x="28" y="37" text-anchor="middle" font-size="22" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text>
+    </svg>
+  </span>
+</div>
 
 <div id="app"></div>
 <div class="overlay" id="overlay"></div>
 <button class="toggle-sidebar" id="toggleSidebar" aria-label="Menu"><svg class="icon-svg lg" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
 <button class="toggle-desktop" id="toggleDesktop" aria-label="Toggle"><svg class="icon-svg sm" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
 
-<!-- CHANGE: Money Updates modal replaces Markets & News -->
 <div id="moneyModal" class="modal-overlay"><div class="modal" style="max-width:560px"><h2>💰 Money Updates</h2><div class="pill-tabs" id="marketCategoryTabs"><button class="pill-tab active" data-cat="global">🌍 Global</button><button class="pill-tab" data-cat="crypto">₿ Crypto</button><button class="pill-tab" data-cat="african">🌍 Africa</button></div><div class="pill-tabs"><button class="pill-tab active" id="marketTabPrices">Prices</button><button class="pill-tab" id="marketTabNews">News</button></div><div id="marketsPricesContent" style="max-height:350px;overflow-y:auto"></div><div id="marketsNewsContent" style="max-height:350px;overflow-y:auto;display:none"></div><button class="modal-btn sec" id="closeMoney" style="margin-top:7px">Close</button></div></div>
 
 <div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade CAPITAN</h2><p>Unlock elite intelligence. Instant crypto activation.</p><div class="tier-grid" id="tierCards"></div><div id="paySection" style="display:none"><div class="pill-tabs"><button class="pill-tab active" data-coin="BTC">₿ Bitcoin</button><button class="pill-tab" data-coin="ETH">Ξ Ethereum</button></div><p style="font-size:9px;color:var(--txt3);margin-bottom:4px">Send exactly the amount below, then paste your TXID:</p><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Transaction hash (TXID)"><button class="modal-btn" id="verifyUpgrade">Verify & Activate</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
@@ -228,7 +234,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 <div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:var(--amber);color:#000;text-align:center;padding:7px;font-size:12px;font-weight:600">Offline</div>
 
 <script>
-// CHANGE: Backend URL updated
 const CFG={API:'https://capitan-ai-wkei.onrender.com',POLL_CHATS:4000,POLL_WS:2500,POLL_MARKETS:10000,MAX_MSG:4000,STREAM_DELAY:8,WS_MAX:{free:0,plus:7,pro:20,founder:999}};
 const $=(s,d=document)=>d.querySelector(s);
 const $$=(s,d=document)=>d.querySelectorAll(s);
@@ -240,11 +245,45 @@ function restoreState(){const chat=localStorage.getItem('cap_activeChat');const 
 window.addEventListener('beforeunload',()=>{saveState();saveDrafts()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveState()});
 
-function applyTheme(){const mode=S.themeMode;if(mode==='light'){document.documentElement.classList.add('light')}else if(mode==='dark'){document.documentElement.classList.remove('light')}else{document.documentElement.classList.remove('light')}}
-function setThemeMode(mode){S.themeMode=mode;localStorage.setItem('cap_theme_mode',mode);applyTheme();const names={system:'System',dark:'Dark',light:'Light'};toast('Theme: '+names[mode]);if(mode==='system')saveState();render();if(mode==='system')restoreState();}
+// FIX: Theme application - properly adds/removes 'light' class and updates meta theme-color
+function applyTheme(){
+  const mode=S.themeMode;
+  const html=document.documentElement;
+  if(mode==='light'){
+    html.classList.add('light');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#FFFFFF');
+  } else if(mode==='dark'){
+    html.classList.remove('light');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#000000');
+  } else {
+    // system
+    const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if(prefersDark){
+      html.classList.remove('light');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#000000');
+    } else {
+      html.classList.add('light');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#FFFFFF');
+    }
+  }
+}
+
+function setThemeMode(mode){
+  S.themeMode=mode;
+  localStorage.setItem('cap_theme_mode',mode);
+  applyTheme();
+  const names={system:'System',dark:'Dark',light:'Light'};
+  toast('Theme: '+names[mode]);
+  render();
+}
 
 window.addEventListener('online',()=>{S.isOnline=true;$('#offlineBanner').style.display='none'});
 window.addEventListener('offline',()=>{S.isOnline=false;$('#offlineBanner').style.display='block'});
+
+// Listen for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+  if(S.themeMode==='system')applyTheme();
+});
 
 class Api{constructor(b){this.b=b;this.t=0}
 async r(p,o={}){if(!S.isOnline&&p!=='/health')throw new Error('Offline');const h={...o.headers};if(!(o.body instanceof FormData))h['Content-Type']='application/json';if(S.token)h['Authorization']=`Bearer ${S.token}`;try{const r=await fetch(`${this.b}${p}`,{...o,headers:h});if(r.status===401){localStorage.removeItem('ct');S.token=null;await this.sess();throw new Error('Session refreshed')}if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||`Error ${r.status}`)}const ct=r.headers.get('content-type');return ct&&ct.includes('json')?await r.json():await r.text()}catch(e){if(this.t<2&&e.message.includes('500')){this.t++;await new Promise(r=>setTimeout(r,500));return this.r(p,o)}this.t=0;throw e}}
@@ -262,8 +301,15 @@ async admin(){return this.r('/api/admin',{method:'POST'})}
 async markets(cat='all'){return this.r(`/api/markets?category=${cat}`)}
 async marketsPrices(cat='all'){return this.r(`/api/markets/prices?category=${cat}`)}
 async marketsNews(cat='all'){return this.r(`/api/markets/news?category=${cat}`)}
-// CHANGE: Tech news endpoint
-async techNews(){return this.r('/api/news/tech')}
+// FIX: Tech news with fallback endpoints
+async techNews(){
+  // Try primary endpoint, then fallback to generic news
+  try{return await this.r('/api/news/tech')}
+  catch(e){
+    try{return await this.r('/api/markets/news?category=tech')}
+    catch(e2){throw new Error('Tech news unavailable')}
+  }
+}
 async health(){return this.r('/health')}
 async wsCreate(code,max){return this.r('/api/workspace/create',{method:'POST',body:JSON.stringify({room_code:code,max_members:max})})}
 async wsJoin(code){return this.r('/api/workspace/join',{method:'POST',body:JSON.stringify({room_code:code})})}
@@ -273,7 +319,6 @@ async wsSaveNotes(code,c){return this.r('/api/workspace/notes',{method:'POST',bo
 async wsGetNotes(code){return this.r(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`)}}
 const api=new Api(CFG.API);
 
-// CHANGE: SVG icon library including pill icons
 const ICONS={
 plus:'<svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
 folder:'<svg class="icon-svg" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
@@ -291,15 +336,26 @@ check:'<svg class="icon-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 1
 star:'<svg class="icon-svg" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
 chat:'<svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
 monitor:'<svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
-// CHANGE: Action icons
 copy:'<svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
 thumbsUp:'<svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>',
 thumbsDown:'<svg class="icon-svg" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10zM17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/></svg>',
 share:'<svg class="icon-svg" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
-// CHANGE: Pill icons
 moneyIcon:'<svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
 codeIcon:'<svg class="icon-svg" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-mathIcon:'<svg class="icon-svg" viewBox="0 0 24 24"><path d="M18 4l-6 16M6 8h12M6 16h12"/></svg>'
+mathIcon:'<svg class="icon-svg" viewBox="0 0 24 24"><path d="M18 4l-6 16M6 8h12M6 16h12"/></svg>',
+// FIX: CAPITAN shield SVG logo (inline, reusable)
+capitanLogo:`<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#5b6af5" stroke-width="1.8" stroke-linejoin="round"/>
+  <text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text>
+</svg>`,
+capitanLogoSm:`<svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#5b6af5" stroke-width="1.8" stroke-linejoin="round"/>
+  <text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text>
+</svg>`,
+capitanLogoAvatar:`<svg width="26" height="26" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#5b6af5" stroke-width="1.8" stroke-linejoin="round"/>
+  <text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#5b6af5" font-family="Inter,sans-serif" font-weight="700">C</text>
+</svg>`
 };
 
 class TokenStreamer{constructor(content,container,delay=8){this.content=content;this.container=container;this.delay=delay;this.index=0;this.tokens=this.tokenize(content);this.running=false;this.timer=null}
@@ -310,7 +366,7 @@ stop(){this.running=false;if(this.timer)clearTimeout(this.timer);if(this.index<t
 finish(){const cursor=this.container.querySelector('.stream-cursor');if(cursor)cursor.remove();S.streamAbort=null;this.running=false}}
 
 async function init(){
-console.log('👌 CAPITAN AI v23 | CLOSEAI');
+console.log('C CAPITAN AI v23 | CLOSEAI');
 applyTheme();
 S.businessMode=localStorage.getItem('cap_business')==='true';
 S.prevTier=localStorage.getItem('cap_tier')||'free';
@@ -319,7 +375,7 @@ const saved=localStorage.getItem('ct');
 if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier}catch(e){localStorage.removeItem('ct');await api.sess()}}
 else{await api.sess()}
 if(S.prevTier!==S.tier){S.activeChat=null;S.messages=[];S.chats=[];localStorage.setItem('cap_tier',S.tier);localStorage.removeItem('cap_messages');localStorage.removeItem('cap_activeChat');localStorage.removeItem('cap_chats')}
-if(!S.activeChat){const restored=restoreState();if(restored&&S.messages.length>0){toast('Messages restored 👌');await loadChats()}}
+if(!S.activeChat){const restored=restoreState();if(restored&&S.messages.length>0){toast('Messages restored');await loadChats()}}
 await Promise.allSettled([loadChats(),loadPayCfg(),loadMarkets()]);
 render();setupListeners();startTasks();
 if(window.innerWidth>768){S.sidebarOpen=true;updateSidebar()}
@@ -332,21 +388,76 @@ async function checkHealth(){try{const h=await api.health();S.connected=h.ai==='
 function startTasks(){setInterval(async()=>{if(!S.loading)await loadChats()},CFG.POLL_CHATS);setInterval(checkHealth,25000);setInterval(async()=>{await loadMarkets();updateTicker()},CFG.POLL_MARKETS);setInterval(saveDrafts,5000);setInterval(saveState,2000)}
 async function loadChats(){try{const d=await api.chats();S.chats=d.chats||[];renderSidebarChats()}catch(e){}}
 async function loadPayCfg(){try{S.payConfig=await api.payCfg()}catch(e){}}
-// CHANGE: Load all market categories in parallel
-async function loadMarkets(){try{const[globalData,cryptoData,africanData]=await Promise.all([api.marketsPrices('global').catch(()=>({prices:{}})),api.marketsPrices('crypto').catch(()=>({prices:{}})),api.marketsPrices('african').catch(()=>({prices:{}}))]);const allData=[];if(globalData.prices&&typeof globalData.prices==='object')allData.push(...Object.entries(globalData.prices).slice(0,5).map(([k,v])=>[k,v]));if(cryptoData.prices&&typeof cryptoData.prices==='object')allData.push(...Object.entries(cryptoData.prices).slice(0,5).map(([k,v])=>[k,v]));if(africanData.prices&&typeof africanData.prices==='object')allData.push(...Object.entries(africanData.prices).slice(0,3).map(([k,v])=>[k,v]));S.tickerData=allData;S.markets={prices:{global:globalData.prices||{},crypto:cryptoData.prices||{},african:africanData.prices||{}}}}catch(e){console.error('Markets error:',e)}}
+
+// FIX: loadMarkets — robust parsing for all three categories
+async function loadMarkets(){
+  try{
+    const[globalData,cryptoData,africanData]=await Promise.all([
+      api.marketsPrices('global').catch(()=>({prices:{}})),
+      api.marketsPrices('crypto').catch(()=>({prices:{}})),
+      api.marketsPrices('african').catch(()=>({prices:{}}))
+    ]);
+    const allData=[];
+    // FIX: Handle both object and array responses for prices
+    function extractPrices(data,limit){
+      const p=data?.prices;
+      if(!p)return[];
+      if(Array.isArray(p))return p.slice(0,limit).map((item,i)=>[item.symbol||item.name||`Item${i}`,item]);
+      if(typeof p==='object')return Object.entries(p).slice(0,limit);
+      return[];
+    }
+    allData.push(...extractPrices(globalData,5));
+    allData.push(...extractPrices(cryptoData,5));
+    allData.push(...extractPrices(africanData,3));
+    S.tickerData=allData;
+    S.markets={
+      prices:{
+        global:globalData?.prices||{},
+        crypto:cryptoData?.prices||{},
+        african:africanData?.prices||{}
+      }
+    };
+  }catch(e){console.error('Markets error:',e)}
+}
+
 async function loadLib(){try{const d=await api.lib();S.library=d.items||[];renderLibList()}catch(e){}}
 
-function updateTicker(){const track=$('#tickerTrack');if(!track||!S.tickerData.length)return;const items=S.tickerData.map(([sym,info])=>{const price=typeof info.price==='number'?info.price.toFixed(2):(info.price||'—');const change=typeof info.change==='number'?info.change.toFixed(2):'0.00';const cls=parseFloat(change)>=0?'positive':'negative';const sign=parseFloat(change)>=0?'+':'';return`<span class="sb-ticker-item"><span class="ticker-symbol">${esc(sym)}</span><span class="ticker-price">${price}</span><span class="ticker-change ${cls}">${sign}${change}%</span></span>`});track.innerHTML=items.join('')+items.join('')}
+function updateTicker(){
+  const track=$('#tickerTrack');
+  if(!track||!S.tickerData.length)return;
+  const items=S.tickerData.map(([sym,info])=>{
+    let price,change;
+    if(typeof info==='object'&&info!==null){
+      price=typeof info.price==='number'?info.price.toFixed(2):(info.price||'—');
+      change=typeof info.change==='number'?info.change.toFixed(2):'0.00';
+    } else {
+      price='—';change='0.00';
+    }
+    const cls=parseFloat(change)>=0?'positive':'negative';
+    const sign=parseFloat(change)>=0?'+':'';
+    return`<span class="sb-ticker-item"><span class="ticker-symbol">${esc(String(sym))}</span><span class="ticker-price">${price}</span><span class="ticker-change ${cls}">${sign}${change}%</span></span>`;
+  });
+  track.innerHTML=items.join('')+items.join('');
+}
 
 function toggleBusinessMode(){S.businessMode=!S.businessMode;localStorage.setItem('cap_business',S.businessMode);if(S.businessMode)document.body.classList.add('business-mode');else document.body.classList.remove('business-mode');const mt=$('#businessToggle');if(mt){mt.textContent=S.businessMode?'ON':'OFF';mt.classList.toggle('active',S.businessMode)}toast(S.businessMode?'Business Mode ON':'Business Mode OFF')}
 function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;openFounder()}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0},1500)}}
-function pulseLogo(active){document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{if(active)l.classList.add('pulse');else l.classList.remove('pulse')})}
+function pulseLogo(active){
+  // FIX: pulse the SVG inside .sb-logo and .thinking-logo
+  document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{
+    if(active)l.classList.add('pulse');else l.classList.remove('pulse');
+  });
+}
 
 function render(){
 const app=$('#app');const tier=S.tier.toUpperCase();const sid=S.session?.id||'...';const isMobile=window.innerWidth<=768;
-const themeLabels={system:'System',dark:'Dark',light:'Light'};
 app.innerHTML=`<aside class="sidebar ${isMobile?'sidebar-mobile':''} ${!isMobile&&!S.sidebarOpen?'collapsed':''}" id="sidebar">
-<div class="sb-header"><span class="sb-logo" onclick="handleLogoClick()">👌</span><span class="sb-brand-name">CAPITAN AI</span>${isMobile?`<button style="background:none;border:none;color:var(--icon);cursor:pointer;padding:4px;margin-left:auto;font-size:16px" onclick="closeSidebar()">✕</button>`:''}</div>
+<div class="sb-header">
+  <!-- FIX: SVG logo replaces emoji -->
+  <span class="sb-logo" onclick="handleLogoClick()">${ICONS.capitanLogo}</span>
+  <span class="sb-brand-name">CAPITAN AI</span>
+  ${isMobile?`<button style="background:none;border:none;color:var(--icon);cursor:pointer;padding:4px;margin-left:auto;font-size:16px" onclick="closeSidebar()">✕</button>`:''}
+</div>
 ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ticker"><div class="sb-ticker-track" id="tickerTrack"></div></div>`:''}
 <div class="sb-section"><button class="btn-new-chat" onclick="newChat()">${ICONS.plus} New Chat</button></div>
 <div class="sb-section">
@@ -362,7 +473,6 @@ ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ti
 <div class="sb-section-body" id="toolsSec">
 <div class="sb-item" onclick="openLib()"><span class="sb-icon">${ICONS.folder}</span> My Library</div>
 ${S.tier!=='free'?`<div class="sb-item" onclick="openWS()"><span class="sb-icon">${ICONS.briefcase}</span> Work Area</div>`:''}
-<!-- CHANGE: Money Updates instead of Markets & News -->
 ${S.tier==='pro'||S.tier==='founder'?`<div class="sb-item" onclick="openMoney()"><span class="sb-icon">${ICONS.chart}</span> Money Updates</div>`:''}
 ${S.tier==='pro'||S.tier==='founder'?`<div class="sb-item" onclick="openTechUpdates()"><span class="sb-icon">${ICONS.zap}</span> Tech Updates</div>`:''}
 ${S.tier==='pro'||S.tier==='founder'?`<div class="sb-item" onclick="openBusiness()"><span class="sb-icon">${ICONS.briefcase}</span> Business Mode <span class="business-indicator ${S.businessMode?'active':''}" style="margin-left:auto">${S.businessMode?'ON':'OFF'}</span></div>`:''}
@@ -372,7 +482,11 @@ ${S.tier==='pro'||S.tier==='founder'?`<div class="sb-item" onclick="exportData()
 <div class="sb-section">
 <div class="sb-section-label" onclick="toggleSec('chats')"><span>${ICONS.chat} Recent Chats <span style="font-size:9px;color:var(--txt4)">${S.chats.length}</span></span><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span></div>
 <div class="sb-section-body" id="chatsSec" style="max-height:35vh;overflow-y:auto"><div id="chatsList">${renderChatsHTML()}</div></div></div>
-<div class="sb-user-section" onclick="${S.tier==='founder'?'openAdmin()':'openUpgrade()'}"><div class="sb-avatar">👌</div><div><div class="sb-user-name">${tier} Tier</div><div class="sb-user-tier">Session ${sid}</div></div></div>
+<div class="sb-user-section" onclick="${S.tier==='founder'?'openAdmin()':'openUpgrade()'}">
+  <!-- FIX: SVG avatar -->
+  <div class="sb-avatar">${ICONS.capitanLogoAvatar}</div>
+  <div><div class="sb-user-name">${tier} Tier</div><div class="sb-user-tier">Session ${sid}</div></div>
+</div>
 <div class="sb-footer">CLOSEAI Technologies © 2026</div></aside>
 <main class="main"><div class="chat-container"><div class="chat-messages" id="chatMsgs">${S.activeChat?renderMsgsHTML():welcomeHTML()}</div><div class="input-area"><div class="input-wrap"><button class="upload-btn" onclick="${S.tier!=='free'?'uploadFile()':'openUpgrade()'}"><svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." autocomplete="off" maxlength="${CFG.MAX_MSG}" value="${S.draft}" ${S.loading?'disabled':''} oninput="handleTyping()"/><div class="input-actions"><button class="send-btn" id="sendBtn" ${S.loading?'disabled':''} onclick="sendMsg()">${ICONS.send}</button></div></div></div></div></main>`;
 updateDesktopToggle();updateTicker();
@@ -381,12 +495,13 @@ if(S.messages.length>0)scrollBottom();
 }
 
 function handleTyping(){const inp=$('#msgInput');if(!inp)return;S.draft=inp.value;updateBtn();pulseLogo(inp.value.length>0)}
-// CHANGE: Welcome with SVG pill icons, no logo, no greeting
 function welcomeHTML(){return`<div class="welcome"><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('Analyze current market conditions')">${ICONS.moneyIcon} Finance</div><div class="wp-pill" onclick="quickSend('Write code for: ')">${ICONS.codeIcon} Write Code</div><div class="wp-pill" onclick="quickSend('Solve this math problem: ')">${ICONS.mathIcon} Solve Math</div></div></div>`}
 function renderChatsHTML(){if(!S.chats.length)return'<div style="padding:10px;font-size:10px;color:var(--txt4);text-align:center">No chats</div>';return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'')}"><span>${esc(c.title||'Untitled')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('')}
-// CHANGE: Message actions with Like/Dislike/Share
+
+// FIX: thinkHTML uses SVG logo instead of emoji
+function thinkHTML(){return`<div class="msg" id="thinkInd"><div class="thinking"><span class="thinking-logo">${ICONS.capitanLogoSm}</span><span class="thinking-text">CAPITAN is thinking...</span></div></div>`}
+
 function renderMsgsHTML(){return S.messages.map((m,i)=>m.role==='user'?`<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`:`<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)" title="Copy">${ICONS.copy}</button><button class="msg-action ${m.liked?'liked':''}" onclick="likeMsg(${i})" title="Like">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked?'disliked':''}" onclick="dislikeMsg(${i})" title="Dislike">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)" title="Share">${ICONS.share}</button><button class="msg-action" onclick="regen()" title="Regenerate">${ICONS.zap}</button></div></div>`).join('')}
-function thinkHTML(){return`<div class="msg" id="thinkInd"><div class="thinking"><span class="thinking-logo">👌</span><span class="thinking-text">CAPITAN is thinking...</span></div></div>`}
 
 function likeMsg(i){if(S.messages[i]){S.messages[i].liked=!S.messages[i].liked;S.messages[i].disliked=false;renderMsgs();saveState();toast(S.messages[i].liked?'👍 Liked':'Like removed')}}
 function dislikeMsg(i){if(S.messages[i]){S.messages[i].disliked=!S.messages[i].disliked;S.messages[i].liked=false;renderMsgs();saveState();toast(S.messages[i].disliked?'👎 Disliked':'Dislike removed')}}
@@ -444,13 +559,137 @@ function openFounder(){$('#founderModal').classList.add('open')}
 async function verifyFounder(){const code=$('#founderCode')?.value;if(!code){toast('Enter code','warning');return}try{const r=await api.founder(code);S.prevTier=S.tier;S.tier='founder';S.token=r.token;S.session.tier='founder';localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier','founder');S.activeChat=null;S.messages=[];S.chats=[];$('#founderModal').classList.remove('open');render();toast('👑 Founder access!','success')}catch(e){toast('Invalid code','error')}}
 async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:14px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Msgs</div></div><div class="stat-card"><div class="stat-val">${d.workspaces}</div><div class="stat-lbl">Workspaces</div></div></div><div style="max-height:160px;overflow-y:auto;font-size:10px">${d.sessions.map(s=>`<div style="padding:3px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between"><span>${s.id}</span><span style="color:var(--accent)">${s.tier}</span><span>${s.msg_count}</span></div>`).join('')}</div>`}catch(e){$('#adminContent').innerHTML=`<div style="color:var(--red)">${e.message}</div>`}}
 
-// CHANGE: Money Updates modal function
 function openMoney(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#moneyModal').classList.add('open');loadMarketData(S.marketCategory)}
-async function openTechUpdates(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#techModal').classList.add('open');const nc=$('#techNewsContent');if(!nc)return;nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading tech news...</div>';try{const data=await api.techNews().catch(()=>({news:[]}));const news=data.news||[];if(news.length>0){nc.innerHTML=news.map(n=>{const timeStr=n.time?formatTimeAgo(n.time):'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(n.url||'')}','${escAttr(n.headline||'')}','${escAttr(n.summary||'')}','${escAttr(n.source||'')}')"><div class="news-source">${esc(n.source||'News')}</div><div class="news-headline">${esc(n.headline||'')}</div>${n.summary?`<div class="news-summary">${esc(n.summary.substring(0,160))}...</div>`:''}<div class="news-time">${timeStr}</div></div>`}).join('')}else{nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No tech news available.<br>Check back shortly.</div>'}}catch(e){nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red);font-size:var(--fs-xs)">Failed to load tech news</div>'}}
-async function loadMarketData(category){const pc=$('#marketsPricesContent');if(!pc)return;pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading prices...</div>';const nc=$('#marketsNewsContent');if(nc)nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading news...</div>';try{const[priceData,newsData]=await Promise.all([api.marketsPrices(category).catch(()=>({prices:{}})),api.marketsNews(category).catch(()=>({news:[]}))]);const prices=priceData.prices||{};const entries=typeof prices==='object'&&!Array.isArray(prices)?Object.entries(prices):[];if(entries.length>0){pc.innerHTML=entries.map(([n,i])=>{const price=typeof i.price==='number'?i.price.toFixed(2):(i.price||'—');const change=typeof i.change==='number'?i.change.toFixed(2):'0.00';const clr=parseFloat(change)>=0?'var(--green)':'var(--red)';const sign=parseFloat(change)>=0?'+':'';const source=i.source?` · ${i.source}`:'';return`<div style="padding:7px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:12px"><span style="font-weight:600">${esc(n)}<span style="font-size:9px;color:var(--txt4)">${source}</span></span><span><span style="font-weight:700">${price}</span> <span style="color:${clr};font-size:11px">${sign}${change}%</span></span></div>`}).join('')}else{pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No market data available.<br>Check back shortly.</div>'}const news=newsData.news||[];if(news.length>0){nc.innerHTML=news.map(n=>{const timeStr=n.time?formatTimeAgo(n.time):'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(n.url||'')}','${escAttr(n.headline||'')}','${escAttr(n.summary||'')}','${escAttr(n.source||'')}')"><div class="news-source">${esc(n.source||'News')}${n.sentiment?` · ${n.sentiment}`:''}</div><div class="news-headline">${esc(n.headline||'')}</div>${n.summary?`<div class="news-summary">${esc(n.summary.substring(0,160))}...</div>`:''}<div class="news-time">${timeStr}</div></div>`}).join('')}else{nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No news available.<br>Check back shortly.</div>'}S.financialNews=news}catch(e){pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red);font-size:var(--fs-xs)">Failed to load market data</div>'}}
+
+// FIX: Tech updates — improved error handling and loading state
+async function openTechUpdates(){
+  if(S.tier!=='pro'&&S.tier!=='founder')return;
+  $('#techModal').classList.add('open');
+  const nc=$('#techNewsContent');
+  if(!nc)return;
+  nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading tech news...</div>';
+  try{
+    let data={news:[]};
+    try{data=await api.techNews();}catch(apiErr){
+      // Fallback: show message with retry option
+      nc.innerHTML=`<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">
+        <div style="margin-bottom:10px">Could not load tech news.</div>
+        <button onclick="retryTechNews()" style="background:var(--accent);color:#fff;border:none;padding:7px 16px;border-radius:18px;font-size:11px;cursor:pointer;font-weight:600">Retry</button>
+      </div>`;
+      return;
+    }
+    const news=Array.isArray(data)?data:(data.news||data.articles||[]);
+    if(news.length>0){
+      nc.innerHTML=news.map(n=>{
+        const timeStr=n.time||n.published_at||n.date?formatTimeAgo(n.time||n.published_at||n.date):'';
+        const headline=n.headline||n.title||n.summary||'';
+        const summary=n.summary||n.description||n.body||'';
+        const source=n.source||n.publisher||'Tech';
+        const url=n.url||n.link||'';
+        return`<div class="news-item" onclick="openNewsArticle('${escAttr(url)}','${escAttr(headline)}','${escAttr(summary)}','${escAttr(source)}')">
+          <div class="news-source">${esc(source)}</div>
+          <div class="news-headline">${esc(headline)}</div>
+          ${summary?`<div class="news-summary">${esc(summary.substring(0,160))}...</div>`:''}
+          <div class="news-time">${timeStr}</div>
+        </div>`;
+      }).join('');
+    } else {
+      nc.innerHTML=`<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">
+        <div style="margin-bottom:10px">No tech news available right now.</div>
+        <button onclick="retryTechNews()" style="background:var(--accent);color:#fff;border:none;padding:7px 16px;border-radius:18px;font-size:11px;cursor:pointer;font-weight:600">Retry</button>
+      </div>`;
+    }
+  }catch(e){
+    nc.innerHTML=`<div style="text-align:center;padding:18px;color:var(--red);font-size:var(--fs-xs)">
+      <div style="margin-bottom:8px">Failed to load tech news</div>
+      <div style="font-size:10px;color:var(--txt4)">${esc(e.message)}</div>
+      <button onclick="retryTechNews()" style="margin-top:10px;background:var(--accent);color:#fff;border:none;padding:7px 16px;border-radius:18px;font-size:11px;cursor:pointer;font-weight:600">Retry</button>
+    </div>`;
+  }
+}
+
+// FIX: Retry function for tech news
+function retryTechNews(){openTechUpdates();}
+
+// FIX: loadMarketData — robust handling of all three categories with array/object support
+async function loadMarketData(category){
+  const pc=$('#marketsPricesContent');
+  if(!pc)return;
+  pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading prices...</div>';
+  const nc=$('#marketsNewsContent');
+  if(nc)nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading news...</div>';
+  try{
+    const[priceData,newsData]=await Promise.all([
+      api.marketsPrices(category).catch(()=>({prices:{}})),
+      api.marketsNews(category).catch(()=>({news:[]}))
+    ]);
+
+    // FIX: Normalize prices — handle both {prices: {sym: {price,change}}} and {prices: [{symbol, price, change}]}
+    const rawPrices=priceData?.prices||priceData?.data||{};
+    let entries=[];
+    if(Array.isArray(rawPrices)){
+      entries=rawPrices.map(item=>[item.symbol||item.name||item.ticker||'—',item]);
+    } else if(typeof rawPrices==='object'&&rawPrices!==null){
+      entries=Object.entries(rawPrices);
+    }
+
+    if(entries.length>0){
+      pc.innerHTML=entries.map(([n,i])=>{
+        let price,change;
+        if(typeof i==='object'&&i!==null){
+          price=typeof i.price==='number'?i.price.toFixed(2):(i.price||'—');
+          change=typeof i.change==='number'?i.change.toFixed(2):(typeof i.change_percent==='number'?i.change_percent.toFixed(2):'0.00');
+        } else {
+          price=typeof i==='number'?i.toFixed(2):String(i||'—');
+          change='0.00';
+        }
+        const clr=parseFloat(change)>=0?'var(--green)':'var(--red)';
+        const sign=parseFloat(change)>=0?'+':'';
+        const source=(typeof i==='object'&&i?.source)?` · ${i.source}`:'';
+        return`<div style="padding:7px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:12px">
+          <span style="font-weight:600">${esc(String(n))}<span style="font-size:9px;color:var(--txt4)">${source}</span></span>
+          <span><span style="font-weight:700">${price}</span> <span style="color:${clr};font-size:11px">${sign}${change}%</span></span>
+        </div>`;
+      }).join('');
+    } else {
+      pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No market data available.<br>Check back shortly.</div>';
+    }
+
+    // FIX: Normalize news — handle both {news:[]} and {articles:[]} and plain array
+    const rawNews=newsData?.news||newsData?.articles||newsData?.data||(Array.isArray(newsData)?newsData:[]);
+    if(nc&&rawNews.length>0){
+      nc.innerHTML=rawNews.map(n=>{
+        const timeStr=(n.time||n.published_at||n.date)?formatTimeAgo(n.time||n.published_at||n.date):'';
+        const headline=n.headline||n.title||'';
+        const summary=n.summary||n.description||'';
+        const source=n.source||n.publisher||'News';
+        const url=n.url||n.link||'';
+        return`<div class="news-item" onclick="openNewsArticle('${escAttr(url)}','${escAttr(headline)}','${escAttr(summary)}','${escAttr(source)}')">
+          <div class="news-source">${esc(source)}${n.sentiment?` · ${n.sentiment}`:''}</div>
+          <div class="news-headline">${esc(headline)}</div>
+          ${summary?`<div class="news-summary">${esc(summary.substring(0,160))}...</div>`:''}
+          <div class="news-time">${timeStr}</div>
+        </div>`;
+      }).join('');
+    } else if(nc){
+      nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No news available.<br>Check back shortly.</div>';
+    }
+    S.financialNews=rawNews;
+  }catch(e){
+    if(pc)pc.innerHTML=`<div style="text-align:center;padding:18px;color:var(--red);font-size:var(--fs-xs)">Failed to load market data</div>`;
+  }
+}
+
 function openNewsArticle(url,headline,summary,source){if(url){window.open(url,'_blank')}else{$('#newsReaderTitle').textContent=headline||'Article';$('#newsReaderContent').innerHTML=(summary||'No details available.').replace(/\n/g,'<br>');$('#newsReaderModal').classList.add('open')}}
-function formatTimeAgo(timeStr){if(!timeStr)return'';try{const then=new Date(timeStr);const now=new Date();const diff=Math.floor((now-then)/1000);if(diff<60)return'Just now';if(diff<3600)return Math.floor(diff/60)+'m ago';if(diff<86400)return Math.floor(diff/3600)+'h ago';return Math.floor(diff/86400)+'d ago'}catch(e){return timeStr}}
-function switchMarketCategory(category){S.marketCategory=category;$$('#marketCategoryTabs .pill-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#marketCategoryTabs [data-cat="${category}"]`)?.classList.add('active');loadMarketData(category);loadMarkets().then(()=>updateTicker())}
+function formatTimeAgo(timeStr){if(!timeStr)return'';try{const then=new Date(timeStr);const now=new Date();const diff=Math.floor((now-then)/1000);if(isNaN(diff)||diff<0)return timeStr;if(diff<60)return'Just now';if(diff<3600)return Math.floor(diff/60)+'m ago';if(diff<86400)return Math.floor(diff/3600)+'h ago';return Math.floor(diff/86400)+'d ago'}catch(e){return timeStr}}
+
+function switchMarketCategory(category){
+  S.marketCategory=category;
+  $$('#marketCategoryTabs .pill-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`#marketCategoryTabs [data-cat="${category}"]`)?.classList.add('active');
+  loadMarketData(category);
+  loadMarkets().then(()=>updateTicker());
+}
 
 function openBusiness(){if(S.tier!=='pro'&&S.tier!=='founder'){toast('Pro tier required','warning');openUpgrade();return}$('#businessModal').classList.add('open');const toggle=$('#businessToggle');if(toggle){toggle.textContent=S.businessMode?'ON':'OFF';toggle.classList.toggle('active',S.businessMode)}}
 function openPrivacy(){$('#privacyModal').classList.add('open')}
@@ -484,7 +723,6 @@ $('#closeAdmin')?.addEventListener('click',()=>$('#adminModal').classList.remove
 $('#closeLibrary')?.addEventListener('click',()=>$('#libraryModal').classList.remove('open'));
 $('#closeWorkspace')?.addEventListener('click',()=>{$('#workspaceModal').classList.remove('open');if(S.ws.timer){clearInterval(S.ws.timer);S.ws.timer=null}});
 $('#closePrivacy')?.addEventListener('click',()=>$('#privacyModal').classList.remove('open'));
-// CHANGE: Close Money modal
 $('#closeMoney')?.addEventListener('click',()=>$('#moneyModal').classList.remove('open'));
 $('#closeTech')?.addEventListener('click',()=>$('#techModal').classList.remove('open'));
 $('#closeNewsReader')?.addEventListener('click',()=>$('#newsReaderModal').classList.remove('open'));
@@ -497,14 +735,17 @@ $('#wsTabCreate')?.addEventListener('click',()=>switchWSTab('create'));$('#wsTab
 $('#verifyFounder')?.addEventListener('click',verifyFounder);
 $('#marketTabPrices')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='block';$('#marketsNewsContent').style.display='none';$('#marketTabPrices').classList.add('active');$('#marketTabNews').classList.remove('active')});
 $('#marketTabNews')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='none';$('#marketsNewsContent').style.display='block';$('#marketTabNews').classList.add('active');$('#marketTabPrices').classList.remove('active')});
-$$('#marketCategoryTabs .pill-tab').forEach(tab=>{tab.addEventListener('click',()=>switchMarketCategory(tab.dataset.cat))});
+// FIX: Market category tabs — re-bind after render since tabs are in static HTML
+$$('#marketCategoryTabs .pill-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>switchMarketCategory(tab.dataset.cat));
+});
 window.addEventListener('resize',()=>{if(window.innerWidth>768){$('#sidebar')?.classList.remove('open');$('#overlay')?.classList.remove('visible')}updateSidebar();updateDesktopToggle()});
 }
 
 S.draft=localStorage.getItem('cap_draft')||'';S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
 document.addEventListener('DOMContentLoaded',init);
 window.CAPITAN={S,api,init,sendMsg,newChat,setThemeMode,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode};
-console.log('👌 CAPITAN AI v23 | CLOSEAI Technologies | AMOLED Ready');
+console.log('C CAPITAN AI v23 | CLOSEAI Technologies | Fixed: theme, markets, tech news, SVG logo');
 </script>
 </body>
 </html>
