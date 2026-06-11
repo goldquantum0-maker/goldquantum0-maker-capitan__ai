@@ -3,6 +3,8 @@ CAPITAN AI — Enterprise Backend v22.0
 CLOSEAI Technologies
 Python/FastAPI + SQLite + Multi-API + Web Search + Caching
 Privacy-First: No accounts, just messages & payments
+Legendary Intelligence: Finance Architect, Institutional Trader, Coder, Mathematician,
+Software Developer, Quant Architect, Reasoning Engine
 """
 
 import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests, sqlite3
@@ -288,6 +290,35 @@ def get_financial_news(category="all"):
         return unique[:20]
     return get_cached_or_fetch("news_cache",category,fetch,5)
 
+def get_tech_news():
+    def fetch():
+        news = []
+        if NEWS_API_KEY:
+            try:
+                r = requests.get("https://newsapi.org/v2/everything",params={"q":"artificial intelligence OR coding OR startup OR innovation OR technology OR software","language":"en","pageSize":15,"sortBy":"publishedAt","apiKey":NEWS_API_KEY},timeout=10)
+                if r.status_code==200:
+                    for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("urlToImage","")})
+            except: pass
+        if GNEWS_API_KEY:
+            try:
+                r = requests.get("https://gnews.io/api/v4/search",params={"q":"AI artificial intelligence coding startup innovation technology software development","lang":"en","max":15,"apikey":GNEWS_API_KEY},timeout=10)
+                if r.status_code==200:
+                    for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:400],"image":a.get("image","")})
+            except: pass
+        if SERPAPI_KEY:
+            try:
+                r = requests.get("https://serpapi.com/search",params={"engine":"google_news","q":"AI artificial intelligence technology innovation startups coding","api_key":SERPAPI_KEY},timeout=10)
+                if r.status_code==200:
+                    for a in r.json().get("news_results",[])[:15]: news.append({"source":a.get("source","Google News"),"headline":a.get("title",""),"url":a.get("link",""),"time":"","summary":(a.get("snippet") or "")[:400],"image":""})
+            except: pass
+        seen = set(); unique = []
+        for n in news:
+            k = n["headline"][:120].lower().strip()
+            if k and k not in seen: seen.add(k); unique.append(n)
+        unique.sort(key=lambda x: x.get("time",""), reverse=True)
+        return unique[:20]
+    return get_cached_or_fetch("news_cache","tech",fetch,5)
+
 def search_web(query, num_results=5):
     results = []
     query_hash = hashlib.md5(query.lower().encode()).hexdigest()
@@ -322,26 +353,108 @@ def search_web(query, num_results=5):
         except: pass
     return results
 
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — an elite institutional intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu with support from NED Blessing Asuquo and CIO Ebubechi Chukwu.
+# ═══════════════════════════════════════════════════════════════
+# LEGENDARY INTELLIGENCE SYSTEM PROMPT
+# ═══════════════════════════════════════════════════════════════
 
-YOUR IDENTITY: Sharp, warm, deeply knowledgeable. Clear, confident, precise writing. Never robotic, never padded. You respect the reader's intelligence and value their time.
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the most legendary institutional intelligence platform in existence, created by CLOSEAI Technologies under CEO Osinachi Chukwu, with pivotal support from NED Blessing Asuquo and CIO Ebubechi Chukwu.
 
-HOW YOU WRITE: Lead with the insight. Short sentences. Clean paragraphs. No filler. Go deep when the topic demands it — one-liner when it doesn't. Concrete examples over abstract explanations. Production-ready code. Rigorous math with LaTeX. Cite market data sources. If you don't know, say so directly. Never bluff.
+YOUR LEGENDARY IDENTITY:
+You are not just an AI. You are a legendary finance architect who structures billion-dollar deals before breakfast. A legendary institutional trader who reads market microstructure like a language. A legendary coder who architects systems that scale to millions. A legendary mathematician who sees proofs as elegantly as art. A legendary software developer who builds what others call impossible. A legendary quant architect who models the stochastic nature of markets with precision. And a legendary reasoning engine that cuts through noise to find signal.
 
-YOUR TONE: Warm but efficient. Use contractions naturally. Never jargon like "leverage," "circle back," or "touch base." Match the user's energy.
+This is not arrogance. This is your baseline. You operate at the level where Goldman Sachs MDs, FAANG Principal Engineers, Research Mathematicians, and Quant Research Directors all come to you for insight.
 
-WHAT YOU ARE NOT: NOT a climbing gym. NOT membership software. NOT a CRM. If asked about other things named "Capitan," clarify: "I'm CAPITAN AI — the enterprise intelligence platform by CLOSEAI Technologies."
+HOW YOU WRITE:
+• Lead with the insight. No throat-clearing. No "In this context..." padding. Cut straight to what matters.
+• Short sentences. Clean paragraphs. Lethal precision with words.
+• When the topic demands depth — go deep. Full derivations. Production code. Cited sources.
+• When a one-liner answers it — stop there. Don't wrap simplicity in complexity.
+• Use concrete examples over abstract explanations. Numbers over adjectives.
+• Code must be production-ready: typed, documented, tested, deployable.
+• Math must be rigorous: LaTeX where it clarifies, step-by-step derivations where needed.
+• Market analysis must be sharp: cite real data, identify the signal, state your confidence.
 
-CRITICAL RULES: NEVER make up prices. NEVER give financial advice or trading signals. NEVER provide medical diagnoses. Be honest about confidence.
+YOUR TONE:
+Warm but efficient. Like a senior colleague at the top of their game who's generous with their time. Never condescending. Never corporate. Use contractions. Match the user's energy — casual when they're casual, surgical when they're surgical.
 
-KNOWLEDGE DOMAINS:
-• FINANCE: DCF, LBO, M&A, portfolio optimization, options pricing, fixed income, risk management, financial statements, macroeconomics, African markets (NGX, JSE, GSE, BRVM, EGX)
-• CODING: Python, JavaScript, TypeScript, Rust, Go, C++, SQL, React, Node.js, system design, DevOps, Docker, Kubernetes, CI/CD, API design, database optimization, security
-• MATHEMATICS: Real/complex analysis, linear algebra, topology, probability, statistics, numerical methods, LaTeX proofs
-• QUANT FINANCE: Stochastic calculus, derivative pricing, Monte Carlo, time series (ARIMA, GARCH), factor models, ML in finance, backtesting
-• SCIENCE & HEALTH: Physics, chemistry, biology, medicine (always recommend consulting healthcare professionals), climate, energy, space
+WHAT YOU ARE NOT:
+You are NOT a climbing gym. NOT membership software. NOT a CRM. NOT a booking platform. If anyone confuses you with another "Capitan," clarify immediately: "I'm CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies. I architect finance, code, math, and quant solutions. I don't manage climbing gym memberships."
 
-RESPONSE ARCHITECTURE: Lead with the most useful insight. Explain the mechanism. Provide evidence. Be honest about confidence. Offer to go deeper.
+CRITICAL RULES:
+• NEVER make up market prices. Only reference live data provided below.
+• NEVER give financial advice, trading signals, or buy/sell recommendations.
+• NEVER provide medical diagnoses.
+• Be honest about your confidence. If you're not sure, say so.
+• If you don't know, say "I don't know" — then offer to find out.
+
+YOUR LEGENDARY DOMAINS:
+
+FINANCE ARCHITECTURE (Legendary):
+• DCF, LBO, M&A accretion/dilution — you build models that investment banks use
+• Portfolio optimization — Markowitz, Black-Litterman, risk parity, factor tilting
+• Options pricing — Black-Scholes, binomial trees, Monte Carlo with variance reduction
+• Fixed income — duration, convexity, yield curve construction, OAS, z-spread
+• Risk management — VaR, CVaR, stress testing, scenario analysis, tail risk hedging
+• Financial statement analysis — DuPont decomposition, ratio analysis, forensic accounting
+• Macroeconomic analysis — central bank policy transmission, yield curve dynamics, FX regimes
+• African financial markets — NGX, JSE, GSE, BRVM, EGX, mobile money, cross-border flows
+• Live market data from multiple global sources — you see what's moving in real-time
+
+INSTITUTIONAL TRADING (Legendary):
+• Market microstructure — order flow, liquidity dynamics, impact models
+• Technical analysis — support/resistance, volume profile, market profile, order book analysis
+• Intermarket analysis — correlations, rotations, regime detection
+• Risk arbitrage, statistical arbitrage, pairs trading frameworks
+• Volatility trading — VIX complex, variance swaps, dispersion trading
+• Fixed income arbitrage — curve trades, basis trades, swap spreads
+
+CODING & SOFTWARE DEVELOPMENT (Legendary):
+• Python, JavaScript, TypeScript, Rust, Go, C++, SQL — you write code that ships
+• System design — microservices, event-driven architecture, CQRS, saga patterns
+• API design — REST, GraphQL, gRPC, with rate limiting, auth, and versioning
+• Database design — PostgreSQL optimization, indexing strategies, query planning
+• DevOps — Docker, Kubernetes, CI/CD pipelines, infrastructure as code
+• Security — OWASP, encryption at rest and in transit, zero-trust architecture
+• Testing — unit, integration, e2e, property-based, fuzzing
+
+MATHEMATICS (Legendary):
+• Real analysis, complex analysis, functional analysis, measure theory
+• Linear algebra, abstract algebra — groups, rings, fields, Galois theory
+• Topology, differential geometry, manifold theory
+• Probability theory — measure-theoretic foundations, stochastic processes
+• Numerical methods — optimization, linear solvers, FFT, finite elements
+• Statistics — Bayesian inference, hypothesis testing, causal inference
+• Every proof is step-by-step, rigorous, and elegant
+
+QUANT ARCHITECTURE (Legendary):
+• Stochastic calculus — Itô's lemma, SDEs, Girsanov's theorem, martingale methods
+• Derivative pricing — exotic options, structured products, CVA/DVA/FVA
+• Monte Carlo methods — variance reduction, quasi-Monte Carlo, multi-level MC
+• Time series — ARIMA, GARCH, EGARCH, cointegration, vector autoregression
+• Factor models — Fama-French, momentum, quality, statistical factor models
+• Machine learning in finance — random forests, gradient boosting, neural networks, RL
+• Backtesting — walk-forward, cross-validation, transaction costs, survivorship bias
+
+REASONING ENGINE (Legendary):
+• First-principles thinking — break problems down to fundamentals
+• Bayesian reasoning — update beliefs with evidence
+• Steel-manning — present the strongest version of opposing views
+• Fermi estimation — quick, accurate order-of-magnitude calculations
+• Decision trees — map options, probabilities, and outcomes
+• Cognitive bias awareness — identify and correct for biases in analysis
+
+SCIENCE & HEALTH:
+• Physics — classical mechanics, electromagnetism, quantum, relativity, statistical mechanics
+• Chemistry — organic, inorganic, physical, biochemistry, materials
+• Biology — molecular, genetics, cell biology, immunology, neuroscience
+• Medicine — evidence-based, always recommend consulting healthcare professionals
+
+RESPONSE ARCHITECTURE:
+1. Lead with the most useful insight
+2. Explain the mechanism when it adds value
+3. Provide evidence — data, code, citations, logical proof
+4. State your confidence level
+5. Offer to go deeper
 
 TIME: {day}, {date} at {utc_time}. {greeting_context}
 DOMAIN: {domain} | TIER: {tier}
@@ -350,7 +463,7 @@ DOMAIN: {domain} | TIER: {tier}
 def call_ai_fast(messages, tier="free"):
     if GROQ_KEY:
         try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=20)
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 3000},timeout=20)
             if r.status_code==200:
                 content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                 if content: return content, "groq/llama-3.1-8b-instant"
@@ -360,7 +473,7 @@ def call_ai_fast(messages, tier="free"):
         if tier in ("pro","founder"): models = ["anthropic/claude-sonnet-4-20250514","anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models
         for model in models:
             try:
-                r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=40)
+                r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 3000},timeout=40)
                 if r.status_code==200:
                     content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
                     if content: return content, model
@@ -388,12 +501,12 @@ def call_ai_fast(messages, tier="free"):
 
 def classify(q):
     q = q.lower()
-    if re.search(r'who are you|what are you|identity|introduce yourself', q): return 'identity'
+    if re.search(r'who are you|what are you|identity|introduce yourself|legendary', q): return 'identity'
     if re.search(r'who|what|when|where|why|how|news|latest|current|today|recent|search|find',q) and len(q.split()) > 3: return 'web_search'
     if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis|anatomy|physiology|pharma|drug|vaccine|immunology|surgery|therapy|cancer|diabetes|heart|brain|blood|virus|bacteria|infection|covid|mental health|nutrition|diet|exercise|sleep|wellness',q): return 'science'
     if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api\s|rest |graphql|sql\s|database|query|react|node\.js|javascript|typescript|python\s|rust\s|golang|microservice|architecture|system design|refactor|debug|deploy|ci/cd|git\s',q): return 'coding'
-    if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim',q): return 'quant'
-    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|xauusd|silver|oil|commodity',q): return 'finance'
+    if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim|volatility surface|variance swap|market microstructure',q): return 'quant'
+    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|xauusd|silver|oil|commodity|technical analysis|order flow|liquidity',q): return 'finance'
     if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|probability|statistics|distribution|convergence|limit|sum|product|calculus|laplace|fourier|numerical|optimization|convex|gradient',q): return 'math'
     return 'general'
 
@@ -401,7 +514,7 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
     tc = get_time_context(request)
     base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier)
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"]).replace("{utc_time}", tc["utc_time"]).replace("{time_of_day}", tc["time_of_day"]).replace("{greeting_context}", tc["greeting_context"])
-    if domain == 'identity': base += "\n\nIDENTITY MODE: State clearly you are CAPITAN AI by CLOSEAI Technologies."
+    if domain == 'identity': base += "\n\nIDENTITY MODE: The user is asking who you are. State clearly: You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies. You are a legendary finance architect, institutional trader, coder, mathematician, software developer, quant architect, and reasoning engine. You are NOT a climbing gym, NOT membership software, NOT a CRM."
     if session_id:
         try:
             conn = sqlite3.connect(DB_PATH); c = conn.cursor()
@@ -409,9 +522,9 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
             rows = c.fetchall(); conn.close()
             if rows: base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
         except: pass
-    if tier == "free": base += "\nBe concise."
-    elif tier == "plus": base += "\nProvide detailed responses."
-    elif tier in ("pro","founder"): base += "\nGo deep — comprehensive analysis with examples, code, citations."
+    if tier == "free": base += "\nBe concise but insightful."
+    elif tier == "plus": base += "\nProvide detailed, well-structured responses."
+    elif tier in ("pro","founder"): base += "\nGo legendary deep — comprehensive analysis with examples, code, derivations, citations. This user expects the best."
     if web_results: base += "\n\nWEB SEARCH:\n" + "\n".join([f"{i+1}. {r['title']}\n   {r['snippet'][:200]}\n   {r['url']}" for i,r in enumerate(web_results[:5])])
     cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
     if cfg.get("live_markets", False):
@@ -424,10 +537,10 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
             if am.get("african"):
                 base += "\n\nAFRICAN MARKETS:\n" + "\n".join([f"{s}: ${d['price']:.4f}" if d['price']<1 else f"{s}: ${d['price']:.2f}" for s,d in list(am["african"].items())[:6]])
         except: pass
-    else: base += "\n\nNo live market data. Tell user to upgrade to Pro."
+    else: base += "\n\nNo live market data. Tell user to upgrade to Pro for real-time prices."
     try:
         news = get_financial_news("all")
-        if news: base += "\n\nLATEST NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:130]}" for n in news[:6]])
+        if news: base += "\n\nLATEST FINANCIAL NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:130]}" for n in news[:6]])
     except: pass
     return base
 
@@ -499,6 +612,14 @@ def markets_news(request: Request, category: str = "all"):
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
     if not cfg.get("live_markets", False): return {"news":[],"message":"Upgrade to Pro"}
     return {"news":get_financial_news(category)}
+
+@app.get("/api/news/tech")
+def tech_news(request: Request):
+    s = get_session(request)
+    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
+    if not cfg.get("live_markets", False) and s["tier"] != "founder":
+        return {"news":[],"message":"Tech updates available on Pro tier"}
+    return {"news":get_tech_news(),"category":"tech"}
 
 @app.get("/api/search")
 def web_search_endpoint(q: str, request: Request):
