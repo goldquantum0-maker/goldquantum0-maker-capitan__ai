@@ -1,5 +1,5 @@
 """
-CAPITAN AI — Enterprise Backend v23.0
+CAPITAN AI — Enterprise Backend v24.0
 CLOSEAI Technologies
 Python/FastAPI + Supabase PostgreSQL + Multi-API + Web Search + Caching
 Privacy-First: No accounts, just messages & payments
@@ -55,7 +55,7 @@ SUPABASE_DB_USER = os.environ.get("SUPABASE_DB_USER", "")
 SUPABASE_DB_PASSWORD = os.environ.get("SUPABASE_DB_PASSWORD", "")
 SUPABASE_DB_PORT = os.environ.get("SUPABASE_DB_PORT", "5432")
 
-def get_db_connection():
+def get_db():
     """Get Supabase PostgreSQL connection"""
     try:
         conn = psycopg2.connect(
@@ -74,7 +74,7 @@ def get_db_connection():
 
 def init_db():
     """Create all tables if they don't exist"""
-    conn = get_db_connection()
+    conn = get_db()
     c = conn.cursor()
     
     c.execute('''
@@ -294,11 +294,9 @@ def get_session(request: Request):
         payload = verify_jwt(auth[7:])
         if payload:
             try:
-                conn = get_db_connection()
-                c = conn.cursor()
-                c.execute("SELECT id,tier,msg_count,msg_window FROM sessions WHERE id=%s", (payload["session_id"],))
-                row = c.fetchone()
-                conn.close()
+                conn = get_db(); c = conn.cursor()
+                c.execute("SELECT id,tier,msg_count,msg_window FROM sessions WHERE id=%s",(payload["session_id"],))
+                row = c.fetchone(); conn.close()
                 if row: return {"id":row[0],"tier":row[1],"msg_count":row[2] or 0,"msg_window":row[3]}
             except: pass
     return None
@@ -326,9 +324,8 @@ def get_time_context():
 
 def get_cached_or_fetch(table, category, fetch_func, ttl=2):
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute(f"SELECT data FROM {table} WHERE category=%s AND created > %s", (category, (datetime.utcnow()-timedelta(minutes=ttl)).isoformat()))
+        conn = get_db(); c = conn.cursor()
+        c.execute(f"SELECT data FROM {table} WHERE category=%s AND created > %s",(category,(datetime.utcnow()-timedelta(minutes=ttl)).isoformat()))
         row = c.fetchone()
         if row: conn.close(); return json.loads(row[0])
         conn.close()
@@ -336,12 +333,10 @@ def get_cached_or_fetch(table, category, fetch_func, ttl=2):
     data = fetch_func()
     if data:
         try:
-            conn = get_db_connection()
-            c = conn.cursor()
-            c.execute(f"DELETE FROM {table} WHERE category=%s AND created < %s", (category, (datetime.utcnow()-timedelta(hours=1)).isoformat()))
-            c.execute(f"INSERT INTO {table} (id,category,data,created) VALUES (%s,%s,%s,%s)", (sid(),category,json.dumps(data),datetime.utcnow().isoformat()))
-            conn.commit()
-            conn.close()
+            conn = get_db(); c = conn.cursor()
+            c.execute(f"DELETE FROM {table} WHERE category=%s AND created < %s",(category,(datetime.utcnow()-timedelta(hours=1)).isoformat()))
+            c.execute(f"INSERT INTO {table} (id,category,data,created) VALUES (%s,%s,%s,%s)",(sid(),category,json.dumps(data),datetime.utcnow().isoformat()))
+            conn.commit(); conn.close()
         except: pass
     return data
 
@@ -434,9 +429,8 @@ def search_web(query, num_results=5):
     results = []
     query_hash = hashlib.md5(query.lower().encode()).hexdigest()
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT data FROM web_cache WHERE query_hash=%s AND created > %s", (query_hash, (datetime.utcnow()-timedelta(hours=1)).isoformat()))
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT data FROM web_cache WHERE query_hash=%s AND created > %s",(query_hash,(datetime.utcnow()-timedelta(hours=1)).isoformat()))
         row = c.fetchone()
         if row: conn.close(); return json.loads(row[0])
         conn.close()
@@ -456,11 +450,9 @@ def search_web(query, num_results=5):
         except: pass
     if results:
         try:
-            conn = get_db_connection()
-            c = conn.cursor()
-            c.execute("INSERT INTO web_cache (id,query_hash,data,created) VALUES (%s,%s,%s,%s)", (sid(),query_hash,json.dumps(results),datetime.utcnow().isoformat()))
-            conn.commit()
-            conn.close()
+            conn = get_db(); c = conn.cursor()
+            c.execute("INSERT INTO web_cache (id,query_hash,data,created) VALUES (%s,%s,%s,%s)",(sid(),query_hash,json.dumps(results),datetime.utcnow().isoformat()))
+            conn.commit(); conn.close()
         except: pass
     return results
 
@@ -571,11 +563,9 @@ def system_prompt(domain, tier, session_id=None, request=None, web_results=None)
     if domain == 'identity': base += "\n\nIDENTITY MODE: You are the ONLY CAPITAN AI. State clearly: 'I am CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies.' Do NOT mention any other product."
     if session_id:
         try:
-            conn = get_db_connection()
-            c = conn.cursor()
-            c.execute("SELECT query, domain FROM memories WHERE session_id=%s ORDER BY created DESC LIMIT 3", (session_id,))
-            rows = c.fetchall()
-            conn.close()
+            conn = get_db(); c = conn.cursor()
+            c.execute("SELECT query, domain FROM memories WHERE session_id=%s ORDER BY created DESC LIMIT 3",(session_id,))
+            rows = c.fetchall(); conn.close()
             if rows: base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
         except: pass
     if tier == "free": base += "\nBe concise."
@@ -623,10 +613,8 @@ def health():
     # Check database
     db_status = "disconnected"
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT 1")
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT 1"); conn.close()
         db_status = "connected"
     except: pass
     return {"status":"ok","version":"23.0","ai":ai,"providers":providers,"database":db_status}
@@ -637,11 +625,9 @@ def get_or_create_session(request: Request):
     if session: return session
     session_id = f"s_{sid()}"
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("INSERT INTO sessions (id,tier,msg_count,msg_window,created,updated) VALUES (%s,%s,%s,%s,%s,%s)", (session_id,"free",0,datetime.utcnow().isoformat(),datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("INSERT INTO sessions (id,tier,msg_count,msg_window,created,updated) VALUES (%s,%s,0,%s,%s,%s)",(session_id,"free",datetime.utcnow().isoformat(),datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
     except: pass
     token = create_jwt(session_id,"free")
     return {"id":session_id,"tier":"free","msg_count":0,"token":token}
@@ -689,11 +675,9 @@ def get_chats(request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id,title,created,updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 30", (s["id"],))
-        rows = c.fetchall()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id,title,created,updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 30",(s["id"],))
+        rows = c.fetchall(); conn.close()
         return {"chats":[{"id":r[0],"title":r[1],"created":r[2],"updated":r[3]} for r in rows]}
     except Exception as e:
         raise HTTPException(500, str(e))
@@ -703,13 +687,11 @@ def get_chat(chat_id: str, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id,s["id"]))
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s",(chat_id,s["id"]))
         if not c.fetchone(): raise HTTPException(404)
-        c.execute("SELECT id,role,content,model,created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
-        rows = c.fetchall()
-        conn.close()
+        c.execute("SELECT id,role,content,model,created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC",(chat_id,))
+        rows = c.fetchall(); conn.close()
         return {"messages":[{"id":r[0],"role":r[1],"content":r[2],"model":r[3],"created":r[4]} for r in rows]}
     except Exception as e:
         raise HTTPException(500, str(e))
@@ -723,30 +705,27 @@ def chat(req: ChatRequest, request: Request):
     limit = cfg["msg_limit"]
     if limit != float("inf"):
         try:
-            conn = get_db_connection()
-            c = conn.cursor()
-            c.execute("SELECT msg_count,msg_window FROM sessions WHERE id=%s", (s["id"],))
-            row = c.fetchone()
-            count = row[0] or 0
+            conn = get_db(); c = conn.cursor()
+            c.execute("SELECT msg_count,msg_window FROM sessions WHERE id=%s",(s["id"],))
+            row = c.fetchone(); count = row[0] or 0
             if count >= limit:
                 w = datetime.fromisoformat(row[1]) if row and row[1] else datetime.utcnow()
                 if datetime.utcnow() - w < timedelta(hours=24): raise HTTPException(429,f"Daily limit ({limit}/day). Upgrade.")
-                c.execute("UPDATE sessions SET msg_count=0, msg_window=%s WHERE id=%s", (datetime.utcnow().isoformat(),s["id"]))
+                c.execute("UPDATE sessions SET msg_count=0, msg_window=%s WHERE id=%s",(datetime.utcnow().isoformat(),s["id"]))
                 conn.commit()
             conn.close()
         except: pass
     user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role")=="user"),"")
     if not user_msg: raise HTTPException(400,"No message")
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
+        conn = get_db(); c = conn.cursor()
         chat_id = req.chat_id or f"chat_{sid()}"
-        if not req.chat_id: c.execute("INSERT INTO chats (id,session_id,title,created,updated) VALUES (%s,%s,%s,%s,%s)", (chat_id,s["id"],user_msg[:60],datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
-        else: c.execute("UPDATE chats SET updated=%s WHERE id=%s AND session_id=%s", (datetime.utcnow().isoformat(),chat_id,s["id"]))
-        c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,created) VALUES (%s,%s,%s,%s,%s,%s)", (f"msg_{sid()}",chat_id,s["id"],"user",user_msg,datetime.utcnow().isoformat()))
-        c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=%s", (s["id"],))
+        if not req.chat_id: c.execute("INSERT INTO chats (id,session_id,title,created,updated) VALUES (%s,%s,%s,%s,%s)",(chat_id,s["id"],user_msg[:60],datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
+        else: c.execute("UPDATE chats SET updated=%s WHERE id=%s AND session_id=%s",(datetime.utcnow().isoformat(),chat_id,s["id"]))
+        c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,created) VALUES (%s,%s,%s,%s,%s,%s)",(f"msg_{sid()}",chat_id,s["id"],"user",user_msg,datetime.utcnow().isoformat()))
+        c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=%s",(s["id"],))
         conn.commit()
-        c.execute("SELECT role,content FROM chat_messages WHERE chat_id=%s ORDER BY created ASC LIMIT 15", (chat_id,))
+        c.execute("SELECT role,content FROM chat_messages WHERE chat_id=%s ORDER BY created ASC LIMIT 15",(chat_id,))
         history = [{"role":r[0],"content":r[1]} for r in c.fetchall()]
         conn.close()
     except Exception as e:
@@ -760,12 +739,10 @@ def chat(req: ChatRequest, request: Request):
     result, model_used = call_ai_fast([{"role":"system","content":prompt}] + history, s["tier"])
     if result:
         try:
-            conn = get_db_connection()
-            c = conn.cursor()
-            c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,model,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (f"msg_{sid()}",chat_id,s["id"],"assistant",result,model_used,datetime.utcnow().isoformat()))
-            c.execute("INSERT INTO memories (id,memory_id,session_id,content,query,domain,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (sid(),mid(),s["id"],result[:500] if result else "",user_msg,domain,datetime.utcnow().isoformat()))
-            conn.commit()
-            conn.close()
+            conn = get_db(); c = conn.cursor()
+            c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,model,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",(f"msg_{sid()}",chat_id,s["id"],"assistant",result,model_used,datetime.utcnow().isoformat()))
+            c.execute("INSERT INTO memories (id,memory_id,session_id,content,query,domain,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",(sid(),mid(),s["id"],result[:500] if result else "",user_msg,domain,datetime.utcnow().isoformat()))
+            conn.commit(); conn.close()
         except: pass
     remaining = limit - (s["msg_count"]+1) if limit!=float("inf") else "unlimited"
     return {"content":result,"chat_id":chat_id,"model":model_used,"remaining":remaining,"web_search_used":web_results is not None}
@@ -775,12 +752,10 @@ def delete_chat(chat_id: str, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id,s["id"]))
-        c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id,s["id"]))
-        conn.commit()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s",(chat_id,s["id"]))
+        c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s",(chat_id,s["id"]))
+        conn.commit(); conn.close()
         return {"deleted":True}
     except Exception as e:
         raise HTTPException(500, str(e))
@@ -790,11 +765,9 @@ def get_library(request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id,name,type,content,size,created FROM library_items WHERE session_id=%s ORDER BY created DESC", (s["id"],))
-        rows = c.fetchall()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id,name,type,content,size,created FROM library_items WHERE session_id=%s ORDER BY created DESC",(s["id"],))
+        rows = c.fetchall(); conn.close()
         return {"items":[{"id":r[0],"name":r[1],"type":r[2],"content":r[3],"size":r[4],"created":r[5]} for r in rows]}
     except: return {"items":[]}
 
@@ -803,12 +776,10 @@ def create_library_item(req: LibraryItemRequest, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
+        conn = get_db(); c = conn.cursor()
         item_id = f"lib_{sid()}"
-        c.execute("INSERT INTO library_items (id,session_id,name,type,content,size,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (item_id,s["id"],req.name,req.type,req.content or "",len(req.content or ""),datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
+        c.execute("INSERT INTO library_items (id,session_id,name,type,content,size,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",(item_id,s["id"],req.name,req.type,req.content or "",len(req.content or ""),datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
         return {"id":item_id,"created":True}
     except: return {"created":False}
 
@@ -817,11 +788,9 @@ def delete_library_item(item_id: str, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("DELETE FROM library_items WHERE id=%s AND session_id=%s", (item_id,s["id"]))
-        conn.commit()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("DELETE FROM library_items WHERE id=%s AND session_id=%s",(item_id,s["id"]))
+        conn.commit(); conn.close()
         return {"deleted":True}
     except: return {"deleted":False}
 
@@ -836,11 +805,9 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
     file_id = f"file_{sid()}"
     with open(os.path.join(UPLOAD_DIR, file_id), "wb") as f: f.write(contents)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("INSERT INTO uploaded_files (id,session_id,filename,original_name,size,mime_type,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (file_id,s["id"],file_id,file.filename or "unknown",len(contents),file.content_type or "application/octet-stream",datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("INSERT INTO uploaded_files (id,session_id,filename,original_name,size,mime_type,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",(file_id,s["id"],file_id,file.filename or "unknown",len(contents),file.content_type or "application/octet-stream",datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
     except: pass
     return {"id":file_id,"filename":file.filename,"size_mb":round(len(contents)/(1024*1024),2)}
 
@@ -852,13 +819,11 @@ def upgrade(req: UpgradeRequest, request: Request):
     if not req.txid.strip(): raise HTTPException(400,"TXID required")
     prices = {"plus":8,"pro":17}; cur = req.currency.upper()
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("INSERT INTO payments (id,session_id,txid,currency,amount,tier,verified,expires,created) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (sid(),s["id"],req.txid.strip(),cur,prices[req.tier],req.tier,1,(datetime.utcnow()+timedelta(days=30)).isoformat(),datetime.utcnow().isoformat()))
-        c.execute("UPDATE sessions SET tier=%s, msg_count=0, updated=%s WHERE id=%s", (req.tier,datetime.utcnow().isoformat(),s["id"]))
-        c.execute("INSERT INTO payment_log (id,session_id,tier,amount,currency,txid,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (sid(),s["id"],req.tier,prices[req.tier],cur,req.txid,datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("INSERT INTO payments (id,session_id,txid,currency,amount,tier,verified,expires,created) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",(sid(),s["id"],req.txid.strip(),cur,prices[req.tier],req.tier,1,(datetime.utcnow()+timedelta(days=30)).isoformat(),datetime.utcnow().isoformat()))
+        c.execute("UPDATE sessions SET tier=%s, msg_count=0, updated=%s WHERE id=%s",(req.tier,datetime.utcnow().isoformat(),s["id"]))
+        c.execute("INSERT INTO payment_log (id,session_id,tier,amount,currency,txid,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",(sid(),s["id"],req.tier,prices[req.tier],cur,req.txid,datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
     except: pass
     token = create_jwt(s["id"],req.tier)
     return {"verified":True,"tier":req.tier,"token":token}
@@ -869,11 +834,9 @@ def founder(req: FounderRequest, request: Request):
     if not s: raise HTTPException(401)
     if req.code not in [ADMIN_CODE, FOUNDER_KEY]: raise HTTPException(403,"Invalid code")
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("UPDATE sessions SET tier='founder', msg_count=0, updated=%s WHERE id=%s", (datetime.utcnow().isoformat(),s["id"]))
-        conn.commit()
-        conn.close()
+        conn = get_db(); c = conn.cursor()
+        c.execute("UPDATE sessions SET tier='founder', msg_count=0, updated=%s WHERE id=%s",(datetime.utcnow().isoformat(),s["id"]))
+        conn.commit(); conn.close()
     except: pass
     token = create_jwt(s["id"],"founder")
     return {"verified":True,"tier":"founder","token":token}
@@ -883,8 +846,7 @@ def admin(request: Request):
     s = get_session(request)
     if not s or s["tier"]!="founder": raise HTTPException(403,"Access denied")
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
+        conn = get_db(); c = conn.cursor()
         c.execute("SELECT COUNT(*) FROM sessions"); total = c.fetchone()[0]
         c.execute("SELECT COUNT(*) FROM sessions WHERE tier!='free'"); paid = c.fetchone()[0]
         c.execute("SELECT COUNT(*) FROM chat_messages"); msgs = c.fetchone()[0]
@@ -905,13 +867,11 @@ def ws_create(req: WorkspaceCreateRequest, request: Request):
     max_m = TIER_CONFIG.get(s["tier"],{}).get("workspace_max",0)
     if max_m == 0: raise HTTPException(403,"Work Area requires Plus or Pro")
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
+        conn = get_db(); c = conn.cursor()
         wid = sid()
-        c.execute("INSERT INTO workspaces (id,room_code,creator_session,creator_tier,max_members,created) VALUES (%s,%s,%s,%s,%s,%s)", (wid,req.room_code.upper(),s["id"],s["tier"],min(req.max_members,max_m),datetime.utcnow().isoformat()))
-        c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s)", (wid,s["id"],"admin",datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
+        c.execute("INSERT INTO workspaces (id,room_code,creator_session,creator_tier,max_members,created) VALUES (%s,%s,%s,%s,%s,%s)",(wid,req.room_code.upper(),s["id"],s["tier"],min(req.max_members,max_m),datetime.utcnow().isoformat()))
+        c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s)",(wid,s["id"],"admin",datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
         return {"room_id":wid,"room_code":req.room_code.upper(),"created":True}
     except: return {"created":False}
 
@@ -920,22 +880,20 @@ def ws_join(req: WorkspaceJoinRequest, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id,max_members,creator_tier FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id,max_members,creator_tier FROM workspaces WHERE room_code=%s",(req.room_code.upper(),))
         ws = c.fetchone()
         if not ws: raise HTTPException(404,"Room not found")
         if s["tier"] != ws[2] and s["tier"] != "founder":
             raise HTTPException(403,f"This Work Area requires {ws[2].upper()} tier.")
-        c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=%s", (ws[0],))
+        c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=%s",(ws[0],))
         if c.fetchone()[0] >= ws[1]: raise HTTPException(400,"Room full")
-        c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s)", (ws[0],s["id"],"member",datetime.utcnow().isoformat()))
-        c.execute("SELECT m.session_id,m.role FROM workspace_members m WHERE m.workspace_id=%s", (ws[0],))
+        c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING",(ws[0],s["id"],"member",datetime.utcnow().isoformat()))
+        c.execute("SELECT m.session_id,m.role FROM workspace_members m WHERE m.workspace_id=%s",(ws[0],))
         members = [{"session_id":r[0],"role":r[1]} for r in c.fetchall()]
-        c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
+        c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50",(ws[0],))
         messages = [{"id":r[0],"session_id":r[1],"author":r[2],"message":r[3],"is_ai":bool(r[4]),"created":r[5]} for r in c.fetchall()]
-        conn.commit()
-        conn.close()
+        conn.commit(); conn.close()
         return {"joined":True,"room_id":ws[0],"members":members,"messages":messages}
     except HTTPException: raise
     except: return {"joined":False}
@@ -945,36 +903,33 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id FROM workspaces WHERE room_code=%s",(req.room_code.upper(),))
         ws = c.fetchone()
         if not ws: raise HTTPException(404)
         is_ai = req.message.strip().startswith("@CAPITAN")
         if is_ai:
-            c.execute("SELECT author,message FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 20", (ws[0],))
+            c.execute("SELECT author,message FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 20",(ws[0],))
             context = "\n".join([f"{r[0]}: {r[1]}" for r in c.fetchall()])
-            c.execute("SELECT content FROM workspace_notes WHERE workspace_id=%s", (ws[0],))
+            c.execute("SELECT content FROM workspace_notes WHERE workspace_id=%s",(ws[0],))
             notes = "\n".join([r[0] for r in c.fetchall()])
             result, _ = call_ai_fast([{"role":"system","content":f"Work Area:\n{context}\n\nNotes:\n{notes}"},{"role":"user","content":req.message.replace('@CAPITAN','').strip()}], s["tier"])
-            if result: c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,is_ai,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (sid(),ws[0],s["id"],"CAPITAN AI",result,1,datetime.utcnow().isoformat()))
-        c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,created) VALUES (%s,%s,%s,%s,%s,%s)", (sid(),ws[0],s["id"],"User",req.message,datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
+            if result: c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,is_ai,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",(sid(),ws[0],s["id"],"CAPITAN AI",result,1,datetime.utcnow().isoformat()))
+        c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,created) VALUES (%s,%s,%s,%s,%s,%s)",(sid(),ws[0],s["id"],"User",req.message,datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
         return {"sent":True}
     except: return {"sent":False}
 
 @app.get("/api/workspace/messages")
 def ws_get_messages(room_code: str):
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id FROM workspaces WHERE room_code=%s",(room_code.upper(),))
         ws = c.fetchone()
         if not ws: raise HTTPException(404)
-        c.execute("SELECT m.session_id,m.role FROM workspace_members m WHERE m.workspace_id=%s", (ws[0],))
+        c.execute("SELECT m.session_id,m.role FROM workspace_members m WHERE m.workspace_id=%s",(ws[0],))
         members = [{"session_id":r[0],"role":r[1]} for r in c.fetchall()]
-        c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
+        c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50",(ws[0],))
         messages = [{"id":r[0],"session_id":r[1],"author":r[2],"message":r[3],"is_ai":bool(r[4]),"created":r[5]} for r in c.fetchall()]
         conn.close()
         return {"messages":messages,"members":members}
@@ -985,25 +940,22 @@ def ws_save_note(req: WorkspaceNoteRequest, request: Request):
     s = get_session(request)
     if not s: raise HTTPException(401)
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id FROM workspaces WHERE room_code=%s",(req.room_code.upper(),))
         if not c.fetchone(): raise HTTPException(404)
-        c.execute("DELETE FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)", (req.room_code.upper(),))
-        c.execute("INSERT INTO workspace_notes (id,workspace_id,session_id,author,content,created,updated) VALUES (%s,(SELECT id FROM workspaces WHERE room_code=%s),%s,%s,%s,%s,%s)", (sid(),req.room_code.upper(),s["id"],"User",req.content,datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
-        conn.commit()
-        conn.close()
+        c.execute("DELETE FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)",(req.room_code.upper(),))
+        c.execute("INSERT INTO workspace_notes (id,workspace_id,session_id,author,content,created,updated) VALUES (%s,(SELECT id FROM workspaces WHERE room_code=%s),%s,%s,%s,%s,%s)",(sid(),req.room_code.upper(),s["id"],"User",req.content,datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
+        conn.commit(); conn.close()
         return {"saved":True}
     except: return {"saved":False}
 
 @app.get("/api/workspace/notes")
 def ws_get_notes(room_code: str):
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
+        conn = get_db(); c = conn.cursor()
+        c.execute("SELECT id FROM workspaces WHERE room_code=%s",(room_code.upper(),))
         if not c.fetchone(): raise HTTPException(404)
-        c.execute("SELECT author,content,updated FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)", (room_code.upper(),))
+        c.execute("SELECT author,content,updated FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)",(room_code.upper(),))
         notes = [{"author":r[0],"content":r[1],"updated":r[2]} for r in c.fetchall()]
         conn.close()
         return {"notes":notes}
