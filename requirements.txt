@@ -5,3 +5,4 @@ pydantic
 python-multipart
 psycopg2-binary
 pydantic-settings
+supabase==1.2.0
