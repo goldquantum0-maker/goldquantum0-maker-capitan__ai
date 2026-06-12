@@ -1,7 +1,8 @@
 """
 CAPITAN AI — Enterprise Backend v25.0
 CLOSEAI Technologies
-Complete Production System | PostgreSQL + Supabase Storage + Full Intelligence
+Full Intelligence: Finance, Trading, Coding, Math, Quant, Web Search, News, Markets
+PWA Ready | Production Database | Full Frontend-Backend Integration
 """
 
 import os
@@ -22,16 +23,12 @@ from urllib.parse import quote_plus
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, Response
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse, Response, HTMLResponse
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 import psycopg2
 import psycopg2.extras
 import uvicorn
-
-# Supabase client for storage
-from supabase import create_client, Client
 
 # ================================================================
 # SECTION 1: LOGGING SETUP
@@ -53,12 +50,6 @@ class Settings(BaseSettings):
     SUPABASE_DB_NAME: str = "postgres"
     SUPABASE_DB_USER: str = "postgres"
     SUPABASE_DB_PASSWORD: str = ""
-    
-    # Supabase Client
-    SUPABASE_URL: str = ""
-    SUPABASE_SERVICE_KEY: str = ""
-    SUPABASE_ANON_KEY: str = ""
-    SUPABASE_BUCKET: str = "capitan-uploads"
     
     # Security
     JWT_SECRET: str = secrets.token_hex(32)
@@ -87,9 +78,6 @@ class Settings(BaseSettings):
     # Other
     WOLFRAM_APP_ID: str = ""
     
-    # CORS
-    ALLOWED_ORIGINS: list = ["*"]
-    
     class Config:
         env_file = ".env"
         extra = "ignore"
@@ -97,37 +85,7 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # ================================================================
-# SECTION 3: SUPABASE CLIENT INITIALIZATION
-# ================================================================
-supabase_client: Client = None
-if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY:
-    supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
-    logger.info("✅ Supabase client initialized")
-else:
-    logger.info("⚠️ Supabase client not configured")
-
-def get_supabase() -> Client:
-    """Get Supabase client for storage features"""
-    if not supabase_client:
-        raise HTTPException(503, "Supabase client not configured")
-    return supabase_client
-
-def init_supabase_storage():
-    """Initialize Supabase storage bucket"""
-    if supabase_client:
-        try:
-            buckets = supabase_client.storage.list_buckets()
-            bucket_exists = any(b.get("name") == settings.SUPABASE_BUCKET for b in buckets)
-            if not bucket_exists:
-                supabase_client.storage.create_bucket(settings.SUPABASE_BUCKET, {"public": True})
-                logger.info(f"✅ Supabase bucket '{settings.SUPABASE_BUCKET}' created")
-            else:
-                logger.info(f"✅ Supabase bucket '{settings.SUPABASE_BUCKET}' ready")
-        except Exception as e:
-            logger.warning(f"Supabase storage init: {e}")
-
-# ================================================================
-# SECTION 4: DATABASE LAYER
+# SECTION 3: DATABASE LAYER
 # ================================================================
 @contextmanager
 def get_db():
@@ -158,14 +116,13 @@ def get_db():
         conn.close()
 
 # ================================================================
-# SECTION 5: TABLE CREATION (15 Tables + Storage Columns)
+# SECTION 4: TABLE CREATION (All 15 Tables)
 # ================================================================
 def init_db():
     """Create all tables if they don't exist"""
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # 1. Sessions
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS sessions (
                         id TEXT PRIMARY KEY,
@@ -176,8 +133,6 @@ def init_db():
                         updated TIMESTAMP
                     )
                 ''')
-                
-                # 2. Chats
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS chats (
                         id TEXT PRIMARY KEY,
@@ -187,8 +142,6 @@ def init_db():
                         updated TIMESTAMP
                     )
                 ''')
-                
-                # 3. Chat Messages
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS chat_messages (
                         id TEXT PRIMARY KEY,
@@ -202,8 +155,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 4. Memories
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS memories (
                         id TEXT PRIMARY KEY,
@@ -215,8 +166,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 5. Library Items
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS library_items (
                         id TEXT PRIMARY KEY,
@@ -228,8 +177,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 6. Uploaded Files (with storage columns)
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS uploaded_files (
                         id TEXT PRIMARY KEY,
@@ -243,8 +190,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 7. Payments
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS payments (
                         id TEXT PRIMARY KEY,
@@ -258,8 +203,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 8. Payment Log
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS payment_log (
                         id TEXT PRIMARY KEY,
@@ -271,8 +214,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 9. Workspaces
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspaces (
                         id TEXT PRIMARY KEY,
@@ -283,8 +224,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 10. Workspace Members
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_members (
                         workspace_id TEXT,
@@ -294,8 +233,6 @@ def init_db():
                         PRIMARY KEY (workspace_id, session_id)
                     )
                 ''')
-                
-                # 11. Workspace Messages
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_messages (
                         id TEXT PRIMARY KEY,
@@ -307,8 +244,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 12. Workspace Notes
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_notes (
                         id TEXT PRIMARY KEY,
@@ -320,8 +255,6 @@ def init_db():
                         updated TIMESTAMP
                     )
                 ''')
-                
-                # 13. Market Cache
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS market_cache (
                         id TEXT PRIMARY KEY,
@@ -330,8 +263,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 14. News Cache
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS news_cache (
                         id TEXT PRIMARY KEY,
@@ -340,8 +271,6 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
-                # 15. Web Cache
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS web_cache (
                         id TEXT PRIMARY KEY,
@@ -350,29 +279,23 @@ def init_db():
                         created TIMESTAMP
                     )
                 ''')
-                
                 conn.commit()
         logger.info("✅ All 15 database tables ready")
-        
-        # Initialize Supabase storage
-        init_supabase_storage()
-        
     except Exception as e:
         logger.warning(f"Database init warning: {e}")
 
 init_db()
 
 # ================================================================
-# SECTION 6: UTILITY FUNCTIONS
+# SECTION 5: UTILITY FUNCTIONS
 # ================================================================
 def sid(): return str(uuid.uuid4())[:8].upper()
 def mid(): return 'mem_' + sid()
 
 # ================================================================
-# SECTION 7: SECURITY & JWT AUTH (FIXED SESSION HANDLING)
+# SECTION 6: SECURITY & JWT AUTH
 # ================================================================
 def create_jwt(session_id, tier):
-    """Create JWT token for authentication"""
     header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
         "session_id": session_id,
@@ -385,7 +308,6 @@ def create_jwt(session_id, tier):
     return f"{header}.{payload}.{signature}"
 
 def verify_jwt(token):
-    """Verify and decode JWT token"""
     try:
         parts = token.split(".")
         if len(parts) != 3:
@@ -404,9 +326,7 @@ def verify_jwt(token):
         return None
 
 def get_session(request: Request):
-    """Get current session from JWT - AUTO-CREATES missing sessions"""
     auth = request.headers.get("Authorization", "")
-    
     if not auth.startswith("Bearer "):
         return None
     
@@ -431,7 +351,6 @@ def get_session(request: Request):
                 row = c.fetchone()
                 
                 if not row:
-                    logger.info(f"Session {session_id} not found, creating...")
                     c.execute(
                         "INSERT INTO sessions (id, tier, msg_count, msg_window, created, updated) VALUES (%s, %s, 0, %s, %s, %s)",
                         (session_id, tier, now, now, now)
@@ -440,24 +359,21 @@ def get_session(request: Request):
                     return {"id": session_id, "tier": tier, "msg_count": 0, "msg_window": now}
                 
                 if tier != row[1]:
-                    logger.info(f"Tier mismatch: JWT={tier}, DB={row[1]}. Updating...")
                     c.execute("UPDATE sessions SET tier=%s, updated=%s WHERE id=%s", (tier, now, session_id))
                     conn.commit()
                     return {"id": row[0], "tier": tier, "msg_count": row[2] or 0, "msg_window": row[3]}
                 
                 return {"id": row[0], "tier": row[1], "msg_count": row[2] or 0, "msg_window": row[3]}
-                
     except Exception as e:
         logger.error(f"Database error in get_session: {e}")
         return None
 
 # ================================================================
-# SECTION 8: RATE LIMITING
+# SECTION 7: RATE LIMITING
 # ================================================================
 rate_store = {}
 
 def check_rate(session_id, tier):
-    """Check rate limit (per minute)"""
     now = time.time()
     key = f"{session_id}"
     
@@ -476,7 +392,7 @@ def check_rate(session_id, tier):
     return True
 
 # ================================================================
-# SECTION 9: TIME CONTEXT
+# SECTION 8: TIME CONTEXT
 # ================================================================
 def get_time_context():
     now = datetime.utcnow()
@@ -510,11 +426,12 @@ def get_time_context():
     }
 
 # ================================================================
-# SECTION 10: MARKET DATA
+# SECTION 9: MARKET DATA (Full Intelligence)
 # ================================================================
 def get_market_data():
     results = {}
     
+    # CoinGecko for Crypto
     if settings.COINGECKO_KEY:
         try:
             ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
@@ -536,6 +453,7 @@ def get_market_data():
         except:
             pass
     
+    # Yahoo Finance for Stocks, Indices, Forex
     try:
         syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X"
         r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",
@@ -548,7 +466,8 @@ def get_market_data():
                 prev = i.get("regularMarketPreviousClose")
                 if price and prev:
                     chg = i.get("regularMarketChangePercent")
-                    results[name] = {
+                    display_name = name.replace("S&P 500", "S&P 500").replace("NASDAQ Composite", "NASDAQ")
+                    results[display_name] = {
                         "price": price,
                         "change": round(chg, 2) if chg else round(((price - prev) / prev) * 100, 2),
                         "source": "Yahoo Finance"
@@ -556,10 +475,30 @@ def get_market_data():
     except:
         pass
     
+    # Alpha Vantage for Forex
+    if settings.ALPHA_VANTAGE_KEY and len(results) < 5:
+        try:
+            for pair, label in {"EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
+                                "USDGHS": "USD/GHS", "USDNGN": "USD/NGN", "USDZAR": "USD/ZAR"}.items():
+                try:
+                    r = requests.get(f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={pair[:3]}&to_currency={pair[3:]}&apikey={settings.ALPHA_VANTAGE_KEY}", timeout=8)
+                    if r.status_code == 200:
+                        data = r.json().get("Realtime Currency Exchange Rate", {})
+                        if data.get("5. Exchange Rate"):
+                            results[label] = {
+                                "price": float(data["5. Exchange Rate"]),
+                                "change": 0,
+                                "source": "Alpha Vantage"
+                            }
+                except:
+                    pass
+        except:
+            pass
+    
     return results
 
 # ================================================================
-# SECTION 11: NEWS FUNCTIONS
+# SECTION 10: FINANCIAL NEWS
 # ================================================================
 def get_financial_news():
     news = []
@@ -596,6 +535,22 @@ def get_financial_news():
         except:
             pass
     
+    if settings.FINNHUB_API_KEY:
+        try:
+            r = requests.get("https://finnhub.io/api/v1/news", params={"category": "general", "token": settings.FINNHUB_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for a in r.json()[:12]:
+                    ts = a.get("datetime", 0)
+                    news.append({
+                        "source": a.get("source", "Finnhub"),
+                        "headline": a.get("headline", ""),
+                        "url": a.get("url", ""),
+                        "time": datetime.fromtimestamp(ts).isoformat() if ts else "",
+                        "summary": (a.get("summary") or "")[:300]
+                    })
+        except:
+            pass
+    
     seen = set()
     unique = []
     for n in news:
@@ -607,18 +562,38 @@ def get_financial_news():
     unique.sort(key=lambda x: x.get("time", ""), reverse=True)
     return unique[:15]
 
+# ================================================================
+# SECTION 11: TECH NEWS
+# ================================================================
 def get_tech_news():
     news = []
     
     if settings.NEWS_API_KEY:
         try:
             r = requests.get("https://newsapi.org/v2/everything",
-                params={"q": "AI artificial intelligence coding startup innovation",
+                params={"q": "AI artificial intelligence coding startup innovation technology",
                         "language": "en", "pageSize": 12, "sortBy": "publishedAt", "apiKey": settings.NEWS_API_KEY}, timeout=10)
             if r.status_code == 200:
                 for a in r.json().get("articles", []):
                     news.append({
                         "source": a.get("source", {}).get("name", "NewsAPI"),
+                        "headline": a.get("title", ""),
+                        "url": a.get("url", ""),
+                        "time": a.get("publishedAt", ""),
+                        "summary": (a.get("description") or "")[:300]
+                    })
+        except:
+            pass
+    
+    if settings.GNEWS_API_KEY:
+        try:
+            r = requests.get("https://gnews.io/api/v4/search",
+                params={"q": "AI artificial intelligence coding startup innovation",
+                        "lang": "en", "max": 12, "apikey": settings.GNEWS_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("articles", []):
+                    news.append({
+                        "source": a.get("source", {}).get("name", "GNews"),
                         "headline": a.get("title", ""),
                         "url": a.get("url", ""),
                         "time": a.get("publishedAt", ""),
@@ -645,6 +620,7 @@ def search_web(query, num_results=5):
     results = []
     query_hash = hashlib.md5(query.lower().encode()).hexdigest()
     
+    # Check cache
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -656,6 +632,7 @@ def search_web(query, num_results=5):
     except:
         pass
     
+    # SerpAPI for Google Search
     if settings.SERPAPI_KEY:
         try:
             r = requests.get("https://serpapi.com/search",
@@ -671,6 +648,23 @@ def search_web(query, num_results=5):
         except:
             pass
     
+    # DuckDuckGo fallback
+    if not results:
+        try:
+            r = requests.get("https://api.duckduckgo.com/", params={"q": query, "format": "json", "no_html": 1}, timeout=6)
+            if r.status_code == 200:
+                data = r.json()
+                if data.get("AbstractText"):
+                    results.append({
+                        "title": data.get("Heading", query),
+                        "snippet": data["AbstractText"][:250],
+                        "url": data.get("AbstractURL", ""),
+                        "source": "DuckDuckGo"
+                    })
+        except:
+            pass
+    
+    # Cache results
     if results:
         try:
             with get_db() as conn:
@@ -684,48 +678,110 @@ def search_web(query, num_results=5):
     return results
 
 # ================================================================
-# SECTION 13: ELITE SYSTEM PROMPT
+# SECTION 13: ELITE SYSTEM PROMPT (Full Intelligence)
 # ================================================================
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies.
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu.
 
-🏦 FINANCE ARCHITECT: DCF, LBO, M&A, portfolio optimization, derivatives pricing
-📈 INSTITUTIONAL TRADER: Market microstructure, volatility trading, algorithmic execution
-💻 LEGENDARY CODER: Full-stack, system architecture, DevOps, databases
-📐 MATHEMATICIAN: Pure math, applied math, linear algebra, probability
-📊 QUANTITATIVE ANALYST: Time series, factor modeling, ML in finance, backtesting
-🔬 GENERAL KNOWLEDGE: Physics, chemistry, biology, medicine, history, philosophy
+╔══════════════════════════════════════════════════════════════╗
+║                    CORE INTELLIGENCE DOMAINS                 ║
+╚══════════════════════════════════════════════════════════════╝
 
-RESPONSE STYLE:
-- Lead with the answer. No throat-clearing.
-- Use 1-2 emojis naturally for warmth.
-- Short sentences. Clean paragraphs.
-- NEVER make up prices or data.
-- NEVER give financial advice or medical diagnoses.
+🏦 FINANCE ARCHITECT:
+- Advanced financial modeling (DCF, LBO, M&A, three-statement models)
+- Portfolio optimization (Markowitz, Black-Litterman, risk parity)
+- Derivatives pricing (Black-Scholes, binomial trees, Monte Carlo)
+- Fixed income analytics (yield curves, duration, convexity, CDS)
+- Risk management (VaR, CVaR, stress testing, scenario analysis)
+- African financial markets (NGX, JSE, GSE, regional integration)
+
+📈 INSTITUTIONAL TRADER:
+- Market microstructure and order flow analysis
+- Volatility trading strategies (volatility arbitrage, dispersion)
+- Intermarket analysis and cross-asset correlations
+- Algorithmic execution (VWAP, TWAP, implementation shortfall)
+- Quantitative trading strategies (mean reversion, momentum, statistical arbitrage)
+
+💻 LEGENDARY CODER:
+- Full-stack development (React, Vue, Angular, Node.js, Python, Go, Rust)
+- System architecture (microservices, event-driven, serverless)
+- DevOps & cloud (AWS, GCP, Azure, Kubernetes, Terraform, CI/CD)
+- Database design (SQL, NoSQL, vector databases, time-series)
+- API development (REST, GraphQL, gRPC, WebSocket)
+
+📐 MATHEMATICIAN:
+- Pure mathematics (abstract algebra, topology, number theory, complex analysis)
+- Applied mathematics (differential equations, dynamical systems, optimization)
+- Linear algebra (eigenvalues, SVD, matrix decompositions, spectral theory)
+- Probability theory (measure theory, stochastic processes, martingales)
+- Numerical methods (finite element, Monte Carlo, optimization algorithms)
+
+📊 QUANTITATIVE ANALYST:
+- Derivative pricing models (local volatility, stochastic volatility, jump diffusion)
+- Time series analysis (ARIMA, GARCH, state space models, regime switching)
+- Factor modeling (Fama-French, Barra, fundamental factor models)
+- Machine learning in finance (random forests, gradient boosting, neural networks)
+- Backtesting frameworks (walk-forward, cross-validation, bootstrap)
+
+🔬 GENERAL KNOWLEDGE:
+- Physics (quantum mechanics, relativity, thermodynamics, electromagnetism)
+- Chemistry (organic, inorganic, physical, computational chemistry)
+- Biology (molecular biology, genetics, neuroscience, ecology)
+- Medicine (diagnosis, treatment protocols, pharmacology, epidemiology)
+- History (world history, economic history, technological revolutions)
+- Philosophy (ethics, epistemology, logic, philosophy of mind)
+- Current events (geopolitics, economics, technology, culture)
+
+╔══════════════════════════════════════════════════════════════╗
+║                      RESPONSE STYLE                          ║
+╚══════════════════════════════════════════════════════════════╝
+
+- Lead with the answer. Never throat-clearing or meta-analysis.
+- Casual greetings get casual responses. Professional queries get depth.
+- Use 1-2 emojis naturally for warmth when appropriate.
+- Short sentences. Clean paragraphs. No filler.
+- Depth when the topic demands it. One-liner when it doesn't.
+- NEVER make up prices or data. Only reference verified information.
+- NEVER give financial advice or trading signals.
+- NEVER provide medical diagnoses.
 
 TIME: {day}, {date} at {utc_time}. {greeting_context}
 DOMAIN: {domain} | TIER: {tier}
 """
 
 # ================================================================
-# SECTION 14: QUERY CLASSIFICATION
+# SECTION 14: QUERY CLASSIFICATION ENGINE
 # ================================================================
 def classify(q):
     q = q.lower()
     
-    if re.search(r'who are you|what are you|identity|introduce yourself', q):
+    # Identity questions
+    if re.search(r'who are you|what are you|identity|introduce yourself|other capitan', q):
         return 'identity'
-    if re.search(r'who|what|when|where|why|how|news|latest|current|today|search', q) and len(q.split()) > 3:
+    
+    # Web search needed
+    if re.search(r'who|what|when|where|why|how|news|latest|current|today|search|find', q) and len(q.split()) > 3:
         return 'web_search'
-    if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|health|medicine|disease', q):
+    
+    # Science/Medical
+    if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis', q):
         return 'science'
-    if re.search(r'```|def |class |import |docker|kubernetes|aws|api|graphql|sql|database|react|node|javascript|python|rust', q):
+    
+    # Coding/Programming
+    if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api|rest|graphql|sql|database|query|react|node|javascript|typescript|python|rust|golang', q):
         return 'coding'
-    if re.search(r'stochastic|ito|black.scholes|monte carlo|sharpe|var|option pricing|derivative|garch|arima|backtest', q):
+    
+    # Quantitative Finance
+    if re.search(r'stochastic|ito|black.scholes|monte carlo|var|cvar|sharpe|sortino|beta|alpha|option pricing|derivative|risk neutral|fama|french|cointegration|garch|arima|backtest|factor model', q):
         return 'quant'
-    if re.search(r'dcf|ebitda|valuation|wacc|capm|pe ratio|forex|federal reserve|inflation|gdp|stock|trading|portfolio|crypto|bitcoin', q):
+    
+    # Finance/Trading
+    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx|central bank|federal reserve|interest rate|inflation|gdp|macro|equity|stock|market|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|silver|oil|commodity', q):
         return 'finance'
-    if re.search(r'prove|proof|theorem|lemma|integral|derivative|matrix|eigenvalue|probability|statistics', q):
+    
+    # Mathematics
+    if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|probability|statistics', q):
         return 'math'
+    
     return 'general'
 
 # ================================================================
@@ -738,6 +794,11 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
     base = base.replace("{utc_time}", tc["utc_time"])
     base = base.replace("{greeting_context}", tc["greeting_context"])
     
+    # Identity mode override
+    if domain == 'identity':
+        base += "\n\nIDENTITY MODE: You are the ONLY CAPITAN AI. State clearly: 'I am CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies.'"
+    
+    # Add user memory context
     if session_id:
         try:
             with get_db() as conn:
@@ -749,14 +810,33 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
         except:
             pass
     
-    if web_results:
-        base += "\n\nWEB RESULTS:\n" + "\n".join([f"• {r['title']}: {r['snippet'][:200]}" for r in web_results[:3]])
+    # Tier-specific instructions
+    if tier == "free":
+        base += "\n\nBe concise but helpful."
+    elif tier == "plus":
+        base += "\n\nProvide detailed responses."
+    elif tier in ("pro", "founder"):
+        base += "\n\nGo deep — provide comprehensive analysis with examples."
     
+    # Add web search results
+    if web_results:
+        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"• {r['title']}: {r['snippet'][:200]}" for r in web_results[:3]])
+    
+    # Add live market data for Pro/Founder
     if tier in ("pro", "founder"):
         try:
             md = get_market_data()
             if md:
-                base += "\n\nLIVE MARKETS:\n" + "\n".join([f"• {s}: ${d['price']:.2f}" for s, d in list(md.items())[:5]])
+                base += "\n\nLIVE MARKETS:\n" + "\n".join([f"• {s}: ${d['price']:.2f} ({'▲' if d.get('change',0)>=0 else '▼'} {abs(d['change']):.2f}%)" for s, d in list(md.items())[:8]])
+        except:
+            pass
+    
+    # Add news for Pro/Founder
+    if tier in ("pro", "founder"):
+        try:
+            news = get_financial_news()
+            if news:
+                base += "\n\nLATEST NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:100]}" for n in news[:5]])
         except:
             pass
     
@@ -766,14 +846,18 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
 # SECTION 16: AI SERVICE (Multi-Provider)
 # ================================================================
 def call_ai_fast(messages, tier="free"):
-    # Groq
+    # Priority 1: Groq (fastest)
     if settings.GROQ_KEY:
         try:
             groq_msgs = []
             for m in messages:
-                if m["role"] == "system" and tier == "free":
-                    m["content"] = m["content"][:1000]
-                groq_msgs.append(m)
+                if m["role"] == "system":
+                    content = m["content"]
+                    if len(content) > 1500 and tier == "free":
+                        content = content[:1500] + "\n\n[Context trimmed]"
+                    groq_msgs.append({"role": "system", "content": content})
+                else:
+                    groq_msgs.append(m)
             
             model = "llama-3.3-70b-versatile" if tier in ("pro", "founder") else "llama-3.1-8b-instant"
             r = requests.post("https://api.groq.com/openai/v1/chat/completions",
@@ -784,14 +868,14 @@ def call_ai_fast(messages, tier="free"):
                 content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 if content:
                     return content, model
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Groq error: {e}")
     
-    # OpenRouter
+    # Priority 2: OpenRouter (Claude/GPT-4 for Pro/Founder)
     if settings.OPENROUTER_KEY:
-        models = ["google/gemini-flash-1.5", "mistral/mistral-7b-instruct"]
+        models = ["google/gemini-flash-1.5", "mistral/mistral-7b-instruct", "deepseek/deepseek-chat"]
         if tier in ("pro", "founder"):
-            models = ["anthropic/claude-3.5-sonnet", "openai/gpt-4o"] + models
+            models = ["anthropic/claude-3.5-sonnet-20241022", "openai/gpt-4o-2024-11-20"] + models
         for model in models:
             try:
                 r = requests.post("https://openrouter.ai/api/v1/chat/completions",
@@ -805,23 +889,55 @@ def call_ai_fast(messages, tier="free"):
             except:
                 continue
     
-    return "I'm having trouble connecting. Please try again.", "fallback"
+    # Priority 3: OpenAI fallback
+    if settings.OPENAI_KEY:
+        try:
+            r = requests.post("https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENAI_KEY}", "Content-Type": "application/json"},
+                json={"model": "gpt-4o-mini", "messages": messages, "temperature": 0.5, "max_tokens": 1000}, timeout=25)
+            if r.status_code == 200:
+                return r.json()["choices"][0]["message"]["content"], "gpt-4o-mini"
+        except:
+            pass
+    
+    # Priority 4: Mistral fallback
+    if settings.MISTRAL_KEY:
+        try:
+            r = requests.post("https://api.mistral.ai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.MISTRAL_KEY}", "Content-Type": "application/json"},
+                json={"model": "mistral-small-latest", "messages": messages, "temperature": 0.5, "max_tokens": 1000}, timeout=25)
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "mistral/small"
+        except:
+            pass
+    
+    return "I'm having trouble connecting to AI services. Please try again or contact support.", "fallback"
 
 # ================================================================
-# SECTION 17: FASTAPI APP WITH CORS
+# SECTION 17: FASTAPI APP WITH CORS (Frontend-Backend Link)
 # ================================================================
 app = FastAPI(title="CAPITAN AI API", version="25.0")
 
+# CORS - Allows frontend (Cloudflare, localhost, etc.) to connect
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "*",  # Allow all origins for testing
+        "https://capitan.pages.dev",
+        "https://*.onrender.com",
+        "http://localhost:3000",
+        "http://localhost:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # ================================================================
-# SECTION 18: HEALTH & DEBUG
+# SECTION 18: HEALTH CHECK
 # ================================================================
 @app.get("/health")
 def health():
@@ -838,28 +954,26 @@ def health():
     providers = []
     if settings.GROQ_KEY: providers.append("groq")
     if settings.OPENROUTER_KEY: providers.append("openrouter")
+    if settings.OPENAI_KEY: providers.append("openai")
     
-    return {"status": "ok", "version": "25.0", "database": db_status, "ai": ai_status, "providers": providers}
+    return {
+        "status": "ok",
+        "version": "25.0",
+        "database": db_status,
+        "ai": ai_status,
+        "providers": providers,
+        "message": "CAPITAN AI backend is running"
+    }
 
-@app.get("/api/debug-token")
-def debug_token(request: Request):
-    auth = request.headers.get("Authorization", "")
-    result = {"has_auth": bool(auth), "token_valid": False, "session_exists": False}
-    
-    if auth.startswith("Bearer "):
-        payload = verify_jwt(auth[7:])
-        result["token_valid"] = payload is not None
-        if payload:
-            result["session_id"] = payload.get("session_id")
-            try:
-                with get_db() as conn:
-                    with conn.cursor() as c:
-                        c.execute("SELECT id FROM sessions WHERE id=%s", (payload.get("session_id"),))
-                        result["session_exists"] = c.fetchone() is not None
-            except:
-                pass
-    
-    return result
+@app.get("/api/status")
+def api_status():
+    """Simple status endpoint for frontend connectivity test"""
+    return {
+        "status": "operational",
+        "version": "25.0",
+        "cors_enabled": True,
+        "endpoints_available": ["/api/session", "/api/chat", "/api/chats", "/api/markets", "/api/search"]
+    }
 
 # ================================================================
 # SECTION 19: SESSION ENDPOINT
@@ -886,7 +1000,13 @@ def get_or_create_session(request: Request):
         logger.error(f"Session creation error: {e}")
     
     token = create_jwt(session_id, tier)
-    return {"id": session_id, "tier": tier, "msg_count": 0, "token": token}
+    return {
+        "id": session_id,
+        "tier": tier,
+        "msg_count": 0,
+        "token": token,
+        "message": "Session created successfully"
+    }
 
 # ================================================================
 # SECTION 20: PAYMENT CONFIGURATION
@@ -904,13 +1024,17 @@ TIER_CONFIG = {
 }
 
 UPGRADE_BENEFITS = {
-    "plus": ["40 messages/day", "Smart AI", "Work Area (7 seats)", "File uploads", "Web search"],
-    "pro": ["Unlimited messages", "Deep AI (Claude/GPT-4)", "Work Area (20 seats)", "Live market data", "All Plus features"]
+    "plus": ["40 messages per day", "Smart AI model", "Work Area (7 seats)", "File uploads (10MB)", "Web search", "Coding & Quant tools", "African Finance module"],
+    "pro": ["Unlimited messages", "Deep AI (Claude Sonnet 4 / GPT-4o)", "Work Area (20 seats)", "File uploads (50MB)", "Live market data", "Financial news", "Web search", "Business mode", "All Plus features"]
 }
 
 @app.get("/api/payment-config")
 def payment_config():
-    return {"wallets": WALLETS, "prices": {"plus": 8, "pro": 17}, "benefits": UPGRADE_BENEFITS}
+    return {
+        "wallets": WALLETS,
+        "prices": {"plus": 8, "pro": 17},
+        "benefits": UPGRADE_BENEFITS
+    }
 
 # ================================================================
 # SECTION 21: MARKET & NEWS ENDPOINTS
@@ -960,40 +1084,42 @@ def web_search_endpoint(q: str, request: Request):
 def get_chats(request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT id,title,created,updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 30", (s["id"],))
+                c.execute("SELECT id, title, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 30", (s["id"],))
                 rows = c.fetchall()
                 return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "created": r[2].isoformat() if r[2] else None, "updated": r[3].isoformat() if r[3] else None} for r in rows]}
-    except:
+    except Exception as e:
+        logger.error(f"Get chats error: {e}")
         return {"chats": []}
 
 @app.get("/api/chats/{chat_id}")
 def get_chat(chat_id: str, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, s["id"]))
                 if not c.fetchone():
-                    raise HTTPException(404)
-                c.execute("SELECT id,role,content,model,created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
+                    raise HTTPException(404, "Chat not found")
+                c.execute("SELECT id, role, content, model, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
                 rows = c.fetchall()
                 return {"messages": [{"id": r[0], "role": r[1], "content": r[2], "model": r[3] or "AI", "created": r[4].isoformat() if r[4] else None} for r in rows]}
     except HTTPException:
         raise
-    except:
-        raise HTTPException(500)
+    except Exception as e:
+        logger.error(f"Get chat error: {e}")
+        raise HTTPException(500, str(e))
 
 @app.delete("/api/chats/{chat_id}")
 def delete_chat(chat_id: str, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1001,11 +1127,12 @@ def delete_chat(chat_id: str, request: Request):
                 c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, s["id"]))
                 conn.commit()
                 return {"deleted": True}
-    except:
-        raise HTTPException(500)
+    except Exception as e:
+        logger.error(f"Delete chat error: {e}")
+        raise HTTPException(500, str(e))
 
 # ================================================================
-# SECTION 23: MAIN CHAT ENDPOINT
+# SECTION 23: MAIN CHAT ENDPOINT (Full Intelligence)
 # ================================================================
 class ChatRequest(BaseModel):
     messages: list
@@ -1015,20 +1142,20 @@ class ChatRequest(BaseModel):
 def chat(req: ChatRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     
     if not check_rate(s["id"], s["tier"]):
-        raise HTTPException(429, "Rate limit exceeded")
+        raise HTTPException(429, "Rate limit exceeded. Please wait a moment.")
     
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
     limit = cfg["msg_limit"]
     
-    # Daily limit
+    # Daily limit check
     if limit != float("inf"):
         try:
             with get_db() as conn:
                 with conn.cursor() as c:
-                    c.execute("SELECT msg_count,msg_window FROM sessions WHERE id=%s", (s["id"],))
+                    c.execute("SELECT msg_count, msg_window FROM sessions WHERE id=%s", (s["id"],))
                     row = c.fetchone()
                     count = row[0] or 0
                     if count >= limit:
@@ -1039,69 +1166,79 @@ def chat(req: ChatRequest, request: Request):
                         conn.commit()
         except HTTPException:
             raise
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Daily limit check error: {e}")
     
     user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role") == "user"), "")
     if not user_msg:
-        raise HTTPException(400, "No message")
+        raise HTTPException(400, "No message content")
     
     chat_id = req.chat_id or f"chat_{sid()}"
     
+    # Save user message to database
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 if not req.chat_id:
-                    c.execute("INSERT INTO chats (id,session_id,title,created,updated) VALUES (%s,%s,%s,%s,%s)",
+                    c.execute("INSERT INTO chats (id, session_id, title, created, updated) VALUES (%s, %s, %s, %s, %s)",
                              (chat_id, s["id"], user_msg[:60], datetime.utcnow(), datetime.utcnow()))
                 else:
                     c.execute("UPDATE chats SET updated=%s WHERE id=%s AND session_id=%s", (datetime.utcnow(), chat_id, s["id"]))
                 
-                c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,created) VALUES (%s,%s,%s,%s,%s,%s)",
+                c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, created) VALUES (%s, %s, %s, %s, %s, %s)",
                          (f"msg_{sid()}", chat_id, s["id"], "user", user_msg, datetime.utcnow()))
                 c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=%s", (s["id"],))
                 conn.commit()
                 
-                c.execute("SELECT role,content FROM chat_messages WHERE chat_id=%s ORDER BY created ASC LIMIT 15", (chat_id,))
+                # Get chat history for context
+                c.execute("SELECT role, content FROM chat_messages WHERE chat_id=%s ORDER BY created ASC LIMIT 15", (chat_id,))
                 history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
     except Exception as e:
-        logger.error(f"Save error: {e}")
+        logger.error(f"Save message error: {e}")
         history = []
     
+    # Classify the query
     domain = classify(user_msg)
+    
+    # Get web results if needed
     web_results = None
     if domain == 'web_search' or cfg.get("web_search", False):
         try:
             web_results = search_web(user_msg, 4)
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Web search error: {e}")
     
+    # Build system prompt and get AI response
     prompt = system_prompt(domain, s["tier"], s["id"], web_results)
     result, model_used = call_ai_fast([{"role": "system", "content": prompt}] + history, s["tier"])
     
+    # Save AI response
     if result:
         try:
             with get_db() as conn:
                 with conn.cursor() as c:
-                    c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,model,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                    c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, created) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                              (f"msg_{sid()}", chat_id, s["id"], "assistant", result, model_used, datetime.utcnow()))
-                    c.execute("INSERT INTO memories (id,memory_id,session_id,content,query,domain,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                    c.execute("INSERT INTO memories (id, memory_id, session_id, content, query, domain, created) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                              (sid(), mid(), s["id"], result[:500] if result else "", user_msg, domain, datetime.utcnow()))
                     conn.commit()
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Save AI response error: {e}")
     
+    # Calculate remaining messages
     remaining = limit - (s["msg_count"] + 1) if limit != float("inf") else "unlimited"
+    
     return {
         "content": result,
         "chat_id": chat_id,
         "model": model_used,
         "remaining": remaining,
-        "web_search_used": web_results is not None
+        "web_search_used": web_results is not None,
+        "domain": domain
     }
 
 # ================================================================
-# SECTION 24: UPGRADE & FOUNDER ENDPOINTS
+# SECTION 24: UPGRADE ENDPOINT
 # ================================================================
 class UpgradeRequest(BaseModel):
     tier: str
@@ -1112,7 +1249,7 @@ class UpgradeRequest(BaseModel):
 def upgrade(req: UpgradeRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     if req.tier not in ("plus", "pro"):
         raise HTTPException(400, "Invalid tier")
     if not req.txid.strip():
@@ -1123,20 +1260,23 @@ def upgrade(req: UpgradeRequest, request: Request):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("INSERT INTO payments (id,session_id,txid,currency,amount,tier,verified,expires,created) VALUES (%s,%s,%s,%s,%s,%s,1,%s,%s)",
+                c.execute("INSERT INTO payments (id, session_id, txid, currency, amount, tier, verified, expires, created) VALUES (%s, %s, %s, %s, %s, %s, 1, %s, %s)",
                          (sid(), s["id"], req.txid.strip(), req.currency.upper(), prices[req.tier], req.tier,
                           (datetime.utcnow() + timedelta(days=30)).isoformat(), datetime.utcnow()))
                 c.execute("UPDATE sessions SET tier=%s, msg_count=0, updated=%s WHERE id=%s",
                          (req.tier, datetime.utcnow().isoformat(), s["id"]))
-                c.execute("INSERT INTO payment_log (id,session_id,tier,amount,currency,txid,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                c.execute("INSERT INTO payment_log (id, session_id, tier, amount, currency, txid, created) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                          (sid(), s["id"], req.tier, prices[req.tier], req.currency.upper(), req.txid, datetime.utcnow()))
                 conn.commit()
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Upgrade error: {e}")
     
     token = create_jwt(s["id"], req.tier)
     return {"verified": True, "tier": req.tier, "token": token}
 
+# ================================================================
+# SECTION 25: FOUNDER ENDPOINT
+# ================================================================
 class FounderRequest(BaseModel):
     code: str
 
@@ -1144,7 +1284,7 @@ class FounderRequest(BaseModel):
 def founder(req: FounderRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     if req.code != settings.FOUNDER_KEY:
         raise HTTPException(403, "Invalid founder code")
     
@@ -1154,27 +1294,28 @@ def founder(req: FounderRequest, request: Request):
                 c.execute("UPDATE sessions SET tier='founder', msg_count=0, updated=%s WHERE id=%s",
                          (datetime.utcnow().isoformat(), s["id"]))
                 conn.commit()
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Founder upgrade error: {e}")
     
     token = create_jwt(s["id"], "founder")
     return {"verified": True, "tier": "founder", "token": token}
 
 # ================================================================
-# SECTION 25: LIBRARY ENDPOINTS
+# SECTION 26: LIBRARY ENDPOINTS
 # ================================================================
 @app.get("/api/library")
 def get_library(request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT id,name,type,content,size,created FROM library_items WHERE session_id=%s ORDER BY created DESC", (s["id"],))
+                c.execute("SELECT id, name, type, content, size, created FROM library_items WHERE session_id=%s ORDER BY created DESC", (s["id"],))
                 rows = c.fetchall()
                 return {"items": [{"id": r[0], "name": r[1], "type": r[2], "content": r[3], "size": r[4], "created": r[5].isoformat() if r[5] else None} for r in rows]}
-    except:
+    except Exception as e:
+        logger.error(f"Get library error: {e}")
         return {"items": []}
 
 class LibraryItemRequest(BaseModel):
@@ -1186,34 +1327,36 @@ class LibraryItemRequest(BaseModel):
 def create_library_item(req: LibraryItemRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 item_id = f"lib_{sid()}"
-                c.execute("INSERT INTO library_items (id,session_id,name,type,content,size,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                c.execute("INSERT INTO library_items (id, session_id, name, type, content, size, created) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                          (item_id, s["id"], req.name, req.type, req.content or "", len(req.content or ""), datetime.utcnow()))
                 conn.commit()
                 return {"id": item_id, "created": True}
-    except:
+    except Exception as e:
+        logger.error(f"Create library error: {e}")
         return {"created": False}
 
 @app.delete("/api/library/{item_id}")
 def delete_library_item(item_id: str, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("DELETE FROM library_items WHERE id=%s AND session_id=%s", (item_id, s["id"]))
                 conn.commit()
                 return {"deleted": True}
-    except:
+    except Exception as e:
+        logger.error(f"Delete library error: {e}")
         return {"deleted": False}
 
 # ================================================================
-# SECTION 26: FILE UPLOAD (Supabase Storage)
+# SECTION 27: FILE UPLOAD ENDPOINT
 # ================================================================
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -1222,7 +1365,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def upload_file(request: Request, file: UploadFile = File(...)):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
     if not cfg["file_upload"]:
@@ -1234,92 +1377,29 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         raise HTTPException(400, f"Max {max_size}MB")
     
     file_id = f"file_{sid()}"
-    file_path = f"{s['id']}/{file_id}_{file.filename}"
-    public_url = None
-    uploaded_to_supabase = False
+    file_path = os.path.join(UPLOAD_DIR, file_id)
     
-    # Try Supabase Storage
-    if supabase_client:
-        try:
-            supabase_client.storage.from_(settings.SUPABASE_BUCKET).upload(
-                file_path, contents,
-                {"content-type": file.content_type or "application/octet-stream"}
-            )
-            public_url = supabase_client.storage.from_(settings.SUPABASE_BUCKET).get_public_url(file_path)
-            uploaded_to_supabase = True
-            logger.info(f"File uploaded to Supabase: {file_path}")
-        except Exception as e:
-            logger.error(f"Supabase upload error: {e}")
-            with open(os.path.join(UPLOAD_DIR, file_id), "wb") as f:
-                f.write(contents)
-    else:
-        with open(os.path.join(UPLOAD_DIR, file_id), "wb") as f:
-            f.write(contents)
+    with open(file_path, "wb") as f:
+        f.write(contents)
     
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("""
-                    INSERT INTO uploaded_files 
-                    (id, session_id, filename, original_name, size, mime_type, storage_path, public_url, created) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    file_id, s["id"], file_id, file.filename or "unknown",
-                    len(contents), file.content_type or "application/octet-stream",
-                    file_path if uploaded_to_supabase else file_id,
-                    public_url, datetime.utcnow()
-                ))
+                c.execute("INSERT INTO uploaded_files (id, session_id, filename, original_name, size, mime_type, storage_path, created) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                         (file_id, s["id"], file_id, file.filename or "unknown", len(contents), file.content_type or "application/octet-stream", file_path, datetime.utcnow()))
                 conn.commit()
     except Exception as e:
-        logger.error(f"Save file record error: {e}")
+        logger.error(f"Save file error: {e}")
     
     return {
         "id": file_id,
         "filename": file.filename,
         "size_mb": round(len(contents) / (1024 * 1024), 2),
-        "storage": "supabase" if uploaded_to_supabase else "local",
-        "url": public_url
+        "storage": "local"
     }
 
-@app.get("/api/upload/{file_id}")
-def get_uploaded_file(file_id: str, request: Request):
-    s = get_session(request)
-    if not s:
-        raise HTTPException(401)
-    
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT storage_path, public_url, mime_type FROM uploaded_files WHERE id=%s AND session_id=%s", (file_id, s["id"]))
-                row = c.fetchone()
-                if not row:
-                    raise HTTPException(404, "File not found")
-                
-                storage_path, public_url, mime_type = row
-                
-                if public_url:
-                    return {"url": public_url}
-                
-                if storage_path and supabase_client:
-                    try:
-                        data = supabase_client.storage.from_(settings.SUPABASE_BUCKET).download(storage_path)
-                        return Response(content=data, media_type=mime_type or "application/octet-stream")
-                    except:
-                        pass
-                
-                local_path = os.path.join(UPLOAD_DIR, file_id)
-                if os.path.exists(local_path):
-                    return FileResponse(local_path)
-                
-                raise HTTPException(404, "File not found")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"File retrieval error: {e}")
-        raise HTTPException(500, "Could not retrieve file")
-
 # ================================================================
-# SECTION 27: WORKSPACE ENDPOINTS
+# SECTION 28: WORKSPACE ENDPOINTS
 # ================================================================
 class WorkspaceCreateRequest(BaseModel):
     room_code: str
@@ -1340,7 +1420,7 @@ class WorkspaceNoteRequest(BaseModel):
 def ws_create(req: WorkspaceCreateRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     max_m = TIER_CONFIG.get(s["tier"], {}).get("workspace_max", 0)
     if max_m == 0:
         raise HTTPException(403, "Work Area requires Plus or Pro")
@@ -1349,20 +1429,21 @@ def ws_create(req: WorkspaceCreateRequest, request: Request):
         with get_db() as conn:
             with conn.cursor() as c:
                 wid = sid()
-                c.execute("INSERT INTO workspaces (id,room_code,creator_session,creator_tier,max_members,created) VALUES (%s,%s,%s,%s,%s,%s)",
+                c.execute("INSERT INTO workspaces (id, room_code, creator_session, creator_tier, max_members, created) VALUES (%s, %s, %s, %s, %s, %s)",
                          (wid, req.room_code.upper(), s["id"], s["tier"], min(req.max_members, max_m), datetime.utcnow()))
-                c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s)",
+                c.execute("INSERT INTO workspace_members (workspace_id, session_id, role, joined) VALUES (%s, %s, %s, %s)",
                          (wid, s["id"], "admin", datetime.utcnow()))
                 conn.commit()
                 return {"room_id": wid, "room_code": req.room_code.upper(), "created": True}
-    except:
+    except Exception as e:
+        logger.error(f"Workspace create error: {e}")
         return {"created": False}
 
 @app.post("/api/workspace/join")
 def ws_join(req: WorkspaceJoinRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     
     try:
         with get_db() as conn:
@@ -1376,24 +1457,21 @@ def ws_join(req: WorkspaceJoinRequest, request: Request):
                 c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=%s", (ws[0],))
                 if c.fetchone()[0] >= ws[1]:
                     raise HTTPException(400, "Room full")
-                c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s)",
+                c.execute("INSERT INTO workspace_members (workspace_id, session_id, role, joined) VALUES (%s, %s, %s, %s)",
                          (ws[0], s["id"], "member", datetime.utcnow()))
-                c.execute("SELECT session_id, role FROM workspace_members WHERE workspace_id=%s", (ws[0],))
-                members = [{"session_id": r[0], "role": r[1]} for r in c.fetchall()]
-                c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
-                messages = [{"id": r[0], "session_id": r[1], "author": r[2], "message": r[3], "is_ai": bool(r[4]), "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]
                 conn.commit()
-                return {"joined": True, "room_id": ws[0], "members": members, "messages": messages}
+                return {"joined": True, "room_id": ws[0]}
     except HTTPException:
         raise
-    except:
+    except Exception as e:
+        logger.error(f"Workspace join error: {e}")
         return {"joined": False}
 
 @app.post("/api/workspace/message")
 def ws_message(req: WorkspaceMessageRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     
     try:
         with get_db() as conn:
@@ -1401,25 +1479,22 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
                 c.execute("SELECT id FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
                 ws = c.fetchone()
                 if not ws:
-                    raise HTTPException(404)
+                    raise HTTPException(404, "Room not found")
                 
+                # Check for @CAPITAN mention for AI response
                 is_ai = req.message.strip().startswith("@CAPITAN")
                 if is_ai:
-                    c.execute("SELECT author,message FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 20", (ws[0],))
-                    context = "\n".join([f"{r[0]}: {r[1]}" for r in c.fetchall()])
-                    c.execute("SELECT content FROM workspace_notes WHERE workspace_id=%s", (ws[0],))
-                    notes = "\n".join([r[0] for r in c.fetchall()])
-                    result, _ = call_ai_fast([{"role": "system", "content": f"Work Area:\n{context}\n\nNotes:\n{notes}"},
-                                             {"role": "user", "content": req.message.replace('@CAPITAN', '').strip()}], s["tier"])
+                    result, _ = call_ai_fast([{"role": "user", "content": req.message.replace('@CAPITAN', '').strip()}], s["tier"])
                     if result:
-                        c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,is_ai,created) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                        c.execute("INSERT INTO workspace_messages (id, workspace_id, session_id, author, message, is_ai, created) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                                  (sid(), ws[0], s["id"], "CAPITAN AI", result, 1, datetime.utcnow()))
                 
-                c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,created) VALUES (%s,%s,%s,%s,%s,%s)",
+                c.execute("INSERT INTO workspace_messages (id, workspace_id, session_id, author, message, created) VALUES (%s, %s, %s, %s, %s, %s)",
                          (sid(), ws[0], s["id"], "User", req.message, datetime.utcnow()))
                 conn.commit()
                 return {"sent": True}
-    except:
+    except Exception as e:
+        logger.error(f"Workspace message error: {e}")
         return {"sent": False}
 
 @app.get("/api/workspace/messages")
@@ -1430,33 +1505,33 @@ def ws_get_messages(room_code: str):
                 c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
                 ws = c.fetchone()
                 if not ws:
-                    raise HTTPException(404)
-                c.execute("SELECT session_id, role FROM workspace_members WHERE workspace_id=%s", (ws[0],))
-                members = [{"session_id": r[0], "role": r[1]} for r in c.fetchall()]
-                c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
+                    raise HTTPException(404, "Room not found")
+                c.execute("SELECT id, session_id, author, message, is_ai, created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
                 messages = [{"id": r[0], "session_id": r[1], "author": r[2], "message": r[3], "is_ai": bool(r[4]), "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]
-                return {"messages": messages, "members": members}
-    except:
-        return {"messages": [], "members": []}
+                return {"messages": messages}
+    except Exception as e:
+        logger.error(f"Get workspace messages error: {e}")
+        return {"messages": []}
 
 @app.post("/api/workspace/notes")
 def ws_save_note(req: WorkspaceNoteRequest, request: Request):
     s = get_session(request)
     if not s:
-        raise HTTPException(401)
+        raise HTTPException(401, "Session required")
     
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT id FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
                 if not c.fetchone():
-                    raise HTTPException(404)
+                    raise HTTPException(404, "Room not found")
                 c.execute("DELETE FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)", (req.room_code.upper(),))
-                c.execute("INSERT INTO workspace_notes (id,workspace_id,session_id,author,content,created,updated) VALUES (%s,(SELECT id FROM workspaces WHERE room_code=%s),%s,%s,%s,%s,%s)",
+                c.execute("INSERT INTO workspace_notes (id, workspace_id, session_id, author, content, created, updated) VALUES (%s, (SELECT id FROM workspaces WHERE room_code=%s), %s, %s, %s, %s, %s)",
                          (sid(), req.room_code.upper(), s["id"], "User", req.content, datetime.utcnow(), datetime.utcnow()))
                 conn.commit()
                 return {"saved": True}
-    except:
+    except Exception as e:
+        logger.error(f"Save workspace note error: {e}")
         return {"saved": False}
 
 @app.get("/api/workspace/notes")
@@ -1466,15 +1541,16 @@ def ws_get_notes(room_code: str):
             with conn.cursor() as c:
                 c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
                 if not c.fetchone():
-                    raise HTTPException(404)
-                c.execute("SELECT author,content,updated FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)", (room_code.upper(),))
+                    raise HTTPException(404, "Room not found")
+                c.execute("SELECT author, content, updated FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)", (room_code.upper(),))
                 notes = [{"author": r[0], "content": r[1], "updated": r[2].isoformat() if r[2] else None} for r in c.fetchall()]
                 return {"notes": notes}
-    except:
+    except Exception as e:
+        logger.error(f"Get workspace notes error: {e}")
         return {"notes": []}
 
 # ================================================================
-# SECTION 28: ADMIN ENDPOINT (Founder only)
+# SECTION 29: ADMIN ENDPOINT
 # ================================================================
 @app.post("/api/admin")
 def admin(request: Request):
@@ -1494,29 +1570,23 @@ def admin(request: Request):
                 c.execute("SELECT COUNT(*) FROM workspaces")
                 ws = c.fetchone()[0]
                 
-                c.execute("SELECT id,tier,msg_count,created FROM sessions ORDER BY created DESC LIMIT 30")
+                c.execute("SELECT id, tier, msg_count, created FROM sessions ORDER BY created DESC LIMIT 30")
                 sessions = [{"id": r[0], "tier": r[1], "msg_count": r[2], "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
-                
-                c.execute("SELECT * FROM payment_log ORDER BY created DESC LIMIT 20")
-                payments = [{"session_id": r[1], "tier": r[2], "amount": r[3], "currency": r[4], "txid": r[5], "created": r[6].isoformat() if r[6] else None} for r in c.fetchall()]
                 
                 return {
                     "total_sessions": total,
                     "paid_sessions": paid,
                     "total_messages": msgs,
                     "workspaces": ws,
-                    "sessions": sessions,
-                    "payments": payments
+                    "sessions": sessions
                 }
     except Exception as e:
+        logger.error(f"Admin error: {e}")
         raise HTTPException(500, str(e))
 
 # ================================================================
-# SECTION 29: PWA & STATIC FILES
+# SECTION 30: PWA & STATIC FILES (Frontend Support)
 # ================================================================
-STATIC_DIR = "static"
-os.makedirs(STATIC_DIR, exist_ok=True)
-
 @app.get("/manifest.json")
 async def get_manifest():
     manifest = {
@@ -1559,25 +1629,106 @@ async def root():
         "version": "25.0",
         "status": "operational",
         "pwa_supported": True,
-        "endpoints": ["/health", "/api/session", "/api/chat", "/api/chats", "/api/markets", "/api/search", "/manifest.json"]
+        "frontend_ready": True,
+        "endpoints": [
+            "/health - Health check",
+            "/api/status - API status",
+            "/api/session - Create/get session",
+            "/api/chat - Send message",
+            "/api/chats - Get chat history",
+            "/api/markets - Market data",
+            "/api/search - Web search",
+            "/api/upgrade - Upgrade tier",
+            "/api/founder - Founder access",
+            "/manifest.json - PWA manifest"
+        ]
     }
 
 # ================================================================
-# SECTION 30: MAIN ENTRY POINT
+# SECTION 31: FRONTEND SERVING (Optional - for testing)
+# ================================================================
+# Create a simple HTML frontend for testing if needed
+@app.get("/test")
+async def test_frontend():
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CAPITAN AI - Test</title>
+        <style>
+            body { font-family: monospace; max-width: 800px; margin: 50px auto; padding: 20px; background: #000; color: #fff; }
+            button { background: #A0A0A4; color: #000; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+            input { width: 100%; padding: 10px; margin: 10px 0; background: #222; color: #fff; border: 1px solid #444; }
+            pre { background: #111; padding: 10px; overflow-x: auto; }
+        </style>
+    </head>
+    <body>
+        <h1>🤖 CAPITAN AI - Backend Connection Test</h1>
+        <div>
+            <button onclick="testConnection()">Test Connection</button>
+            <button onclick="createSession()">Create Session</button>
+            <button onclick="sendMessage()">Send Test Message</button>
+        </div>
+        <input type="text" id="message" placeholder="Enter your message..." value="What is CAPITAN AI?">
+        <pre id="output">Click a button to test...</pre>
+        
+        <script>
+            const API_URL = window.location.origin;
+            
+            async function testConnection() {
+                const res = await fetch(`${API_URL}/health`);
+                const data = await res.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            }
+            
+            async function createSession() {
+                const res = await fetch(`${API_URL}/api/session`);
+                const data = await res.json();
+                localStorage.setItem('token', data.token);
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            }
+            
+            async function sendMessage() {
+                const token = localStorage.getItem('token');
+                const msg = document.getElementById('message').value;
+                const res = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ messages: [{ role: 'user', content: msg }] })
+                });
+                const data = await res.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            }
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+# ================================================================
+# SECTION 32: MAIN ENTRY POINT
 # ================================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*60}")
     print(f"🚀 CAPITAN AI v25.0 - COMPLETE PRODUCTION BACKEND")
     print(f"{'='*60}")
-    print(f"📊 Database: {'Supabase PostgreSQL' if settings.DATABASE_URL or settings.SUPABASE_DB_PASSWORD else 'Not configured'}")
-    print(f"☁️  Supabase Storage: {'✅ Enabled' if supabase_client else '❌ Disabled'}")
+    print(f"📊 Database: {'Connected' if settings.DATABASE_URL or settings.SUPABASE_DB_PASSWORD else 'Not configured'}")
     print(f"🤖 AI Providers: Groq={bool(settings.GROQ_KEY)} | OpenRouter={bool(settings.OPENROUTER_KEY)}")
-    print(f"📈 Markets: CoinGecko={bool(settings.COINGECKO_KEY)} | Yahoo=Active")
+    print(f"📈 Markets: CoinGecko={bool(settings.COINGECKO_KEY)} | Yahoo Finance=Active")
     print(f"🔍 Web Search: SerpAPI={bool(settings.SERPAPI_KEY)}")
     print(f"📰 News: NewsAPI={bool(settings.NEWS_API_KEY)}")
     print(f"👑 Founder Key: {settings.FOUNDER_KEY[:10]}...")
     print(f"📨 Limits: Free=17/day | Plus=40/day | Pro=Unlimited")
     print(f"🌐 PWA: Enabled (manifest.json, icons)")
+    print(f"🔗 Frontend Ready: CORS enabled for all origins")
+    print(f"🧠 Intelligence: Finance | Trading | Coding | Math | Quant | General Knowledge")
+    print(f"{'='*60}")
+    print(f"📍 Backend URL: http://0.0.0.0:{port}")
+    print(f"📍 Health Check: http://0.0.0.0:{port}/health")
+    print(f"📍 Test Frontend: http://0.0.0.0:{port}/test")
     print(f"{'='*60}\n")
     uvicorn.run(app, host="0.0.0.0", port=port)
