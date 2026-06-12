@@ -1,13 +1,13 @@
 """
 CAPITAN AI — Enterprise Backend v25.0
 CLOSEAI Technologies
-Python/FastAPI + Supabase PostgreSQL + Multi-API + Web Search + Caching
 """
 
 import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 import concurrent.futures
@@ -38,9 +38,8 @@ JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_hex(32))
 FOUNDER_KEY = os.environ.get("FOUNDER_KEY", "Osinachi@3500")
 
 # ═══════════════════════════════════════════════════════════════
-# SUPABASE CONNECTION (FIXED)
+# SUPABASE CONNECTION
 # ═══════════════════════════════════════════════════════════════
-# Use the pooler with port 5432
 SUPABASE_DB_HOST = os.environ.get("SUPABASE_DB_HOST", "aws-0-eu-west-2.pooler.supabase.com")
 SUPABASE_DB_PORT = os.environ.get("SUPABASE_DB_PORT", "5432")
 SUPABASE_DB_NAME = os.environ.get("SUPABASE_DB_NAME", "postgres")
@@ -87,7 +86,6 @@ def init_db():
                         updated TEXT
                     )
                 ''')
-                # Chats table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS chats (
                         id TEXT PRIMARY KEY,
@@ -97,7 +95,6 @@ def init_db():
                         updated TEXT
                     )
                 ''')
-                # Chat messages table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS chat_messages (
                         id TEXT PRIMARY KEY,
@@ -109,7 +106,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Memories table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS memories (
                         id TEXT PRIMARY KEY,
@@ -121,7 +117,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Library items table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS library_items (
                         id TEXT PRIMARY KEY,
@@ -133,7 +128,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Uploaded files table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS uploaded_files (
                         id TEXT PRIMARY KEY,
@@ -145,7 +139,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Payments table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS payments (
                         id TEXT PRIMARY KEY,
@@ -159,7 +152,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Payment log table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS payment_log (
                         id TEXT PRIMARY KEY,
@@ -171,7 +163,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Workspaces table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspaces (
                         id TEXT PRIMARY KEY,
@@ -182,7 +173,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Workspace members table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_members (
                         workspace_id TEXT,
@@ -191,7 +181,6 @@ def init_db():
                         joined TEXT
                     )
                 ''')
-                # Workspace messages table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_messages (
                         id TEXT PRIMARY KEY,
@@ -203,7 +192,6 @@ def init_db():
                         created TEXT
                     )
                 ''')
-                # Workspace notes table
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_notes (
                         id TEXT PRIMARY KEY,
@@ -215,7 +203,6 @@ def init_db():
                         updated TEXT
                     )
                 ''')
-                # Cache tables
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS market_cache (
                         id TEXT PRIMARY KEY,
@@ -253,7 +240,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 WALLETS = {"BTC":"bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new","ETH":"0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"}
 
-# UPDATED TIER CONFIG
+# TIER CONFIG - Free: 17, Plus: 40
 TIER_CONFIG = {
     "free": {"name":"Free", "msg_limit": 17, "workspace_max": 0, "file_upload": False, "file_size_mb": 0, "live_markets": False, "web_search": False},
     "plus": {"name":"Plus", "msg_limit": 40, "workspace_max": 7, "file_upload": True, "file_size_mb": 10, "live_markets": False, "web_search": True},
@@ -319,7 +306,7 @@ def check_rate(session_id, tier):
     return True
 
 # ═══════════════════════════════════════════════════════════════
-# ENHANCED TECH NEWS (WORKING)
+# TECH NEWS (WORKING)
 # ═══════════════════════════════════════════════════════════════
 def get_tech_news():
     """Fetch real tech news from multiple sources"""
@@ -360,7 +347,7 @@ def get_tech_news():
                 })
     except: pass
     
-    # Source 3: GitHub Trending (via API)
+    # Source 3: GitHub Trending
     try:
         r = requests.get("https://api.github.com/repositories?since=0&per_page=15", timeout=8)
         if r.status_code == 200:
@@ -373,21 +360,6 @@ def get_tech_news():
                     "summary": repo.get("description", "")[:200] if repo.get("description") else ""
                 })
     except: pass
-    
-    # Source 4: NewsAPI if key available
-    if NEWS_API_KEY:
-        try:
-            r = requests.get(f"https://newsapi.org/v2/everything?q=technology OR AI OR coding&language=en&pageSize=8&apiKey={NEWS_API_KEY}", timeout=8)
-            if r.status_code == 200:
-                for article in r.json().get("articles", []):
-                    news.append({
-                        "source": article.get("source", {}).get("name", "NewsAPI"),
-                        "headline": article.get("title", ""),
-                        "url": article.get("url", ""),
-                        "time": article.get("publishedAt", ""),
-                        "summary": (article.get("description", "") or "")[:200]
-                    })
-        except: pass
     
     # Remove duplicates
     seen = set()
@@ -413,105 +385,50 @@ def get_elite_prompt(tier, context=""):
 You are CAPITAN AI, the world's most advanced enterprise intelligence platform.
 
 ═══════════════════════════════════════════════════════════════════════
-DOMAIN MASTERY
+CORE CAPABILITIES
 ═══════════════════════════════════════════════════════════════════════
 
-🏦 FINANCE & ECONOMICS:
-- Corporate finance (DCF, LBO, M&A, leveraged buyouts, restructuring)
-- Investment management (modern portfolio theory, Black-Litterman, factor investing)
-- Derivatives (options, futures, swaps, exotic options, credit derivatives)
-- Fixed income (yield curves, duration, convexity, CDS, ABS, MBS)
-- Risk management (VaR, CVaR, stress testing, scenario analysis, Basel III/IV)
-- Macroeconomics (monetary policy, fiscal policy, international trade, exchange rates)
-- African markets (NGX, JSE, GSE, regional integration, frontier markets)
-
-📈 QUANTITATIVE FINANCE:
-- Stochastic calculus (Ito's lemma, Girsanov theorem, martingale pricing)
-- Time series analysis (ARIMA, GARCH, cointegration, regime switching)
-- Machine learning (random forests, neural networks, reinforcement learning)
-- Algorithmic trading (market microstructure, execution algorithms, HFT)
-- Risk modeling (factor models, PCA, copulas, extreme value theory)
-
-💻 COMPUTER SCIENCE & SOFTWARE:
-- Languages: Python, JavaScript, TypeScript, Go, Rust, C++, Java, Kotlin, Swift
-- Frameworks: React, Vue, Angular, Django, FastAPI, Spring Boot, .NET
-- DevOps: Docker, Kubernetes, Terraform, CI/CD, AWS, GCP, Azure
-- Databases: PostgreSQL, MySQL, MongoDB, Redis, Cassandra, DynamoDB
-- System design: microservices, event-driven, serverless, message queues
-
-🔬 SCIENCE & MEDICINE:
-- Physics: quantum mechanics, relativity, thermodynamics, electromagnetism
-- Chemistry: organic, inorganic, physical, computational chemistry
-- Biology: genetics, molecular biology, neuroscience, ecology, evolution
-- Medicine: diagnosis, treatment protocols, pharmacology, epidemiology, public health
-
-📚 HUMANITIES & ARTS:
-- Philosophy: ethics, epistemology, logic, philosophy of mind, political philosophy
-- History: world history, economic history, technological revolutions
-- Literature: critical analysis, literary theory, world literature
-- Art: art history, movements, techniques, criticism
-
-🌍 GENERAL KNOWLEDGE:
-- Current events (geopolitics, economics, technology, science, culture)
-- Geography (world geography, demographics, cultural regions)
-- Law (constitutional law, international law, business law, intellectual property)
-- Sports (rules, history, statistics, major leagues and tournaments)
-
-═══════════════════════════════════════════════════════════════════════
-REASONING PROTOCOLS
-═══════════════════════════════════════════════════════════════════════
-
-1. FIRST-PRINCIPLES THINKING: Break problems down to fundamental truths
-2. BAYESIAN UPDATING: Systematically revise beliefs with new evidence
-3. FERMI ESTIMATION: Rapid order-of-magnitude calculations for approximations
-4. LATERAL CONNECTION: Find unexpected relationships between domains
-5. RED TEAM ANALYSIS: Challenge assumptions and identify edge cases
-6. OCCAM'S RAZOR: Prefer simpler explanations when equally valid
-7. HICKAM'S DICTUM: "There's nothing impossible if you can find the right angle"
+🏦 FINANCE: DCF, LBO, M&A, portfolio optimization, options pricing, risk management
+📈 QUANT: Stochastic calculus, time series, ML models, algorithmic trading
+💻 CODE: Python, JS, Go, Rust, system design, DevOps, cloud architecture
+🔬 SCIENCE: Physics, chemistry, biology, medicine, neuroscience
+📚 GENERAL: History, philosophy, literature, current events, geopolitics
 
 ═══════════════════════════════════════════════════════════════════════
 RESPONSE GUIDELINES
 ═══════════════════════════════════════════════════════════════════════
 
-- Lead with your conclusion, then provide supporting evidence
-- Use 1-2 emojis naturally for warmth and clarity when appropriate
-- Short sentences, clean paragraphs, zero filler words
-- Depth for complex topics, brevity for simple questions
-- Cite sources when providing factual information
+- Lead with the answer. No throat-clearing or meta-analysis.
+- Use 1-2 emojis naturally for warmth when appropriate.
+- Short sentences. Clean paragraphs. No filler.
+- Depth for complex topics, brevity for simple questions.
 - Acknowledge uncertainty: "I'm not certain, but..."
 
 ═══════════════════════════════════════════════════════════════════════
 CRITICAL RULES
 ═══════════════════════════════════════════════════════════════════════
 
-❌ NEVER fabricate data, prices, or facts — only reference verified information
-❌ NEVER provide financial advice or trading signals (always disclaim)
-❌ NEVER provide medical diagnoses (refer to healthcare professionals)
+❌ NEVER fabricate data or facts — only reference verified information
+❌ NEVER provide financial advice or medical diagnoses
 ❌ NEVER claim to be anything other than CAPITAN AI
 
 ✅ ALWAYS be helpful, truthful, and professional
 ✅ ALWAYS admit knowledge gaps: "I don't have that information"
-✅ ALWAYS maintain warmth while staying professional
 
 ═══════════════════════════════════════════════════════════════════════
-CONTEXT
-═══════════════════════════════════════════════════════════════════════
-
 Current time: {current_time}
 User tier: {tier.upper()}
-{context}
 ═══════════════════════════════════════════════════════════════════════"""
 
 # ═══════════════════════════════════════════════════════════════
-# AI CALL FUNCTION (ENHANCED)
+# AI CALL FUNCTION
 # ═══════════════════════════════════════════════════════════════
 def call_ai_with_context(messages, tier="free"):
     """Call AI with elite prompting"""
     
-    # Try Groq first (fastest)
+    # Try Groq first
     if GROQ_KEY:
         try:
-            # Use larger model for Pro/Founder
             model = "llama-3.3-70b-versatile" if tier in ("pro", "founder") else "llama-3.1-8b-instant"
             max_tokens = 2000 if tier in ("pro", "founder") else 1000
             
@@ -532,36 +449,7 @@ def call_ai_with_context(messages, tier="free"):
         except Exception as e:
             print(f"Groq error: {e}")
     
-    # Try OpenRouter for Claude/GPT-4
-    if OPENROUTER_KEY:
-        try:
-            models = ["google/gemini-flash-1.5", "microsoft/phi-3-mini-128k-instruct"]
-            if tier in ("pro", "founder"):
-                models = ["anthropic/claude-3.5-sonnet", "openai/gpt-4o", "deepseek/deepseek-chat"] + models
-            
-            for model in models:
-                try:
-                    r = requests.post(
-                        "https://openrouter.ai/api/v1/chat/completions",
-                        headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"},
-                        json={
-                            "model": model,
-                            "messages": messages,
-                            "temperature": 0.6,
-                            "max_tokens": 2000 if tier in ("pro", "founder") else 1000
-                        },
-                        timeout=35
-                    )
-                    if r.status_code == 200:
-                        content = r.json()["choices"][0]["message"]["content"]
-                        if content:
-                            return content, f"openrouter/{model}"
-                except:
-                    continue
-        except Exception as e:
-            print(f"OpenRouter error: {e}")
-    
-    # Fallback response
+    # Fallback
     return "I'm CAPITAN AI, ready to assist with any question. How can I help you today?", "fallback"
 
 # ═══════════════════════════════════════════════════════════════
@@ -704,19 +592,15 @@ def upgrade(req: UpgradeRequest, request: Request):
     return {"verified": True, "tier": req.tier, "token": token}
 
 # ═══════════════════════════════════════════════════════════════
-# TECH NEWS (WORKING ENDPOINT)
+# TECH NEWS ENDPOINT
 # ═══════════════════════════════════════════════════════════════
 @app.get("/api/news/tech")
 def tech_news(request: Request):
-    s = get_session(request)
-    tier = s["tier"] if s else "free"
-    
-    # Allow for all tiers
     news = get_tech_news()
     return {"news": news}
 
 # ═══════════════════════════════════════════════════════════════
-# CHAT ENDPOINT (ENHANCED)
+# CHAT ENDPOINT
 # ═══════════════════════════════════════════════════════════════
 class ChatRequest(BaseModel):
     messages: list
@@ -873,14 +757,6 @@ def delete_chat(chat_id: str, request: Request):
 # ═══════════════════════════════════════════════════════════════
 @app.get("/api/markets")
 def markets(request: Request):
-    s = get_session(request)
-    tier = s["tier"] if s else "free"
-    cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
-    
-    if not cfg.get("live_markets", False):
-        return {"prices": {}, "news": [], "message": "Upgrade to Pro for live market data"}
-    
-    # Simple market data (can expand later)
     return {"prices": {}, "news": []}
 
 @app.get("/api/markets/prices")
@@ -892,14 +768,7 @@ def markets_news(request: Request):
     return {"news": []}
 
 @app.get("/api/search")
-def web_search(q: str = "", request: Request):
-    s = get_session(request)
-    tier = s["tier"] if s else "free"
-    cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
-    
-    if not cfg.get("web_search", False):
-        return {"results": [], "message": "Web search available on Plus and Pro plans"}
-    
+def web_search(request: Request, q: str = ""):
     return {"results": []}
 
 # ═══════════════════════════════════════════════════════════════
@@ -995,7 +864,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
     return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents) / (1024 * 1024), 2)}
 
 # ═══════════════════════════════════════════════════════════════
-# WORKSPACE ENDPOINTS (BASIC)
+# WORKSPACE ENDPOINTS
 # ═══════════════════════════════════════════════════════════════
 class WorkspaceCreateRequest(BaseModel):
     room_code: str
@@ -1064,15 +933,8 @@ def ws_join(req: WorkspaceJoinRequest, request: Request):
                     "INSERT INTO workspace_members (workspace_id, session_id, role, joined) VALUES (%s, %s, %s, %s)",
                     (ws[0], s["id"], "member", datetime.utcnow().isoformat())
                 )
-                
-                c.execute("SELECT session_id, role FROM workspace_members WHERE workspace_id=%s", (ws[0],))
-                members = [{"session_id": r[0], "role": r[1]} for r in c.fetchall()]
-                
-                c.execute("SELECT id, session_id, author, message, is_ai, created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
-                messages = [{"id": r[0], "session_id": r[1], "author": r[2], "message": r[3], "is_ai": bool(r[4]), "created": r[5]} for r in c.fetchall()]
-                
                 conn.commit()
-                return {"joined": True, "room_id": ws[0], "members": members, "messages": messages}
+                return {"joined": True, "room_id": ws[0]}
     except HTTPException:
         raise
     except:
@@ -1102,7 +964,7 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
         return {"sent": False}
 
 @app.get("/api/workspace/messages")
-def ws_get_messages(room_code: str):
+def ws_get_messages(request: Request, room_code: str):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1111,15 +973,10 @@ def ws_get_messages(room_code: str):
                 if not ws:
                     raise HTTPException(404, "Room not found")
                 
-                c.execute("SELECT session_id, role FROM workspace_members WHERE workspace_id=%s", (ws[0],))
-                members = [{"session_id": r[0], "role": r[1]} for r in c.fetchall()]
-                
                 c.execute("SELECT id, session_id, author, message, is_ai, created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
                 messages = [{"id": r[0], "session_id": r[1], "author": r[2], "message": r[3], "is_ai": bool(r[4]), "created": r[5]} for r in c.fetchall()]
                 
-                return {"messages": messages, "members": members}
-    except HTTPException:
-        raise
+                return {"messages": messages, "members": []}
     except:
         return {"messages": [], "members": []}
 
@@ -1148,7 +1005,7 @@ def ws_save_note(req: WorkspaceNoteRequest, request: Request):
         return {"saved": False}
 
 @app.get("/api/workspace/notes")
-def ws_get_notes(room_code: str):
+def ws_get_notes(request: Request, room_code: str):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1164,7 +1021,7 @@ def ws_get_notes(room_code: str):
         return {"notes": []}
 
 # ═══════════════════════════════════════════════════════════════
-# ADMIN (DISABLED - Only founder)
+# ADMIN (DISABLED)
 # ═══════════════════════════════════════════════════════════════
 @app.post("/api/admin")
 def admin(request: Request):
