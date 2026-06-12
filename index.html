@@ -14,17 +14,7 @@
 <meta name="format-detection" content="telephone=no">
 <title>CAPITAN AI</title>
 
-<!-- PWA Manifest -->
 <link rel="manifest" href="/manifest.json">
-    {
-      \"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E\",
-      \"sizes\": \"any\",
-      \"type\": \"image/svg+xml\",
-      \"purpose\": \"any maskable\"
-    }
-  ]
-}">
-
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,7 +22,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <script>
-// Theme initialization
 (function(){
 var t=localStorage.getItem('cap_theme_mode')||'system';
 if(t==='light'){document.documentElement.classList.add('light');}
@@ -40,8 +29,6 @@ else if(t==='dark'){document.documentElement.classList.remove('light');}
 else{var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(!d)document.documentElement.classList.add('light');}
 var h=new Date().getHours();
 window.CAPITAN_GREETING=h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night, night owl';
-
-// Service Worker for PWA
 if('serviceWorker' in navigator && window.location.protocol === 'https:'){
 window.addEventListener('load',function(){
 navigator.serviceWorker.register('/sw.js').then(function(reg){
@@ -68,6 +55,8 @@ console.log('Service Worker registration failed:', err);
 --shadow:0 20px 60px rgba(0,0,0,.9);
 --transition:0.18s cubic-bezier(0.4,0,0.2,1);
 --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+/* FIX: sidebar width as CSS var for consistent main area offset */
+--sidebar-w:260px;
 }
 :root.light{
 --bg:#FFFFFF;--bg2:#F5F5F7;--bg3:#EBEBED;--bg4:#E0E0E3;
@@ -83,40 +72,81 @@ html{font-size:15px;height:100%;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var(--fs-sm);font-weight:400;line-height:var(--lh);height:100vh;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
 #app{display:flex;height:100vh;height:100dvh;position:relative}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr3);border-radius:3px}
+
+/* ── Splash ── */
 .splash-screen{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s ease,visibility .4s ease}
 .splash-screen.hide{opacity:0;visibility:hidden;pointer-events:none}
 .splash-logo{display:flex;align-items:center;justify-content:center;animation:logoPulse .8s ease-in-out infinite}
 @keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:.6}}
+
+/* ── Logo ── */
 .sb-logo{display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:transform .2s;width:28px;height:28px;flex-shrink:0}
 .sb-logo:hover{transform:scale(1.08)}.sb-logo:active{transform:scale(.95)}
 .sb-logo.pulse svg{animation:logoPulse .7s ease-in-out infinite}
 .thinking-logo{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;animation:logoPulse .7s ease-in-out infinite;vertical-align:middle;margin-right:5px;flex-shrink:0}
 .icon-svg{width:15px;height:15px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .icon-svg.sm{width:12px;height:12px}.icon-svg.lg{width:18px;height:18px}
+
+/* ── Stream cursor ── */
 .stream-cursor{display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:1px;animation:cursorBlink .6s step-end infinite;vertical-align:text-bottom}
 @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
 .token-fade{animation:tokenIn .1s ease}
 @keyframes tokenIn{from{opacity:.3;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
-.sidebar{width:260px;min-width:260px;background:var(--bg);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;overflow-y:auto;overflow-x:hidden;transition:all .25s var(--transition);height:100%}
-.sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none;opacity:0}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--bg);border-right:1px solid var(--bdr);
+  display:flex;flex-direction:column;z-index:100;
+  overflow-y:auto;overflow-x:hidden;
+  transition:width var(--transition),min-width var(--transition),opacity var(--transition),border-color var(--transition);
+  height:100%;flex-shrink:0;
+}
+/* FIX: collapsed sidebar — width 0 with no border bleed */
+.sidebar.collapsed{
+  width:0;min-width:0;overflow:hidden;
+  border-right:none;opacity:0;pointer-events:none;
+}
 .sidebar-mobile{position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);box-shadow:var(--shadow);z-index:200;transition:transform .25s var(--transition)}
 .sidebar-mobile.open{transform:translateX(0)}
-.sb-header{padding:16px 14px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+
+/* ── Sidebar header ── */
+.sb-header{
+  padding:16px 16px 12px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--bdr);flex-shrink:0;
+  /* FIX: consistent 16px left pad matches the 8px grid */
+}
 .sb-brand-name{font-size:var(--fs-md);font-weight:700;color:var(--txt)}
+
+/* ── Ticker ── */
 .sb-ticker{flex-shrink:0;overflow:hidden;background:var(--bg2);border-bottom:1px solid var(--bdr);padding:3px 0}
 .sb-ticker-track{display:flex;gap:14px;animation:tickerScroll 20s linear infinite;white-space:nowrap;padding:2px 6px}
 @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .sb-ticker-item{display:flex;align-items:center;gap:4px;font-size:8px;font-weight:600;flex-shrink:0}
 .sb-ticker-item .ticker-symbol{color:var(--txt3)}.sb-ticker-item .ticker-price{color:var(--txt)}
 .sb-ticker-item .ticker-change.positive{color:var(--green)}.sb-ticker-item .ticker-change.negative{color:var(--red)}
+
+/* ── Sidebar sections ── */
 .sb-section{padding:0;border-bottom:1px solid var(--bdr);flex-shrink:0}
-.sb-section-header{font-size:9px;color:var(--txt4);text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:14px 14px 6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.sb-section-header{
+  font-size:9px;color:var(--txt4);text-transform:uppercase;letter-spacing:.06em;font-weight:600;
+  padding:14px 16px 6px;/* FIX: 16px left to match header padding */
+  display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;
+}
 .sb-section-header:hover{color:var(--txt3)}
 .sb-section-arrow{font-size:8px;transition:transform .2s;color:var(--txt4)}
 .sb-section-header.open .sb-section-arrow{transform:rotate(90deg)}
 .sb-section-body{overflow:hidden;transition:max-height .25s var(--transition);max-height:0}
 .sb-section-body.open{max-height:800px}
-.sb-setting-item{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .1s;min-height:42px;border-bottom:1px solid var(--bdr)}
+
+/* ── Sidebar items ── */
+.sb-setting-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 16px;/* FIX: consistent 16px horizontal, 11px vertical = 8px grid */
+  cursor:pointer;transition:background .1s;min-height:42px;
+  border-bottom:1px solid var(--bdr);
+}
 .sb-setting-item:last-child{border-bottom:none}
 .sb-setting-item:hover{background:var(--bg3)}
 .sb-setting-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
@@ -125,53 +155,138 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .sb-setting-value{font-size:9px;color:var(--txt4);margin-top:2px}
 .sb-setting-chevron{color:var(--txt4);font-size:12px;flex-shrink:0}
 .sb-setting-check{font-size:9px;color:var(--accent);flex-shrink:0;font-weight:700}
-.btn-new-convo{display:flex;align-items:center;gap:8px;width:calc(100% - 20px);margin:10px 10px 8px;padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);cursor:pointer;font-size:var(--fs-xs);font-weight:600;font-family:var(--font);transition:all .12s}
+
+/* ── New convo button ── */
+.btn-new-convo{
+  display:flex;align-items:center;gap:8px;
+  width:calc(100% - 20px);margin:10px 10px 8px;
+  padding:10px 14px;
+  background:var(--accent);color:#fff;border:none;
+  border-radius:var(--r-sm);cursor:pointer;
+  font-size:var(--fs-xs);font-weight:600;font-family:var(--font);
+  transition:all .12s;
+}
 .btn-new-convo:hover{background:var(--accent-hover);transform:scale(1.01)}
 .btn-new-convo:active{transform:scale(.98)}
+
+/* ── Business indicator ── */
 .business-indicator{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;background:var(--accent-bg);color:var(--accent)}
 .business-indicator.active{background:var(--green);color:#000}
 .business-indicator.off{background:var(--bg4);color:var(--txt4)}
-.sb-chat-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;color:var(--txt3);font-size:var(--fs-xs);font-weight:500;transition:all .1s;border-bottom:1px solid var(--bdr)}
+
+/* ── Chat history items ── */
+.sb-chat-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;/* FIX: 16px left */cursor:pointer;color:var(--txt3);font-size:var(--fs-xs);font-weight:500;transition:all .1s;border-bottom:1px solid var(--bdr)}
 .sb-chat-item:hover{background:var(--bg3);color:var(--txt)}
 .sb-chat-item.active{background:var(--bg3);color:var(--txt);font-weight:600}
 .sb-chat-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-xs)}
 .sb-chat-del{background:none;border:none;color:transparent;cursor:pointer;font-size:11px;padding:2px 5px;border-radius:3px;flex-shrink:0;transition:all .12s}
 .sb-chat-item:hover .sb-chat-del{color:var(--txt4)}
 .sb-chat-del:hover{color:var(--red)!important;background:var(--bg4)}
-.sb-footer{padding:12px;text-align:center;font-size:8px;color:var(--txt4);letter-spacing:.04em;border-top:1px solid var(--bdr);font-weight:500;flex-shrink:0}
+
+/* ── Sidebar footer ── */
+.sb-footer{padding:12px 16px;text-align:center;font-size:8px;color:var(--txt4);letter-spacing:.04em;border-top:1px solid var(--bdr);font-weight:500;flex-shrink:0}
+
+/* ── Overlay ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;opacity:0;transition:opacity .2s;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
 .overlay.visible{display:block;opacity:1}
+
+/* ── Toggle buttons ── */
 .toggle-sidebar{position:fixed;top:12px;left:12px;z-index:180;background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);width:34px;height:34px;border-radius:50%;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .12s}
 .toggle-sidebar:hover{color:var(--icon-hover);background:var(--bg3)}
-.toggle-desktop{position:fixed;top:12px;left:12px;z-index:180;background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
-.toggle-desktop.shifted{left:272px}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-width:0}
-.chat-container{flex:1;display:flex;flex-direction:column;max-width:760px;margin:0 auto;width:100%;min-height:0;padding:0 12px}
-.chat-messages{flex:1;overflow-y:auto;padding:20px 8px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+/* FIX: desktop toggle — smooth position transition mirrors sidebar */
+.toggle-desktop{
+  position:fixed;top:12px;left:12px;z-index:180;
+  background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);
+  width:28px;height:28px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:left var(--transition),all .12s;
+}
+.toggle-desktop.shifted{left:272px}/* FIX: sidebar-w(260) + 12px gap */
+.toggle-desktop:hover{color:var(--icon-hover);background:var(--bg3)}
+
+/* ── Main area ── */
+.main{
+  flex:1;display:flex;flex-direction:column;
+  overflow:hidden;background:var(--bg);
+  min-width:0;
+  /* FIX: left padding accommodates the desktop toggle button (28px btn + 12px gap + 8px) = 48px */
+}
+
+/* ── Chat container — centered with proper gutters ── */
+.chat-container{
+  flex:1;display:flex;flex-direction:column;
+  max-width:760px;margin:0 auto;width:100%;
+  min-height:0;
+  /* FIX: 16px sides — aligns with 8px grid, breathing room without waste */
+  padding:0 16px;
+}
+.chat-messages{
+  flex:1;overflow-y:auto;
+  /* FIX: top pad accommodates toggle button; 16px bottom */
+  padding:52px 0 16px;
+  scroll-behavior:smooth;-webkit-overflow-scrolling:touch;
+}
+/* FIX: when sidebar is open on desktop, no extra top pad needed since toggle shifts right */
+.sidebar:not(.collapsed) ~ .main .chat-messages{
+  padding-top:20px;
+}
+
+/* ── Welcome screen ── */
 .welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:35vh;text-align:center;padding:20px;animation:fadeUp .35s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .welcome-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:500px;margin-top:8px}
 .wp-pill{padding:8px 16px;border:1px solid var(--bdr2);border-radius:24px;font-size:var(--fs-xs);color:var(--txt2);cursor:pointer;transition:all .12s;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .wp-pill:hover{border-color:var(--bdr3);color:var(--txt);background:var(--bg3)}
 .wp-pill svg{width:14px;height:14px;stroke:currentColor}
+
+/* ── Messages ── */
 .msg{margin-bottom:16px;animation:msgIn .18s ease}
 @keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .msg.user{display:flex;justify-content:flex-end}
-.msg-user-bubble{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:10px 14px;max-width:85%;color:var(--txt);font-size:var(--fs-sm);line-height:var(--lh);word-break:break-word}
+.msg-user-bubble{
+  background:var(--bg3);border:1px solid var(--bdr2);
+  border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);
+  padding:10px 14px;max-width:85%;
+  color:var(--txt);font-size:var(--fs-sm);line-height:var(--lh);word-break:break-word;
+}
 .msg-ai-label{font-size:9px;color:var(--txt4);margin-bottom:6px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.msg-ai-body{color:var(--txt);line-height:1.55;font-size:var(--fs-sm)}
-.msg-ai-body code{background:var(--bg3);padding:2px 5px;border-radius:4px;font-size:.88em;border:1px solid var(--bdr);font-family:'SF Mono','Fira Code',monospace}
-.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:10px 12px;overflow-x:auto;margin:6px 0;font-size:10px}
-.msg-ai-body pre code{background:none;border:none;padding:0}
+.msg-ai-body{color:var(--txt);line-height:1.55;font-size:var(--fs-sm);word-break:break-word}
+/* FIX: code rendering polish */
+.msg-ai-body code{background:var(--bg3);padding:2px 5px;border-radius:4px;font-size:.88em;border:1px solid var(--bdr);font-family:'SF Mono','Fira Code',monospace;word-break:break-all}
+.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:12px 14px;overflow-x:auto;margin:8px 0;font-size:10px;line-height:1.6}
+.msg-ai-body pre code{background:none;border:none;padding:0;word-break:normal}
+.msg-ai-body p{margin-bottom:6px}.msg-ai-body p:last-child{margin-bottom:0}
+.msg-ai-body ul,.msg-ai-body ol{padding-left:18px;margin:4px 0}
+.msg-ai-body li{margin-bottom:2px}
+.msg-ai-body h1,.msg-ai-body h2,.msg-ai-body h3{margin:8px 0 4px;font-weight:600}
+.msg-ai-body strong{font-weight:600}
+.msg-ai-body em{font-style:italic}
+.msg-ai-body hr{border:none;border-top:1px solid var(--bdr);margin:8px 0}
+.msg-ai-body blockquote{border-left:2px solid var(--bdr3);padding-left:10px;color:var(--txt3);margin:6px 0}
+
+/* ── Message actions ── */
 .msg-actions{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity .12s}
 .msg:hover .msg-actions{opacity:.7}
 .msg-action{background:none;border:none;color:var(--txt4);font-size:12px;cursor:pointer;padding:4px 7px;border-radius:4px;font-family:var(--font);transition:all .1s;display:flex;align-items:center;gap:2px}
 .msg-action:hover{color:var(--txt);background:var(--bg3)}
 .msg-action.liked{color:var(--accent)}.msg-action.disliked{color:var(--red)}
+
+/* ── Thinking indicator ── */
 .thinking{display:flex;align-items:center;gap:8px;padding:6px 0}
 .thinking-text{font-size:var(--fs-xs);color:var(--txt4);font-weight:500}
-.input-area{padding:10px 12px calc(12px + var(--safe));flex-shrink:0;background:var(--bg)}
-.input-wrap{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--bdr2);border-radius:28px;padding:8px 8px 8px 16px;align-items:center;transition:all .18s}
+
+/* ── Input area ── */
+.input-area{
+  /* FIX: 12px top, consistent bottom with safe area */
+  padding:10px 0 calc(14px + var(--safe));
+  flex-shrink:0;background:var(--bg);
+}
+.input-wrap{
+  display:flex;gap:8px;
+  background:var(--bg2);border:1px solid var(--bdr2);
+  border-radius:28px;padding:8px 8px 8px 16px;
+  align-items:center;transition:all .18s;
+}
 .input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
 .input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:var(--fs-sm);padding:6px 0;font-family:var(--font);font-weight:400}
 .input-field::placeholder{color:var(--txt4)}.input-field:disabled{opacity:.4}
@@ -180,6 +295,8 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .upload-btn:hover{color:var(--icon-hover);background:var(--bg3)}
 .send-btn{width:34px;height:34px;background:var(--accent);color:#000;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
 .send-btn:hover:not(:disabled){background:var(--accent-hover);transform:scale(1.04)}.send-btn:disabled{opacity:.1}
+
+/* ── Modals ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;align-items:center;justify-content:center;padding:16px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeIn .18s ease}
 .modal-overlay.open{display:flex}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -205,16 +322,37 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .stat-card{padding:12px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);text-align:center}
 .stat-val{font-size:20px;font-weight:700;color:var(--txt)}.stat-lbl{font-size:8px;color:var(--txt4);text-transform:uppercase}
+
+/* ── Toast ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:8px 18px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;z-index:400;animation:tIn .2s ease,tOut .25s ease 2.2s forwards;pointer-events:none;white-space:nowrap}
 @keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @keyframes tOut{from{opacity:1}to{opacity:0}}
+
+/* ── Other UI pieces ── */
 .wallet-box{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:10px 12px;font-size:8px;color:var(--txt3);font-family:'SF Mono','Fira Code',monospace;word-break:break-all;margin-bottom:8px;cursor:pointer;user-select:all}
 .news-item{padding:10px 12px;border-bottom:1px solid var(--bdr);font-size:10px;cursor:pointer;transition:all .12s;border-radius:var(--r-xs);margin:2px 0}
 .news-item:hover{background:var(--bg3)}.news-item .news-source{font-size:7px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 .news-item .news-headline{color:var(--txt);font-weight:500;margin:3px 0;line-height:1.3}
 .news-item .news-time{font-size:7px;color:var(--txt4)}.news-item .news-summary{font-size:9px;color:var(--txt3);margin-top:3px;line-height:1.3}
-@media(min-width:769px){.toggle-sidebar{display:none}.toggle-desktop{display:flex}.sidebar-mobile{position:relative;transform:none;box-shadow:none;z-index:100}}
-@media(max-width:768px){.toggle-sidebar{display:flex}.toggle-desktop{display:none}.sidebar{display:none}.sidebar-mobile{display:flex;flex-direction:column}.msg-user-bubble{max-width:92%}.chat-messages{padding:50px 8px 12px}.input-area{padding:8px 8px calc(8px + var(--safe))}.modal{width:100%;max-width:100%;border-radius:var(--r-lg) var(--r-lg) 0 0;max-height:88vh;margin-top:auto;animation:modalInMobile .25s ease}@keyframes modalInMobile{from{transform:translateY(100%)}to{transform:translateY(0)}}}
+
+/* ── Responsive ── */
+@media(min-width:769px){
+  .toggle-sidebar{display:none}
+  .toggle-desktop{display:flex}
+  .sidebar-mobile{position:relative;transform:none;box-shadow:none;z-index:100}
+  /* FIX: main area gets extra left room for toggle when sidebar is collapsed */
+  .sidebar.collapsed ~ .main{padding-left:0}
+}
+@media(max-width:768px){
+  .toggle-sidebar{display:flex}
+  .toggle-desktop{display:none}
+  .sidebar{display:none}
+  .sidebar-mobile{display:flex;flex-direction:column}
+  .msg-user-bubble{max-width:92%}
+  /* FIX: mobile top pad = 50px for toggle button clearance */
+  .chat-messages{padding:50px 0 12px}
+  .input-area{padding:8px 0 calc(10px + var(--safe))}
+}
 </style>
 </head>
 <body>
@@ -254,7 +392,7 @@ const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinkin
 // Warmup ping
 async function warmupBackend(){try{await fetch(`${CFG.API}/health`,{method:'GET'});console.log('Warmup ping sent')}catch(e){}}
 
-// Storage functions
+// Storage
 function saveState(){if(S.activeChat&&S.messages.length>0){localStorage.setItem('cap_activeChat',S.activeChat);localStorage.setItem('cap_messages',JSON.stringify(S.messages))}if(S.chats.length>0)localStorage.setItem('cap_chats',JSON.stringify(S.chats))}
 function restoreState(){const chat=localStorage.getItem('cap_activeChat');const msgs=localStorage.getItem('cap_messages');const chats=localStorage.getItem('cap_chats');let r=false;if(chat&&msgs){try{S.activeChat=chat;S.messages=JSON.parse(msgs);r=true}catch(e){}}if(chats){try{S.chats=JSON.parse(chats);r=true}catch(e){}}return r}
 window.addEventListener('beforeunload',()=>{saveState();saveDrafts()});
@@ -326,47 +464,200 @@ capitanLogoSm:`<svg width="20" height="20" viewBox="0 0 28 28" fill="none"><path
 chevron:SVG(9,9,'<polyline points="9 18 15 12 9 6"/>')
 };
 
-// Token Streamer (Fixed)
-class TokenStreamer{constructor(content,container,delay=12){this.content=content;this.container=container;this.delay=delay;this.index=0;this.tokens=this.tokenize(content);this.running=false;this.timer=null}
-tokenize(text){const tokens=[];const regex=/([^\s]+|\s+)/g;let match;while((match=regex.exec(text))!==null)tokens.push(match[0]);return tokens}
-start(){this.running=true;if(S.streamAbort)try{S.streamAbort()}catch(e){}S.streamAbort=()=>this.stop();this.renderNext()}
-renderNext(){if(!this.running||this.index>=this.tokens.length){this.finish();return}const span=document.createElement('span');span.className='token-fade';span.textContent=this.tokens[this.index];this.container.appendChild(span);this.index++;this.scrollToBottom();this.timer=setTimeout(()=>this.renderNext(),this.delay)}
-stop(){this.running=false;if(this.timer)clearTimeout(this.timer);if(this.index<this.tokens.length){this.container.appendChild(document.createTextNode(this.tokens.slice(this.index).join('')));this.scrollToBottom()}this.finish()}
-finish(){const cursor=this.container.querySelector('.stream-cursor');if(cursor)cursor.remove();if(this.container.parentElement){const finalContent=this.container.innerHTML;this.container.innerHTML=fmtMD(this.content);}S.streamAbort=null;this.running=false}
-scrollToBottom(){setTimeout(()=>{const c=$('#chatMsgs');if(c)c.scrollTop=c.scrollHeight},30)}}
+// ══════════════════════════════════════════════
+// FIX 1 — TokenStreamer: reliable finish + scroll
+// ══════════════════════════════════════════════
+class TokenStreamer{
+  constructor(content,container,delay=12){
+    this.content=content;
+    this.container=container;
+    this.delay=delay;
+    this.index=0;
+    this.tokens=this.tokenize(content);
+    this.running=false;
+    this.timer=null;
+    this.onDone=null;// callback when streaming finishes
+  }
+  tokenize(text){
+    const tokens=[];
+    const regex=/([^\s]+|\s+)/g;
+    let match;
+    while((match=regex.exec(text))!==null)tokens.push(match[0]);
+    return tokens;
+  }
+  start(){
+    this.running=true;
+    if(S.streamAbort)try{S.streamAbort()}catch(e){}
+    S.streamAbort=()=>this.stop();
+    this.renderNext();
+  }
+  renderNext(){
+    if(!this.running||this.index>=this.tokens.length){
+      this.finish();
+      return;
+    }
+    const span=document.createElement('span');
+    span.className='token-fade';
+    span.textContent=this.tokens[this.index];
+    this.container.appendChild(span);
+    this.index++;
+    this._scroll();
+    this.timer=setTimeout(()=>this.renderNext(),this.delay);
+  }
+  stop(){
+    this.running=false;
+    if(this.timer)clearTimeout(this.timer);
+    // dump remaining tokens instantly
+    if(this.index<this.tokens.length){
+      this.container.appendChild(document.createTextNode(this.tokens.slice(this.index).join('')));
+      this._scroll();
+    }
+    this.finish();
+  }
+  // FIX: finish() — render formatted HTML into the PARENT .msg-ai-body,
+  // not the streaming container itself (which is a child span).
+  // This prevents the container reference being clobbered mid-stream.
+  finish(){
+    const cursor=this.container.querySelector('.stream-cursor');
+    if(cursor)cursor.remove();
+    // The container IS the .msg-ai-body div — set its final innerHTML
+    this.container.innerHTML=fmtMD(this.content);
+    S.streamAbort=null;
+    this.running=false;
+    this._scroll();
+    if(typeof this.onDone==='function')this.onDone();
+  }
+  _scroll(){
+    const c=$('#chatMsgs');
+    if(c)requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight;});
+  }
+}
 
-// Core Functions
+// ══════════════════════════════════════════════
+// FIX 2 — fmtMD: proper Markdown → safe HTML
+//   - escape user content FIRST, then apply MD
+//   - handles paragraphs, lists, headings, hr
+// ══════════════════════════════════════════════
+function fmtMD(text){
+  if(!text)return'';
+  // Preserve code blocks (escape content inside them)
+  const codeBlocks=[];
+  text=text.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,lang,code)=>{
+    const idx=codeBlocks.length;
+    codeBlocks.push(`<pre><code class="lang-${esc(lang)}">${esc(code.trim())}</code></pre>`);
+    return`\x00CODE${idx}\x00`;
+  });
+  // Inline code
+  const inlineCodes=[];
+  text=text.replace(/`([^`\n]+)`/g,(_,code)=>{
+    const idx=inlineCodes.length;
+    inlineCodes.push(`<code>${esc(code)}</code>`);
+    return`\x00INLINE${idx}\x00`;
+  });
+  // Escape HTML in the rest
+  text=esc(text);
+  // Restore placeholders (now safe to inject pre-built HTML)
+  text=text.replace(/\x00CODE(\d+)\x00/g,(_,i)=>codeBlocks[i]);
+  text=text.replace(/\x00INLINE(\d+)\x00/g,(_,i)=>inlineCodes[i]);
+  // Headings
+  text=text.replace(/^######\s(.+)$/gm,'<h6>$1</h6>');
+  text=text.replace(/^#####\s(.+)$/gm,'<h5>$1</h5>');
+  text=text.replace(/^####\s(.+)$/gm,'<h4>$1</h4>');
+  text=text.replace(/^###\s(.+)$/gm,'<h3>$1</h3>');
+  text=text.replace(/^##\s(.+)$/gm,'<h2>$1</h2>');
+  text=text.replace(/^#\s(.+)$/gm,'<h1>$1</h1>');
+  // Bold / italic
+  text=text.replace(/\*\*\*(.*?)\*\*\*/g,'<strong><em>$1</em></strong>');
+  text=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  text=text.replace(/\*(.*?)\*/g,'<em>$1</em>');
+  text=text.replace(/__(.*?)__/g,'<strong>$1</strong>');
+  text=text.replace(/_(.*?)_/g,'<em>$1</em>');
+  // Strikethrough
+  text=text.replace(/~~(.*?)~~/g,'<del>$1</del>');
+  // Blockquote
+  text=text.replace(/^&gt;\s(.+)$/gm,'<blockquote>$1</blockquote>');
+  // HR
+  text=text.replace(/^(?:---|\*\*\*|___)\s*$/gm,'<hr>');
+  // Unordered lists
+  text=text.replace(/^[\*\-\+]\s(.+)$/gm,'<li>$1</li>');
+  text=text.replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>');
+  // Ordered lists
+  text=text.replace(/^\d+\.\s(.+)$/gm,'<li>$1</li>');
+  // Paragraphs — split on double newline
+  const lines=text.split('\n');
+  const out=[];
+  let inPre=false;
+  for(const line of lines){
+    if(line.startsWith('<pre>')){inPre=true;}
+    if(line.startsWith('</pre>')){inPre=false;out.push(line);continue;}
+    if(inPre){out.push(line);continue;}
+    if(line.trim()===''||line.startsWith('<h')||line.startsWith('<ul')||line.startsWith('<ol')||line.startsWith('<li')||line.startsWith('<blockquote')||line.startsWith('<hr')||line.startsWith('<pre')){
+      out.push(line);
+    }else{
+      out.push(line); // newlines become <br> below
+    }
+  }
+  text=out.join('\n');
+  // Newlines to <br> (but not inside block elements)
+  text=text.replace(/\n(?!<\/?(ul|ol|li|h[1-6]|pre|blockquote|hr))/g,'<br>');
+  // Clean up extra <br> after block elements
+  text=text.replace(/(<\/(?:ul|ol|pre|h[1-6]|blockquote)>)<br>/g,'$1');
+  return text;
+}
+
+// ══════════════════════════════════════════════
+// Core helpers
+// ══════════════════════════════════════════════
+function esc(t){if(t===null||t===undefined)return'';const d=document.createElement('div');d.textContent=String(t);return d.innerHTML;}
+function escAttr(t){return String(t||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');}
+function saveDrafts(){S.draft=$('#msgInput')?.value||'';S.wsDraft=$('#wsMessageInput')?.value||'';localStorage.setItem('cap_draft',S.draft);localStorage.setItem('cap_ws_draft',S.wsDraft);}
+
 async function init(){
-console.log('CAPITAN AI v24 | PWA Ready');applyTheme();S.businessMode=localStorage.getItem('cap_business')==='true';S.prevTier=localStorage.getItem('cap_tier')||'free';
-await warmupBackend();
-await checkHealth();const saved=localStorage.getItem('ct');
-if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier}catch(e){localStorage.removeItem('ct');await api.sess()}}else{await api.sess()}
-if(S.prevTier!==S.tier){S.activeChat=null;S.messages=[];S.chats=[];localStorage.setItem('cap_tier',S.tier);['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k))}
-if(!S.activeChat){const restored=restoreState();if(restored&&S.messages.length>0)toast('Messages restored')}
-await Promise.allSettled([loadChats(),loadPayCfg(),loadMarkets()]);render();setupListeners();startTasks();
-if(window.innerWidth>768){S.sidebarOpen=true;updateSidebar()}if(S.businessMode)document.body.classList.add('business-mode');if(!S.isOnline)$('#offlineBanner').style.display='block';
-setTimeout(()=>{const splash=$('#splashScreen');if(splash){splash.classList.add('hide');S.splashDone=true}},600);
+  console.log('CAPITAN AI v24.1 | Fixed');
+  applyTheme();
+  S.businessMode=localStorage.getItem('cap_business')==='true';
+  S.prevTier=localStorage.getItem('cap_tier')||'free';
+  await warmupBackend();
+  await checkHealth();
+  const saved=localStorage.getItem('ct');
+  if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier}catch(e){localStorage.removeItem('ct');await api.sess()}}
+  else{await api.sess()}
+  if(S.prevTier!==S.tier){S.activeChat=null;S.messages=[];S.chats=[];localStorage.setItem('cap_tier',S.tier);['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k));}
+  if(!S.activeChat){const restored=restoreState();if(restored&&S.messages.length>0)toast('Messages restored');}
+  await Promise.allSettled([loadChats(),loadPayCfg(),loadMarkets()]);
+  render();
+  setupListeners();
+  startTasks();
+  if(window.innerWidth>768){S.sidebarOpen=true;updateSidebar();}
+  if(S.businessMode)document.body.classList.add('business-mode');
+  if(!S.isOnline)$('#offlineBanner').style.display='block';
+  setTimeout(()=>{const splash=$('#splashScreen');if(splash){splash.classList.add('hide');S.splashDone=true;}},600);
 }
 
 async function checkHealth(){try{const h=await api.health();S.connected=h.ai==='connected'?'online':'degraded'}catch(e){S.connected='offline'}}
-function startTasks(){setInterval(async()=>{if(!S.loading)await loadChats()},CFG.POLL_CHATS);setInterval(checkHealth,25000);setInterval(async()=>{await loadMarkets();updateTicker()},CFG.POLL_MARKETS);setInterval(saveDrafts,5000);setInterval(saveState,2000)}
+function startTasks(){setInterval(async()=>{if(!S.loading)await loadChats()},CFG.POLL_CHATS);setInterval(checkHealth,25000);setInterval(async()=>{await loadMarkets();updateTicker()},CFG.POLL_MARKETS);setInterval(saveDrafts,5000);setInterval(saveState,2000);}
 async function loadChats(){try{const d=await api.chats();S.chats=d.chats||[];renderSidebarChats()}catch(e){}}
 async function loadPayCfg(){try{S.payConfig=await api.payCfg()}catch(e){}}
-async function loadMarkets(){try{const allData=[];const cats=['global','crypto','african'];for(const cat of cats){try{const d=await api.marketsPrices(cat);const p=d?.prices||d?.data||{};if(p&&typeof p==='object'&&!Array.isArray(p)){allData.push(...Object.entries(p).slice(0,cat==='african'?3:5));}else if(Array.isArray(p)){allData.push(...p.slice(0,cat==='african'?3:5).map((item,i)=>[item?.symbol||item?.name||`${cat}${i}`,item]));}}catch(e){}}S.tickerData=allData;S.markets={prices:{}};}catch(e){console.error('Markets:',e)}}
+async function loadMarkets(){try{const allData=[];const cats=['global','crypto','african'];for(const cat of cats){try{const d=await api.marketsPrices(cat);const p=d?.prices||d?.data||{};if(p&&typeof p==='object'&&!Array.isArray(p)){allData.push(...Object.entries(p).slice(0,cat==='african'?3:5));}else if(Array.isArray(p)){allData.push(...p.slice(0,cat==='african'?3:5).map((item,i)=>[item?.symbol||item?.name||`${cat}${i}`,item]));}}catch(e){}}S.tickerData=allData;S.markets={prices:{}};}catch(e){console.error('Markets:',e);}}
 async function loadLib(){try{const d=await api.lib();S.library=d.items||[];renderLibList()}catch(e){}}
 
 function updateTicker(){const track=$('#tickerTrack');if(!track||!S.tickerData.length)return;const items=S.tickerData.map(([sym,info])=>{let price='—',change='0.00';if(info&&typeof info==='object'){price=typeof info.price==='number'?info.price.toFixed(2):(info.price||'—');change=typeof info.change==='number'?info.change.toFixed(2):'0.00';}const cls=parseFloat(change)>=0?'positive':'negative';const sign=parseFloat(change)>=0?'+':'';return`<span class="sb-ticker-item"><span class="ticker-symbol">${esc(String(sym))}</span><span class="ticker-price">${price}</span><span class="ticker-change ${cls}">${sign}${change}%</span></span>`;});track.innerHTML=items.join('')+items.join('');}
 
 function toggleBusinessMode(){S.businessMode=!S.businessMode;localStorage.setItem('cap_business',S.businessMode);if(S.businessMode)document.body.classList.add('business-mode');else document.body.classList.remove('business-mode');const mt=$('#businessToggle');if(mt){mt.textContent=S.businessMode?'ON':'OFF';mt.className=S.businessMode?'business-indicator active':'business-indicator off';}updateSidebarBizIndicator();toast('Business Mode '+(S.businessMode?'ON':'OFF'));}
 function updateSidebarBizIndicator(){document.querySelectorAll('.biz-indicator').forEach(el=>{el.textContent=S.businessMode?'ON':'OFF';el.className=S.businessMode?'business-indicator active':'business-indicator off';});}
-function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;openFounder()}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0},1500)}}
-function pulseLogo(active){document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{if(active)l.classList.add('pulse');else l.classList.remove('pulse')})}
+function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;openFounder();}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0;},1500);}}
+function pulseLogo(active){document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{if(active)l.classList.add('pulse');else l.classList.remove('pulse');});}
 
 function toggleSidebarSection(headerEl){const body=headerEl.nextElementSibling;const isOpen=body.classList.contains('open');if(isOpen){body.classList.remove('open');body.style.maxHeight='0';headerEl.classList.remove('open');}else{body.classList.add('open');body.style.maxHeight=body.scrollHeight+'px';headerEl.classList.add('open');}S.sidebarSections[headerEl.dataset.section]=!isOpen;}
 
+// ══════════════════════════════════════════════
+// Render
+// ══════════════════════════════════════════════
 function render(){
-const app=$('#app');const tier=S.tier.toUpperCase();const sid=S.session?.id||'...';const isMobile=window.innerWidth<=768;
-app.innerHTML=`<aside class="sidebar ${isMobile?'sidebar-mobile':''} ${!isMobile&&!S.sidebarOpen?'collapsed':''}" id="sidebar">
+  const app=$('#app');
+  const tier=S.tier.toUpperCase();
+  const isMobile=window.innerWidth<=768;
+  app.innerHTML=`<aside class="sidebar ${isMobile?'sidebar-mobile':''} ${!isMobile&&!S.sidebarOpen?'collapsed':''}" id="sidebar">
 <div class="sb-header"><span class="sb-logo" onclick="handleLogoClick()">${ICONS.capitanLogo}</span><span class="sb-brand-name">CAPITAN AI</span>${isMobile?`<button style="background:none;border:none;color:var(--icon);cursor:pointer;padding:4px;margin-left:auto;font-size:14px" onclick="closeSidebar()">✕</button>`:''}</div>
 ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ticker"><div class="sb-ticker-track" id="tickerTrack"></div></div>`:''}
 <button class="btn-new-convo" onclick="newChat()">${ICONS.newConvo} New Conversation</button>
@@ -377,93 +668,328 @@ ${(S.tier==='pro'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ti
 <div class="sb-section"><div class="sb-section-header" data-section="support" onclick="toggleSidebarSection(this)">Support <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="openSupport()"><div class="sb-setting-icon" style="background:rgba(74,222,128,0.12)">${ICONS.chat}</div><div class="sb-setting-info"><div class="sb-setting-label">Contact Support</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div></div></div>
 <div class="sb-section" style="flex:1;overflow-y:auto;border-bottom:none"><div class="sb-section-header open" data-section="chats" onclick="toggleSidebarSection(this)">Recent Chats <span class="sb-section-arrow">▶</span></div><div class="sb-section-body open" style="max-height:600px"><div id="chatsList">${renderChatsHTML()}</div></div></div>
 <div class="sb-footer">CLOSEAI Technologies © 2026</div></aside>
-<main class="main"><div class="chat-container"><div class="chat-messages" id="chatMsgs">${S.activeChat?renderMsgsHTML():welcomeHTML()}</div><div class="input-area"><div class="input-wrap"><button class="upload-btn" onclick="${S.tier!=='free'?'uploadFile()':'openUpgrade()'}"><svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." autocomplete="off" maxlength="${CFG.MAX_MSG}" value="${esc(S.draft)}" ${S.loading?'disabled':''} oninput="handleTyping()"/><div class="input-actions"><button class="send-btn" id="sendBtn" ${S.loading?'disabled':''} onclick="sendMsg()">${ICONS.send}</button></div></div></div></div></main>`;
-updateDesktopToggle();updateTicker();if(S.sidebarOpen&&isMobile){$('#sidebar').classList.add('open');$('#overlay').classList.add('visible')}if(S.messages.length>0)scrollBottom();
+<main class="main"><div class="chat-container"><div class="chat-messages" id="chatMsgs">${renderMsgsHTML()}</div><div class="input-area"><div class="input-wrap"><button class="upload-btn" onclick="${S.tier!=='free'?'uploadFile()':'openUpgrade()'}"><svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." autocomplete="off" maxlength="${CFG.MAX_MSG}" value="${esc(S.draft)}" ${S.loading?'disabled':''} oninput="handleTyping()"/><div class="input-actions"><button class="send-btn" id="sendBtn" ${S.loading?'disabled':''} onclick="sendMsg()">${ICONS.send}</button></div></div></div></div></main>`;
+  updateDesktopToggle();
+  updateTicker();
+  if(S.sidebarOpen&&isMobile){$('#sidebar').classList.add('open');$('#overlay').classList.add('visible');}
+  if(S.messages.length>0)scrollBottom();
 }
 
-function handleTyping(){const inp=$('#msgInput');if(!inp)return;S.draft=inp.value;updateBtn();pulseLogo(inp.value.length>0)}
-function welcomeHTML(){return`<div class="welcome"><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('Analyze current market conditions')">${ICONS.moneyIcon} Finance</div><div class="wp-pill" onclick="quickSend('Write code for: ')">${ICONS.codeIcon} Write Code</div><div class="wp-pill" onclick="quickSend('Solve this math problem: ')">${ICONS.mathIcon} Solve Math</div></div></div>`}
-function renderChatsHTML(){if(!S.chats.length)return'<div style="padding:12px;font-size:10px;color:var(--txt4);text-align:center">No conversations yet</div>';return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'')}"><span>${esc(c.title||'Untitled')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('')}
-function renderMsgsHTML(){return S.messages.map((m,i)=>m.role==='user'?`<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`:`<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)">${ICONS.copy}</button><button class="msg-action ${m.liked?'liked':''}" onclick="likeMsg(${i})">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked?'disliked':''}" onclick="dislikeMsg(${i})">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)">${ICONS.share}</button><button class="msg-action" onclick="regen()">${ICONS.zap}</button></div></div>`).join('')}
+function handleTyping(){const inp=$('#msgInput');if(!inp)return;S.draft=inp.value;updateBtn();pulseLogo(inp.value.length>0);}
 
-function likeMsg(i){if(S.messages[i]){S.messages[i].liked=!S.messages[i].liked;S.messages[i].disliked=false;renderMsgs();saveState()}}
-function dislikeMsg(i){if(S.messages[i]){S.messages[i].disliked=!S.messages[i].disliked;S.messages[i].liked=false;renderMsgs();saveState()}}
-function shareMsg(content){if(navigator.share){navigator.share({text:content}).catch(()=>{})}else{navigator.clipboard.writeText(content);toast('Copied!')}}
+// ══════════════════════════════════════════════
+// FIX 3 — welcomeHTML vs renderMsgsHTML:
+//   render() always calls renderMsgsHTML() which
+//   internally decides what to show, so there's
+//   one source of truth and no stale activeChat check.
+// ══════════════════════════════════════════════
+function welcomeHTML(){
+  return`<div class="welcome"><div class="welcome-pills">
+<div class="wp-pill" onclick="quickSend('Analyze current market conditions')">${ICONS.moneyIcon} Finance</div>
+<div class="wp-pill" onclick="quickSend('Write code for: ')">${ICONS.codeIcon} Write Code</div>
+<div class="wp-pill" onclick="quickSend('Solve this math problem: ')">${ICONS.mathIcon} Solve Math</div>
+</div></div>`;
+}
 
+function renderChatsHTML(){
+  if(!S.chats.length)return'<div style="padding:12px;font-size:10px;color:var(--txt4);text-align:center">No conversations yet</div>';
+  return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')" title="${esc(c.title||'')}"><span>${esc(c.title||'Untitled')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('');
+}
+
+// FIX 3 cont. — single render function; shows welcome when no messages
+function renderMsgsHTML(){
+  if(!S.messages.length)return welcomeHTML();
+  return S.messages.map((m,i)=>
+    m.role==='user'
+      ?`<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`
+      :`<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)">${ICONS.copy}</button><button class="msg-action ${m.liked?'liked':''}" onclick="likeMsg(${i})">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked?'disliked':''}" onclick="dislikeMsg(${i})">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)">${ICONS.share}</button><button class="msg-action" onclick="regen()">${ICONS.zap}</button></div></div>`
+  ).join('');
+}
+
+function likeMsg(i){if(S.messages[i]){S.messages[i].liked=!S.messages[i].liked;S.messages[i].disliked=false;renderMsgs();saveState();}}
+function dislikeMsg(i){if(S.messages[i]){S.messages[i].disliked=!S.messages[i].disliked;S.messages[i].liked=false;renderMsgs();saveState();}}
+function shareMsg(content){if(navigator.share){navigator.share({text:content}).catch(()=>{})}else{navigator.clipboard.writeText(content);toast('Copied!');}}
+
+// ══════════════════════════════════════════════
+// FIX 4 — sendMsg: correct stream target selection
+//   Problem: streamTarget grabbed via $$('.msg-ai-body')
+//   which could select a stale element. Now we:
+//   1. Push user message, render
+//   2. Push empty assistant placeholder, re-render
+//   3. Grab the LAST .msg-ai-body by ID (msgBody + index)
+//   4. Stream into that exact element
+// ══════════════════════════════════════════════
 async function sendMsg(){
-if(!S.isOnline){toast('Offline','warning');return}const inp=$('#msgInput');if(!inp)return;const msg=inp.value.trim();if(!msg||S.loading)return;
-inp.value='';S.draft='';S.loading=true;S.thinking=true;updateBtn();pulseLogo(true);
-S.messages.push({role:'user',content:msg});renderMsgs();S.messages.push({role:'assistant',content:'',model:''});renderMsgs();
-const lastMsg=$$('.msg-ai-body');const streamTarget=lastMsg[lastMsg.length-1];if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom()}
-try{const r=await api.send(S.messages.slice(0,-1),S.activeChat);const finalContent=r.content;S.messages[S.messages.length-1].content=finalContent;S.activeChat=r.chat_id;S.session.count=(S.session.count||0)+1;await loadChats();if(streamTarget){streamTarget.innerHTML='';const isCodeResponse=finalContent.includes('```');if(isCodeResponse){streamTarget.innerHTML=fmtMD(finalContent);scrollBottom();}else{const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);streamer.start();await new Promise(resolve=>{const check=setInterval(()=>{if(!streamer.running){clearInterval(check);resolve()}},50)})}}else{renderMsgs();}scrollBottom();saveState();if(r.remaining!=='unlimited'&&r.remaining<=3)toast(r.remaining+' left','warning')}
-catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;renderMsgs();toast(e.message,'error')}
-finally{S.loading=false;S.thinking=false;updateBtn();pulseLogo(false);if(S.streamAbort)try{S.streamAbort()}catch(e){}}
+  if(!S.isOnline){toast('Offline','warning');return;}
+  const inp=$('#msgInput');
+  if(!inp)return;
+  const msg=inp.value.trim();
+  if(!msg||S.loading)return;
+  inp.value='';S.draft='';
+  S.loading=true;S.thinking=true;
+  updateBtn();pulseLogo(true);
+
+  // Step 1: add user message and render
+  S.messages.push({role:'user',content:msg});
+  renderMsgs();
+
+  // Step 2: add empty AI placeholder and render
+  const aiIdx=S.messages.length;// index of the upcoming AI message
+  S.messages.push({role:'assistant',content:''});
+  renderMsgs();
+
+  // Step 3: grab the exact placeholder element by its assigned id
+  const streamTarget=$(`#msgBody${aiIdx}`);
+  if(streamTarget){
+    streamTarget.innerHTML='<span class="stream-cursor"></span>';
+    scrollBottom();
+  }
+
+  try{
+    const r=await api.send(S.messages.slice(0,-1),S.activeChat);
+    const finalContent=r.content||'';
+
+    // Update state
+    S.messages[S.messages.length-1].content=finalContent;
+    S.activeChat=r.chat_id;
+    S.session.count=(S.session.count||0)+1;
+
+    // Refresh sidebar chat list async
+    loadChats();
+
+    if(streamTarget){
+      streamTarget.innerHTML='';// clear cursor
+      const isCodeHeavy=finalContent.includes('```');
+      if(isCodeHeavy){
+        // Code-heavy responses render immediately (no flicker)
+        streamTarget.innerHTML=fmtMD(finalContent);
+        scrollBottom();
+      }else{
+        // Stream token by token
+        await new Promise(resolve=>{
+          const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);
+          streamer.onDone=resolve;
+          streamer.start();
+        });
+      }
+    }else{
+      renderMsgs();
+    }
+
+    scrollBottom();
+    saveState();
+    if(r.remaining!=='unlimited'&&r.remaining<=3)toast(r.remaining+' messages left','warning');
+  }catch(e){
+    S.messages[S.messages.length-1].content=`Error: ${e.message}`;
+    renderMsgs();
+    toast(e.message,'error');
+  }finally{
+    S.loading=false;S.thinking=false;
+    updateBtn();pulseLogo(false);
+    if(S.streamAbort)try{S.streamAbort();}catch(e){}
+  }
 }
 
-async function quickSend(p){const inp=$('#msgInput');if(inp){inp.value=p;await sendMsg()}}
-async function regen(){if(S.messages.length<2)return;S.messages.pop();renderMsgs();S.loading=true;S.thinking=true;updateBtn();pulseLogo(true);S.messages.push({role:'assistant',content:'',model:''});renderMsgs();const lastMsg=$$('.msg-ai-body');const streamTarget=lastMsg[lastMsg.length-1];if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom()}try{const r=await api.send(S.messages.slice(0,-1),S.activeChat);const finalContent=r.content;S.messages[S.messages.length-1].content=finalContent;if(streamTarget){streamTarget.innerHTML='';const isCodeResponse=finalContent.includes('```');if(isCodeResponse){streamTarget.innerHTML=fmtMD(finalContent);}else{const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);streamer.start();await new Promise(resolve=>{const check=setInterval(()=>{if(!streamer.running){clearInterval(check);resolve()}},50)})}}renderMsgs();scrollBottom();saveState()}catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;renderMsgs();toast(e.message,'error')}finally{S.loading=false;S.thinking=false;updateBtn();pulseLogo(false)}}
-async function loadChat(id){S.activeChat=id;S.messages=[];try{const c=await api.chat(id);S.messages=c.messages||[];renderMsgs();renderSidebarChats();scrollBottom();saveState()}catch(e){toast(e.message,'error')}}
-async function delChat(id){if(!confirm('Delete?'))return;try{await api.delChat(id);S.chats=S.chats.filter(c=>c.id!==id);if(S.activeChat===id)newChat();renderSidebarChats();toast('Deleted')}catch(e){toast(e.message,'error')}}
-function newChat(){if(S.streamAbort)try{S.streamAbort()}catch(e){}S.activeChat=null;S.messages=[];['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k));render();if(window.innerWidth<=768)closeSidebar()}
+async function quickSend(p){const inp=$('#msgInput');if(inp){inp.value=p;inp.focus();}}
 
-async function uploadFile(){if(S.tier==='free'){toast('Upgrade required','warning');return}const inp=document.createElement('input');inp.type='file';const max=S.tier==='founder'?500:S.tier==='pro'?50:10;inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size/(1024*1024)>max){toast(`Max ${max}MB`,'error');return}try{const r=await api.upload(f);toast(`Uploaded! (${r.size_mb}MB)`);if(S.activeChat){S.messages.push({role:'user',content:`[File: ${f.name}]`});renderMsgs();saveState()}}catch(e){toast(e.message,'error')}};inp.click()}
+// FIX 5 — regen: same stream target fix as sendMsg
+async function regen(){
+  if(S.messages.length<2)return;
+  S.messages.pop();
+  S.loading=true;S.thinking=true;
+  updateBtn();pulseLogo(true);
 
-function genRoomCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return`CAP-${Array.from({length:3},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}-${Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}`}
-async function wsCreate(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}const code=genRoomCode();const max=CFG.WS_MAX[S.tier]||7;try{const r=await api.wsCreate(code,max);S.ws={code,id:r.room_id,messages:[],members:[],notes:[],timer:null};$('#wsRoomCode').textContent=code;$('#wsRoomDisplay').style.display='block';toast('Room created!','success');wsPoll()}catch(e){toast(e.message,'error')}}
-async function wsJoin(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}const code=$('#wsJoinInput')?.value.trim().toUpperCase();if(!code){toast('Enter room code','warning');return}try{const r=await api.wsJoin(code);S.ws={...S.ws,code,id:r.room_id,messages:r.messages||[],members:r.members||[]};switchWSTab('chat');renderWSMsgs();toast('Joined!','success');wsPoll()}catch(e){toast(e.message,'error')}}
-async function wsSend(){const inp=$('#wsMessageInput');if(!inp)return;const msg=inp.value.trim();if(!msg||!S.ws.code)return;inp.value='';S.wsDraft='';try{const r=await api.wsMsg(S.ws.code,msg);S.ws.messages=r.messages||[];renderWSMsgs()}catch(e){toast(e.message,'error')}}
-async function wsSaveNotes(){const c=$('#wsNotesEditor')?.value;if(!c||!S.ws.code)return;try{const r=await api.wsSaveNotes(S.ws.code,c);S.ws.notes=r.notes||[];renderWSNotes();toast('Saved!')}catch(e){toast(e.message,'error')}}
-function wsPoll(){if(S.ws.timer)clearInterval(S.ws.timer);S.ws.timer=setInterval(async()=>{if(!S.ws.code){clearInterval(S.ws.timer);return}try{const[md,nd]=await Promise.all([api.wsGetMsgs(S.ws.code),api.wsGetNotes(S.ws.code)]);S.ws.messages=md.messages||[];S.ws.notes=nd.notes||[];renderWSMsgs();renderWSNotes()}catch(e){}},CFG.POLL_WS)}
-function renderWSMsgs(){const c=$('#wsMessages');if(!c)return;if(!S.ws.messages.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">No messages</div>';return}c.innerHTML=S.ws.messages.map(m=>`<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-weight:600;color:${m.is_ai?'var(--accent)':'var(--txt)'}">${esc(m.author)}</span><span style="font-size:7px;color:var(--txt4)">${new Date(m.created).toLocaleTimeString()}</span></div><div style="color:var(--txt2);line-height:1.4">${fmtMD(m.message)}</div></div>`).join('');c.scrollTop=c.scrollHeight}
-function renderWSNotes(){const c=$('#wsNotesDisplay');if(!c)return;if(!S.ws.notes.length){c.innerHTML='<div style="padding:4px;font-size:9px;color:var(--txt4)">No notes</div>';c.style.display='block';return}c.style.display='block';c.innerHTML=S.ws.notes.map(n=>`<div style="padding:2px 0;font-size:9px;color:var(--txt2);line-height:1.4">${fmtMD(n.content)}</div>`).join('')}
-function switchWSTab(t){['create','join','chat'].forEach(k=>{const p=$('#ws'+k.charAt(0).toUpperCase()+k.slice(1)+'Panel');if(p)p.style.display=k===t?'block':'none'});$$('#workspaceModal .pill-tab').forEach(b=>b.classList.remove('active'));$('#wsTab'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.add('active')}
+  S.messages.push({role:'assistant',content:''});
+  renderMsgs();
 
-function openLib(){$('#libraryModal').classList.add('open');loadLib()}
-function renderLibList(){const c=$('#libraryList');if(!c)return;if(!S.library.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">Empty</div>';return}c.innerHTML=S.library.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid var(--bdr);font-size:10px"><div style="flex:1;cursor:pointer" onclick="viewLib('${i.id}')"><div style="font-weight:600;color:var(--txt)">${esc(i.name)}</div></div><button onclick="delLib('${i.id}')" style="background:none;border:none;color:var(--txt4);cursor:pointer;font-size:11px">✕</button></div>`).join('')}
-function viewLib(id){const i=S.library.find(x=>x.id===id);if(!i)return;$('#libName').value=i.name;$('#libContent').value=i.content}
-async function saveLib(){const n=$('#libName')?.value.trim();const c=$('#libContent')?.value.trim();if(!n||!c){toast('Required','warning');return}try{await api.libCreate(n,'note',c);$('#libName').value='';$('#libContent').value='';await loadLib();toast('Saved!')}catch(e){toast(e.message,'error')}}
-async function delLib(id){if(!confirm('Delete?'))return;try{await api.libDel(id);await loadLib();toast('Deleted')}catch(e){toast(e.message,'error')}}
+  const aiIdx=S.messages.length-1;
+  const streamTarget=$(`#msgBody${aiIdx}`);
+  if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom();}
 
-function openUpgrade(){$('#upgradeModal').classList.add('open');if(!S.payConfig)return;const{benefits}=S.payConfig;$('#tierCards').innerHTML=`<div class="tier-card ${S.tier==='free'?'selected':''}" onclick="selUp('free')"><div class="tier-card-header">🔹 Free</div><div class="tier-card-price">$0</div><ul class="tier-card-features"><li>10 msgs/day</li><li>Fast AI</li></ul></div><div class="tier-card" onclick="selUp('plus')"><div class="tier-card-header">🔶 Plus</div><div class="tier-card-price">$8<span>/mo</span></div><ul class="tier-card-features">${(benefits?.plus||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div><div class="tier-card" onclick="selUp('pro')"><div class="tier-card-header">💎 Pro</div><div class="tier-card-price">$17<span>/mo</span></div><ul class="tier-card-features">${(benefits?.pro||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div>`;$$('#paySection .pill-tab').forEach(t=>t.onclick=()=>{$$('#paySection .pill-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');S.selCoin=t.dataset.coin;updateWallet()});$('#verifyUpgrade').onclick=verifyUp;updateWallet()}
-function selUp(t){S.selTier=t;$$('.tier-card').forEach(c=>c.classList.remove('selected'));if(t==='free'){$$('.tier-card')[0]?.classList.add('selected');}else if(t==='plus'){$$('.tier-card')[1]?.classList.add('selected');}else if(t==='pro'){$$('.tier-card')[2]?.classList.add('selected');}if(t!=='free'){$('#paySection').style.display='block';updateWallet()}else{$('#paySection').style.display='none'}}
-function updateWallet(){const el=$('#walletAddr');if(!el||!S.payConfig?.wallets)return;el.textContent=S.payConfig.wallets[S.selCoin]||'Unavailable';el.onclick=()=>{navigator.clipboard.writeText(el.textContent);toast('Address copied!')}}
-async function verifyUp(){const txid=$('#txidInput')?.value.trim();if(!S.selTier||S.selTier==='free'){toast('Select tier','warning');return}if(!txid){toast('Enter TXID','warning');return}try{const r=await api.upgrade(S.selTier,txid,S.selCoin);S.prevTier=S.tier;S.tier=r.tier;S.token=r.token;S.session.tier=r.tier;localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier',r.tier);S.activeChat=null;S.messages=[];S.chats=[];$('#upgradeModal').classList.remove('open');render();toast('🎉 '+r.tier.toUpperCase()+'!','success')}catch(e){toast(e.message,'error')}}
+  try{
+    const r=await api.send(S.messages.slice(0,-1),S.activeChat);
+    const finalContent=r.content||'';
+    S.messages[S.messages.length-1].content=finalContent;
+    if(streamTarget){
+      streamTarget.innerHTML='';
+      const isCodeHeavy=finalContent.includes('```');
+      if(isCodeHeavy){streamTarget.innerHTML=fmtMD(finalContent);}
+      else{
+        await new Promise(resolve=>{
+          const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);
+          streamer.onDone=resolve;
+          streamer.start();
+        });
+      }
+    }
+    scrollBottom();saveState();
+  }catch(e){
+    S.messages[S.messages.length-1].content=`Error: ${e.message}`;
+    renderMsgs();
+    toast(e.message,'error');
+  }finally{
+    S.loading=false;S.thinking=false;
+    updateBtn();pulseLogo(false);
+  }
+}
 
-function openFounder(){$('#founderModal').classList.add('open')}
-async function verifyFounder(){const code=$('#founderCode')?.value;if(!code){toast('Enter code','warning');return}try{const r=await api.founder(code);S.prevTier=S.tier;S.tier='founder';S.token=r.token;S.session.tier='founder';localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier','founder');S.activeChat=null;S.messages=[];S.chats=[];$('#founderModal').classList.remove('open');render();toast('👑 Founder!','success')}catch(e){toast('Invalid','error')}}
-async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Msgs</div></div><div class="stat-card"><div class="stat-val">${d.workspaces}</div><div class="stat-lbl">Workspaces</div></div></div><div style="max-height:150px;overflow-y:auto;font-size:9px">${d.sessions.map(s=>`<div style="padding:3px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between"><span>${s.id}</span><span style="color:var(--accent)">${s.tier}</span><span>${s.msg_count}</span></div>`).join('')}</div>`}catch(e){$('#adminContent').innerHTML=`<div style="color:var(--red)">${e.message}</div>`}}
+async function loadChat(id){
+  S.activeChat=id;S.messages=[];
+  try{
+    const c=await api.chat(id);
+    S.messages=c.messages||[];
+    renderMsgs();
+    renderSidebarChats();
+    scrollBottom();
+    saveState();
+  }catch(e){toast(e.message,'error');}
+}
+async function delChat(id){
+  if(!confirm('Delete?'))return;
+  try{
+    await api.delChat(id);
+    S.chats=S.chats.filter(c=>c.id!==id);
+    if(S.activeChat===id)newChat();
+    renderSidebarChats();
+    toast('Deleted');
+  }catch(e){toast(e.message,'error');}
+}
+function newChat(){
+  if(S.streamAbort)try{S.streamAbort();}catch(e){}
+  S.activeChat=null;S.messages=[];
+  ['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k));
+  render();
+  if(window.innerWidth<=768)closeSidebar();
+}
 
-function openSupport(){$('#supportModal').classList.add('open')}
-function openMoney(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#moneyModal').classList.add('open');loadMarketData(S.marketCategory)}
-async function openTechUpdates(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#techModal').classList.add('open');const nc=$('#techNewsContent');if(!nc)return;nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const data=await api.techNews();const news=Array.isArray(data)?data:(data?.news||data?.articles||[]);if(news.length>0){nc.innerHTML=news.map(n=>{const h=n.headline||n.title||'';const s=n.summary||n.description||'';const src=(typeof n.source==='object'?n.source?.name:n.source)||n.publisher||'Tech';const u=n.url||n.link||'';const t=n.time||n.publishedAt||n.date||'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(u)}','${escAttr(h)}','${escAttr(s)}','${escAttr(String(src))}')"><div class="news-source">${esc(String(src))}</div><div class="news-headline">${esc(h)}</div>${s?`<div class="news-summary">${esc(s.substring(0,140))}...</div>`:''}${t?`<div class="news-time">${timeAgo(t)}</div>`:''}</div>`}).join('')}else{nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No tech news available.<br><button onclick="retryTech()" style="margin-top:8px;background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:10px;cursor:pointer;font-weight:600">Retry</button></div>'}}catch(e){nc.innerHTML=`<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Could not load.<br><button onclick="retryTech()" style="margin-top:8px;background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:10px;cursor:pointer;font-weight:600">Retry</button></div>`}}
-function retryTech(){openTechUpdates()}
-async function loadMarketData(cat){const pc=$('#marketsPricesContent');if(!pc)return;pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading prices...</div>';const nc=$('#marketsNewsContent');if(nc)nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading news...</div>';try{const[pd,nd]=await Promise.all([api.marketsPrices(cat).catch(()=>({})),api.marketsNews(cat).catch(()=>({}))]);const prices=pd?.prices||pd?.data||pd||{};let entries=[];if(Array.isArray(prices)){entries=prices.map((item,i)=>[item?.symbol||item?.name||`Item${i}`,item])}else if(prices&&typeof prices==='object'){entries=Object.entries(prices)}if(entries.length>0){pc.innerHTML=entries.map(([n,i])=>{let price='—',change='0.00';if(i&&typeof i==='object'){price=typeof i.price==='number'?i.price.toFixed(2):(i.price||'—');change=typeof i.change==='number'?i.change.toFixed(2):(typeof i.change_percent==='number'?i.change_percent.toFixed(2):'0.00')}else if(typeof i==='number'){price=i.toFixed(2)}const clr=parseFloat(change)>=0?'var(--green)':'var(--red)';const sign=parseFloat(change)>=0?'+':'';const src=(i&&typeof i==='object'&&i.source)?` · ${i.source}`:'';return`<div style="padding:7px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:11px"><span style="font-weight:600">${esc(String(n))}<span style="font-size:8px;color:var(--txt4)">${src}</span></span><span><span style="font-weight:700">${price}</span> <span style="color:${clr};font-size:10px">${sign}${change}%</span></span></div>`}).join('')}else{pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No data available.<br>Check back shortly.</div>'}const rawNews=nd?.news||nd?.articles||(Array.isArray(nd)?nd:[]);if(nc&&rawNews.length>0){nc.innerHTML=rawNews.map(n=>{const h=n.headline||n.title||'';const s=n.summary||n.description||'';const src=n.source||n.publisher||'News';const u=n.url||n.link||'';const t=n.time||n.publishedAt||n.date||'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(u)}','${escAttr(h)}','${escAttr(s)}','${escAttr(String(src))}')"><div class="news-source">${esc(String(src))}${n.sentiment?` · ${n.sentiment}`:''}</div><div class="news-headline">${esc(h)}</div>${s?`<div class="news-summary">${esc(s.substring(0,140))}...</div>`:''}${t?`<div class="news-time">${timeAgo(t)}</div>`:''}</div>`}).join('')}else if(nc){nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No news available.</div>'}}catch(e){if(pc)pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red);font-size:var(--fs-xs)">Failed to load data</div>'}}
-function openNewsArticle(url,headline,summary,source){if(url){window.open(url,'_blank')}else{$('#newsReaderTitle').textContent=headline||'Article';$('#newsReaderContent').innerHTML=(summary||'').replace(/\n/g,'<br>');$('#newsReaderModal').classList.add('open')}}
-function timeAgo(ts){if(!ts)return'';try{if(typeof ts!=='string')ts=String(ts);const then=new Date(ts);const now=new Date();const diff=Math.floor((now-then)/1000);if(isNaN(diff)||diff<0)return'';if(diff<60)return'Now';if(diff<3600)return Math.floor(diff/60)+'m';if(diff<86400)return Math.floor(diff/3600)+'h';return Math.floor(diff/86400)+'d'}catch(e){return''}}
-function switchMarketCategory(cat){S.marketCategory=cat;$$('#marketCategoryTabs .pill-tab').forEach(t=>t.classList.remove('active'));const tab=document.querySelector(`#marketCategoryTabs [data-cat="${cat}"]`);if(tab)tab.classList.add('active');loadMarketData(cat);loadMarkets().then(()=>updateTicker())}
-function openBusiness(){if(S.tier!=='pro'&&S.tier!=='founder'){toast('Pro tier required','warning');openUpgrade();return}$('#businessModal').classList.add('open');const t=$('#businessToggle');if(t){t.textContent=S.businessMode?'ON':'OFF';t.className=S.businessMode?'business-indicator active':'business-indicator off'}}
-function openPrivacy(){$('#privacyModal').classList.add('open')}
-function openWS(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return}$('#workspaceModal').classList.add('open');switchWSTab('create')}
-function closeModals(){$$('.modal-overlay').forEach(m=>m.classList.remove('open'))}
-function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;updateSidebar()}function closeSidebar(){S.sidebarOpen=false;updateSidebar()}
-function updateSidebar(){const sb=$('#sidebar');const ov=$('#overlay');if(!sb)return;if(window.innerWidth<=768){S.sidebarOpen?(sb.classList.add('open'),ov?.classList.add('visible')):(sb.classList.remove('open'),ov?.classList.remove('visible'))}else{S.sidebarOpen?sb.classList.remove('collapsed'):sb.classList.add('collapsed');updateDesktopToggle()}}
-function updateDesktopToggle(){const t=$('#toggleDesktop');if(t&&window.innerWidth>768){S.sidebarOpen?t.classList.add('shifted'):t.classList.remove('shifted')}}
-function updateBtn(){const b=$('#sendBtn');const i=$('#msgInput');if(b)b.disabled=S.loading||!i?.value.trim()}
-function scrollBottom(){setTimeout(()=>{const c=$('#chatMsgs');if(c)c.scrollTop=c.scrollHeight},50)}
-function toast(msg,type='info'){const ex=$('.toast');if(ex)ex.remove();const colors={success:'var(--green)',error:'var(--red)',warning:'var(--amber)'};const t=document.createElement('div');t.className='toast';t.textContent=msg;t.style.background=type==='info'?'var(--txt)':'var(--bg2)';t.style.color=type==='info'?'var(--bg)':colors[type]||'var(--txt)';t.style.border=`1px solid ${colors[type]||'var(--bdr)'}`;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
-function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Copied!'))}
-function fmtMD(t){if(!t)return'';t=t.replace(/```(\w*)\n([\s\S]*?)```/g,(_,lang,code)=>`<pre><code>${esc(code.trim())}</code></pre>`);t=t.replace(/`([^`]+)`/g,'<code>$1</code>');t=t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');t=t.replace(/\n/g,'<br>');return t}
-function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
-function escAttr(t){return t.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n')}
-function saveDrafts(){S.draft=$('#msgInput')?.value||'';S.wsDraft=$('#wsMessageInput')?.value||'';localStorage.setItem('cap_draft',S.draft);localStorage.setItem('cap_ws_draft',S.wsDraft)}
-function exportData(){if(S.tier!=='pro'&&S.tier!=='founder')return;const data={tier:S.tier,chats:S.chats.length,exported:new Date().toISOString()};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`capitan-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href);toast('Exported!')}
-function renderMsgs(){const c=$('#chatMsgs');if(c)c.innerHTML=S.activeChat?renderMsgsHTML():welcomeHTML();scrollBottom()}
-function renderSidebarChats(){const c=$('#chatsList');if(c)c.innerHTML=renderChatsHTML()}
-function setupListeners(){$('#toggleSidebar')?.addEventListener('click',toggleSidebar);$('#toggleDesktop')?.addEventListener('click',toggleSidebar);$('#overlay')?.addEventListener('click',closeSidebar);document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){const a=document.activeElement;if(a?.id==='msgInput'){e.preventDefault();sendMsg()}else if(a?.id==='wsMessageInput'){e.preventDefault();wsSend()}}if(e.key==='Escape'){closeModals();if(window.innerWidth<=768)closeSidebar()}if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();newChat()}});$$('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')}));$('#closeUpgrade')?.addEventListener('click',()=>$('#upgradeModal').classList.remove('open'));$('#closeFounder')?.addEventListener('click',()=>$('#founderModal').classList.remove('open'));$('#closeAdmin')?.addEventListener('click',()=>$('#adminModal').classList.remove('open'));$('#closeLibrary')?.addEventListener('click',()=>$('#libraryModal').classList.remove('open'));$('#closeWorkspace')?.addEventListener('click',()=>{$('#workspaceModal').classList.remove('open');if(S.ws.timer){clearInterval(S.ws.timer);S.ws.timer=null}});$('#closePrivacy')?.addEventListener('click',()=>$('#privacyModal').classList.remove('open'));$('#closeSupport')?.addEventListener('click',()=>$('#supportModal').classList.remove('open'));$('#closeMoney')?.addEventListener('click',()=>$('#moneyModal').classList.remove('open'));$('#closeTech')?.addEventListener('click',()=>$('#techModal').classList.remove('open'));$('#closeNewsReader')?.addEventListener('click',()=>$('#newsReaderModal').classList.remove('open'));$('#closeBusiness')?.addEventListener('click',()=>$('#businessModal').classList.remove('open'));$('#libSave')?.addEventListener('click',saveLib);$('#wsCreateBtn')?.addEventListener('click',wsCreate);$('#wsJoinBtn')?.addEventListener('click',wsJoin);$('#wsSendBtn')?.addEventListener('click',wsSend);$('#wsEditNote')?.addEventListener('click',()=>{const nc=S.ws.notes.map(n=>n.content).join('\n');const ed=$('#wsNotesEditor');const sb=$('#wsSaveNote');if(ed){ed.value=nc;ed.style.display='block'}if(sb)sb.style.display='block'});$('#wsSaveNote')?.addEventListener('click',wsSaveNotes);$('#wsTabCreate')?.addEventListener('click',()=>switchWSTab('create'));$('#wsTabJoin')?.addEventListener('click',()=>switchWSTab('join'));$('#wsTabChat')?.addEventListener('click',()=>switchWSTab('chat'));$('#verifyFounder')?.addEventListener('click',verifyFounder);$('#marketTabPrices')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='block';$('#marketsNewsContent').style.display='none';$('#marketTabPrices').classList.add('active');$('#marketTabNews').classList.remove('active')});$('#marketTabNews')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='none';$('#marketsNewsContent').style.display='block';$('#marketTabNews').classList.add('active');$('#marketTabPrices').classList.remove('active')});$$('#marketCategoryTabs .pill-tab').forEach(tab=>tab.addEventListener('click',()=>switchMarketCategory(tab.dataset.cat)));window.addEventListener('resize',()=>{if(window.innerWidth>768){$('#sidebar')?.classList.remove('open');$('#overlay')?.classList.remove('visible')}updateSidebar();updateDesktopToggle()});}
-S.draft=localStorage.getItem('cap_draft')||'';S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
+async function uploadFile(){
+  if(S.tier==='free'){toast('Upgrade required','warning');return;}
+  const inp=document.createElement('input');inp.type='file';
+  const max=S.tier==='founder'?500:S.tier==='pro'?50:10;
+  inp.onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    if(f.size/(1024*1024)>max){toast(`Max ${max}MB`,'error');return;}
+    try{
+      const r=await api.upload(f);
+      toast(`Uploaded! (${r.size_mb}MB)`);
+      if(S.activeChat){S.messages.push({role:'user',content:`[File: ${f.name}]`});renderMsgs();saveState();}
+    }catch(e){toast(e.message,'error');}
+  };
+  inp.click();
+}
+
+function genRoomCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return`CAP-${Array.from({length:3},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}-${Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}`;}
+async function wsCreate(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return;}const code=genRoomCode();const max=CFG.WS_MAX[S.tier]||7;try{const r=await api.wsCreate(code,max);S.ws={code,id:r.room_id,messages:[],members:[],notes:[],timer:null};$('#wsRoomCode').textContent=code;$('#wsRoomDisplay').style.display='block';toast('Room created!','success');wsPoll();}catch(e){toast(e.message,'error');}}
+async function wsJoin(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return;}const code=$('#wsJoinInput')?.value.trim().toUpperCase();if(!code){toast('Enter room code','warning');return;}try{const r=await api.wsJoin(code);S.ws={...S.ws,code,id:r.room_id,messages:r.messages||[],members:r.members||[]};switchWSTab('chat');renderWSMsgs();toast('Joined!','success');wsPoll();}catch(e){toast(e.message,'error');}}
+async function wsSend(){const inp=$('#wsMessageInput');if(!inp)return;const msg=inp.value.trim();if(!msg||!S.ws.code)return;inp.value='';S.wsDraft='';try{const r=await api.wsMsg(S.ws.code,msg);S.ws.messages=r.messages||[];renderWSMsgs();}catch(e){toast(e.message,'error');}}
+async function wsSaveNotes(){const c=$('#wsNotesEditor')?.value;if(!c||!S.ws.code)return;try{const r=await api.wsSaveNotes(S.ws.code,c);S.ws.notes=r.notes||[];renderWSNotes();toast('Saved!');}catch(e){toast(e.message,'error');}}
+function wsPoll(){if(S.ws.timer)clearInterval(S.ws.timer);S.ws.timer=setInterval(async()=>{if(!S.ws.code){clearInterval(S.ws.timer);return;}try{const[md,nd]=await Promise.all([api.wsGetMsgs(S.ws.code),api.wsGetNotes(S.ws.code)]);S.ws.messages=md.messages||[];S.ws.notes=nd.notes||[];renderWSMsgs();renderWSNotes();}catch(e){}},CFG.POLL_WS);}
+function renderWSMsgs(){const c=$('#wsMessages');if(!c)return;if(!S.ws.messages.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">No messages</div>';return;}c.innerHTML=S.ws.messages.map(m=>`<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-weight:600;color:${m.is_ai?'var(--accent)':'var(--txt)'}">${esc(m.author)}</span><span style="font-size:7px;color:var(--txt4)">${new Date(m.created).toLocaleTimeString()}</span></div><div style="color:var(--txt2);line-height:1.4">${fmtMD(m.message)}</div></div>`).join('');c.scrollTop=c.scrollHeight;}
+function renderWSNotes(){const c=$('#wsNotesDisplay');if(!c)return;if(!S.ws.notes.length){c.innerHTML='<div style="padding:4px;font-size:9px;color:var(--txt4)">No notes</div>';c.style.display='block';return;}c.style.display='block';c.innerHTML=S.ws.notes.map(n=>`<div style="padding:2px 0;font-size:9px;color:var(--txt2);line-height:1.4">${fmtMD(n.content)}</div>`).join('');}
+function switchWSTab(t){['create','join','chat'].forEach(k=>{const p=$('#ws'+k.charAt(0).toUpperCase()+k.slice(1)+'Panel');if(p)p.style.display=k===t?'block':'none';});$$('#workspaceModal .pill-tab').forEach(b=>b.classList.remove('active'));$('#wsTab'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.add('active');}
+
+function openLib(){$('#libraryModal').classList.add('open');loadLib();}
+function renderLibList(){const c=$('#libraryList');if(!c)return;if(!S.library.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">Empty</div>';return;}c.innerHTML=S.library.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid var(--bdr);font-size:10px"><div style="flex:1;cursor:pointer" onclick="viewLib('${i.id}')"><div style="font-weight:600;color:var(--txt)">${esc(i.name)}</div></div><button onclick="delLib('${i.id}')" style="background:none;border:none;color:var(--txt4);cursor:pointer;font-size:11px">✕</button></div>`).join('');}
+function viewLib(id){const i=S.library.find(x=>x.id===id);if(!i)return;$('#libName').value=i.name;$('#libContent').value=i.content;}
+async function saveLib(){const n=$('#libName')?.value.trim();const c=$('#libContent')?.value.trim();if(!n||!c){toast('Required','warning');return;}try{await api.libCreate(n,'note',c);$('#libName').value='';$('#libContent').value='';await loadLib();toast('Saved!');}catch(e){toast(e.message,'error');}}
+async function delLib(id){if(!confirm('Delete?'))return;try{await api.libDel(id);await loadLib();toast('Deleted');}catch(e){toast(e.message,'error');}}
+
+function openUpgrade(){$('#upgradeModal').classList.add('open');if(!S.payConfig)return;const{benefits}=S.payConfig;$('#tierCards').innerHTML=`<div class="tier-card ${S.tier==='free'?'selected':''}" onclick="selUp('free')"><div class="tier-card-header">🔹 Free</div><div class="tier-card-price">$0</div><ul class="tier-card-features"><li>10 msgs/day</li><li>Fast AI</li></ul></div><div class="tier-card" onclick="selUp('plus')"><div class="tier-card-header">🔶 Plus</div><div class="tier-card-price">$8<span>/mo</span></div><ul class="tier-card-features">${(benefits?.plus||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div><div class="tier-card" onclick="selUp('pro')"><div class="tier-card-header">💎 Pro</div><div class="tier-card-price">$17<span>/mo</span></div><ul class="tier-card-features">${(benefits?.pro||[]).map(b=>`<li>${b}</li>`).join('')}</ul></div>`;$$('#paySection .pill-tab').forEach(t=>t.onclick=()=>{$$('#paySection .pill-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');S.selCoin=t.dataset.coin;updateWallet();});$('#verifyUpgrade').onclick=verifyUp;updateWallet();}
+function selUp(t){S.selTier=t;$$('.tier-card').forEach(c=>c.classList.remove('selected'));if(t==='free'){$$('.tier-card')[0]?.classList.add('selected');}else if(t==='plus'){$$('.tier-card')[1]?.classList.add('selected');}else if(t==='pro'){$$('.tier-card')[2]?.classList.add('selected');}if(t!=='free'){$('#paySection').style.display='block';updateWallet();}else{$('#paySection').style.display='none';}}
+function updateWallet(){const el=$('#walletAddr');if(!el||!S.payConfig?.wallets)return;el.textContent=S.payConfig.wallets[S.selCoin]||'Unavailable';el.onclick=()=>{navigator.clipboard.writeText(el.textContent);toast('Address copied!');}}
+async function verifyUp(){const txid=$('#txidInput')?.value.trim();if(!S.selTier||S.selTier==='free'){toast('Select tier','warning');return;}if(!txid){toast('Enter TXID','warning');return;}try{const r=await api.upgrade(S.selTier,txid,S.selCoin);S.prevTier=S.tier;S.tier=r.tier;S.token=r.token;S.session.tier=r.tier;localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier',r.tier);S.activeChat=null;S.messages=[];S.chats=[];$('#upgradeModal').classList.remove('open');render();toast('🎉 '+r.tier.toUpperCase()+'!','success');}catch(e){toast(e.message,'error');}}
+
+function openFounder(){$('#founderModal').classList.add('open');}
+async function verifyFounder(){const code=$('#founderCode')?.value;if(!code){toast('Enter code','warning');return;}try{const r=await api.founder(code);S.prevTier=S.tier;S.tier='founder';S.token=r.token;S.session.tier='founder';localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier','founder');S.activeChat=null;S.messages=[];S.chats=[];$('#founderModal').classList.remove('open');render();toast('👑 Founder!','success');}catch(e){toast('Invalid','error');}}
+async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Msgs</div></div><div class="stat-card"><div class="stat-val">${d.workspaces}</div><div class="stat-lbl">Workspaces</div></div></div><div style="max-height:150px;overflow-y:auto;font-size:9px">${d.sessions.map(s=>`<div style="padding:3px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between"><span>${s.id}</span><span style="color:var(--accent)">${s.tier}</span><span>${s.msg_count}</span></div>`).join('')}</div>`;}catch(e){$('#adminContent').innerHTML=`<div style="color:var(--red)">${e.message}</div>`;}}
+
+function openSupport(){$('#supportModal').classList.add('open');}
+function openMoney(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#moneyModal').classList.add('open');loadMarketData(S.marketCategory);}
+async function openTechUpdates(){if(S.tier!=='pro'&&S.tier!=='founder')return;$('#techModal').classList.add('open');const nc=$('#techNewsContent');if(!nc)return;nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading...</div>';try{const data=await api.techNews();const news=Array.isArray(data)?data:(data?.news||data?.articles||[]);if(news.length>0){nc.innerHTML=news.map(n=>{const h=n.headline||n.title||'';const s=n.summary||n.description||'';const src=(typeof n.source==='object'?n.source?.name:n.source)||n.publisher||'Tech';const u=n.url||n.link||'';const t=n.time||n.publishedAt||n.date||'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(u)}','${escAttr(h)}','${escAttr(s)}','${escAttr(String(src))}')"><div class="news-source">${esc(String(src))}</div><div class="news-headline">${esc(h)}</div>${s?`<div class="news-summary">${esc(s.substring(0,140))}...</div>`:''}${t?`<div class="news-time">${timeAgo(t)}</div>`:''}</div>`;}).join('');}else{nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No tech news available.<br><button onclick="retryTech()" style="margin-top:8px;background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:10px;cursor:pointer;font-weight:600">Retry</button></div>';}}catch(e){nc.innerHTML=`<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Could not load.<br><button onclick="retryTech()" style="margin-top:8px;background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:10px;cursor:pointer;font-weight:600">Retry</button></div>`;}}
+function retryTech(){openTechUpdates();}
+async function loadMarketData(cat){const pc=$('#marketsPricesContent');if(!pc)return;pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading prices...</div>';const nc=$('#marketsNewsContent');if(nc)nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">Loading news...</div>';try{const[pd,nd]=await Promise.all([api.marketsPrices(cat).catch(()=>({})),api.marketsNews(cat).catch(()=>({}))]);const prices=pd?.prices||pd?.data||pd||{};let entries=[];if(Array.isArray(prices)){entries=prices.map((item,i)=>[item?.symbol||item?.name||`Item${i}`,item]);}else if(prices&&typeof prices==='object'){entries=Object.entries(prices);}if(entries.length>0){pc.innerHTML=entries.map(([n,i])=>{let price='—',change='0.00';if(i&&typeof i==='object'){price=typeof i.price==='number'?i.price.toFixed(2):(i.price||'—');change=typeof i.change==='number'?i.change.toFixed(2):(typeof i.change_percent==='number'?i.change_percent.toFixed(2):'0.00');}else if(typeof i==='number'){price=i.toFixed(2);}const clr=parseFloat(change)>=0?'var(--green)':'var(--red)';const sign=parseFloat(change)>=0?'+':'';const src=(i&&typeof i==='object'&&i.source)?` · ${i.source}`:'';return`<div style="padding:7px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:11px"><span style="font-weight:600">${esc(String(n))}<span style="font-size:8px;color:var(--txt4)">${src}</span></span><span><span style="font-weight:700">${price}</span> <span style="color:${clr};font-size:10px">${sign}${change}%</span></span></div>`;}).join('');}else{pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No data available.<br>Check back shortly.</div>';}const rawNews=nd?.news||nd?.articles||(Array.isArray(nd)?nd:[]);if(nc&&rawNews.length>0){nc.innerHTML=rawNews.map(n=>{const h=n.headline||n.title||'';const s=n.summary||n.description||'';const src=n.source||n.publisher||'News';const u=n.url||n.link||'';const t=n.time||n.publishedAt||n.date||'';return`<div class="news-item" onclick="openNewsArticle('${escAttr(u)}','${escAttr(h)}','${escAttr(s)}','${escAttr(String(src))}')"><div class="news-source">${esc(String(src))}${n.sentiment?` · ${n.sentiment}`:''}</div><div class="news-headline">${esc(h)}</div>${s?`<div class="news-summary">${esc(s.substring(0,140))}...</div>`:''}${t?`<div class="news-time">${timeAgo(t)}</div>`:''}</div>`;}).join('');}else if(nc){nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3);font-size:var(--fs-xs)">No news available.</div>';}}catch(e){if(pc)pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red);font-size:var(--fs-xs)">Failed to load data</div>';}}
+function openNewsArticle(url,headline,summary,source){if(url){window.open(url,'_blank');}else{$('#newsReaderTitle').textContent=headline||'Article';$('#newsReaderContent').innerHTML=(summary||'').replace(/\n/g,'<br>');$('#newsReaderModal').classList.add('open');}}
+function timeAgo(ts){if(!ts)return'';try{if(typeof ts!=='string')ts=String(ts);const then=new Date(ts);const now=new Date();const diff=Math.floor((now-then)/1000);if(isNaN(diff)||diff<0)return'';if(diff<60)return'Now';if(diff<3600)return Math.floor(diff/60)+'m';if(diff<86400)return Math.floor(diff/3600)+'h';return Math.floor(diff/86400)+'d';}catch(e){return'';}}
+function switchMarketCategory(cat){S.marketCategory=cat;$$('#marketCategoryTabs .pill-tab').forEach(t=>t.classList.remove('active'));const tab=document.querySelector(`#marketCategoryTabs [data-cat="${cat}"]`);if(tab)tab.classList.add('active');loadMarketData(cat);loadMarkets().then(()=>updateTicker());}
+function openBusiness(){if(S.tier!=='pro'&&S.tier!=='founder'){toast('Pro tier required','warning');openUpgrade();return;}$('#businessModal').classList.add('open');const t=$('#businessToggle');if(t){t.textContent=S.businessMode?'ON':'OFF';t.className=S.businessMode?'business-indicator active':'business-indicator off';}}
+function openPrivacy(){$('#privacyModal').classList.add('open');}
+function openWS(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return;}$('#workspaceModal').classList.add('open');switchWSTab('create');}
+function closeModals(){$$('.modal-overlay').forEach(m=>m.classList.remove('open'));}
+function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;updateSidebar();}
+function closeSidebar(){S.sidebarOpen=false;updateSidebar();}
+function updateSidebar(){
+  const sb=$('#sidebar');const ov=$('#overlay');
+  if(!sb)return;
+  if(window.innerWidth<=768){
+    S.sidebarOpen?(sb.classList.add('open'),ov?.classList.add('visible')):(sb.classList.remove('open'),ov?.classList.remove('visible'));
+  }else{
+    S.sidebarOpen?sb.classList.remove('collapsed'):sb.classList.add('collapsed');
+    updateDesktopToggle();
+  }
+}
+function updateDesktopToggle(){
+  const t=$('#toggleDesktop');
+  if(t&&window.innerWidth>768){
+    // FIX: arrow direction flips when sidebar open/closed
+    const arrow=t.querySelector('svg polyline');
+    if(arrow){arrow.setAttribute('points',S.sidebarOpen?'15 18 9 12 15 6':'9 18 15 12 9 6');}
+    S.sidebarOpen?t.classList.add('shifted'):t.classList.remove('shifted');
+  }
+}
+function updateBtn(){const b=$('#sendBtn');const i=$('#msgInput');if(b)b.disabled=S.loading||!i?.value.trim();}
+function scrollBottom(){const c=$('#chatMsgs');if(c)requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight;});}
+function toast(msg,type='info'){const ex=$('.toast');if(ex)ex.remove();const colors={success:'var(--green)',error:'var(--red)',warning:'var(--amber)'};const t=document.createElement('div');t.className='toast';t.textContent=msg;t.style.background=type==='info'?'var(--txt)':'var(--bg2)';t.style.color=type==='info'?'var(--bg)':colors[type]||'var(--txt)';t.style.border=`1px solid ${colors[type]||'var(--bdr)'}`;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
+function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Copied!'));}
+function exportData(){if(S.tier!=='pro'&&S.tier!=='founder')return;const data={tier:S.tier,chats:S.chats.length,exported:new Date().toISOString()};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`capitan-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href);toast('Exported!');}
+function renderMsgs(){const c=$('#chatMsgs');if(c){c.innerHTML=renderMsgsHTML();scrollBottom();}}
+function renderSidebarChats(){const c=$('#chatsList');if(c)c.innerHTML=renderChatsHTML();}
+
+function setupListeners(){
+  $('#toggleSidebar')?.addEventListener('click',toggleSidebar);
+  $('#toggleDesktop')?.addEventListener('click',toggleSidebar);
+  $('#overlay')?.addEventListener('click',closeSidebar);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){
+      const a=document.activeElement;
+      if(a?.id==='msgInput'){e.preventDefault();sendMsg();}
+      else if(a?.id==='wsMessageInput'){e.preventDefault();wsSend();}
+    }
+    if(e.key==='Escape'){closeModals();if(window.innerWidth<=768)closeSidebar();}
+    if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();newChat();}
+  });
+  $$('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+  $('#closeUpgrade')?.addEventListener('click',()=>$('#upgradeModal').classList.remove('open'));
+  $('#closeFounder')?.addEventListener('click',()=>$('#founderModal').classList.remove('open'));
+  $('#closeAdmin')?.addEventListener('click',()=>$('#adminModal').classList.remove('open'));
+  $('#closeLibrary')?.addEventListener('click',()=>$('#libraryModal').classList.remove('open'));
+  $('#closeWorkspace')?.addEventListener('click',()=>{$('#workspaceModal').classList.remove('open');if(S.ws.timer){clearInterval(S.ws.timer);S.ws.timer=null;}});
+  $('#closePrivacy')?.addEventListener('click',()=>$('#privacyModal').classList.remove('open'));
+  $('#closeSupport')?.addEventListener('click',()=>$('#supportModal').classList.remove('open'));
+  $('#closeMoney')?.addEventListener('click',()=>$('#moneyModal').classList.remove('open'));
+  $('#closeTech')?.addEventListener('click',()=>$('#techModal').classList.remove('open'));
+  $('#closeNewsReader')?.addEventListener('click',()=>$('#newsReaderModal').classList.remove('open'));
+  $('#closeBusiness')?.addEventListener('click',()=>$('#businessModal').classList.remove('open'));
+  $('#libSave')?.addEventListener('click',saveLib);
+  $('#wsCreateBtn')?.addEventListener('click',wsCreate);
+  $('#wsJoinBtn')?.addEventListener('click',wsJoin);
+  $('#wsSendBtn')?.addEventListener('click',wsSend);
+  $('#wsEditNote')?.addEventListener('click',()=>{const nc=S.ws.notes.map(n=>n.content).join('\n');const ed=$('#wsNotesEditor');const sb=$('#wsSaveNote');if(ed){ed.value=nc;ed.style.display='block';}if(sb)sb.style.display='block';});
+  $('#wsSaveNote')?.addEventListener('click',wsSaveNotes);
+  $('#wsTabCreate')?.addEventListener('click',()=>switchWSTab('create'));
+  $('#wsTabJoin')?.addEventListener('click',()=>switchWSTab('join'));
+  $('#wsTabChat')?.addEventListener('click',()=>switchWSTab('chat'));
+  $('#verifyFounder')?.addEventListener('click',verifyFounder);
+  $('#marketTabPrices')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='block';$('#marketsNewsContent').style.display='none';$('#marketTabPrices').classList.add('active');$('#marketTabNews').classList.remove('active');});
+  $('#marketTabNews')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='none';$('#marketsNewsContent').style.display='block';$('#marketTabNews').classList.add('active');$('#marketTabPrices').classList.remove('active');});
+  $$('#marketCategoryTabs .pill-tab').forEach(tab=>tab.addEventListener('click',()=>switchMarketCategory(tab.dataset.cat)));
+  window.addEventListener('resize',()=>{if(window.innerWidth>768){$('#sidebar')?.classList.remove('open');$('#overlay')?.classList.remove('visible');}updateSidebar();updateDesktopToggle();});
+}
+
+S.draft=localStorage.getItem('cap_draft')||'';
+S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
 document.addEventListener('DOMContentLoaded',init);
 window.CAPITAN={S,api,init,sendMsg,newChat,setThemeMode,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode,toggleSidebarSection,openSupport};
-console.log('CAPITAN AI v24 | PWA Complete');
+console.log('CAPITAN AI v24.1 | Bugs fixed');
 </script>
 </body>
 </html>
