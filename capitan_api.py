@@ -1,8 +1,14 @@
 """
-CAPITAN AI — Enterprise Backend v25.0
+CAPITAN AI — Enterprise Backend v25.0 (FIXED)
 CLOSEAI Technologies
 Full Intelligence: Finance, Trading, Coding, Math, Quant, Web Search, News, Markets
 PWA Ready | Production Database | Full Frontend-Backend Integration
+
+FIX APPLIED: /api/session now ALWAYS returns a fresh JWT token, including for
+existing/returning sessions. Previously, if a valid Authorization header was
+already present, the endpoint returned the session dict WITHOUT a "token"
+field, causing the frontend to fail to store/refresh credentials and surface
+"Error: Session refreshed" on subsequent /api/chat calls (401 Session required).
 """
 
 import os
@@ -50,18 +56,18 @@ class Settings(BaseSettings):
     SUPABASE_DB_NAME: str = "postgres"
     SUPABASE_DB_USER: str = "postgres"
     SUPABASE_DB_PASSWORD: str = ""
-    
+
     # Security
     JWT_SECRET: str = secrets.token_hex(32)
     FOUNDER_KEY: str = "Osinachi@3500"
-    
+
     # AI Providers
     OPENROUTER_KEY: str = ""
     OPENAI_KEY: str = ""
     MISTRAL_KEY: str = ""
     GROQ_KEY: str = ""
     HF_TOKEN: str = ""
-    
+
     # Market Data
     ALPHA_VANTAGE_KEY: str = ""
     FRED_API_KEY: str = ""
@@ -69,15 +75,15 @@ class Settings(BaseSettings):
     COINGECKO_KEY: str = ""
     TWELVE_DATA_KEY: str = ""
     ETHERSCAN_API_KEY: str = ""
-    
+
     # News & Search
     SERPAPI_KEY: str = ""
     GNEWS_API_KEY: str = ""
     NEWS_API_KEY: str = ""
-    
+
     # Other
     WOLFRAM_APP_ID: str = ""
-    
+
     class Config:
         env_file = ".env"
         extra = "ignore"
@@ -92,7 +98,7 @@ def get_db():
     """Get database connection with automatic cleanup and retry"""
     conn = None
     max_retries = 3
-    
+
     for attempt in range(max_retries):
         try:
             if settings.DATABASE_URL:
@@ -102,7 +108,7 @@ def get_db():
                 conn_string = f"postgresql://{settings.SUPABASE_DB_USER}:{encoded_password}@{settings.SUPABASE_DB_HOST}:{settings.SUPABASE_DB_PORT}/{settings.SUPABASE_DB_NAME}?sslmode=require"
             else:
                 raise ValueError("No database configuration found")
-            
+
             conn = psycopg2.connect(conn_string, connect_timeout=10)
             yield conn
             return
@@ -329,27 +335,27 @@ def get_session(request: Request):
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         return None
-    
+
     payload = verify_jwt(auth[7:])
     if not payload:
         return None
-    
+
     session_id = payload.get("session_id")
     if not session_id:
         return None
-    
+
     tier = payload.get("tier", "free")
     if tier not in ("free", "plus", "pro", "founder"):
         tier = "free"
-    
+
     now = datetime.utcnow().isoformat()
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT id, tier, msg_count, msg_window FROM sessions WHERE id = %s", (session_id,))
                 row = c.fetchone()
-                
+
                 if not row:
                     c.execute(
                         "INSERT INTO sessions (id, tier, msg_count, msg_window, created, updated) VALUES (%s, %s, 0, %s, %s, %s)",
@@ -357,12 +363,12 @@ def get_session(request: Request):
                     )
                     conn.commit()
                     return {"id": session_id, "tier": tier, "msg_count": 0, "msg_window": now}
-                
+
                 if tier != row[1]:
                     c.execute("UPDATE sessions SET tier=%s, updated=%s WHERE id=%s", (tier, now, session_id))
                     conn.commit()
                     return {"id": row[0], "tier": tier, "msg_count": row[2] or 0, "msg_window": row[3]}
-                
+
                 return {"id": row[0], "tier": row[1], "msg_count": row[2] or 0, "msg_window": row[3]}
     except Exception as e:
         logger.error(f"Database error in get_session: {e}")
@@ -376,18 +382,18 @@ rate_store = {}
 def check_rate(session_id, tier):
     now = time.time()
     key = f"{session_id}"
-    
+
     if key not in rate_store:
         rate_store[key] = []
-    
+
     rate_store[key] = [t for t in rate_store[key] if now - t < 60]
-    
+
     limits = {"free": 15, "plus": 30, "pro": 60, "founder": 200}
     limit = limits.get(tier, 15)
-    
+
     if len(rate_store[key]) >= limit:
         return False
-    
+
     rate_store[key].append(now)
     return True
 
@@ -400,7 +406,7 @@ def get_time_context():
     day = now.strftime("%A")
     date = now.strftime("%B %d, %Y")
     utc_time = now.strftime("%H:%M UTC")
-    
+
     if hour < 5:
         time_of_day = "late night"
         greeting_context = "The world is quiet."
@@ -416,7 +422,7 @@ def get_time_context():
     else:
         time_of_day = "night"
         greeting_context = "Night owl mode."
-    
+
     return {
         "time_of_day": time_of_day,
         "day": day,
@@ -430,7 +436,7 @@ def get_time_context():
 # ================================================================
 def get_market_data():
     results = {}
-    
+
     # CoinGecko for Crypto
     if settings.COINGECKO_KEY:
         try:
@@ -452,7 +458,7 @@ def get_market_data():
                     }
         except:
             pass
-    
+
     # Yahoo Finance for Stocks, Indices, Forex
     try:
         syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X"
@@ -474,7 +480,7 @@ def get_market_data():
                     }
     except:
         pass
-    
+
     # Alpha Vantage for Forex
     if settings.ALPHA_VANTAGE_KEY and len(results) < 5:
         try:
@@ -494,7 +500,7 @@ def get_market_data():
                     pass
         except:
             pass
-    
+
     return results
 
 # ================================================================
@@ -502,7 +508,7 @@ def get_market_data():
 # ================================================================
 def get_financial_news():
     news = []
-    
+
     if settings.NEWS_API_KEY:
         try:
             r = requests.get("https://newsapi.org/v2/top-headlines",
@@ -518,7 +524,7 @@ def get_financial_news():
                     })
         except:
             pass
-    
+
     if settings.GNEWS_API_KEY:
         try:
             r = requests.get("https://gnews.io/api/v4/search",
@@ -534,7 +540,7 @@ def get_financial_news():
                     })
         except:
             pass
-    
+
     if settings.FINNHUB_API_KEY:
         try:
             r = requests.get("https://finnhub.io/api/v1/news", params={"category": "general", "token": settings.FINNHUB_API_KEY}, timeout=10)
@@ -550,7 +556,7 @@ def get_financial_news():
                     })
         except:
             pass
-    
+
     seen = set()
     unique = []
     for n in news:
@@ -558,7 +564,7 @@ def get_financial_news():
         if k and k not in seen:
             seen.add(k)
             unique.append(n)
-    
+
     unique.sort(key=lambda x: x.get("time", ""), reverse=True)
     return unique[:15]
 
@@ -567,7 +573,7 @@ def get_financial_news():
 # ================================================================
 def get_tech_news():
     news = []
-    
+
     if settings.NEWS_API_KEY:
         try:
             r = requests.get("https://newsapi.org/v2/everything",
@@ -584,7 +590,7 @@ def get_tech_news():
                     })
         except:
             pass
-    
+
     if settings.GNEWS_API_KEY:
         try:
             r = requests.get("https://gnews.io/api/v4/search",
@@ -601,7 +607,7 @@ def get_tech_news():
                     })
         except:
             pass
-    
+
     seen = set()
     unique = []
     for n in news:
@@ -609,7 +615,7 @@ def get_tech_news():
         if k and k not in seen:
             seen.add(k)
             unique.append(n)
-    
+
     unique.sort(key=lambda x: x.get("time", ""), reverse=True)
     return unique[:15]
 
@@ -619,7 +625,7 @@ def get_tech_news():
 def search_web(query, num_results=5):
     results = []
     query_hash = hashlib.md5(query.lower().encode()).hexdigest()
-    
+
     # Check cache
     try:
         with get_db() as conn:
@@ -631,7 +637,7 @@ def search_web(query, num_results=5):
                     return json.loads(row[0])
     except:
         pass
-    
+
     # SerpAPI for Google Search
     if settings.SERPAPI_KEY:
         try:
@@ -647,7 +653,7 @@ def search_web(query, num_results=5):
                     })
         except:
             pass
-    
+
     # DuckDuckGo fallback
     if not results:
         try:
@@ -663,7 +669,7 @@ def search_web(query, num_results=5):
                     })
         except:
             pass
-    
+
     # Cache results
     if results:
         try:
@@ -674,7 +680,7 @@ def search_web(query, num_results=5):
                     conn.commit()
         except:
             pass
-    
+
     return results
 
 # ================================================================
@@ -753,35 +759,35 @@ DOMAIN: {domain} | TIER: {tier}
 # ================================================================
 def classify(q):
     q = q.lower()
-    
+
     # Identity questions
     if re.search(r'who are you|what are you|identity|introduce yourself|other capitan', q):
         return 'identity'
-    
+
     # Web search needed
     if re.search(r'who|what|when|where|why|how|news|latest|current|today|search|find', q) and len(q.split()) > 3:
         return 'web_search'
-    
+
     # Science/Medical
     if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis', q):
         return 'science'
-    
+
     # Coding/Programming
     if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api|rest|graphql|sql|database|query|react|node|javascript|typescript|python|rust|golang', q):
         return 'coding'
-    
+
     # Quantitative Finance
     if re.search(r'stochastic|ito|black.scholes|monte carlo|var|cvar|sharpe|sortino|beta|alpha|option pricing|derivative|risk neutral|fama|french|cointegration|garch|arima|backtest|factor model', q):
         return 'quant'
-    
+
     # Finance/Trading
     if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx|central bank|federal reserve|interest rate|inflation|gdp|macro|equity|stock|market|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|silver|oil|commodity', q):
         return 'finance'
-    
+
     # Mathematics
     if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|probability|statistics', q):
         return 'math'
-    
+
     return 'general'
 
 # ================================================================
@@ -793,11 +799,11 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"])
     base = base.replace("{utc_time}", tc["utc_time"])
     base = base.replace("{greeting_context}", tc["greeting_context"])
-    
+
     # Identity mode override
     if domain == 'identity':
         base += "\n\nIDENTITY MODE: You are the ONLY CAPITAN AI. State clearly: 'I am CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies.'"
-    
+
     # Add user memory context
     if session_id:
         try:
@@ -809,7 +815,7 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
                         base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
         except:
             pass
-    
+
     # Tier-specific instructions
     if tier == "free":
         base += "\n\nBe concise but helpful."
@@ -817,11 +823,11 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
         base += "\n\nProvide detailed responses."
     elif tier in ("pro", "founder"):
         base += "\n\nGo deep — provide comprehensive analysis with examples."
-    
+
     # Add web search results
     if web_results:
         base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"• {r['title']}: {r['snippet'][:200]}" for r in web_results[:3]])
-    
+
     # Add live market data for Pro/Founder
     if tier in ("pro", "founder"):
         try:
@@ -830,7 +836,7 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
                 base += "\n\nLIVE MARKETS:\n" + "\n".join([f"• {s}: ${d['price']:.2f} ({'▲' if d.get('change',0)>=0 else '▼'} {abs(d['change']):.2f}%)" for s, d in list(md.items())[:8]])
         except:
             pass
-    
+
     # Add news for Pro/Founder
     if tier in ("pro", "founder"):
         try:
@@ -839,7 +845,7 @@ def system_prompt(domain, tier, session_id=None, web_results=None):
                 base += "\n\nLATEST NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:100]}" for n in news[:5]])
         except:
             pass
-    
+
     return base
 
 # ================================================================
@@ -858,7 +864,7 @@ def call_ai_fast(messages, tier="free"):
                     groq_msgs.append({"role": "system", "content": content})
                 else:
                     groq_msgs.append(m)
-            
+
             model = "llama-3.3-70b-versatile" if tier in ("pro", "founder") else "llama-3.1-8b-instant"
             r = requests.post("https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {settings.GROQ_KEY}", "Content-Type": "application/json"},
@@ -870,7 +876,7 @@ def call_ai_fast(messages, tier="free"):
                     return content, model
         except Exception as e:
             logger.error(f"Groq error: {e}")
-    
+
     # Priority 2: OpenRouter (Claude/GPT-4 for Pro/Founder)
     if settings.OPENROUTER_KEY:
         models = ["google/gemini-flash-1.5", "mistral/mistral-7b-instruct", "deepseek/deepseek-chat"]
@@ -888,7 +894,7 @@ def call_ai_fast(messages, tier="free"):
                         return content, model
             except:
                 continue
-    
+
     # Priority 3: OpenAI fallback
     if settings.OPENAI_KEY:
         try:
@@ -899,7 +905,7 @@ def call_ai_fast(messages, tier="free"):
                 return r.json()["choices"][0]["message"]["content"], "gpt-4o-mini"
         except:
             pass
-    
+
     # Priority 4: Mistral fallback
     if settings.MISTRAL_KEY:
         try:
@@ -912,7 +918,7 @@ def call_ai_fast(messages, tier="free"):
                     return content, "mistral/small"
         except:
             pass
-    
+
     return "I'm having trouble connecting to AI services. Please try again or contact support.", "fallback"
 
 # ================================================================
@@ -949,13 +955,13 @@ def health():
                 db_status = "connected"
     except:
         pass
-    
+
     ai_status = "connected" if (settings.GROQ_KEY or settings.OPENROUTER_KEY) else "disconnected"
     providers = []
     if settings.GROQ_KEY: providers.append("groq")
     if settings.OPENROUTER_KEY: providers.append("openrouter")
     if settings.OPENAI_KEY: providers.append("openai")
-    
+
     return {
         "status": "ok",
         "version": "25.0",
@@ -976,18 +982,29 @@ def api_status():
     }
 
 # ================================================================
-# SECTION 19: SESSION ENDPOINT
+# SECTION 19: SESSION ENDPOINT  ***FIXED***
 # ================================================================
 @app.get("/api/session")
 def get_or_create_session(request: Request):
     session = get_session(request)
     if session:
-        return session
-    
+        # FIX: Previously this branch returned the session dict WITHOUT a
+        # "token" field. The frontend expects every /api/session response to
+        # include a usable token. Missing it caused the client to be unable
+        # to authenticate subsequent /api/chat calls, surfacing as
+        # "Error: Session refreshed". Always (re)issue a valid JWT here.
+        token = create_jwt(session["id"], session["tier"])
+        return {
+            "id": session["id"],
+            "tier": session["tier"],
+            "msg_count": session["msg_count"],
+            "token": token
+        }
+
     session_id = f"s_{sid()}"
     tier = "free"
     now = datetime.utcnow().isoformat()
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -998,7 +1015,7 @@ def get_or_create_session(request: Request):
                 conn.commit()
     except Exception as e:
         logger.error(f"Session creation error: {e}")
-    
+
     token = create_jwt(session_id, tier)
     return {
         "id": session_id,
@@ -1143,13 +1160,13 @@ def chat(req: ChatRequest, request: Request):
     s = get_session(request)
     if not s:
         raise HTTPException(401, "Session required")
-    
+
     if not check_rate(s["id"], s["tier"]):
         raise HTTPException(429, "Rate limit exceeded. Please wait a moment.")
-    
+
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
     limit = cfg["msg_limit"]
-    
+
     # Daily limit check
     if limit != float("inf"):
         try:
@@ -1168,13 +1185,13 @@ def chat(req: ChatRequest, request: Request):
             raise
         except Exception as e:
             logger.error(f"Daily limit check error: {e}")
-    
+
     user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role") == "user"), "")
     if not user_msg:
         raise HTTPException(400, "No message content")
-    
+
     chat_id = req.chat_id or f"chat_{sid()}"
-    
+
     # Save user message to database
     try:
         with get_db() as conn:
@@ -1184,22 +1201,22 @@ def chat(req: ChatRequest, request: Request):
                              (chat_id, s["id"], user_msg[:60], datetime.utcnow(), datetime.utcnow()))
                 else:
                     c.execute("UPDATE chats SET updated=%s WHERE id=%s AND session_id=%s", (datetime.utcnow(), chat_id, s["id"]))
-                
+
                 c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, created) VALUES (%s, %s, %s, %s, %s, %s)",
                          (f"msg_{sid()}", chat_id, s["id"], "user", user_msg, datetime.utcnow()))
                 c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=%s", (s["id"],))
                 conn.commit()
-                
+
                 # Get chat history for context
                 c.execute("SELECT role, content FROM chat_messages WHERE chat_id=%s ORDER BY created ASC LIMIT 15", (chat_id,))
                 history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
     except Exception as e:
         logger.error(f"Save message error: {e}")
         history = []
-    
+
     # Classify the query
     domain = classify(user_msg)
-    
+
     # Get web results if needed
     web_results = None
     if domain == 'web_search' or cfg.get("web_search", False):
@@ -1207,11 +1224,11 @@ def chat(req: ChatRequest, request: Request):
             web_results = search_web(user_msg, 4)
         except Exception as e:
             logger.error(f"Web search error: {e}")
-    
+
     # Build system prompt and get AI response
     prompt = system_prompt(domain, s["tier"], s["id"], web_results)
     result, model_used = call_ai_fast([{"role": "system", "content": prompt}] + history, s["tier"])
-    
+
     # Save AI response
     if result:
         try:
@@ -1224,10 +1241,10 @@ def chat(req: ChatRequest, request: Request):
                     conn.commit()
         except Exception as e:
             logger.error(f"Save AI response error: {e}")
-    
+
     # Calculate remaining messages
     remaining = limit - (s["msg_count"] + 1) if limit != float("inf") else "unlimited"
-    
+
     return {
         "content": result,
         "chat_id": chat_id,
@@ -1254,9 +1271,9 @@ def upgrade(req: UpgradeRequest, request: Request):
         raise HTTPException(400, "Invalid tier")
     if not req.txid.strip():
         raise HTTPException(400, "TXID required")
-    
+
     prices = {"plus": 8, "pro": 17}
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1270,7 +1287,7 @@ def upgrade(req: UpgradeRequest, request: Request):
                 conn.commit()
     except Exception as e:
         logger.error(f"Upgrade error: {e}")
-    
+
     token = create_jwt(s["id"], req.tier)
     return {"verified": True, "tier": req.tier, "token": token}
 
@@ -1287,7 +1304,7 @@ def founder(req: FounderRequest, request: Request):
         raise HTTPException(401, "Session required")
     if req.code != settings.FOUNDER_KEY:
         raise HTTPException(403, "Invalid founder code")
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1296,7 +1313,7 @@ def founder(req: FounderRequest, request: Request):
                 conn.commit()
     except Exception as e:
         logger.error(f"Founder upgrade error: {e}")
-    
+
     token = create_jwt(s["id"], "founder")
     return {"verified": True, "tier": "founder", "token": token}
 
@@ -1366,22 +1383,22 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
     s = get_session(request)
     if not s:
         raise HTTPException(401, "Session required")
-    
+
     cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"])
     if not cfg["file_upload"]:
         raise HTTPException(403, "Upgrade required")
-    
+
     contents = await file.read()
     max_size = 50 if s["tier"] == "pro" else (500 if s["tier"] == "founder" else 10)
     if len(contents) / (1024 * 1024) > max_size:
         raise HTTPException(400, f"Max {max_size}MB")
-    
+
     file_id = f"file_{sid()}"
     file_path = os.path.join(UPLOAD_DIR, file_id)
-    
+
     with open(file_path, "wb") as f:
         f.write(contents)
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1390,7 +1407,7 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
                 conn.commit()
     except Exception as e:
         logger.error(f"Save file error: {e}")
-    
+
     return {
         "id": file_id,
         "filename": file.filename,
@@ -1424,7 +1441,7 @@ def ws_create(req: WorkspaceCreateRequest, request: Request):
     max_m = TIER_CONFIG.get(s["tier"], {}).get("workspace_max", 0)
     if max_m == 0:
         raise HTTPException(403, "Work Area requires Plus or Pro")
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1444,7 +1461,7 @@ def ws_join(req: WorkspaceJoinRequest, request: Request):
     s = get_session(request)
     if not s:
         raise HTTPException(401, "Session required")
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1472,7 +1489,7 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
     s = get_session(request)
     if not s:
         raise HTTPException(401, "Session required")
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1480,7 +1497,7 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
                 ws = c.fetchone()
                 if not ws:
                     raise HTTPException(404, "Room not found")
-                
+
                 # Check for @CAPITAN mention for AI response
                 is_ai = req.message.strip().startswith("@CAPITAN")
                 if is_ai:
@@ -1488,7 +1505,7 @@ def ws_message(req: WorkspaceMessageRequest, request: Request):
                     if result:
                         c.execute("INSERT INTO workspace_messages (id, workspace_id, session_id, author, message, is_ai, created) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                                  (sid(), ws[0], s["id"], "CAPITAN AI", result, 1, datetime.utcnow()))
-                
+
                 c.execute("INSERT INTO workspace_messages (id, workspace_id, session_id, author, message, created) VALUES (%s, %s, %s, %s, %s, %s)",
                          (sid(), ws[0], s["id"], "User", req.message, datetime.utcnow()))
                 conn.commit()
@@ -1518,7 +1535,7 @@ def ws_save_note(req: WorkspaceNoteRequest, request: Request):
     s = get_session(request)
     if not s:
         raise HTTPException(401, "Session required")
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1557,7 +1574,7 @@ def admin(request: Request):
     s = get_session(request)
     if not s or s["tier"] != "founder":
         raise HTTPException(403, "Access denied")
-    
+
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1569,10 +1586,10 @@ def admin(request: Request):
                 msgs = c.fetchone()[0]
                 c.execute("SELECT COUNT(*) FROM workspaces")
                 ws = c.fetchone()[0]
-                
+
                 c.execute("SELECT id, tier, msg_count, created FROM sessions ORDER BY created DESC LIMIT 30")
                 sessions = [{"id": r[0], "tier": r[1], "msg_count": r[2], "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
-                
+
                 return {
                     "total_sessions": total,
                     "paid_sessions": paid,
@@ -1647,7 +1664,6 @@ async def root():
 # ================================================================
 # SECTION 31: FRONTEND SERVING (Optional - for testing)
 # ================================================================
-# Create a simple HTML frontend for testing if needed
 @app.get("/test")
 async def test_frontend():
     html_content = """
@@ -1671,23 +1687,23 @@ async def test_frontend():
         </div>
         <input type="text" id="message" placeholder="Enter your message..." value="What is CAPITAN AI?">
         <pre id="output">Click a button to test...</pre>
-        
+
         <script>
             const API_URL = window.location.origin;
-            
+
             async function testConnection() {
                 const res = await fetch(`${API_URL}/health`);
                 const data = await res.json();
                 document.getElementById('output').textContent = JSON.stringify(data, null, 2);
             }
-            
+
             async function createSession() {
                 const res = await fetch(`${API_URL}/api/session`);
                 const data = await res.json();
                 localStorage.setItem('token', data.token);
                 document.getElementById('output').textContent = JSON.stringify(data, null, 2);
             }
-            
+
             async function sendMessage() {
                 const token = localStorage.getItem('token');
                 const msg = document.getElementById('message').value;
@@ -1714,7 +1730,7 @@ async def test_frontend():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*60}")
-    print(f"🚀 CAPITAN AI v25.0 - COMPLETE PRODUCTION BACKEND")
+    print(f"🚀 CAPITAN AI v25.0 - COMPLETE PRODUCTION BACKEND (FIXED)")
     print(f"{'='*60}")
     print(f"📊 Database: {'Connected' if settings.DATABASE_URL or settings.SUPABASE_DB_PASSWORD else 'Not configured'}")
     print(f"🤖 AI Providers: Groq={bool(settings.GROQ_KEY)} | OpenRouter={bool(settings.OPENROUTER_KEY)}")
