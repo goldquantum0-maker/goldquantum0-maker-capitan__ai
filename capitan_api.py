@@ -1,871 +1,1927 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<meta name="application-name" content="CAPITAN AI">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CAPITAN AI">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#000000">
-<meta name="color-scheme" content="dark">
-<meta name="description" content="CAPITAN AI — Enterprise Intelligence by CLOSEAI Technologies">
-<meta name="format-detection" content="telephone=no">
-<title>CAPITAN AI</title>
+"""
+CAPITAN AI — Enterprise Backend v27.0 - FULLY RESTORED
+CLOSEAI Technologies
+Complete: Telegram Auth | Founder Login | Full Intelligence | PWA | All Features
+"""
 
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%23A0A0A4' stroke-width='4'/%3E%3Ctext y='.78em' font-size='38' text-anchor='middle' x='50' fill='%23A0A0A4' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+import os
+import re
+import json
+import uuid
+import time
+import hashlib
+import hmac
+import base64
+import secrets
+import requests
+import logging
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict, Tuple
+from contextlib import contextmanager
+from urllib.parse import quote_plus
+from hashlib import sha256
 
-<script>
-(function(){
-var t=localStorage.getItem('cap_theme_mode')||'system';
-if(t==='light'){document.documentElement.classList.add('light');}
-else if(t==='dark'){document.documentElement.classList.remove('light');}
-else{var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(!d)document.documentElement.classList.add('light');}
-var h=new Date().getHours();
-window.CAPITAN_GREETING=h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night, night owl';
-if('serviceWorker' in navigator && window.location.protocol === 'https:'){
-window.addEventListener('load',function(){
-navigator.serviceWorker.register('/sw.js').then(function(reg){
-console.log('Service Worker registered:', reg.scope);
-}).catch(function(err){
-console.log('Service Worker registration failed:', err);
-});
-});
-}
-})();
-</script>
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse, Response, HTMLResponse, RedirectResponse
+from pydantic import BaseModel, EmailStr
+from pydantic_settings import BaseSettings
+import psycopg2
+import psycopg2.extras
+import uvicorn
 
-<style>
-:root{
---bg:#000000;--bg2:#050505;--bg3:#0a0a0a;--bg4:#101010;
---bdr:#1a1a1a;--bdr2:#222;--bdr3:#333;
---txt:#FFFFFF;--txt2:#CCCCCC;--txt3:#999999;--txt4:#777777;
---accent:#A0A0A4;--accent-hover:#B8B8BC;--accent-bg:rgba(160,160,164,0.12);
---red:#F87171;--green:#4ade80;--amber:#fbbf24;
---orange:#F97316;--orange-bg:rgba(249,115,22,0.15);
---icon:#9CA3AF;--icon-hover:#FFFFFF;
---radius:14px;--r-sm:10px;--r-xs:7px;--r-lg:18px;
---fs-xs:10px;--fs-sm:11px;--fs-md:12px;--fs-lg:14px;--fs-xl:17px;
---lh:1.45;--safe:env(safe-area-inset-bottom,0px);
---shadow:0 20px 60px rgba(0,0,0,.9);
---transition:0.18s cubic-bezier(0.4,0,0.2,1);
---font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
---sidebar-w:320px;
-}
-:root.light{
---bg:#FFFFFF;--bg2:#F5F5F7;--bg3:#EBEBED;--bg4:#E0E0E3;
---bdr:#E0E0E0;--bdr2:#D0D0D0;--bdr3:#B0B0B0;
---txt:#000000;--txt2:#333333;--txt3:#666666;--txt4:#999999;
---accent:#6B6B70;--accent-hover:#8A8A90;--accent-bg:rgba(107,107,112,0.10);
---red:#DC2626;--green:#16A34A;--amber:#D97706;
---orange:#EA580C;
---icon:#6B7280;--icon-hover:#000000;
---shadow:0 12px 40px rgba(0,0,0,.06);
-}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{font-size:15px;height:100%;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var(--fs-sm);font-weight:400;line-height:var(--lh);height:100vh;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
-#app{display:flex;height:100vh;height:100dvh;position:relative}
-::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr3);border-radius:3px}
+# ================================================================
+# LOGGING SETUP
+# ================================================================
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-.splash-screen{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s ease,visibility .4s ease}
-.splash-screen.hide{opacity:0;visibility:hidden;pointer-events:none}
-.splash-logo{display:flex;align-items:center;justify-content:center;animation:logoPulse .8s ease-in-out infinite}
-@keyframes logoPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:.6}}
+# ================================================================
+# CONFIGURATION
+# ================================================================
+class Settings(BaseSettings):
+    # Database
+    DATABASE_URL: str = ""
+    SUPABASE_DB_HOST: str = ""
+    SUPABASE_DB_PORT: str = "5432"
+    SUPABASE_DB_NAME: str = "postgres"
+    SUPABASE_DB_USER: str = "postgres"
+    SUPABASE_DB_PASSWORD: str = ""
+    
+    # Security
+    JWT_SECRET: str = secrets.token_hex(32)
+    FOUNDER_KEY: str = "Osinachi@3500"
+    
+    # Telegram Bot
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_BOT_USERNAME: str = "capitan_ai_bot"
+    
+    # Frontend URL for redirects
+    FRONTEND_URL: str = "https://capitan.pages.dev"
+    
+    # AI Providers
+    GROQ_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    MISTRAL_API_KEY: str = ""
+    HF_TOKEN: str = ""
+    
+    # Market Data
+    ALPHA_VANTAGE_KEY: str = ""
+    FRED_API_KEY: str = ""
+    FINNHUB_API_KEY: str = ""
+    COINGECKO_KEY: str = ""
+    TWELVE_DATA_KEY: str = ""
+    ETHERSCAN_API_KEY: str = ""
+    
+    # News & Search
+    SERPAPI_KEY: str = ""
+    GNEWS_API_KEY: str = ""
+    NEWS_API_KEY: str = ""
+    
+    # Other
+    WOLFRAM_APP_ID: str = ""
+    
+    # CORS
+    ALLOWED_ORIGINS: list = ["*"]
+    
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
 
-.sb-logo{display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:transform .2s;width:32px;height:32px;flex-shrink:0}
-.sb-logo:hover{transform:scale(1.08)}.sb-logo:active{transform:scale(.95)}
-.sb-logo.pulse svg{animation:logoPulse .7s ease-in-out infinite}
-.icon-svg{width:15px;height:15px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.icon-svg.sm{width:12px;height:12px}.icon-svg.lg{width:18px;height:18px}
+settings = Settings()
 
-.stream-cursor{display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:1px;animation:cursorBlink .6s step-end infinite;vertical-align:text-bottom}
-@keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
-.token-fade{animation:tokenIn .1s ease}
-@keyframes tokenIn{from{opacity:.3;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
+# ================================================================
+# DATABASE LAYER
+# ================================================================
+@contextmanager
+def get_db():
+    conn = None
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            if settings.DATABASE_URL:
+                conn_string = settings.DATABASE_URL
+            elif settings.SUPABASE_DB_PASSWORD:
+                encoded_password = quote_plus(settings.SUPABASE_DB_PASSWORD)
+                conn_string = f"postgresql://{settings.SUPABASE_DB_USER}:{encoded_password}@{settings.SUPABASE_DB_HOST}:{settings.SUPABASE_DB_PORT}/{settings.SUPABASE_DB_NAME}?sslmode=require"
+            else:
+                raise ValueError("No database configuration found")
+            conn = psycopg2.connect(conn_string, connect_timeout=10)
+            yield conn
+            return
+        except Exception as e:
+            logger.warning(f"Database attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2)
+    if conn:
+        conn.close()
 
-.sidebar{
-  width:var(--sidebar-w);min-width:var(--sidebar-w);
-  background:var(--bg);border-right:1px solid var(--bdr);
-  display:flex;flex-direction:column;z-index:100;
-  overflow-y:auto;overflow-x:hidden;
-  transition:transform var(--transition);
-  height:100%;flex-shrink:0;
-}
-.sidebar-mobile{position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);box-shadow:var(--shadow);z-index:200;transition:transform .25s var(--transition)}
-.sidebar-mobile.open{transform:translateX(0)}
+def init_db():
+    """Create all tables if they don't exist"""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                # Users table (Telegram auth)
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS users (
+                        id UUID PRIMARY KEY,
+                        telegram_id BIGINT UNIQUE,
+                        telegram_username TEXT,
+                        first_name TEXT,
+                        last_name TEXT,
+                        name TEXT,
+                        email TEXT,
+                        tier TEXT DEFAULT 'free',
+                        tier_expires TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # User sessions
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS user_sessions (
+                        id UUID PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        token TEXT UNIQUE NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        expires_at TIMESTAMP
+                    )
+                ''')
+                
+                # Auth states for Telegram OAuth
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS auth_states (
+                        id UUID PRIMARY KEY,
+                        state TEXT UNIQUE NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        expires_at TIMESTAMP
+                    )
+                ''')
+                
+                # Anonymous sessions (backward compatibility)
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS sessions (
+                        id TEXT PRIMARY KEY,
+                        tier TEXT DEFAULT 'free',
+                        msg_count INTEGER DEFAULT 0,
+                        msg_window TEXT,
+                        created TIMESTAMP,
+                        updated TIMESTAMP
+                    )
+                ''')
+                
+                # Chats
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS chats (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        title TEXT,
+                        created TIMESTAMP DEFAULT NOW(),
+                        updated TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Chat messages
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id TEXT PRIMARY KEY,
+                        chat_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        role TEXT,
+                        content TEXT,
+                        model TEXT,
+                        tokens INTEGER,
+                        latency_ms INTEGER,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Memories
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS memories (
+                        id TEXT PRIMARY KEY,
+                        memory_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        content TEXT,
+                        query TEXT,
+                        domain TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Library items
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS library_items (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        name TEXT,
+                        type TEXT,
+                        content TEXT,
+                        size INTEGER DEFAULT 0,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Uploaded files
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS uploaded_files (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        filename TEXT,
+                        original_name TEXT,
+                        size INTEGER,
+                        mime_type TEXT,
+                        storage_path TEXT,
+                        public_url TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Projects
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS projects (
+                        id UUID PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        workspace_id TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Project members
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS project_members (
+                        project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        role TEXT DEFAULT 'member',
+                        joined_at TIMESTAMP DEFAULT NOW(),
+                        PRIMARY KEY (project_id, user_id)
+                    )
+                ''')
+                
+                # Workspaces
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS workspaces (
+                        id TEXT PRIMARY KEY,
+                        name TEXT,
+                        owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        room_code TEXT UNIQUE,
+                        max_members INTEGER DEFAULT 10,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Workspace members
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS workspace_members (
+                        workspace_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        role TEXT DEFAULT 'member',
+                        joined_at TIMESTAMP DEFAULT NOW(),
+                        PRIMARY KEY (workspace_id, user_id)
+                    )
+                ''')
+                
+                # Workspace messages
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS workspace_messages (
+                        id TEXT PRIMARY KEY,
+                        workspace_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        author_name TEXT,
+                        message TEXT,
+                        is_ai INTEGER DEFAULT 0,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Workspace notes
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS workspace_notes (
+                        id TEXT PRIMARY KEY,
+                        workspace_id TEXT,
+                        content TEXT,
+                        updated TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Payments
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS payments (
+                        id UUID PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        txid TEXT UNIQUE,
+                        currency TEXT,
+                        amount REAL,
+                        tier TEXT,
+                        verified INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        expires_at TIMESTAMP
+                    )
+                ''')
+                
+                # Payment log
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS payment_log (
+                        id TEXT PRIMARY KEY,
+                        session_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        tier TEXT,
+                        amount REAL,
+                        currency TEXT,
+                        txid TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                # Cache tables
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS market_cache (
+                        id TEXT PRIMARY KEY,
+                        category TEXT,
+                        data TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS news_cache (
+                        id TEXT PRIMARY KEY,
+                        category TEXT,
+                        data TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS web_cache (
+                        id TEXT PRIMARY KEY,
+                        query_hash TEXT,
+                        data TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                
+                conn.commit()
+        logger.info("✅ All database tables ready")
+    except Exception as e:
+        logger.warning(f"Database init: {e}")
 
-.sb-header{
-  padding:20px 20px 16px;
-  display:flex;align-items:center;gap:12px;
-  border-bottom:1px solid var(--bdr);flex-shrink:0;
-}
-.sb-brand-name{font-size:var(--fs-md);font-weight:700;color:var(--txt);letter-spacing:-0.3px}
-.profile-icon{
-  margin-left:auto;
-  background:var(--bg2);
-  border:1px solid var(--bdr);
-  width:36px;height:36px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  transition:all .12s;
-}
-.profile-icon:hover{background:var(--bg3);border-color:var(--accent)}
+init_db()
 
-.sb-ticker{flex-shrink:0;overflow:hidden;background:var(--bg2);border-bottom:1px solid var(--bdr);padding:3px 0}
-.sb-ticker-track{display:flex;gap:14px;animation:tickerScroll 20s linear infinite;white-space:nowrap;padding:2px 6px}
-@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.sb-ticker-item{display:flex;align-items:center;gap:4px;font-size:8px;font-weight:600;flex-shrink:0}
-.sb-ticker-item .ticker-symbol{color:var(--txt3)}.sb-ticker-item .ticker-price{color:var(--txt)}
-.sb-ticker-item .ticker-change.positive{color:var(--green)}.sb-ticker-item .ticker-change.negative{color:var(--red)}
+def sid(): return str(uuid.uuid4())[:8].upper()
+def mid(): return 'mem_' + sid()
 
-.btn-new-convo{
-  display:flex;align-items:center;gap:8px;
-  width:calc(100% - 20px);margin:12px 10px;
-  padding:12px 16px;
-  background:var(--accent);color:#000;
-  border:none;border-radius:var(--r-sm);cursor:pointer;
-  font-size:var(--fs-sm);font-weight:600;font-family:var(--font);
-  transition:all .12s;
-}
-.btn-new-convo:hover{background:var(--accent-hover);transform:scale(1.01)}
-.btn-new-convo:active{transform:scale(.98)}
+# ================================================================
+# AUTHENTICATION (Telegram)
+# ================================================================
+def create_auth_token(user_id: str) -> str:
+    """Create JWT token for authenticated users"""
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({
+        "user_id": user_id,
+        "type": "user",
+        "exp": int((datetime.utcnow() + timedelta(days=30)).timestamp())
+    }).encode()).decode().rstrip("=")
+    signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    return f"{header}.{payload}.{signature}"
 
-.sb-chat-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 20px;cursor:pointer;color:var(--txt3);
-  font-size:var(--fs-sm);font-weight:500;transition:all .1s;
-  border-bottom:1px solid var(--bdr);
-}
-.sb-chat-item:hover{background:var(--bg3);color:var(--txt)}
-.sb-chat-item.active{background:var(--bg3);color:var(--txt);font-weight:600}
-.sb-chat-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-sm)}
-.sb-chat-del{background:none;border:none;color:transparent;cursor:pointer;font-size:11px;padding:2px 5px;border-radius:3px;flex-shrink:0;transition:all .12s}
-.sb-chat-item:hover .sb-chat-del{color:var(--txt4)}
-.sb-chat-del:hover{color:var(--red)!important;background:var(--bg4)}
+def create_session_jwt(session_id: str, tier: str) -> str:
+    """Create JWT for anonymous sessions"""
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({
+        "session_id": session_id,
+        "tier": tier,
+        "type": "session",
+        "exp": int((datetime.utcnow() + timedelta(days=365)).timestamp())
+    }).encode()).decode().rstrip("=")
+    signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    return f"{header}.{payload}.{signature}"
 
-.section-header{
-  padding:16px 20px 6px;
-  font-size:10px;color:var(--txt4);
-  text-transform:uppercase;letter-spacing:.06em;font-weight:600;
-}
+def verify_jwt(token: str):
+    try:
+        parts = token.split(".")
+        if len(parts) != 3: return None
+        header, payload, signature = parts
+        expected = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+        if not hmac.compare_digest(signature, expected): return None
+        data = json.loads(base64.urlsafe_b64decode(payload + "=="))
+        if data.get("exp", 0) < datetime.utcnow().timestamp(): return None
+        return data
+    except: return None
 
-.sb-footer{padding:16px 20px;text-align:center;font-size:8px;color:var(--txt4);letter-spacing:.04em;border-top:1px solid var(--bdr);font-weight:500;flex-shrink:0}
+def get_current_user(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    payload = verify_jwt(auth[7:])
+    if not payload or payload.get("type") != "user":
+        return None
+    user_id = payload.get("user_id")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, telegram_id, telegram_username, first_name, last_name, name, email, tier, created_at FROM users WHERE id = %s", (user_id,))
+                row = c.fetchone()
+                if row:
+                    name = row[5] or row[3] or row[2] or f"User_{row[1]}" if row[1] else "User"
+                    return {
+                        "id": row[0],
+                        "telegram_id": row[1],
+                        "telegram_username": row[2],
+                        "first_name": row[3],
+                        "last_name": row[4],
+                        "name": name,
+                        "email": row[6],
+                        "tier": row[7],
+                        "created_at": row[8].isoformat() if row[8] else None
+                    }
+    except Exception as e:
+        logger.error(f"Get user error: {e}")
+    return None
 
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:150;opacity:0;transition:opacity .2s;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
-.overlay.visible{display:block;opacity:1}
+def get_current_session(request: Request):
+    """Get anonymous session from token (fallback for non-authenticated users)"""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(401, "Missing authorization header")
+    payload = verify_jwt(auth[7:])
+    if not payload:
+        raise HTTPException(401, "Invalid or expired token")
+    
+    # Handle user token
+    if payload.get("type") == "user":
+        user = get_current_user(request)
+        if user:
+            return {"id": user["id"], "tier": user["tier"], "msg_count": 0, "is_user": True, "user_data": user}
+    
+    # Handle session token
+    session_id = payload.get("session_id")
+    tier = payload.get("tier", "free")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, tier, msg_count, msg_window FROM sessions WHERE id = %s", (session_id,))
+                row = c.fetchone()
+                if row:
+                    return {"id": row[0], "tier": row[1], "msg_count": row[2] or 0, "msg_window": row[3], "is_user": False}
+                else:
+                    now = datetime.utcnow()
+                    c.execute("INSERT INTO sessions (id, tier, msg_count, msg_window, created, updated) VALUES (%s, %s, 0, %s, %s, %s)",
+                             (session_id, tier, None, now, now))
+                    conn.commit()
+                    return {"id": session_id, "tier": tier, "msg_count": 0, "msg_window": None, "is_user": False}
+    except Exception as e:
+        logger.error(f"Session error: {e}")
+    raise HTTPException(401, "Session not found")
 
-.toggle-sidebar{position:fixed;top:12px;left:12px;z-index:180;background:var(--bg2);border:1px solid var(--bdr);color:var(--icon);width:34px;height:34px;border-radius:50%;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .12s}
-.toggle-sidebar:hover{color:var(--icon-hover);background:var(--bg3)}
+# ================================================================
+# TELEGRAM AUTH ENDPOINTS
+# ================================================================
 
-.main{
-  flex:1;display:flex;flex-direction:column;
-  overflow:hidden;background:var(--bg);
-  min-width:0;
-}
-
-.chat-container{
-  flex:1;display:flex;flex-direction:column;
-  max-width:760px;margin:0 auto;width:100%;
-  min-height:0;padding:0 16px;
-}
-.chat-messages{
-  flex:1;overflow-y:auto;
-  padding:24px 0 16px;
-  scroll-behavior:smooth;-webkit-overflow-scrolling:touch;
-}
-
-.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:35vh;text-align:center;padding:20px;animation:fadeUp .35s ease}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.welcome-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:500px;margin-top:8px}
-.wp-pill{padding:8px 16px;border:1px solid var(--bdr2);border-radius:24px;font-size:var(--fs-xs);color:var(--txt2);cursor:pointer;transition:all .12s;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:6px}
-.wp-pill:hover{border-color:var(--bdr3);color:var(--txt);background:var(--bg3)}
-.wp-pill svg{width:14px;height:14px;stroke:currentColor}
-
-.msg{margin-bottom:16px;animation:msgIn .18s ease}
-@keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.msg.user{display:flex;justify-content:flex-end}
-.msg-user-bubble{
-  background:var(--bg3);border:1px solid var(--bdr2);
-  border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);
-  padding:10px 14px;max-width:85%;
-  color:var(--txt);font-size:var(--fs-sm);line-height:var(--lh);word-break:break-word;
-}
-.msg-ai-label{font-size:9px;color:var(--txt4);margin-bottom:6px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.msg-ai-body{color:var(--txt);line-height:1.55;font-size:var(--fs-sm);word-break:break-word}
-.msg-ai-body code{background:var(--bg3);padding:2px 5px;border-radius:4px;font-size:.88em;border:1px solid var(--bdr);font-family:'SF Mono','Fira Code',monospace;word-break:break-all}
-.msg-ai-body pre{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:12px 14px;overflow-x:auto;margin:8px 0;font-size:10px;line-height:1.6}
-.msg-ai-body pre code{background:none;border:none;padding:0;word-break:normal}
-
-.msg-actions{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity .12s}
-.msg:hover .msg-actions{opacity:.7}
-.msg-action{background:none;border:none;color:var(--txt4);font-size:12px;cursor:pointer;padding:4px 7px;border-radius:4px;font-family:var(--font);transition:all .1s;display:flex;align-items:center;gap:2px}
-.msg-action:hover{color:var(--txt);background:var(--bg3)}
-.msg-action.liked{color:var(--accent)}.msg-action.disliked{color:var(--red)}
-
-.thinking{display:flex;align-items:center;gap:8px;padding:6px 0}
-.thinking-text{font-size:var(--fs-xs);color:var(--txt4);font-weight:500}
-
-.input-area{
-  padding:10px 0 calc(14px + var(--safe));
-  flex-shrink:0;background:var(--bg);
-}
-.input-wrap{
-  display:flex;gap:8px;
-  background:var(--bg2);border:1px solid var(--bdr2);
-  border-radius:28px;padding:8px 8px 8px 16px;
-  align-items:center;transition:all .18s;
-}
-.input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
-.input-field{flex:1;background:none;border:none;outline:none;color:var(--txt);font-size:var(--fs-sm);padding:6px 0;font-family:var(--font);font-weight:400}
-.input-field::placeholder{color:var(--txt4)}.input-field:disabled{opacity:.4}
-.input-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.upload-btn{width:32px;height:32px;background:none;border:none;color:var(--icon);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .12s}
-.upload-btn:hover{color:var(--icon-hover);background:var(--bg3)}
-.send-btn{width:34px;height:34px;background:var(--accent);color:#000;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
-.send-btn:hover:not(:disabled){background:var(--accent-hover);transform:scale(1.04)}.send-btn:disabled{opacity:.1}
-
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;align-items:center;justify-content:center;padding:16px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeIn .18s ease}
-.modal-overlay.open{display:flex}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r-lg);padding:24px;width:460px;max-width:94vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow);animation:modalIn .2s ease}
-@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.modal h2{font-size:var(--fs-lg);font-weight:700;margin-bottom:4px;color:var(--txt)}
-.modal p{font-size:var(--fs-xs);color:var(--txt3);margin-bottom:10px}
-.modal input,.modal textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:9px 12px;border-radius:var(--r-xs);font-size:var(--fs-xs);margin-bottom:8px;outline:none;font-family:var(--font)}
-.modal input:focus,.modal textarea:focus{border-color:var(--accent)}
-.modal-btn{width:100%;background:var(--txt);color:var(--bg);border:none;padding:10px;border-radius:var(--r-xs);cursor:pointer;font-weight:600;font-size:var(--fs-xs);margin-top:6px;font-family:var(--font);transition:all .12s}
-.modal-btn:hover{opacity:.88}.modal-btn.sec{background:transparent;border:1px solid var(--bdr);color:var(--txt2);margin-top:4px}
-.pill-tabs{display:flex;gap:4px;margin-bottom:8px}
-.pill-tab{flex:1;padding:7px;border:1px solid var(--bdr);border-radius:20px;background:none;color:var(--txt3);font-size:var(--fs-xs);cursor:pointer;font-family:var(--font);font-weight:600;text-align:center;transition:all .12s}
-.pill-tab.active{background:var(--txt);color:var(--bg);border-color:var(--txt)}
-.tier-grid{display:grid;gap:8px;margin-bottom:10px}
-.tier-card{border:1px solid var(--bdr);border-radius:var(--r-sm);padding:12px;cursor:pointer;transition:all .12s;background:var(--bg)}
-.tier-card:hover{border-color:var(--bdr3)}.tier-card.selected{border-color:var(--accent);background:var(--accent-bg)}
-.tier-card-name{font-weight:700;font-size:var(--fs-sm);color:var(--txt)}
-.tier-card-price{font-size:var(--fs-xl);font-weight:700;color:var(--txt);margin:4px 0}
-.tier-card-price span{font-size:var(--fs-xs);color:var(--txt3);font-weight:400}
-.tier-card-features{list-style:none;padding:0;margin-top:5px}
-.tier-card-features li{font-size:var(--fs-xs);color:var(--txt2);padding:2px 0;display:flex;align-items:center;gap:6px}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.stat-card{padding:12px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);text-align:center}
-.stat-val{font-size:20px;font-weight:700;color:var(--txt)}.stat-lbl{font-size:8px;color:var(--txt4);text-transform:uppercase}
-
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:8px 18px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;z-index:400;animation:tIn .2s ease,tOut .25s ease 2.2s forwards;pointer-events:none;white-space:nowrap}
-@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-@keyframes tOut{from{opacity:1}to{opacity:0}}
-
-/* Profile Modal Card Styles */
-.profile-card{
-  background:var(--bg3);
-  border-radius:var(--r-lg);
-  margin-bottom:16px;
-  overflow:hidden;
-  transition:all .2s;
-}
-.profile-card-header{
-  padding:16px;
-  border-bottom:1px solid var(--bdr);
-}
-.profile-card-item{
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:14px 16px;
-  cursor:pointer;
-  transition:background .1s;
-  border-bottom:1px solid var(--bdr);
-}
-.profile-card-item:last-child{border-bottom:none}
-.profile-card-item:hover{background:var(--bg4)}
-.profile-card-icon{
-  width:40px;height:40px;
-  background:var(--accent-bg);
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-}
-.profile-card-info{flex:1}
-.profile-card-title{font-size:var(--fs-sm);font-weight:600;color:var(--txt)}
-.profile-card-subtitle{font-size:9px;color:var(--txt4);margin-top:2px}
-.profile-card-badge{
-  background:var(--accent-bg);
-  padding:4px 8px;
-  border-radius:12px;
-  font-size:9px;
-  color:var(--accent);
-  font-weight:600;
-}
-.profile-locked{
-  opacity:0.6;
-  filter:grayscale(0.3);
-}
-.avatar-container{
-  position:relative;
-  display:inline-block;
-}
-.avatar{
-  width:80px;height:80px;
-  background:var(--orange);
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:32px;
-  font-weight:600;
-  color:#fff;
-  margin:0 auto 12px;
-}
-.avatar-edit{
-  position:absolute;
-  bottom:4px;
-  right:4px;
-  background:var(--bg2);
-  border:1px solid var(--bdr);
-  border-radius:50%;
-  width:28px;height:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  transition:all .12s;
-}
-.avatar-edit:hover{background:var(--bg3)}
-.telegram-login-card{
-  background:var(--accent-bg);
-  border:1px solid var(--accent);
-  border-radius:var(--r-lg);
-  padding:16px;
-  text-align:center;
-  margin-bottom:16px;
-  cursor:pointer;
-  transition:all .2s;
-}
-.telegram-login-card:hover{
-  background:var(--accent-bg);
-  transform:translateY(-1px);
-}
-.telegram-login-card .telegram-icon{
-  font-size:32px;
-  margin-bottom:8px;
-}
-
-.wallet-box{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:10px 12px;font-size:8px;color:var(--txt3);font-family:'SF Mono','Fira Code',monospace;word-break:break-all;margin-bottom:8px;cursor:pointer;user-select:all}
-.news-item{padding:10px 12px;border-bottom:1px solid var(--bdr);font-size:10px;cursor:pointer;transition:all .12s;border-radius:var(--r-xs);margin:2px 0}
-.news-item:hover{background:var(--bg3)}.news-item .news-source{font-size:7px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
-.news-item .news-headline{color:var(--txt);font-weight:500;margin:3px 0;line-height:1.3}
-.business-indicator{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;background:var(--accent-bg);color:var(--accent)}
-.business-indicator.active{background:var(--green);color:#000}
-.business-indicator.off{background:var(--bg4);color:var(--txt4)}
-
-@media(min-width:769px){
-  .toggle-sidebar{display:none}
-}
-@media(max-width:768px){
-  .toggle-sidebar{display:flex}
-  .sidebar{display:none}
-  .sidebar-mobile{display:flex;flex-direction:column}
-  .msg-user-bubble{max-width:92%}
-  .chat-messages{padding:70px 0 12px}
-  .input-area{padding:8px 0 calc(10px + var(--safe))}
-  .modal{width:95%;padding:16px}
-}
-</style>
-</head>
-<body>
-
-<div class="splash-screen" id="splashScreen">
-  <span class="splash-logo"><svg width="52" height="52" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="14" fill="#000"/><path d="M28 8 L46 17 L46 32 C46 42 38 50 28 54 C18 50 10 42 10 32 L10 17 Z" fill="none" stroke="#A0A0A4" stroke-width="2.5"/><text x="28" y="37" text-anchor="middle" font-size="22" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text></svg></span>
-</div>
-
-<div id="app"></div>
-<div class="overlay" id="overlay"></div>
-<button class="toggle-sidebar" id="toggleSidebar" aria-label="Menu"><svg class="icon-svg lg" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
-
-<!-- Modals -->
-<div id="profileModal" class="modal-overlay"><div class="modal"><div id="profileContent"></div><button class="modal-btn sec" id="closeProfileModal">Close</button></div></div>
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade</h2><div class="tier-grid" id="tierCards"></div><div id="paySection" style="display:none"><div class="pill-tabs"><button class="pill-tab active" data-coin="BTC">BTC</button><button class="pill-tab" data-coin="ETH">ETH</button></div><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Transaction hash"><button class="modal-btn" id="verifyUpgrade">Verify & Activate</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
-<div id="adminModal" class="modal-overlay"><div class="modal" style="width:480px"><h2>Admin</h2><div id="adminContent"></div><button class="modal-btn sec" id="closeAdmin">Close</button></div></div>
-<div id="libraryModal" class="modal-overlay"><div class="modal"><h2>📁 Library</h2><div id="libraryList" style="max-height:180px;overflow-y:auto;margin-bottom:8px"></div><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" placeholder="Content..." style="min-height:50px;resize:vertical"></textarea><button class="modal-btn" id="libSave">Save</button><button class="modal-btn sec" id="closeLibrary">Close</button></div></div>
-<div id="workspaceModal" class="modal-overlay"><div class="modal" style="width:480px"><h2>🗂️ Work Area</h2><div class="pill-tabs"><button class="pill-tab active" id="wsTabCreate">Create</button><button class="pill-tab" id="wsTabJoin">Join</button><button class="pill-tab" id="wsTabChat">Chat</button></div><div id="wsCreatePanel"><button class="modal-btn" id="wsCreateBtn">Create Room</button><div id="wsRoomDisplay" style="display:none;margin-top:8px;padding:12px;background:var(--bg3);border-radius:var(--r-xs);text-align:center"><div style="font-size:8px">ROOM CODE</div><div style="font-size:22px;font-weight:700;font-family:monospace" id="wsRoomCode">—</div></div></div><div id="wsJoinPanel" style="display:none"><input type="text" id="wsJoinInput" placeholder="Room code" style="text-transform:uppercase"><button class="modal-btn" id="wsJoinBtn">Join</button></div><div id="wsChatPanel" style="display:none"><div id="wsNotesDisplay" style="background:var(--bg3);padding:10px;margin-bottom:8px;max-height:80px;overflow-y:auto;display:none"></div><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:9px;color:var(--txt4)">Notes</span><button id="wsEditNote" style="background:none;border:1px solid var(--bdr);padding:3px 8px;border-radius:4px;font-size:8px;cursor:pointer">Edit</button></div><textarea id="wsNotesEditor" style="min-height:40px;resize:vertical;display:none;margin-bottom:6px"></textarea><button id="wsSaveNote" class="modal-btn" style="display:none;margin-bottom:6px;padding:6px">Save</button><div style="max-height:160px;overflow-y:auto;margin-bottom:8px;padding:8px;background:var(--bg3);border-radius:var(--r-xs)" id="wsMessages"></div><div style="display:flex;gap:6px"><input type="text" id="wsMessageInput" placeholder="Message..." style="flex:1;margin-bottom:0"><button class="modal-btn" id="wsSendBtn" style="width:auto;margin-top:0;padding:7px 14px">Send</button></div></div><button class="modal-btn sec" id="closeWorkspace">Close</button></div></div>
-<div id="privacyModal" class="modal-overlay"><div class="modal"><h2>🔒 Privacy</h2><div style="font-size:var(--fs-xs);color:var(--txt2);line-height:1.6"><p><strong>CAPITAN AI</strong> by CLOSEAI Technologies. No permanent storage. All data encrypted.</p><p style="margin-top:8px">AI responses for informational purposes only. Not financial advice.</p></div><button class="modal-btn sec" id="closePrivacy">Close</button></div></div>
-<div id="supportModal" class="modal-overlay"><div class="modal"><h2>🆘 Support</h2><div style="font-size:var(--fs-xs);color:var(--txt2);line-height:1.6"><p>Email: <a href="mailto:closeaitechnologies@protonmail.com" style="color:var(--accent)">closeaitechnologies@protonmail.com</a></p><p>Response: 24-48 hours</p></div><button class="modal-btn sec" id="closeSupport">Close</button></div></div>
-<div id="moneyModal" class="modal-overlay"><div class="modal" style="max-width:540px"><h2>💰 Markets</h2><div class="pill-tabs" id="marketCategoryTabs"><button class="pill-tab active" data-cat="global">Global</button><button class="pill-tab" data-cat="crypto">Crypto</button><button class="pill-tab" data-cat="african">Africa</button></div><div class="pill-tabs"><button class="pill-tab active" id="marketTabPrices">Prices</button><button class="pill-tab" id="marketTabNews">News</button></div><div id="marketsPricesContent" style="max-height:350px;overflow-y:auto"></div><div id="marketsNewsContent" style="max-height:350px;overflow-y:auto;display:none"></div><button class="modal-btn sec" id="closeMoney">Close</button></div></div>
-<div id="techModal" class="modal-overlay"><div class="modal" style="max-width:520px"><h2>💻 Tech News</h2><div id="techNewsContent" style="max-height:380px;overflow-y:auto"></div><button class="modal-btn sec" id="closeTech">Close</button></div></div>
-<div id="businessModal" class="modal-overlay"><div class="modal"><h2>Business Mode</h2><div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg3);border-radius:var(--r-xs);margin-bottom:8px"><span style="font-size:var(--fs-xs)">Business Mode</span><span id="businessToggle" class="business-indicator off" onclick="window.toggleBusinessMode?.()">OFF</span></div><button class="modal-btn sec" id="closeBusiness">Close</button></div></div>
-<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:var(--amber);color:#000;text-align:center;padding:6px;font-size:11px;font-weight:600">Offline Mode</div>
-
-<script>
-// Configuration
-const CFG={API:'https://capitan-ai-jxu8.onrender.com',POLL_CHATS:4000,POLL_WS:2500,POLL_MARKETS:10000,MAX_MSG:4000,STREAM_DELAY:12,WS_MAX:{free:0,plus:10,pro:25,pro_max:50,founder:100}};
-const $=(s,d=document)=>d.querySelector(s);
-const $$=(s,d=document)=>d.querySelectorAll(s);
-
-// State
-const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinking:false,businessMode:false,sidebarOpen:window.innerWidth>768,connected:'checking',isOnline:navigator.onLine,chats:[],activeChat:null,messages:[],library:[],payConfig:null,markets:null,tickerData:[],marketCategory:'global',ws:{code:null,id:null,messages:[],members:[],notes:[],timer:null},draft:'',wsDraft:'',selTier:null,selCoin:'BTC',logoClicks:0,logoClickTimer:null,greeting:window.CAPITAN_GREETING||'Good day',streamAbort:null,splashDone:false,themeMode:localStorage.getItem('cap_theme_mode')||'system',user:null};
-
-// Warmup ping
-async function warmupBackend(){try{await fetch(`${CFG.API}/health`,{method:'GET'});}catch(e){}}
-
-// Storage
-function saveState(){if(S.activeChat&&S.messages.length>0){localStorage.setItem('cap_activeChat',S.activeChat);localStorage.setItem('cap_messages',JSON.stringify(S.messages))}if(S.chats.length>0)localStorage.setItem('cap_chats',JSON.stringify(S.chats))}
-function restoreState(){const chat=localStorage.getItem('cap_activeChat');const msgs=localStorage.getItem('cap_messages');const chats=localStorage.getItem('cap_chats');let r=false;if(chat&&msgs){try{S.activeChat=chat;S.messages=JSON.parse(msgs);r=true}catch(e){}}if(chats){try{S.chats=JSON.parse(chats);r=true}catch(e){}}return r}
-window.addEventListener('beforeunload',()=>{saveState();saveDrafts()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)saveState()});
-
-// Theme
-function applyTheme(){const m=S.themeMode;const h=document.documentElement;if(m==='light'){h.classList.add('light');}else if(m==='dark'){h.classList.remove('light');}else{const d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(d){h.classList.remove('light');}else{h.classList.add('light');}}}
-function setThemeMode(m){S.themeMode=m;localStorage.setItem('cap_theme_mode',m);applyTheme();render();toast('Theme: '+(m==='system'?'System':m==='dark'?'Dark':'Light'))}
-window.addEventListener('online',()=>{S.isOnline=true;$('#offlineBanner').style.display='none';warmupBackend()});
-window.addEventListener('offline',()=>{S.isOnline=false;$('#offlineBanner').style.display='block'});
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.themeMode==='system')applyTheme()});
-
-// API Class
-class Api{constructor(b){this.b=b;this.t=0}
-async r(p,o={}){if(!S.isOnline&&p!=='/health')throw new Error('Offline');const h={...o.headers};if(!(o.body instanceof FormData))h['Content-Type']='application/json';if(S.token)h['Authorization']=`Bearer ${S.token}`;try{const r=await fetch(`${this.b}${p}`,{...o,headers:h});if(r.status===401){localStorage.removeItem('ct');S.token=null;await this.sess();throw new Error('Session refreshed')}if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||`Error ${r.status}`)}const ct=r.headers.get('content-type');return ct&&ct.includes('json')?await r.json():await r.text()}catch(e){if(this.t<2&&e.message.includes('500')){this.t++;await new Promise(r=>setTimeout(r,500));return this.r(p,o)}this.t=0;throw e}}
-async sess(){const d=await this.r('/api/session');S.session={id:d.id,tier:d.tier,count:d.msg_count||0};S.tier=d.tier;S.token=d.token;localStorage.setItem('ct',d.token);return d}
-async getSess(){return this.r('/api/session')}async chats(){return this.r('/api/chats')}async chat(id){return this.r(`/api/chats/${id}`)}
-async send(msgs,cid){return this.r('/api/chat',{method:'POST',body:JSON.stringify({messages:msgs,chat_id:cid})})}
-async delChat(id){return this.r(`/api/chats/${id}`,{method:'DELETE'})}async lib(){return this.r('/api/library')}
-async libCreate(n,t,c){return this.r('/api/library',{method:'POST',body:JSON.stringify({name:n,type:t,content:c})})}
-async libDel(id){return this.r(`/api/library/${id}`,{method:'DELETE'})}
-async upload(f){const fd=new FormData();fd.append('file',f);return this.r('/api/upload',{method:'POST',body:fd})}
-async payCfg(){return this.r('/api/payment-config')}
-async upgrade(tier,txid,coin){return this.r('/api/upgrade',{method:'POST',body:JSON.stringify({tier,txid,currency:coin})})}
-async founder(code){return this.r('/api/founder',{method:'POST',body:JSON.stringify({code})})}
-async admin(){return this.r('/api/admin',{method:'POST'})}
-async markets(){return this.r('/api/markets')}
-async marketsPrices(cat){return this.r(`/api/markets/prices?category=${cat||'all'}`)}
-async marketsNews(cat){return this.r(`/api/markets/news?category=${cat||'all'}`)}
-async techNews(){return this.r('/api/news/tech')}
-async health(){return this.r('/health')}
-async wsCreate(code,max){return this.r('/api/workspace/create',{method:'POST',body:JSON.stringify({room_code:code,max_members:max})})}
-async wsJoin(code){return this.r('/api/workspace/join',{method:'POST',body:JSON.stringify({room_code:code})})}
-async wsMsg(code,msg){return this.r('/api/workspace/message',{method:'POST',body:JSON.stringify({room_code:code,message:msg})})}
-async wsGetMsgs(code){return this.r(`/api/workspace/messages?room_code=${encodeURIComponent(code)}`)}
-async wsSaveNotes(code,c){return this.r('/api/workspace/notes',{method:'POST',body:JSON.stringify({room_code:code,content:c})})}
-async wsGetNotes(code){return this.r(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`)}}
-const api=new Api(CFG.API);
-
-// SVG Icons
-const SVG=(w,h,d)=>`<svg class="icon-svg" viewBox="0 0 24 24" width="${w||15}" height="${h||15}">${d}</svg>`;
-const CLOGO=`<svg width="26" height="26" viewBox="0 0 28 28" fill="none"><path d="M14 3 L24 8 L24 16 C24 22 19.5 26.5 14 28.5 C8.5 26.5 4 22 4 16 L4 8 Z" fill="none" stroke="#A0A0A4" stroke-width="1.8"/><text x="14" y="19.5" text-anchor="middle" font-size="12" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text></svg>`;
-const ICONS={
-plus:SVG(15,15,'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
-folder:SVG(15,15,'<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
-briefcase:SVG(15,15,'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>'),
-chart:SVG(15,15,'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'),
-zap:SVG(15,15,'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'),
-sun:SVG(15,15,'<circle cx="12" cy="12" r="5"/>'),
-moon:SVG(15,15,'<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'),
-lock:SVG(15,15,'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>'),
-send:SVG(15,15,'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'),
-settings:SVG(15,15,'<circle cx="12" cy="12" r="3"/>'),
-chat:SVG(15,15,'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>'),
-monitor:SVG(15,15,'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'),
-copy:SVG(15,15,'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>'),
-thumbsUp:SVG(15,15,'<path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>'),
-thumbsDown:SVG(15,15,'<path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10zM17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/>'),
-share:SVG(15,15,'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>'),
-moneyIcon:SVG(14,14,'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'),
-codeIcon:SVG(14,14,'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
-mathIcon:SVG(14,14,'<path d="M18 4l-6 16M6 8h12M6 16h12"/>'),
-newConvo:SVG(15,15,'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
-capitanLogo:CLOGO,
-chevron:SVG(9,9,'<polyline points="9 18 15 12 9 6"/>')
-};
-
-// TokenStreamer
-class TokenStreamer{
-  constructor(content,container,delay=12){
-    this.content=content;this.container=container;this.delay=delay;
-    this.index=0;this.tokens=this.tokenize(content);this.running=false;
-    this.timer=null;this.onDone=null;
-  }
-  tokenize(text){const tokens=[];const regex=/([^\s]+|\s+)/g;let match;while((match=regex.exec(text))!==null)tokens.push(match[0]);return tokens;}
-  start(){this.running=true;if(S.streamAbort)try{S.streamAbort()}catch(e){}S.streamAbort=()=>this.stop();this.renderNext();}
-  renderNext(){if(!this.running||this.index>=this.tokens.length){this.finish();return;}const span=document.createElement('span');span.className='token-fade';span.textContent=this.tokens[this.index];this.container.appendChild(span);this.index++;this._scroll();this.timer=setTimeout(()=>this.renderNext(),this.delay);}
-  stop(){this.running=false;if(this.timer)clearTimeout(this.timer);if(this.index<this.tokens.length){this.container.appendChild(document.createTextNode(this.tokens.slice(this.index).join('')));this._scroll();}this.finish();}
-  finish(){const cursor=this.container.querySelector('.stream-cursor');if(cursor)cursor.remove();this.container.innerHTML=fmtMD(this.content);S.streamAbort=null;this.running=false;this._scroll();if(typeof this.onDone==='function')this.onDone();}
-  _scroll(){const c=$('#chatMsgs');if(c)requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight;});}
-}
-
-function fmtMD(text){
-  if(!text)return'';
-  const codeBlocks=[];
-  text=text.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,lang,code)=>{const idx=codeBlocks.length;codeBlocks.push(`<pre><code class="lang-${esc(lang)}">${esc(code.trim())}</code></pre>`);return`\x00CODE${idx}\x00`;});
-  const inlineCodes=[];
-  text=text.replace(/`([^`\n]+)`/g,(_,code)=>{const idx=inlineCodes.length;inlineCodes.push(`<code>${esc(code)}</code>`);return`\x00INLINE${idx}\x00`;});
-  text=esc(text);
-  text=text.replace(/\x00CODE(\d+)\x00/g,(_,i)=>codeBlocks[i]);
-  text=text.replace(/\x00INLINE(\d+)\x00/g,(_,i)=>inlineCodes[i]);
-  text=text.replace(/^###\s(.+)$/gm,'<h3>$1</h3>');
-  text=text.replace(/^##\s(.+)$/gm,'<h2>$1</h2>');
-  text=text.replace(/^#\s(.+)$/gm,'<h1>$1</h1>');
-  text=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-  text=text.replace(/\*(.*?)\*/g,'<em>$1</em>');
-  text=text.replace(/^&gt;\s(.+)$/gm,'<blockquote>$1</blockquote>');
-  text=text.replace(/^(?:---|\*\*\*|___)\s*$/gm,'<hr>');
-  text=text.replace(/^[\*\-\+]\s(.+)$/gm,'<li>$1</li>');
-  text=text.replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>');
-  text=text.replace(/\n/g,'<br>');
-  return text;
-}
-
-function esc(t){if(t===null||t===undefined)return'';const d=document.createElement('div');d.textContent=String(t);return d.innerHTML;}
-function escAttr(t){return String(t||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');}
-function saveDrafts(){S.draft=$('#msgInput')?.value||'';S.wsDraft=$('#wsMessageInput')?.value||'';localStorage.setItem('cap_draft',S.draft);localStorage.setItem('cap_ws_draft',S.wsDraft);}
-
-// Telegram Login Handler
-window.onTelegramAuth = async function(user) {
-  try {
-    const res = await api.verifyTelegram(user);
-    S.token = res.token;
-    S.tier = res.user.tier;
-    S.user = res.user;
-    localStorage.setItem('ct', res.token);
-    localStorage.setItem('cap_tier', res.user.tier);
-    closeModals();
-    render();
-    toast(`Welcome ${res.user.name || res.user.telegram_username || 'User'}!`);
-    loadChats();
-  } catch(e) { toast('Login failed: ' + e.message); }
-};
-
-// Founder Login (Fixed)
-async function handleFounderLogin() {
-  const code = prompt("Enter founder code:");
-  if (!code) return;
-  try {
-    const res = await api.founder(code);
-    if (res.verified) {
-      S.token = res.token;
-      S.tier = res.tier;
-      S.user = res.user;
-      localStorage.setItem('ct', res.token);
-      localStorage.setItem('cap_tier', res.tier);
-      closeModals();
-      render();
-      toast('Founder access granted!');
-      loadChats();
+def check_telegram_authorization(data: dict) -> Optional[dict]:
+    """Verify Telegram login data"""
+    if not settings.TELEGRAM_BOT_TOKEN:
+        return None
+    
+    check_data = data.copy()
+    received_hash = check_data.pop('hash', None)
+    
+    if not received_hash:
+        return None
+    
+    check_string = '\n'.join(f"{k}={v}" for k, v in sorted(check_data.items()))
+    secret_key = sha256(settings.TELEGRAM_BOT_TOKEN.encode()).digest()
+    computed_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+    
+    if computed_hash != received_hash:
+        return None
+    
+    auth_date = int(data.get('auth_date', 0))
+    if datetime.utcnow().timestamp() - auth_date > 86400:
+        return None
+    
+    return {
+        "id": int(data.get('id')),
+        "first_name": data.get('first_name'),
+        "last_name": data.get('last_name'),
+        "username": data.get('username'),
+        "photo_url": data.get('photo_url')
     }
-  } catch(e) { toast('Invalid founder code'); }
+
+@app.get("/api/auth/telegram/callback")
+async def telegram_callback(request: Request):
+    """Handle Telegram OAuth callback - redirects to frontend with data"""
+    params = dict(request.query_params)
+    
+    if not params:
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/")
+    
+    import urllib.parse
+    tg_data = urllib.parse.urlencode(params)
+    redirect_url = f"{settings.FRONTEND_URL}/?tgAuth={urllib.parse.quote(tg_data)}"
+    
+    logger.info(f"Telegram callback received, redirecting to frontend")
+    return RedirectResponse(url=redirect_url)
+
+@app.post("/api/auth/telegram/verify")
+async def verify_telegram_login(req: dict):
+    """Verify Telegram login data from frontend widget"""
+    data = req.get("data", {})
+    
+    user_info = check_telegram_authorization(data)
+    if not user_info:
+        raise HTTPException(400, "Invalid Telegram authorization")
+    
+    telegram_id = user_info["id"]
+    telegram_username = user_info.get("username", "")
+    first_name = user_info.get("first_name", "")
+    last_name = user_info.get("last_name", "")
+    name = f"{first_name} {last_name}".strip() or telegram_username or f"User_{telegram_id}"
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, tier FROM users WHERE telegram_id = %s", (telegram_id,))
+                user = c.fetchone()
+                
+                if not user:
+                    user_id = str(uuid.uuid4())
+                    c.execute("""
+                        INSERT INTO users (id, telegram_id, telegram_username, first_name, last_name, name, tier)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (user_id, telegram_id, telegram_username, first_name, last_name, name, "free"))
+                    user = (user_id, "free")
+                else:
+                    user_id = user[0]
+                    c.execute("""
+                        UPDATE users SET telegram_username = %s, first_name = %s, last_name = %s, name = %s, updated_at = NOW()
+                        WHERE id = %s
+                    """, (telegram_username, first_name, last_name, name, user_id))
+                
+                auth_token = create_auth_token(user_id)
+                c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s, %s, %s, %s)",
+                         (str(uuid.uuid4()), user_id, auth_token, datetime.utcnow() + timedelta(days=30)))
+                conn.commit()
+                
+                return {
+                    "token": auth_token,
+                    "user": {
+                        "id": user_id,
+                        "telegram_id": telegram_id,
+                        "telegram_username": telegram_username,
+                        "name": name,
+                        "tier": user[1]
+                    }
+                }
+    except Exception as e:
+        logger.error(f"Verify error: {e}")
+        raise HTTPException(500, "Verification failed")
+
+@app.get("/api/auth/me")
+def get_me(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    return user
+
+@app.post("/api/auth/logout")
+def logout(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth[7:]
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("DELETE FROM user_sessions WHERE token = %s", (token,))
+                    conn.commit()
+        except: pass
+    return {"message": "Logged out"}
+
+@app.post("/api/auth/update-profile")
+def update_profile(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    name = req.get("name")
+    email = req.get("email")
+    if name:
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("UPDATE users SET name = %s, updated_at = NOW() WHERE id = %s", (name, user["id"]))
+                    conn.commit()
+        except: pass
+    if email:
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("UPDATE users SET email = %s, updated_at = NOW() WHERE id = %s", (email, user["id"]))
+                    conn.commit()
+        except: pass
+    return {"message": "Profile updated"}
+
+@app.delete("/api/auth/delete-account")
+def delete_account(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM users WHERE id = %s", (user["id"],))
+                conn.commit()
+        return {"message": "Account deleted"}
+    except Exception as e:
+        logger.error(f"Delete account error: {e}")
+        raise HTTPException(500, "Could not delete account")
+
+# ================================================================
+# ANONYMOUS SESSION ENDPOINT (Backward compatibility)
+# ================================================================
+@app.get("/api/session")
+def get_or_create_anonymous_session():
+    session_id = f"s_{sid()}"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO sessions (id, tier, msg_count, msg_window, created, updated) VALUES (%s, %s, 0, %s, %s, %s)",
+                         (session_id, "free", None, datetime.utcnow(), datetime.utcnow()))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Session creation error: {e}")
+    token = create_session_jwt(session_id, "free")
+    return {"id": session_id, "tier": "free", "msg_count": 0, "token": token}
+
+# ================================================================
+# FOUNDER ENDPOINT - FIXED (Creates founder account on first login)
+# ================================================================
+class FounderRequest(BaseModel):
+    code: str
+
+@app.post("/api/founder")
+async def founder_login(req: FounderRequest):
+    """Founder login - creates or authenticates founder account"""
+    if req.code != settings.FOUNDER_KEY:
+        raise HTTPException(403, "Invalid founder code")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                # Check if founder user already exists
+                c.execute("SELECT id, tier FROM users WHERE telegram_username = 'founder' OR name = 'CAPITAN Founder'")
+                existing = c.fetchone()
+                
+                if existing:
+                    user_id = existing[0]
+                    tier = existing[1]
+                    # Update tier to founder if not already
+                    if tier != 'founder':
+                        c.execute("UPDATE users SET tier = 'founder', updated_at = NOW() WHERE id = %s", (user_id,))
+                else:
+                    # Create founder user
+                    user_id = str(uuid.uuid4())
+                    c.execute("""
+                        INSERT INTO users (id, telegram_id, telegram_username, name, email, tier)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (user_id, 0, 'founder', 'CAPITAN Founder', 'founder@capitan.ai', 'founder'))
+                
+                # Create auth token
+                auth_token = create_auth_token(user_id)
+                c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s, %s, %s, %s)",
+                         (str(uuid.uuid4()), user_id, auth_token, datetime.utcnow() + timedelta(days=365)))
+                conn.commit()
+                
+                return {
+                    "verified": True,
+                    "tier": "founder",
+                    "token": auth_token,
+                    "user": {
+                        "id": user_id,
+                        "name": "CAPITAN Founder",
+                        "email": "founder@capitan.ai",
+                        "tier": "founder"
+                    }
+                }
+    except Exception as e:
+        logger.error(f"Founder login error: {e}")
+        raise HTTPException(500, "Founder login failed")
+
+# ================================================================
+# TIER CONFIGURATION
+# ================================================================
+TIER_CONFIG = {
+    "free": {"name": "Free", "msg_limit": 20, "workspace_max": 0, "workspace_seats": 0, "projects_enabled": False, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0},
+    "plus": {"name": "Plus", "msg_limit": 50, "workspace_max": 1, "workspace_seats": 10, "projects_enabled": False, "file_upload": True, "live_markets": False, "web_search": True, "ai_model": "Groq Llama 3.3 70B", "price": 8},
+    "pro": {"name": "Pro", "msg_limit": 150, "workspace_max": 5, "workspace_seats": 25, "projects_enabled": True, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "Claude 3.5 Sonnet", "price": 17},
+    "pro_max": {"name": "Pro Max", "msg_limit": float("inf"), "workspace_max": 999, "workspace_seats": 50, "projects_enabled": True, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "GPT-4o + Claude Ensemble", "price": 30},
+    "founder": {"name": "Founder", "msg_limit": float("inf"), "workspace_max": 999, "workspace_seats": 100, "projects_enabled": True, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "All Models", "price": 0}
 }
 
-async function init(){
-  console.log('CAPITAN AI v25.0 | Store Ready');
-  applyTheme();
-  S.businessMode=localStorage.getItem('cap_business')==='true';
-  S.prevTier=localStorage.getItem('cap_tier')||'free';
-  await warmupBackend();
-  await checkHealth();
-  const saved=localStorage.getItem('ct');
-  if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier;if(s.user_data) S.user=s.user_data;}catch(e){localStorage.removeItem('ct');await api.sess()}}
-  else{await api.sess()}
-  if(S.prevTier!==S.tier){S.activeChat=null;S.messages=[];S.chats=[];localStorage.setItem('cap_tier',S.tier);['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k));}
-  if(!S.activeChat){const restored=restoreState();if(restored&&S.messages.length>0)toast('Messages restored');}
-  await Promise.allSettled([loadChats(),loadPayCfg(),loadMarkets()]);
-  render();
-  setupListeners();
-  startTasks();
-  if(S.businessMode)document.body.classList.add('business-mode');
-  if(!S.isOnline)$('#offlineBanner').style.display='block';
-  setTimeout(()=>{const splash=$('#splashScreen');if(splash){splash.classList.add('hide');S.splashDone=true;}},500);
+WALLETS = {
+    "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
+    "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
 }
 
-async function checkHealth(){try{const h=await api.health();S.connected=h.ai==='connected'?'online':'degraded'}catch(e){S.connected='offline'}}
-function startTasks(){setInterval(async()=>{if(!S.loading)await loadChats()},CFG.POLL_CHATS);setInterval(checkHealth,25000);setInterval(async()=>{await loadMarkets();updateTicker()},CFG.POLL_MARKETS);setInterval(saveDrafts,5000);setInterval(saveState,2000);}
-async function loadChats(){try{const d=await api.chats();S.chats=d.chats||[];renderSidebarChats()}catch(e){}}
-async function loadPayCfg(){try{S.payConfig=await api.payCfg()}catch(e){}}
-async function loadMarkets(){try{const allData=[];const cats=['global','crypto','african'];for(const cat of cats){try{const d=await api.marketsPrices(cat);const p=d?.prices||d?.data||{};if(p&&typeof p==='object'&&!Array.isArray(p)){allData.push(...Object.entries(p).slice(0,cat==='african'?3:5));}else if(Array.isArray(p)){allData.push(...p.slice(0,cat==='african'?3:5).map((item,i)=>[item?.symbol||item?.name||`${cat}${i}`,item]));}}catch(e){}}S.tickerData=allData;S.markets={prices:{}};}catch(e){console.error('Markets:',e);}}
-async function loadLib(){try{const d=await api.lib();S.library=d.items||[];renderLibList()}catch(e){}}
-
-function updateTicker(){const track=$('#tickerTrack');if(!track||!S.tickerData.length)return;const items=S.tickerData.map(([sym,info])=>{let price='—',change='0.00';if(info&&typeof info==='object'){price=typeof info.price==='number'?info.price.toFixed(2):(info.price||'—');change=typeof info.change==='number'?info.change.toFixed(2):'0.00';}const cls=parseFloat(change)>=0?'positive':'negative';const sign=parseFloat(change)>=0?'+':'';return`<span class="sb-ticker-item"><span class="ticker-symbol">${esc(String(sym))}</span><span class="ticker-price">${price}</span><span class="ticker-change ${cls}">${sign}${change}%</span></span>`;});track.innerHTML=items.join('')+items.join('');}
-
-function toggleBusinessMode(){S.businessMode=!S.businessMode;localStorage.setItem('cap_business',S.businessMode);if(S.businessMode)document.body.classList.add('business-mode');else document.body.classList.remove('business-mode');const mt=$('#businessToggle');if(mt){mt.textContent=S.businessMode?'ON':'OFF';mt.className=S.businessMode?'business-indicator active':'business-indicator off';}toast('Business Mode '+(S.businessMode?'ON':'OFF'));}
-function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;handleFounderLogin();}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0;},1500);}}
-function pulseLogo(active){document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{if(active)l.classList.add('pulse');else l.classList.remove('pulse');});}
-
-function render(){
-  const app=$('#app');
-  const isMobile=window.innerWidth<=768;
-  app.innerHTML=`<aside class="sidebar ${isMobile?'sidebar-mobile':''}" id="sidebar">
-<div class="sb-header"><span class="sb-logo" onclick="handleLogoClick()">${ICONS.capitanLogo}</span><span class="sb-brand-name">CAPITAN AI</span><div class="profile-icon" onclick="showProfileModal()">👤</div></div>
-${(S.tier==='pro'||S.tier==='pro_max'||S.tier==='founder')&&S.tickerData.length>0?`<div class="sb-ticker"><div class="sb-ticker-track" id="tickerTrack"></div></div>`:''}
-<button class="btn-new-convo" onclick="newChat()">${ICONS.newConvo} New Conversation</button>
-<div class="section-header">Library</div>
-<div class="sb-setting-item" onclick="openLib()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.folder}</div><div class="sb-setting-info"><div class="sb-setting-label">My Library</div><div class="sb-setting-value">Saved notes & content</div></div></div>
-<div class="section-header">Recent Chats</div>
-<div class="chats-list" id="chatsList">${renderChatsHTML()}</div>
-<div class="sb-footer">CLOSEAI Technologies © 2026</div>
-</aside>
-<button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
-<main class="main"><div class="chat-container"><div class="chat-messages" id="chatMsgs">${renderMsgsHTML()}</div><div class="input-area"><div class="input-wrap"><button class="upload-btn" onclick="${S.tier!=='free'?'uploadFile()':'openUpgrade()'}"><svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." autocomplete="off" maxlength="${CFG.MAX_MSG}" value="${esc(S.draft)}" ${S.loading?'disabled':''} oninput="handleTyping()"/><div class="input-actions"><button class="send-btn" id="sendBtn" ${S.loading?'disabled':''} onclick="sendMsg()">${ICONS.send}</button></div></div></div></div></main>`;
-  updateTicker();
-  if(S.sidebarOpen&&isMobile){$('#sidebar').classList.add('open');$('#overlay').classList.add('visible');}
-  if(S.messages.length>0)scrollBottom();
+UPGRADE_BENEFITS = {
+    "plus": ["50 messages per day", "Groq Llama 3.3 70B AI", "Work Area (10 seats)", "File uploads (10MB)", "Web search", "Coding & Quant tools"],
+    "pro": ["150 messages per day", "Claude 3.5 Sonnet AI", "Work Area (25 seats)", "File uploads (50MB)", "Live market data", "Financial news", "Projects", "All Plus features"],
+    "pro_max": ["Unlimited messages", "GPT-4o + Claude Ensemble AI", "Work Area (50 seats)", "File uploads (100MB)", "Live market data", "Advanced reasoning", "All Pro features"]
 }
 
-function handleTyping(){const inp=$('#msgInput');if(!inp)return;S.draft=inp.value;updateBtn();pulseLogo(inp.value.length>0);}
-function welcomeHTML(){return`<div class="welcome"><h2>CAPITAN AI</h2><p>Your enterprise intelligence platform</p><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('What is CAPITAN AI?')">🤖 About CAPITAN</div><div class="wp-pill" onclick="quickSend('Write Python code for a trading bot')">💻 Trading Bot</div><div class="wp-pill" onclick="quickSend('Explain DCF valuation')">📊 Finance</div></div></div>`;}
-function renderChatsHTML(){if(!S.chats.length)return'<div style="padding:12px;color:var(--txt4);text-align:center">No conversations yet</div>';return S.chats.map(c=>`<div class="sb-chat-item ${S.activeChat===c.id?'active':''}" onclick="loadChat('${c.id}')"><span>${esc(c.title||'Chat')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join('');}
-function renderMsgsHTML(){if(!S.messages.length)return welcomeHTML();return S.messages.map((m,i)=>m.role==='user'?`<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>`:`<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)">${ICONS.copy}</button><button class="msg-action ${m.liked?'liked':''}" onclick="likeMsg(${i})">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked?'disliked':''}" onclick="dislikeMsg(${i})">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)">${ICONS.share}</button><button class="msg-action" onclick="regen()">${ICONS.zap}</button></div></div>`).join('');}
+# ================================================================
+# RATE LIMITING
+# ================================================================
+rate_store = {}
+def check_rate_limit(id: str, tier: str) -> bool:
+    now = time.time()
+    key = f"rate:{id}"
+    if key not in rate_store: rate_store[key] = []
+    rate_store[key] = [t for t in rate_store[key] if now - t < 60]
+    limits = {"free": 15, "plus": 30, "pro": 60, "pro_max": 100, "founder": 200}
+    limit = limits.get(tier, 15)
+    if len(rate_store[key]) >= limit: return False
+    rate_store[key].append(now)
+    return True
 
-function likeMsg(i){if(S.messages[i]){S.messages[i].liked=!S.messages[i].liked;S.messages[i].disliked=false;renderMsgs();saveState();}}
-function dislikeMsg(i){if(S.messages[i]){S.messages[i].disliked=!S.messages[i].disliked;S.messages[i].liked=false;renderMsgs();saveState();}}
-function shareMsg(content){if(navigator.share){navigator.share({text:content}).catch(()=>{})}else{navigator.clipboard.writeText(content);toast('Copied!');}}
+# ================================================================
+# TIME CONTEXT
+# ================================================================
+def get_time_context():
+    now = datetime.utcnow()
+    hour = now.hour
+    day = now.strftime("%A")
+    date = now.strftime("%B %d, %Y")
+    utc_time = now.strftime("%H:%M UTC")
+    if hour < 5: time_of_day, greeting_context = "late night", "The world is quiet."
+    elif hour < 12: time_of_day, greeting_context = "morning", "Fresh day ahead."
+    elif hour < 17: time_of_day, greeting_context = "afternoon", "Markets are alive."
+    elif hour < 21: time_of_day, greeting_context = "evening", "Winding down."
+    else: time_of_day, greeting_context = "night", "Night owl mode."
+    return {"time_of_day": time_of_day, "day": day, "date": date, "utc_time": utc_time, "greeting_context": greeting_context}
 
-async function sendMsg(){
-  if(!S.isOnline){toast('Offline','warning');return;}
-  const inp=$('#msgInput');if(!inp)return;
-  const msg=inp.value.trim();if(!msg||S.loading)return;
-  inp.value='';S.draft='';
-  S.loading=true;S.thinking=true;
-  updateBtn();pulseLogo(true);
+# ================================================================
+# MARKET DATA (Full Intelligence - Multi-Source)
+# ================================================================
+def get_market_data():
+    results = {}
+    
+    # CoinGecko for Crypto
+    if settings.COINGECKO_KEY:
+        try:
+            ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
+            r = requests.get("https://api.coingecko.com/api/v3/simple/price", params={"ids": ids, "vs_currencies": "usd", "include_24hr_change": "true"}, headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=10)
+            if r.status_code == 200:
+                data = r.json()
+                nm = {"bitcoin": "BTC", "ethereum": "ETH", "ripple": "XRP", "cardano": "ADA", "solana": "SOL", "polkadot": "DOT", "dogecoin": "DOGE", "avalanche-2": "AVAX", "chainlink": "LINK", "uniswap": "UNI", "binancecoin": "BNB", "tron": "TRX", "toncoin": "TON", "near": "NEAR"}
+                for k, v in data.items():
+                    results[nm.get(k, k.upper())] = {"price": v["usd"], "change": round(v.get("usd_24h_change", 0), 2), "source": "CoinGecko"}
+        except: pass
+    
+    # Yahoo Finance for Stocks, Indices, Forex
+    try:
+        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X"
+        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}", params={"fields": "regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"}, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        if r.status_code == 200:
+            for i in r.json().get("quoteResponse", {}).get("result", []):
+                name = i.get("shortName") or i.get("symbol", "")
+                price = i.get("regularMarketPrice")
+                prev = i.get("regularMarketPreviousClose")
+                if price and prev:
+                    chg = i.get("regularMarketChangePercent")
+                    results[name] = {"price": price, "change": round(chg, 2) if chg else round(((price - prev) / prev) * 100, 2), "source": "Yahoo Finance"}
+    except: pass
+    
+    # Alpha Vantage for Forex
+    if settings.ALPHA_VANTAGE_KEY and len(results) < 5:
+        try:
+            for pair, label in {"EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY", "USDGHS": "USD/GHS", "USDNGN": "USD/NGN", "USDZAR": "USD/ZAR", "USDKES": "USD/KES"}.items():
+                try:
+                    r = requests.get(f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={pair[:3]}&to_currency={pair[3:]}&apikey={settings.ALPHA_VANTAGE_KEY}", timeout=8)
+                    if r.status_code == 200:
+                        data = r.json().get("Realtime Currency Exchange Rate", {})
+                        if data.get("5. Exchange Rate"):
+                            results[label] = {"price": float(data["5. Exchange Rate"]), "change": 0, "source": "Alpha Vantage"}
+                except: pass
+        except: pass
+    
+    # Finnhub fallback
+    if settings.FINNHUB_API_KEY and len(results) < 5:
+        try:
+            for sym in ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL"]:
+                try:
+                    r = requests.get(f"https://finnhub.io/api/v1/quote?symbol={sym}&token={settings.FINNHUB_API_KEY}", timeout=8)
+                    if r.status_code == 200:
+                        data = r.json()
+                        if data.get("c"):
+                            prev = data.get("pc", data["c"])
+                            results[sym] = {"price": data["c"], "change": round(((data["c"] - prev) / prev) * 100, 2) if prev else 0, "source": "Finnhub"}
+                except: pass
+        except: pass
+    
+    return results
 
-  S.messages.push({role:'user',content:msg});
-  renderMsgs();
-  const aiIdx=S.messages.length;
-  S.messages.push({role:'assistant',content:''});
-  renderMsgs();
+# ================================================================
+# FINANCIAL NEWS (Multi-Source)
+# ================================================================
+def get_financial_news():
+    news = []
+    
+    if settings.NEWS_API_KEY:
+        try:
+            r = requests.get("https://newsapi.org/v2/top-headlines", params={"category": "business", "language": "en", "pageSize": 12, "apiKey": settings.NEWS_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("articles", []):
+                    news.append({"source": a.get("source", {}).get("name", "NewsAPI"), "headline": a.get("title", ""), "url": a.get("url", ""), "time": a.get("publishedAt", ""), "summary": (a.get("description") or "")[:300]})
+        except: pass
+    
+    if settings.GNEWS_API_KEY:
+        try:
+            r = requests.get("https://gnews.io/api/v4/search", params={"q": "finance markets stocks economy", "lang": "en", "max": 12, "apikey": settings.GNEWS_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("articles", []):
+                    news.append({"source": a.get("source", {}).get("name", "GNews"), "headline": a.get("title", ""), "url": a.get("url", ""), "time": a.get("publishedAt", ""), "summary": (a.get("description") or "")[:300]})
+        except: pass
+    
+    if settings.FINNHUB_API_KEY:
+        try:
+            r = requests.get("https://finnhub.io/api/v1/news", params={"category": "general", "token": settings.FINNHUB_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for a in r.json()[:12]:
+                    ts = a.get("datetime", 0)
+                    news.append({"source": a.get("source", "Finnhub"), "headline": a.get("headline", ""), "url": a.get("url", ""), "time": datetime.fromtimestamp(ts).isoformat() if ts else "", "summary": (a.get("summary") or "")[:300]})
+        except: pass
+    
+    seen = set(); unique = []
+    for n in news:
+        k = n["headline"][:100].lower().strip()
+        if k and k not in seen: seen.add(k); unique.append(n)
+    unique.sort(key=lambda x: x.get("time", ""), reverse=True)
+    return unique[:15]
 
-  const streamTarget=$(`#msgBody${aiIdx}`);
-  if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom();}
+# ================================================================
+# TECH NEWS
+# ================================================================
+def get_tech_news():
+    news = []
+    
+    if settings.NEWS_API_KEY:
+        try:
+            r = requests.get("https://newsapi.org/v2/everything", params={"q": "AI artificial intelligence coding startup innovation technology software", "language": "en", "pageSize": 12, "sortBy": "publishedAt", "apiKey": settings.NEWS_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("articles", []):
+                    news.append({"source": a.get("source", {}).get("name", "NewsAPI"), "headline": a.get("title", ""), "url": a.get("url", ""), "time": a.get("publishedAt", ""), "summary": (a.get("description") or "")[:300]})
+        except: pass
+    
+    if settings.GNEWS_API_KEY:
+        try:
+            r = requests.get("https://gnews.io/api/v4/search", params={"q": "AI artificial intelligence coding startup innovation technology", "lang": "en", "max": 12, "apikey": settings.GNEWS_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for a in r.json().get("articles", []):
+                    news.append({"source": a.get("source", {}).get("name", "GNews"), "headline": a.get("title", ""), "url": a.get("url", ""), "time": a.get("publishedAt", ""), "summary": (a.get("description") or "")[:300]})
+        except: pass
+    
+    seen = set(); unique = []
+    for n in news:
+        k = n["headline"][:100].lower().strip()
+        if k and k not in seen: seen.add(k); unique.append(n)
+    unique.sort(key=lambda x: x.get("time", ""), reverse=True)
+    return unique[:15]
 
-  try{
-    const r=await api.send(S.messages.slice(0,-1),S.activeChat);
-    const finalContent=r.content||'';
-    S.messages[S.messages.length-1].content=finalContent;
-    S.activeChat=r.chat_id;
-    S.session.count=(S.session.count||0)+1;
-    loadChats();
-    if(streamTarget){
-      streamTarget.innerHTML='';
-      if(finalContent.includes('```')){streamTarget.innerHTML=fmtMD(finalContent);scrollBottom();}
-      else{await new Promise(resolve=>{const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);streamer.onDone=resolve;streamer.start();});}
-    }else{renderMsgs();}
-    scrollBottom();saveState();
-  }catch(e){
-    S.messages[S.messages.length-1].content=`Error: ${e.message}`;
-    renderMsgs();toast(e.message,'error');
-  }finally{
-    S.loading=false;S.thinking=false;
-    updateBtn();pulseLogo(false);
-    if(S.streamAbort)try{S.streamAbort();}catch(e){}
-  }
-}
+# ================================================================
+# WEB SEARCH (with caching)
+# ================================================================
+def search_web(query, num_results=5):
+    results = []
+    query_hash = hashlib.md5(query.lower().encode()).hexdigest()
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT data FROM web_cache WHERE query_hash=%s AND created > %s", (query_hash, (datetime.utcnow() - timedelta(hours=1)).isoformat()))
+                row = c.fetchone()
+                if row: return json.loads(row[0])
+    except: pass
+    
+    if settings.SERPAPI_KEY:
+        try:
+            r = requests.get("https://serpapi.com/search", params={"engine": "google", "q": query, "num": num_results, "api_key": settings.SERPAPI_KEY}, timeout=8)
+            if r.status_code == 200:
+                for item in r.json().get("organic_results", [])[:num_results]:
+                    results.append({"title": item.get("title", ""), "snippet": item.get("snippet", "")[:250], "url": item.get("link", ""), "source": "Google"})
+        except: pass
+    
+    if not results:
+        try:
+            r = requests.get("https://api.duckduckgo.com/", params={"q": query, "format": "json", "no_html": 1}, timeout=6)
+            if r.status_code == 200:
+                data = r.json()
+                if data.get("AbstractText"):
+                    results.append({"title": data.get("Heading", query), "snippet": data["AbstractText"][:250], "url": data.get("AbstractURL", ""), "source": "DuckDuckGo"})
+        except: pass
+    
+    if results:
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("INSERT INTO web_cache (id, query_hash, data, created) VALUES (%s, %s, %s, %s)", (sid(), query_hash, json.dumps(results), datetime.utcnow().isoformat()))
+                    conn.commit()
+        except: pass
+    
+    return results
 
-async function quickSend(p){const inp=$('#msgInput');if(inp){inp.value=p;inp.focus();}}
-async function regen(){if(S.messages.length<2)return;S.messages.pop();S.loading=true;S.thinking=true;updateBtn();pulseLogo(true);S.messages.push({role:'assistant',content:''});renderMsgs();const aiIdx=S.messages.length-1;const streamTarget=$(`#msgBody${aiIdx}`);if(streamTarget){streamTarget.innerHTML='<span class="stream-cursor"></span>';scrollBottom();}try{const r=await api.send(S.messages.slice(0,-1),S.activeChat);const finalContent=r.content||'';S.messages[S.messages.length-1].content=finalContent;if(streamTarget){streamTarget.innerHTML='';if(finalContent.includes('```')){streamTarget.innerHTML=fmtMD(finalContent);}else{await new Promise(resolve=>{const streamer=new TokenStreamer(finalContent,streamTarget,CFG.STREAM_DELAY);streamer.onDone=resolve;streamer.start();});}}scrollBottom();saveState();}catch(e){S.messages[S.messages.length-1].content=`Error: ${e.message}`;renderMsgs();toast(e.message,'error');}finally{S.loading=false;S.thinking=false;updateBtn();pulseLogo(false);}}
-async function loadChat(id){S.activeChat=id;S.messages=[];try{const c=await api.chat(id);S.messages=c.messages||[];renderMsgs();renderSidebarChats();scrollBottom();saveState();}catch(e){toast(e.message,'error');}}
-async function delChat(id){if(!confirm('Delete?'))return;try{await api.delChat(id);S.chats=S.chats.filter(c=>c.id!==id);if(S.activeChat===id)newChat();renderSidebarChats();toast('Deleted');}catch(e){toast(e.message,'error');}}
-function newChat(){if(S.streamAbort)try{S.streamAbort();}catch(e){}S.activeChat=null;S.messages=[];['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k));render();if(window.innerWidth<=768)closeSidebar();}
+# ================================================================
+# ELITE SYSTEM PROMPT (Full Intelligence - RESTORED)
+# ================================================================
+ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu.
 
-async function uploadFile(){if(S.tier==='free'){toast('Upgrade required','warning');openUpgrade();return;}const inp=document.createElement('input');inp.type='file';const max=S.tier==='pro_max'?100:(S.tier==='pro'?50:10);inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size/(1024*1024)>max){toast(`Max ${max}MB`,'error');return;}try{const r=await api.upload(f);toast(`Uploaded! (${r.size_mb}MB)`);if(S.activeChat){S.messages.push({role:'user',content:`[File: ${f.name}]`});renderMsgs();saveState();}}catch(e){toast(e.message,'error');}};inp.click();}
+╔══════════════════════════════════════════════════════════════╗
+║                    CORE INTELLIGENCE DOMAINS                 ║
+╚══════════════════════════════════════════════════════════════╝
 
-function genRoomCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return`CAP-${Array.from({length:3},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}-${Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join('')}`;}
-async function wsCreate(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return;}const code=genRoomCode();const max=CFG.WS_MAX[S.tier]||7;try{const r=await api.wsCreate(code,max);S.ws={code,id:r.room_id,messages:[],members:[],notes:[],timer:null};$('#wsRoomCode').textContent=code;$('#wsRoomDisplay').style.display='block';toast('Room created!','success');wsPoll();}catch(e){toast(e.message,'error');}}
-async function wsJoin(){if(S.tier==='free'){toast('Plus or Pro required','warning');openUpgrade();return;}const code=$('#wsJoinInput')?.value.trim().toUpperCase();if(!code){toast('Enter room code','warning');return;}try{const r=await api.wsJoin(code);S.ws={...S.ws,code,id:r.room_id,messages:r.messages||[],members:r.members||[]};switchWSTab('chat');renderWSMsgs();toast('Joined!','success');wsPoll();}catch(e){toast(e.message,'error');}}
-async function wsSend(){const inp=$('#wsMessageInput');if(!inp)return;const msg=inp.value.trim();if(!msg||!S.ws.code)return;inp.value='';S.wsDraft='';try{const r=await api.wsMsg(S.ws.code,msg);S.ws.messages=r.messages||[];renderWSMsgs();}catch(e){toast(e.message,'error');}}
-async function wsSaveNotes(){const c=$('#wsNotesEditor')?.value;if(!c||!S.ws.code)return;try{const r=await api.wsSaveNotes(S.ws.code,c);S.ws.notes=r.notes||[];renderWSNotes();toast('Saved!');}catch(e){toast(e.message,'error');}}
-function wsPoll(){if(S.ws.timer)clearInterval(S.ws.timer);S.ws.timer=setInterval(async()=>{if(!S.ws.code){clearInterval(S.ws.timer);return;}try{const[md,nd]=await Promise.all([api.wsGetMsgs(S.ws.code),api.wsGetNotes(S.ws.code)]);S.ws.messages=md.messages||[];S.ws.notes=nd.notes||[];renderWSMsgs();renderWSNotes();}catch(e){}},CFG.POLL_WS);}
-function renderWSMsgs(){const c=$('#wsMessages');if(!c)return;if(!S.ws.messages.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">No messages</div>';return;}c.innerHTML=S.ws.messages.map(m=>`<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:10px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-weight:600;color:${m.is_ai?'var(--accent)':'var(--txt)'}">${esc(m.author)}</span><span style="font-size:7px;color:var(--txt4)">${new Date(m.created).toLocaleTimeString()}</span></div><div style="color:var(--txt2);line-height:1.4">${fmtMD(m.message)}</div></div>`).join('');c.scrollTop=c.scrollHeight;}
-function renderWSNotes(){const c=$('#wsNotesDisplay');if(!c)return;if(!S.ws.notes.length){c.innerHTML='<div style="padding:4px;font-size:9px;color:var(--txt4)">No notes</div>';c.style.display='block';return;}c.style.display='block';c.innerHTML=S.ws.notes.map(n=>`<div style="padding:2px 0;font-size:9px;color:var(--txt2);line-height:1.4">${fmtMD(n.content)}</div>`).join('');}
-function switchWSTab(t){['create','join','chat'].forEach(k=>{const p=$('#ws'+k.charAt(0).toUpperCase()+k.slice(1)+'Panel');if(p)p.style.display=k===t?'block':'none';});$$('#workspaceModal .pill-tab').forEach(b=>b.classList.remove('active'));$('#wsTab'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.add('active');}
+🏦 FINANCE ARCHITECT:
+- Advanced financial modeling (DCF, LBO, M&A, three-statement models)
+- Portfolio optimization (Markowitz, Black-Litterman, risk parity)
+- Derivatives pricing (Black-Scholes, binomial trees, Monte Carlo)
+- Fixed income analytics (yield curves, duration, convexity, CDS)
+- Risk management (VaR, CVaR, stress testing, scenario analysis)
+- African financial markets (NGX, JSE, GSE, regional integration)
 
-function openLib(){$('#libraryModal').classList.add('open');loadLib();}
-function renderLibList(){const c=$('#libraryList');if(!c)return;if(!S.library.length){c.innerHTML='<div style="padding:8px;font-size:9px;color:var(--txt4);text-align:center">Empty</div>';return;}c.innerHTML=S.library.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid var(--bdr);font-size:10px"><div style="flex:1;cursor:pointer" onclick="viewLib('${i.id}')"><div style="font-weight:600;color:var(--txt)">${esc(i.name)}</div></div><button onclick="delLib('${i.id}')" style="background:none;border:none;color:var(--txt4);cursor:pointer;font-size:11px">✕</button></div>`).join('');}
-function viewLib(id){const i=S.library.find(x=>x.id===id);if(!i)return;$('#libName').value=i.name;$('#libContent').value=i.content;}
-async function saveLib(){const n=$('#libName')?.value.trim();const c=$('#libContent')?.value.trim();if(!n||!c){toast('Required','warning');return;}try{await api.libCreate(n,'note',c);$('#libName').value='';$('#libContent').value='';await loadLib();toast('Saved!');}catch(e){toast(e.message,'error');}}
-async function delLib(id){if(!confirm('Delete?'))return;try{await api.libDel(id);await loadLib();toast('Deleted');}catch(e){toast(e.message,'error');}}
+📈 INSTITUTIONAL TRADER:
+- Market microstructure and order flow analysis
+- Volatility trading strategies (volatility arbitrage, dispersion)
+- Intermarket analysis and cross-asset correlations
+- Algorithmic execution (VWAP, TWAP, implementation shortfall)
+- Quantitative trading strategies (mean reversion, momentum, statistical arbitrage)
 
-function openUpgrade(){$('#upgradeModal').classList.add('open');if(!S.payConfig)return;const{benefits}=S.payConfig;$('#tierCards').innerHTML=`
-<div class="tier-card ${S.tier==='free'?'selected':''}" onclick="selUp('free')"><div class="tier-card-header">🔹 Free</div><div class="tier-card-price">$0</div><ul class="tier-card-features"><li>20 msgs/day</li><li>Groq 3.1 AI</li></ul></div>
-<div class="tier-card" onclick="selUp('plus')"><div class="tier-card-header">🔶 Plus</div><div class="tier-card-price">$8<span>/mo</span></div><ul class="tier-card-features"><li>50 messages/day</li><li>Groq 3.3 70B</li><li>Work Area (10 seats)</li><li>File uploads</li><li>Web search</li></ul></div>
-<div class="tier-card" onclick="selUp('pro')"><div class="tier-card-header">💎 Pro</div><div class="tier-card-price">$17<span>/mo</span></div><ul class="tier-card-features"><li>150 messages/day</li><li>Claude 3.5 Sonnet</li><li>Work Area (25 seats)</li><li>Live markets</li><li>Projects</li></ul></div>
-<div class="tier-card" onclick="selUp('pro_max')"><div class="tier-card-header">👑 Pro Max</div><div class="tier-card-price">$30<span>/mo</span></div><ul class="tier-card-features"><li>Unlimited messages</li><li>GPT-4o + Claude Ensemble</li><li>Work Area (50 seats)</li><li>Advanced reasoning</li></ul></div>`;$$('#paySection .pill-tab').forEach(t=>t.onclick=()=>{$$('#paySection .pill-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');S.selCoin=t.dataset.coin;updateWallet();});$('#verifyUpgrade').onclick=verifyUp;updateWallet();}
-function selUp(t){S.selTier=t;$$('.tier-card').forEach(c=>c.classList.remove('selected'));if(t==='free'){$$('.tier-card')[0]?.classList.add('selected');}else if(t==='plus'){$$('.tier-card')[1]?.classList.add('selected');}else if(t==='pro'){$$('.tier-card')[2]?.classList.add('selected');}else if(t==='pro_max'){$$('.tier-card')[3]?.classList.add('selected');}if(t!=='free'){$('#paySection').style.display='block';updateWallet();}else{$('#paySection').style.display='none';}}
-function updateWallet(){const el=$('#walletAddr');if(!el||!S.payConfig?.wallets)return;el.textContent=S.payConfig.wallets[S.selCoin]||'Unavailable';el.onclick=()=>{navigator.clipboard.writeText(el.textContent);toast('Address copied!');}}
-async function verifyUp(){const txid=$('#txidInput')?.value.trim();if(!S.selTier||S.selTier==='free'){toast('Select tier','warning');return;}if(!txid){toast('Enter TXID','warning');return;}try{const r=await api.upgrade(S.selTier,txid,S.selCoin);S.prevTier=S.tier;S.tier=r.tier;S.token=r.token;localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier',r.tier);S.activeChat=null;S.messages=[];S.chats=[];$('#upgradeModal').classList.remove('open');render();toast('🎉 '+r.tier.toUpperCase()+'!','success');}catch(e){toast(e.message,'error');}}
+💻 LEGENDARY CODER:
+- Full-stack development (React, Vue, Angular, Node.js, Python, Go, Rust)
+- System architecture (microservices, event-driven, serverless)
+- DevOps & cloud (AWS, GCP, Azure, Kubernetes, Terraform, CI/CD)
+- Database design (SQL, NoSQL, vector databases, time-series)
+- API development (REST, GraphQL, gRPC, WebSocket)
 
-// Profile Modal - Modern Card Design
-function showProfileModal(){
-  const isAuthenticated = !!S.token && S.tier !== 'free';
-  const tierNames = {free:'Free',plus:'Plus',pro:'Pro',pro_max:'Pro Max',founder:'Founder'};
-  const userInitial = (S.user?.name || S.user?.telegram_username || 'U').charAt(0).toUpperCase();
-  const displayName = S.user?.name || S.user?.telegram_username || 'Guest User';
-  const tier = S.tier;
-  const isProOrHigher = (tier === 'pro' || tier === 'pro_max' || tier === 'founder');
-  const isPlusOrHigher = (tier === 'plus' || isProOrHigher);
-  
-  let content = `
-    <div style="text-align:center;margin-bottom:20px">
-      <div class="avatar-container">
-        <div class="avatar">${userInitial}</div>
-        <div class="avatar-edit" onclick="editProfile()">✏️</div>
-      </div>
-      <div style="font-weight:600;font-size:18px;margin-top:8px">${esc(displayName)}</div>
-      <div style="display:inline-block;margin-top:6px"><span class="profile-card-badge">${tierNames[tier]}</span></div>
-    </div>
-  `;
-  
-  // Telegram login card (only for non-authenticated)
-  if(!isAuthenticated){
-    content += `
-      <div class="telegram-login-card" onclick="initTelegramLogin()">
-        <div class="telegram-icon">📱</div>
-        <div style="font-weight:600;margin-bottom:4px">Sign in with Telegram</div>
-        <div style="font-size:11px;color:var(--txt3)">Save your data across devices</div>
-      </div>
-    `;
-  }
-  
-  // MY CAPITAN Section
-  content += `<div class="section-header" style="padding:8px 0 4px">MY CAPITAN</div>`;
-  content += `<div class="profile-card"><div class="profile-card-item" onclick="openLib()"><div class="profile-card-icon">😊</div><div class="profile-card-info"><div class="profile-card-title">Personalization</div><div class="profile-card-subtitle">Customize your experience</div></div></div>`;
-  content += `<div class="profile-card-item" onclick="openMemory()"><div class="profile-card-icon">📖</div><div class="profile-card-info"><div class="profile-card-title">Memory</div><div class="profile-card-subtitle">AI remembers your context</div></div></div>`;
-  
-  // Apps card (locked for free)
-  if(isPlusOrHigher){
-    content += `<div class="profile-card-item" onclick="openApps()"><div class="profile-card-icon">▦</div><div class="profile-card-info"><div class="profile-card-title">Apps</div><div class="profile-card-subtitle">Markets, News, Business tools</div></div></div>`;
-  } else {
-    content += `<div class="profile-card-item profile-locked" onclick="openUpgrade()"><div class="profile-card-icon">▦</div><div class="profile-card-info"><div class="profile-card-title">Apps <span style="color:var(--orange);font-size:10px">(Pro required)</span></div><div class="profile-card-subtitle">Unlock with upgrade</div></div></div>`;
-  }
-  content += `</div>`;
-  
-  // ACCOUNT Section
-  content += `<div class="section-header" style="padding:8px 0 4px">ACCOUNT</div>`;
-  content += `<div class="profile-card">`;
-  
-  // Workspace card (locked for free)
-  if(isPlusOrHigher){
-    const seats = {plus:10,pro:25,pro_max:50,founder:100}[tier] || 0;
-    content += `<div class="profile-card-item" onclick="openWorkspace()"><div class="profile-card-icon">💼</div><div class="profile-card-info"><div class="profile-card-title">Workspace</div><div class="profile-card-subtitle">${seats} seats - Collaborate globally</div></div></div>`;
-  } else {
-    content += `<div class="profile-card-item profile-locked" onclick="openUpgrade()"><div class="profile-card-icon">💼</div><div class="profile-card-info"><div class="profile-card-title">Workspace <span style="color:var(--orange);font-size:10px">(Plus required)</span></div><div class="profile-card-subtitle">Upgrade to collaborate</div></div></div>`;
-  }
-  
-  // Upgrade card (hide for Pro Max)
-  if(tier !== 'pro_max'){
-    const upgradeText = tier === 'free' ? 'Upgrade to Plus' : (tier === 'plus' ? 'Upgrade to Pro' : 'Upgrade to Pro Max');
-    content += `<div class="profile-card-item" onclick="openUpgrade()"><div class="profile-card-icon">⭐</div><div class="profile-card-info"><div class="profile-card-title">${upgradeText}</div><div class="profile-card-subtitle">Get more features</div></div></div>`;
-  }
-  
-  // Trusted contact (Support)
-  content += `<div class="profile-card-item" onclick="openSupport()"><div class="profile-card-icon">👥</div><div class="profile-card-info"><div class="profile-card-title">Trusted contact</div><div class="profile-card-subtitle">24/7 support</div></div></div>`;
-  content += `</div>`;
-  
-  // SETTINGS Section
-  content += `<div class="section-header" style="padding:8px 0 4px">SETTINGS</div>`;
-  content += `<div class="profile-card">`;
-  content += `<div class="profile-card-item" onclick="setThemeMode('dark')"><div class="profile-card-icon">🌙</div><div class="profile-card-info"><div class="profile-card-title">Dark Mode</div></div>${S.themeMode==='dark'?'<span style="color:var(--accent)">✓</span>':''}</div>`;
-  content += `<div class="profile-card-item" onclick="setThemeMode('light')"><div class="profile-card-icon">☀️</div><div class="profile-card-info"><div class="profile-card-title">Light Mode</div></div>${S.themeMode==='light'?'<span style="color:var(--accent)">✓</span>':''}</div>`;
-  content += `<div class="profile-card-item" onclick="setThemeMode('system')"><div class="profile-card-icon">🖥️</div><div class="profile-card-info"><div class="profile-card-title">System Theme</div></div>${S.themeMode==='system'?'<span style="color:var(--accent)">✓</span>':''}</div>`;
-  content += `<div class="profile-card-item" onclick="openPrivacy()"><div class="profile-card-icon">🔒</div><div class="profile-card-info"><div class="profile-card-title">Privacy Policy</div></div></div>`;
-  if(isAuthenticated){
-    content += `<div class="profile-card-item" onclick="logout()"><div class="profile-card-icon">🚪</div><div class="profile-card-info"><div class="profile-card-title" style="color:var(--red)">Logout</div></div></div>`;
-    content += `<div class="profile-card-item" onclick="deleteAccount()"><div class="profile-card-icon">🗑️</div><div class="profile-card-info"><div class="profile-card-title" style="color:var(--red)">Delete Account</div></div></div>`;
-  }
-  content += `</div>`;
-  
-  $('#profileContent').innerHTML = content;
-  $('#profileModal').classList.add('open');
-}
+📐 MATHEMATICIAN:
+- Pure mathematics (abstract algebra, topology, number theory, complex analysis)
+- Applied mathematics (differential equations, dynamical systems, optimization)
+- Linear algebra (eigenvalues, SVD, matrix decompositions, spectral theory)
+- Probability theory (measure theory, stochastic processes, martingales)
+- Numerical methods (finite element, Monte Carlo, optimization algorithms)
 
-function initTelegramLogin(){
-  const widget = document.createElement('script');
-  widget.src = 'https://telegram.org/js/telegram-widget.js?22';
-  widget.setAttribute('data-telegram-login', 'capitan_ai_bot');
-  widget.setAttribute('data-size', 'large');
-  widget.setAttribute('data-radius', '12');
-  widget.setAttribute('data-request-access', 'write');
-  widget.setAttribute('data-onauth', 'onTelegramAuth(user)');
-  widget.async = true;
-  const tempDiv = document.createElement('div');
-  tempDiv.appendChild(widget);
-  toast('Opening Telegram login...');
-}
+📊 QUANTITATIVE ANALYST:
+- Derivative pricing models (local volatility, stochastic volatility, jump diffusion)
+- Time series analysis (ARIMA, GARCH, state space models, regime switching)
+- Factor modeling (Fama-French, Barra, fundamental factor models)
+- Machine learning in finance (random forests, gradient boosting, neural networks)
+- Backtesting frameworks (walk-forward, cross-validation, bootstrap)
 
-function editProfile(){
-  const newName = prompt("Enter your name:", S.user?.name || '');
-  if(newName && newName.trim()){
-    api.updateProfile(newName);
-    if(S.user) S.user.name = newName;
-    toast('Name updated!');
-    showProfileModal();
-  }
-}
+🔬 GENERAL KNOWLEDGE:
+- Physics (quantum mechanics, relativity, thermodynamics, electromagnetism)
+- Chemistry (organic, inorganic, physical, computational chemistry)
+- Biology (molecular biology, genetics, neuroscience, ecology)
+- Medicine (diagnosis, treatment protocols, pharmacology, epidemiology)
+- History (world history, economic history, technological revolutions)
+- Philosophy (ethics, epistemology, logic, philosophy of mind)
+- Current events (geopolitics, economics, technology, culture)
 
-function openMemory(){toast('Memory feature - AI remembers your context');}
-function openApps(){toast('Apps - Markets, News, Business tools');}
-async function deleteAccount(){if(confirm('Permanently delete your account? All data will be lost.')){await api.deleteAccount();logout();}}
-function openWorkspace(){if(S.tier==='free'){toast('Upgrade to Plus or Pro','warning');openUpgrade();return;}$('#workspaceModal').classList.add('open');switchWSTab('create');}
-function openMoney(){if(S.tier!=='pro'&&S.tier!=='pro_max'&&S.tier!=='founder'){toast('Pro tier required','warning');return;}$('#moneyModal').classList.add('open');loadMarketData(S.marketCategory);}
-async function openTechUpdates(){if(S.tier!=='pro'&&S.tier!=='pro_max'&&S.tier!=='founder'){toast('Pro tier required','warning');return;}$('#techModal').classList.add('open');const nc=$('#techNewsContent');if(!nc)return;nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">Loading...</div>';try{const data=await api.techNews();const news=Array.isArray(data)?data:(data?.news||data?.articles||[]);if(news.length>0){nc.innerHTML=news.map(n=>`<div class="news-item" onclick="window.open('${n.url}','_blank')"><div class="news-source">${n.source}</div><div class="news-headline">${esc(n.headline)}</div></div>`).join('');}else{nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">No news available.</div>';}}catch(e){nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red)">Failed to load.</div>';}}
-function openSupport(){$('#supportModal').classList.add('open');}
-function openPrivacy(){$('#privacyModal').classList.add('open');}
-function openBusiness(){if(S.tier!=='pro'&&S.tier!=='pro_max'&&S.tier!=='founder'){toast('Pro tier required','warning');openUpgrade();return;}$('#businessModal').classList.add('open');const t=$('#businessToggle');if(t){t.textContent=S.businessMode?'ON':'OFF';t.className=S.businessMode?'business-indicator active':'business-indicator off';}}
-async function loadMarketData(cat){const pc=$('#marketsPricesContent');if(!pc)return;pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">Loading...</div>';try{const pd=await api.marketsPrices(cat);const prices=pd?.prices||pd?.data||pd||{};let entries=Object.entries(prices);if(entries.length>0){pc.innerHTML=entries.map(([n,i])=>{let price='—';if(i&&typeof i==='object'){price=typeof i.price==='number'?i.price.toFixed(2):(i.price||'—');}else if(typeof i==='number'){price=i.toFixed(2);}return`<div style="padding:8px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:11px"><span style="font-weight:600">${esc(String(n))}</span><span><strong>$${price}</strong></span></div>`;}).join('');}else{pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">No data available.</div>';}}catch(e){pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red)">Failed to load.</div>';}}
+╔══════════════════════════════════════════════════════════════╗
+║                      RESPONSE STYLE                          ║
+╚══════════════════════════════════════════════════════════════╝
 
-async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Msgs</div></div></div>`;}catch(e){$('#adminContent').innerHTML=`<div style="color:var(--red)">${e.message}</div>`;}}
+- Lead with the answer. Never throat-clearing or meta-analysis.
+- Casual greetings get casual responses. Professional queries get depth.
+- Use 1-2 emojis naturally for warmth when appropriate.
+- Short sentences. Clean paragraphs. No filler.
+- Depth when the topic demands it. One-liner when it doesn't.
+- NEVER make up prices or data. Only reference verified information.
+- NEVER give financial advice or trading signals.
+- NEVER provide medical diagnoses.
 
-function logout(){api.logout();S.token=null;localStorage.removeItem('ct');localStorage.removeItem('cap_tier');window.location.reload();}
-function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;const sb=$('#sidebar');const ov=$('#overlay');if(window.innerWidth<=768){S.sidebarOpen?(sb.classList.add('open'),ov?.classList.add('visible')):(sb.classList.remove('open'),ov?.classList.remove('visible'));}}
-function closeSidebar(){S.sidebarOpen=false;const sb=$('#sidebar');const ov=$('#overlay');if(sb)sb.classList.remove('open');if(ov)ov.classList.remove('visible');}
-function updateBtn(){const b=$('#sendBtn');const i=$('#msgInput');if(b)b.disabled=S.loading||!i?.value.trim();}
-function scrollBottom(){const c=$('#chatMsgs');if(c)requestAnimationFrame(()=>{c.scrollTop=c.scrollHeight;});}
-function toast(msg,type='info'){const ex=$('.toast');if(ex)ex.remove();const colors={success:'var(--green)',error:'var(--red)',warning:'var(--amber)'};const t=document.createElement('div');t.className='toast';t.textContent=msg;t.style.background=type==='info'?'var(--txt)':'var(--bg2)';t.style.color=type==='info'?'var(--bg)':colors[type]||'var(--txt)';document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
-function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Copied!'));}
-function renderMsgs(){const c=$('#chatMsgs');if(c){c.innerHTML=renderMsgsHTML();scrollBottom();}}
-function renderSidebarChats(){const c=$('#chatsList');if(c)c.innerHTML=renderChatsHTML();}
-function closeModals(){$$('.modal-overlay').forEach(m=>m.classList.remove('open'));}
+TIME: {day}, {date} at {utc_time}. {greeting_context}
+DOMAIN: {domain} | TIER: {tier} | AI MODEL: {model}
+"""
 
-function setupListeners(){
-  $('#toggleSidebar')?.addEventListener('click',toggleSidebar);
-  $('#overlay')?.addEventListener('click',closeSidebar);
-  document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){const a=document.activeElement;if(a?.id==='msgInput'){e.preventDefault();sendMsg();}else if(a?.id==='wsMessageInput'){e.preventDefault();wsSend();}}if(e.key==='Escape'){closeModals();if(window.innerWidth<=768)closeSidebar();}});
-  $$('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
-  $('#closeUpgrade')?.addEventListener('click',()=>$('#upgradeModal').classList.remove('open'));
-  $('#closeAdmin')?.addEventListener('click',()=>$('#adminModal').classList.remove('open'));
-  $('#closeLibrary')?.addEventListener('click',()=>$('#libraryModal').classList.remove('open'));
-  $('#closeWorkspace')?.addEventListener('click',()=>{$('#workspaceModal').classList.remove('open');if(S.ws.timer){clearInterval(S.ws.timer);S.ws.timer=null;}});
-  $('#closePrivacy')?.addEventListener('click',()=>$('#privacyModal').classList.remove('open'));
-  $('#closeSupport')?.addEventListener('click',()=>$('#supportModal').classList.remove('open'));
-  $('#closeMoney')?.addEventListener('click',()=>$('#moneyModal').classList.remove('open'));
-  $('#closeTech')?.addEventListener('click',()=>$('#techModal').classList.remove('open'));
-  $('#closeBusiness')?.addEventListener('click',()=>$('#businessModal').classList.remove('open'));
-  $('#libSave')?.addEventListener('click',saveLib);
-  $('#wsCreateBtn')?.addEventListener('click',wsCreate);
-  $('#wsJoinBtn')?.addEventListener('click',wsJoin);
-  $('#wsSendBtn')?.addEventListener('click',wsSend);
-  $('#wsEditNote')?.addEventListener('click',()=>{const nc=S.ws.notes.map(n=>n.content).join('\n');const ed=$('#wsNotesEditor');const sb=$('#wsSaveNote');if(ed){ed.value=nc;ed.style.display='block';}if(sb)sb.style.display='block';});
-  $('#wsSaveNote')?.addEventListener('click',wsSaveNotes);
-  $('#wsTabCreate')?.addEventListener('click',()=>switchWSTab('create'));
-  $('#wsTabJoin')?.addEventListener('click',()=>switchWSTab('join'));
-  $('#wsTabChat')?.addEventListener('click',()=>switchWSTab('chat'));
-  $('#marketTabPrices')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='block';$('#marketsNewsContent').style.display='none';$('#marketTabPrices').classList.add('active');$('#marketTabNews').classList.remove('active');});
-  $('#marketTabNews')?.addEventListener('click',()=>{$('#marketsPricesContent').style.display='none';$('#marketsNewsContent').style.display='block';$('#marketTabNews').classList.add('active');$('#marketTabPrices').classList.remove('active');});
-  $$('#marketCategoryTabs .pill-tab').forEach(tab=>tab.addEventListener('click',()=>{S.marketCategory=tab.dataset.cat;loadMarketData(S.marketCategory);}));
-  window.addEventListener('resize',()=>{if(window.innerWidth>768){$('#sidebar')?.classList.remove('open');$('#overlay')?.classList.remove('visible');}});
-  $('#closeProfileModal')?.addEventListener('click',()=>$('#profileModal').classList.remove('open'));
-}
+# ================================================================
+# QUERY CLASSIFICATION ENGINE
+# ================================================================
+def classify(q):
+    q = q.lower()
+    
+    if re.search(r'who are you|what are you|identity|introduce yourself|other capitan', q):
+        return 'identity'
+    
+    if re.search(r'who|what|when|where|why|how|news|latest|current|today|search|find', q) and len(q.split()) > 3:
+        return 'web_search'
+    
+    if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis', q):
+        return 'science'
+    
+    if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api|rest|graphql|sql|database|query|react|node|javascript|typescript|python|rust|golang', q):
+        return 'coding'
+    
+    if re.search(r'stochastic|ito|black.scholes|monte carlo|var|cvar|sharpe|sortino|beta|alpha|option pricing|derivative|risk neutral|fama|french|cointegration|garch|arima|backtest|factor model', q):
+        return 'quant'
+    
+    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx|central bank|federal reserve|interest rate|inflation|gdp|macro|equity|stock|market|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|silver|oil|commodity', q):
+        return 'finance'
+    
+    if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|probability|statistics', q):
+        return 'math'
+    
+    return 'general'
 
-S.draft=localStorage.getItem('cap_draft')||'';
-S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
-document.addEventListener('DOMContentLoaded',init);
-window.CAPITAN={S,api,init,sendMsg,newChat,setThemeMode,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode,openSupport,showProfileModal};
-console.log('CAPITAN AI v25.0 | Store Ready | Founder Fixed');
-</script>
-</body>
-</html>
+# ================================================================
+# SYSTEM PROMPT BUILDER
+# ================================================================
+def system_prompt(domain, tier, model, user_id=None, web_results=None):
+    tc = get_time_context()
+    base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier).replace("{model}", model)
+    base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"])
+    base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
+    
+    if domain == 'identity':
+        base += "\n\nIDENTITY MODE: You are the ONLY CAPITAN AI. State clearly: 'I am CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies.'"
+    
+    if user_id:
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("SELECT query, domain FROM memories WHERE user_id=%s ORDER BY created DESC LIMIT 3", (user_id,))
+                    rows = c.fetchall()
+                    if rows:
+                        base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
+        except: pass
+    
+    if tier == "free":
+        base += "\n\nBe concise but helpful."
+    elif tier == "plus":
+        base += "\n\nProvide detailed responses."
+    elif tier in ("pro", "pro_max", "founder"):
+        base += "\n\nGo deep — provide comprehensive analysis with examples."
+    
+    if web_results:
+        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"• {r['title']}: {r['snippet'][:200]}" for r in web_results[:3]])
+    
+    if tier in ("pro", "pro_max", "founder"):
+        try:
+            md = get_market_data()
+            if md:
+                base += "\n\nLIVE MARKETS:\n" + "\n".join([f"• {s}: ${d['price']:.2f} ({'▲' if d.get('change',0)>=0 else '▼'} {abs(d['change']):.2f}%)" for s, d in list(md.items())[:8]])
+        except: pass
+    
+    if tier in ("pro", "pro_max", "founder"):
+        try:
+            news = get_financial_news()
+            if news:
+                base += "\n\nLATEST NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:100]}" for n in news[:5]])
+        except: pass
+    
+    return base
+
+# ================================================================
+# AI SERVICE (Multi-Provider with Tier-based routing - FULLY RESTORED)
+# ================================================================
+def call_ai_with_tier(messages, tier="free"):
+    # Pro Max: Ensemble of GPT-4o + Claude
+    if tier == "pro_max" and settings.OPENROUTER_API_KEY:
+        try:
+            # Primary: Claude 3.5 Sonnet
+            r1 = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.5, "max_tokens": 2000},
+                timeout=35
+            )
+            content1 = r1.json().get("choices", [{}])[0].get("message", {}).get("content", "") if r1.status_code == 200 else ""
+            
+            # Secondary: GPT-4o
+            r2 = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "openai/gpt-4o-2024-11-20", "messages": messages, "temperature": 0.5, "max_tokens": 2000},
+                timeout=35
+            )
+            content2 = r2.json().get("choices", [{}])[0].get("message", {}).get("content", "") if r2.status_code == 200 else ""
+            
+            if content1 and content2:
+                combined = f"{content1}\n\n--- Additional Insights (GPT-4o) ---\n\n{content2}"
+                return combined, "claude-3.5-sonnet + gpt-4o (Ensemble)"
+            elif content1:
+                return content1, "claude-3.5-sonnet"
+            elif content2:
+                return content2, "gpt-4o"
+        except Exception as e:
+            logger.error(f"Pro Max ensemble error: {e}")
+    
+    # Pro: Claude 3.5 Sonnet
+    if tier == "pro" and settings.OPENROUTER_API_KEY:
+        try:
+            r = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.5, "max_tokens": 2000},
+                timeout=35
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "claude-3.5-sonnet"
+        except Exception as e:
+            logger.error(f"Pro Claude error: {e}")
+    
+    # Plus: Groq Llama 3.3 70B
+    if tier == "plus" and settings.GROQ_API_KEY:
+        try:
+            for m in messages:
+                if m.get("role") == "system" and len(m["content"]) > 1500:
+                    m["content"] = m["content"][:1500]
+            r = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.5, "max_tokens": 1500},
+                timeout=30
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "llama-3.3-70b"
+        except Exception as e:
+            logger.error(f"Plus Groq error: {e}")
+    
+    # Free / Fallback: Groq Llama 3.1 8B
+    if settings.GROQ_API_KEY:
+        try:
+            for m in messages:
+                if m.get("role") == "system" and tier == "free" and len(m["content"]) > 1000:
+                    m["content"] = m["content"][:1000]
+            r = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "llama-3.1-8b-instant", "messages": messages, "temperature": 0.5, "max_tokens": 800},
+                timeout=25
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "llama-3.1-8b"
+        except Exception as e:
+            logger.error(f"Free Groq error: {e}")
+    
+    # OpenAI fallback
+    if settings.OPENAI_API_KEY:
+        try:
+            r = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "gpt-4o-mini", "messages": messages, "temperature": 0.5, "max_tokens": 800},
+                timeout=25
+            )
+            if r.status_code == 200:
+                return r.json()["choices"][0]["message"]["content"], "gpt-4o-mini"
+        except: pass
+    
+    # Mistral fallback
+    if settings.MISTRAL_API_KEY:
+        try:
+            r = requests.post(
+                "https://api.mistral.ai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.MISTRAL_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "mistral-small-latest", "messages": messages, "temperature": 0.5, "max_tokens": 800},
+                timeout=25
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "mistral/small"
+        except: pass
+    
+    return "I'm having trouble connecting to AI services. Please try again or contact support.", "fallback"
+
+# ================================================================
+# FASTAPI APP
+# ================================================================
+app = FastAPI(title="CAPITAN AI API", version="27.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
+
+# ================================================================
+# CHAT ENDPOINT
+# ================================================================
+class ChatRequest(BaseModel):
+    messages: list
+    chat_id: Optional[str] = None
+
+@app.post("/api/chat")
+async def chat(req: ChatRequest, request: Request):
+    # Try to get authenticated user first, fallback to session
+    user = get_current_user(request)
+    session = None
+    if not user:
+        try:
+            session = get_current_session(request)
+        except:
+            raise HTTPException(401, "Authentication required")
+    
+    if user:
+        tier = user["tier"]
+        user_id = user["id"]
+        is_authenticated = True
+    else:
+        tier = session["tier"]
+        user_id = None
+        is_authenticated = False
+    
+    tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
+    limit = tier_info["msg_limit"]
+    
+    if not check_rate_limit(user_id if user else session["id"], tier):
+        raise HTTPException(429, "Rate limit exceeded. Please wait a moment.")
+    
+    user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role") == "user"), "")
+    if not user_msg:
+        raise HTTPException(400, "No message content")
+    
+    chat_id = req.chat_id or f"chat_{sid()}"
+    
+    # Save to database
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if is_authenticated:
+                    c.execute("INSERT INTO chats (id, user_id, title, created, updated) VALUES (%s, %s, %s, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated = NOW()",
+                             (chat_id, user_id, user_msg[:60]))
+                    c.execute("INSERT INTO chat_messages (id, chat_id, user_id, role, content, created) VALUES (%s, %s, %s, %s, %s, NOW())",
+                             (f"msg_{sid()}", chat_id, user_id, "user", user_msg))
+                else:
+                    c.execute("INSERT INTO chats (id, session_id, title, created, updated) VALUES (%s, %s, %s, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET updated = NOW()",
+                             (chat_id, session["id"], user_msg[:60]))
+                    c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, created) VALUES (%s, %s, %s, %s, %s, NOW())",
+                             (f"msg_{sid()}", chat_id, session["id"], "user", user_msg))
+                conn.commit()
+                
+                c.execute("SELECT role, content FROM chat_messages WHERE chat_id = %s ORDER BY created ASC LIMIT 15", (chat_id,))
+                history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
+    except Exception as e:
+        logger.error(f"Save error: {e}")
+        history = []
+    
+    # Classify domain
+    domain = classify(user_msg)
+    
+    # Get web search results if needed
+    web_results = None
+    if tier_info.get("web_search", False) and domain == "web_search":
+        try:
+            web_results = search_web(user_msg, 4)
+        except Exception as e:
+            logger.error(f"Web search error: {e}")
+    
+    # Build system prompt
+    prompt = system_prompt(domain, tier, tier_info["ai_model"], user_id if is_authenticated else None, web_results)
+    
+    # Get AI response
+    result, model_used = call_ai_with_tier([{"role": "system", "content": prompt}] + history, tier)
+    
+    # Save AI response
+    if result:
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    if is_authenticated:
+                        c.execute("INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, created) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+                                 (f"msg_{sid()}", chat_id, user_id, "assistant", result, model_used))
+                        c.execute("INSERT INTO memories (id, memory_id, user_id, content, query, domain, created) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+                                 (sid(), mid(), user_id, result[:500], user_msg, domain))
+                    else:
+                        c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, created) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+                                 (f"msg_{sid()}", chat_id, session["id"], "assistant", result, model_used))
+                        c.execute("INSERT INTO memories (id, memory_id, session_id, content, query, domain, created) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+                                 (sid(), mid(), session["id"], result[:500], user_msg, domain))
+                    conn.commit()
+        except Exception as e:
+            logger.error(f"Save AI error: {e}")
+    
+    # Calculate remaining messages
+    remaining = limit - (history.count({"role": "user"}) + 1) if limit != float("inf") else "unlimited"
+    
+    return {
+        "content": result,
+        "chat_id": chat_id,
+        "model": model_used,
+        "tier": tier,
+        "domain": domain,
+        "remaining": remaining
+    }
+
+# ================================================================
+# CHAT HISTORY ENDPOINTS
+# ================================================================
+@app.get("/api/chats")
+def get_chats(request: Request):
+    user = get_current_user(request)
+    if user:
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("SELECT id, title, created, updated FROM chats WHERE user_id = %s ORDER BY updated DESC LIMIT 50", (user["id"],))
+                    rows = c.fetchall()
+                    return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "created": r[2].isoformat() if r[2] else None, "updated": r[3].isoformat() if r[3] else None} for r in rows]}
+        except: pass
+    else:
+        try:
+            session = get_current_session(request)
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("SELECT id, title, created, updated FROM chats WHERE session_id = %s ORDER BY updated DESC LIMIT 50", (session["id"],))
+                    rows = c.fetchall()
+                    return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "created": r[2].isoformat() if r[2] else None, "updated": r[3].isoformat() if r[3] else None} for r in rows]}
+        except: pass
+    return {"chats": []}
+
+@app.get("/api/chats/{chat_id}")
+def get_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user:
+                    c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = get_current_session(request)
+                    c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                if not c.fetchone():
+                    raise HTTPException(404, "Chat not found")
+                
+                c.execute("SELECT id, role, content, model, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
+                rows = c.fetchall()
+                return {"messages": [{"id": r[0], "role": r[1], "content": r[2], "model": r[3] or "AI", "created": r[4].isoformat() if r[4] else None} for r in rows]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get chat error: {e}")
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/chats/{chat_id}")
+def delete_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user:
+                    c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND user_id=%s", (chat_id, user["id"]))
+                    c.execute("DELETE FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = get_current_session(request)
+                    c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, session["id"]))
+                    c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Delete chat error: {e}")
+        raise HTTPException(500, str(e))
+
+# ================================================================
+# PROJECTS ENDPOINTS (Pro and Pro Max)
+# ================================================================
+@app.get("/api/projects")
+def get_projects(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if not tier_info["projects_enabled"]:
+        return {"projects": [], "message": "Projects require Pro or Pro Max tier"}
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, name, description, created_at FROM projects WHERE user_id = %s ORDER BY created_at DESC", (user["id"],))
+                rows = c.fetchall()
+                return {"projects": [{"id": r[0], "name": r[1], "description": r[2], "created_at": r[3].isoformat() if r[3] else None} for r in rows]}
+    except Exception as e:
+        logger.error(f"Get projects error: {e}")
+        return {"projects": []}
+
+@app.post("/api/projects")
+def create_project(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if not tier_info["projects_enabled"]:
+        raise HTTPException(403, "Projects require Pro or Pro Max tier")
+    
+    name = req.get("name")
+    description = req.get("description", "")
+    if not name:
+        raise HTTPException(400, "Project name required")
+    
+    project_id = str(uuid.uuid4())
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO projects (id, user_id, name, description) VALUES (%s, %s, %s, %s)",
+                         (project_id, user["id"], name, description))
+                conn.commit()
+        return {"id": project_id, "name": name, "description": description}
+    except Exception as e:
+        logger.error(f"Create project error: {e}")
+        raise HTTPException(500, "Could not create project")
+
+@app.delete("/api/projects/{project_id}")
+def delete_project(project_id: str, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM projects WHERE id = %s AND user_id = %s", (project_id, user["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Delete project error: {e}")
+        raise HTTPException(500, "Could not delete project")
+
+# ================================================================
+# PAYMENT & UPGRADE ENDPOINTS
+# ================================================================
+@app.get("/api/payment-config")
+def payment_config():
+    return {
+        "wallets": WALLETS,
+        "prices": {"plus": 8, "pro": 17, "pro_max": 30},
+        "benefits": UPGRADE_BENEFITS,
+        "tiers": {
+            "plus": {"price": 8, "features": TIER_CONFIG["plus"]},
+            "pro": {"price": 17, "features": TIER_CONFIG["pro"]},
+            "pro_max": {"price": 30, "features": TIER_CONFIG["pro_max"]}
+        }
+    }
+
+class UpgradeRequest(BaseModel):
+    tier: str
+    txid: str
+    currency: str = "BTC"
+
+@app.post("/api/upgrade")
+def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    if req.tier not in ("plus", "pro", "pro_max"):
+        raise HTTPException(400, "Invalid tier")
+    if not req.txid.strip():
+        raise HTTPException(400, "TXID required")
+    
+    prices = {"plus": 8, "pro": 17, "pro_max": 30}
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO payments (id, user_id, txid, currency, amount, tier, verified, expires_at) VALUES (%s, %s, %s, %s, %s, %s, 1, %s)",
+                         (str(uuid.uuid4()), user["id"], req.txid.strip(), req.currency.upper(), prices[req.tier], req.tier,
+                          datetime.utcnow() + timedelta(days=30)))
+                c.execute("UPDATE users SET tier = %s, tier_expires = %s, updated_at = NOW() WHERE id = %s",
+                         (req.tier, datetime.utcnow() + timedelta(days=30), user["id"]))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Upgrade error: {e}")
+        raise HTTPException(500, "Could not process upgrade")
+    
+    return {"verified": True, "tier": req.tier}
+
+# ================================================================
+# MARKET & NEWS ENDPOINTS (Tier-gated)
+# ================================================================
+@app.get("/api/markets")
+def markets(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"prices": {}, "news": [], "message": "Pro tier required"}
+    return {"prices": get_market_data(), "news": get_financial_news()}
+
+@app.get("/api/markets/prices")
+def markets_prices(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"prices": {}, "message": "Pro tier required"}
+    return {"prices": get_market_data()}
+
+@app.get("/api/markets/news")
+def markets_news(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"news": [], "message": "Pro tier required"}
+    return {"news": get_financial_news()}
+
+@app.get("/api/news/tech")
+def tech_news(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"news": [], "message": "Pro tier required"}
+    return {"news": get_tech_news()}
+
+@app.get("/api/search")
+def web_search(q: str, request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("plus", "pro", "pro_max", "founder"):
+        return {"results": [], "message": "Web search on Plus and Pro"}
+    return {"results": search_web(q)}
+
+# ================================================================
+# WORKSPACE ENDPOINTS
+# ================================================================
+@app.post("/api/workspace/create")
+def ws_create(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if tier_info["workspace_seats"] == 0:
+        raise HTTPException(403, "Work Area requires Plus or Pro")
+    
+    room_code = req.get("room_code", f"CAP-{sid()}")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                wid = sid()
+                c.execute("INSERT INTO workspaces (id, name, owner_id, room_code, max_members) VALUES (%s, %s, %s, %s, %s)",
+                         (wid, req.get("name", "My Workspace"), user["id"], room_code.upper(), tier_info["workspace_seats"]))
+                c.execute("INSERT INTO workspace_members (workspace_id, user_id, role) VALUES (%s, %s, %s)",
+                         (wid, user["id"], "admin"))
+                conn.commit()
+                return {"room_id": wid, "room_code": room_code.upper(), "created": True}
+    except Exception as e:
+        logger.error(f"Workspace create error: {e}")
+        return {"created": False}
+
+@app.post("/api/workspace/join")
+def ws_join(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    room_code = req.get("room_code", "").upper()
+    if not room_code:
+        raise HTTPException(400, "Room code required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, max_members FROM workspaces WHERE room_code = %s", (room_code,))
+                ws = c.fetchone()
+                if not ws:
+                    raise HTTPException(404, "Room not found")
+                c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id = %s", (ws[0],))
+                if c.fetchone()[0] >= ws[1]:
+                    raise HTTPException(400, "Room full")
+                c.execute("INSERT INTO workspace_members (workspace_id, user_id, role) VALUES (%s, %s, %s)",
+                         (ws[0], user["id"], "member"))
+                conn.commit()
+                return {"joined": True, "room_id": ws[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Workspace join error: {e}")
+        return {"joined": False}
+
+@app.post("/api/workspace/message")
+def ws_message(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    room_code = req.get("room_code", "").upper()
+    message = req.get("message", "")
+    if not room_code or not message:
+        raise HTTPException(400, "Room code and message required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM workspaces WHERE room_code = %s", (room_code,))
+                ws = c.fetchone()
+                if not ws:
+                    raise HTTPException(404, "Room not found")
+                
+                is_ai = message.strip().startswith("@CAPITAN")
+                if is_ai:
+                    result, _ = call_ai_with_tier([{"role": "user", "content": message.replace('@CAPITAN', '').strip()}], user["tier"])
+                    if result:
+                        c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai) VALUES (%s, %s, %s, %s, %s, 1)",
+                                 (sid(), ws[0], user["id"], "CAPITAN AI", result))
+                
+                c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message) VALUES (%s, %s, %s, %s, %s)",
+                         (sid(), ws[0], user["id"], user["name"], message))
+                conn.commit()
+                return {"sent": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Workspace message error: {e}")
+        return {"sent": False}
+
+@app.get("/api/workspace/messages")
+def ws_get_messages(room_code: str, user: dict = Depends(get_current_user)):
+    if not user:
+        return {"messages": [], "members": []}
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM workspaces WHERE room_code = %s", (room_code.upper(),))
+                ws = c.fetchone()
+                if not ws:
+                    return {"messages": [], "members": []}
+                
+                c.execute("SELECT u.name, wm.role FROM workspace_members wm JOIN users u ON wm.user_id = u.id WHERE wm.workspace_id = %s", (ws[0],))
+                members = [{"name": r[0], "role": r[1]} for r in c.fetchall()]
+                
+                c.execute("SELECT id, author_name, message, is_ai, created FROM workspace_messages WHERE workspace_id = %s ORDER BY created ASC LIMIT 50", (ws[0],))
+                messages = [{"id": r[0], "author": r[1], "message": r[2], "is_ai": bool(r[3]), "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+                
+                return {"messages": messages, "members": members}
+    except Exception as e:
+        logger.error(f"Get workspace messages error: {e}")
+        return {"messages": [], "members": []}
+
+# ================================================================
+# LIBRARY ENDPOINTS
+# ================================================================
+@app.get("/api/library")
+def get_library(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return {"items": []}
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, name, type, content, size, created FROM library_items WHERE user_id = %s ORDER BY created DESC", (user["id"],))
+                rows = c.fetchall()
+                return {"items": [{"id": r[0], "name": r[1], "type": r[2], "content": r[3], "size": r[4], "created": r[5].isoformat() if r[5] else None} for r in rows]}
+    except Exception as e:
+        logger.error(f"Get library error: {e}")
+        return {"items": []}
+
+class LibraryItemRequest(BaseModel):
+    name: str
+    type: str = "note"
+    content: Optional[str] = ""
+
+@app.post("/api/library")
+def create_library_item(req: LibraryItemRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                item_id = f"lib_{sid()}"
+                c.execute("INSERT INTO library_items (id, user_id, name, type, content, size, created) VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+                         (item_id, user["id"], req.name, req.type, req.content or "", len(req.content or "")))
+                conn.commit()
+                return {"id": item_id, "created": True}
+    except Exception as e:
+        logger.error(f"Create library error: {e}")
+        return {"created": False}
+
+@app.delete("/api/library/{item_id}")
+def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM library_items WHERE id = %s AND user_id = %s", (item_id, user["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Delete library error: {e}")
+        return {"deleted": False}
+
+# ================================================================
+# UPLOAD ENDPOINT
+# ================================================================
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if not tier_info["file_upload"]:
+        raise HTTPException(403, "Upgrade to Plus or Pro for file uploads")
+    
+    contents = await file.read()
+    max_size = 50 if user["tier"] == "pro" else (100 if user["tier"] in ("pro_max", "founder") else 10)
+    if len(contents) / (1024 * 1024) > max_size:
+        raise HTTPException(400, f"Max {max_size}MB")
+    
+    file_id = f"file_{sid()}"
+    file_path = os.path.join(UPLOAD_DIR, file_id)
+    
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO uploaded_files (id, user_id, filename, original_name, size, mime_type, storage_path, created) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())",
+                         (file_id, user["id"], file_id, file.filename or "unknown", len(contents), file.content_type or "application/octet-stream", file_path))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Save file error: {e}")
+    
+    return {
+        "id": file_id,
+        "filename": file.filename,
+        "size_mb": round(len(contents) / (1024 * 1024), 2),
+        "storage": "local"
+    }
+
+# ================================================================
+# ADMIN ENDPOINT (Founder only)
+# ================================================================
+@app.post("/api/admin")
+def admin(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT COUNT(*) FROM users")
+                total_users = c.fetchone()[0]
+                c.execute("SELECT COUNT(*) FROM users WHERE tier != 'free'")
+                paid_users = c.fetchone()[0]
+                c.execute("SELECT COUNT(*) FROM chat_messages")
+                total_msgs = c.fetchone()[0]
+                c.execute("SELECT COUNT(*) FROM workspaces")
+                total_workspaces = c.fetchone()[0]
+                c.execute("SELECT COUNT(*) FROM projects")
+                total_projects = c.fetchone()[0]
+                
+                return {
+                    "total_users": total_users,
+                    "paid_users": paid_users,
+                    "total_messages": total_msgs,
+                    "workspaces": total_workspaces,
+                    "projects": total_projects
+                }
+    except Exception as e:
+        logger.error(f"Admin error: {e}")
+        raise HTTPException(500, str(e))
+
+# ================================================================
+# HEALTH CHECK
+# ================================================================
+@app.get("/health")
+def health():
+    db_status = "disconnected"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT 1")
+                db_status = "connected"
+    except Exception as e:
+        logger.warning(f"Health check DB error: {e}")
+    
+    ai_status = "connected" if (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY) else "disconnected"
+    providers = []
+    if settings.GROQ_API_KEY: providers.append("groq")
+    if settings.OPENROUTER_API_KEY: providers.append("openrouter")
+    if settings.OPENAI_API_KEY: providers.append("openai")
+    
+    return {
+        "status": "ok",
+        "version": "27.0",
+        "database": db_status,
+        "ai": ai_status,
+        "providers": providers,
+        "telegram_auth": bool(settings.TELEGRAM_BOT_TOKEN)
+    }
+
+# ================================================================
+# PWA & STATIC FILES (FULLY RESTORED)
+# ================================================================
+@app.get("/manifest.json")
+async def get_manifest():
+    manifest = {
+        "name": "CAPITAN AI",
+        "short_name": "CAPITAN",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#000000",
+        "theme_color": "#4ADE80",
+        "orientation": "portrait",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+        ]
+    }
+    return JSONResponse(content=manifest)
+
+@app.get("/icon-192.png")
+async def icon_192():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#000" rx="20"/>
+        <path d="M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z" fill="none" stroke="#A0A0A4" stroke-width="4"/>
+        <text x="50" y="72" text-anchor="middle" font-size="42" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
+
+@app.get("/icon-512.png")
+async def icon_512():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#000" rx="20"/>
+        <path d="M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z" fill="none" stroke="#A0A0A4" stroke-width="4"/>
+        <text x="50" y="72" text-anchor="middle" font-size="42" fill="#A0A0A4" font-family="Inter,sans-serif" font-weight="700">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
+
+@app.get("/")
+async def root():
+    return {
+        "name": "CAPITAN AI",
+        "version": "27.0",
+        "status": "operational",
+        "telegram_auth": bool(settings.TELEGRAM_BOT_TOKEN),
+        "pwa_supported": True,
+        "tiers": ["free", "plus", "pro", "pro_max", "founder"],
+        "endpoints": [
+            "/health - Health check",
+            "/api/session - Anonymous session",
+            "/api/auth/telegram/callback - Telegram OAuth callback",
+            "/api/auth/telegram/verify - Telegram auth verification",
+            "/api/founder - Founder login",
+            "/api/auth/me - Get current user",
+            "/api/chat - Chat endpoint",
+            "/api/chats - Chat history",
+            "/api/markets - Market data",
+            "/api/search - Web search",
+            "/api/upgrade - Upgrade tier",
+            "/manifest.json - PWA manifest"
+        ]
+    }
+
+# ================================================================
+# TEST FRONTEND ENDPOINT (For debugging)
+# ================================================================
+@app.get("/test")
+async def test_frontend():
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head><title>CAPITAN AI - Test</title><style>body{background:#000;color:#fff;font-family:monospace;}</style></head>
+    <body>
+        <h1>CAPITAN AI Backend Test</h1>
+        <div id="out"></div>
+        <script>
+            fetch('/health').then(r=>r.json()).then(d=>document.getElementById('out').innerHTML=JSON.stringify(d,null,2));
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+# ================================================================
+# MAIN ENTRY POINT
+# ================================================================
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    print(f"\n{'='*60}")
+    print(f"🚀 CAPITAN AI v27.0 - FULLY RESTORED ENTERPRISE BACKEND")
+    print(f"{'='*60}")
+    print(f"📊 Database: {'Connected' if settings.DATABASE_URL or settings.SUPABASE_DB_PASSWORD else 'Not configured'}")
+    print(f"🤖 AI Providers: Groq={bool(settings.GROQ_API_KEY)} | OpenRouter={bool(settings.OPENROUTER_API_KEY)} | OpenAI={bool(settings.OPENAI_API_KEY)}")
+    print(f"📈 Markets: CoinGecko={bool(settings.COINGECKO_KEY)} | Yahoo=Active | Finnhub={bool(settings.FINNHUB_API_KEY)}")
+    print(f"🔍 Web Search: SerpAPI={bool(settings.SERPAPI_KEY)}")
+    print(f"📰 News: NewsAPI={bool(settings.NEWS_API_KEY)} | GNews={bool(settings.GNEWS_API_KEY)}")
+    print(f"🔐 Auth: Telegram Bot @{settings.TELEGRAM_BOT_USERNAME}")
+    print(f"👑 Founder: Enabled (click logo 5x, code: {settings.FOUNDER_KEY[:10]}...)")
+    print(f"💎 Tiers: Free(20) | Plus(50/$8) | Pro(150/$17) | Pro Max(∞/$30)")
+    print(f"📨 AI Models: Free(Groq 3.1) | Plus(Groq 3.3) | Pro(Claude) | Pro Max(Ensemble)")
+    print(f"🌐 PWA: Enabled (manifest.json, icons)")
+    print(f"📁 All Features: Projects | Workspaces | Library | File Uploads | Markets | News | Search")
+    print(f"📞 Telegram Callback URL: {settings.FRONTEND_URL}/?tgAuth=...")
+    print(f"{'='*60}")
+    print(f"📍 Backend URL: http://0.0.0.0:{port}")
+    print(f"📍 Health Check: http://0.0.0.0:{port}/health")
+    print(f"📍 Test Frontend: http://0.0.0.0:{port}/test")
+    print(f"{'='*60}\n")
+    uvicorn.run(app, host="0.0.0.0", port=port)
