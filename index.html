@@ -7,21 +7,37 @@
 <meta name="theme-color" content="#000000">
 <title>CAPITAN AI</title>
 <link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='20'/%3E%3Cpath d='M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z' fill='none' stroke='%234ADE80' stroke-width='4'/%3E%3Ctext x='50' y='72' text-anchor='middle' font-size='42' fill='%234ADE80' font-family='Inter,sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E">
 <style>
 :root {
-  --bg: #000000; --bg2: #050505; --bg3: #0a0a0a; --bdr: #1a1a1a;
-  --txt: #FFFFFF; --txt2: #CCCCCC; --txt3: #666666;
-  --accent: #4ADE80; --accent-hover: #22C55E; --accent-bg: rgba(74,222,128,0.12);
-  --radius: 12px; --sidebar-w: 300px;
+  --bg: #000000;
+  --bg2: #050505;
+  --bg3: #0a0a0a;
+  --bdr: #1a1a1a;
+  --txt: #FFFFFF;
+  --txt2: #CCCCCC;
+  --txt3: #666666;
+  --accent: #4ADE80;
+  --accent-hover: #22C55E;
+  --accent-bg: rgba(74,222,128,0.12);
+  --radius: 12px;
+  --sidebar-w: 300px;
+  --red: #EF4444;
 }
 :root.light {
-  --bg: #FFFFFF; --bg2: #F5F5F7; --bg3: #EBEBED; --bdr: #E0E0E0;
-  --txt: #000000; --txt2: #333333; --txt3: #666666;
+  --bg: #FFFFFF;
+  --bg2: #F5F5F7;
+  --bg3: #EBEBED;
+  --bdr: #E0E0E0;
+  --txt: #000000;
+  --txt2: #333333;
+  --txt3: #666666;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: var(--bg); color: var(--txt); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; overflow: hidden; }
 #app { display: flex; height: 100vh; }
 
+/* Sidebar */
 .sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--bg2); border-right: 1px solid var(--bdr); display: flex; flex-direction: column; overflow-y: auto; transition: transform 0.2s; z-index: 100; }
 .sidebar-header { padding: 20px; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; align-items: center; }
 .sb-logo { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, var(--accent), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
@@ -33,6 +49,7 @@ body { background: var(--bg); color: var(--txt); font-family: -apple-system, Bli
 .sb-chat-del { background: none; border: none; color: var(--txt3); cursor: pointer; }
 .sidebar-footer { padding: 16px; text-align: center; font-size: 10px; color: var(--txt3); border-top: 1px solid var(--bdr); }
 
+/* Main */
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .top-bar { position: absolute; top: 16px; right: 20px; z-index: 90; display: flex; gap: 12px; }
 .profile-btn { background: var(--bg2); border: 1px solid var(--bdr); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
@@ -42,8 +59,10 @@ body { background: var(--bg); color: var(--txt); font-family: -apple-system, Bli
 .welcome { text-align: center; padding: 40px; }
 .welcome h1 { font-size: 32px; margin-bottom: 12px; background: linear-gradient(135deg, var(--accent), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .welcome-pills { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
-.wp-pill { padding: 10px 20px; border: 1px solid var(--bdr); border-radius: 30px; cursor: pointer; background: var(--bg2); }
+.wp-pill { padding: 10px 20px; border: 1px solid var(--bdr); border-radius: 30px; cursor: pointer; background: var(--bg2); transition: all 0.2s; }
 .wp-pill:hover { border-color: var(--accent); background: var(--accent-bg); }
+
+/* Messages */
 .msg { margin-bottom: 20px; }
 .msg.user { display: flex; justify-content: flex-end; }
 .msg-user-bubble { background: var(--accent-bg); border: 1px solid var(--accent); padding: 10px 16px; border-radius: 18px 18px 4px 18px; max-width: 80%; }
@@ -54,33 +73,53 @@ body { background: var(--bg); color: var(--txt); font-family: -apple-system, Bli
 .msg-actions { display: flex; gap: 8px; margin-top: 8px; opacity: 0.5; }
 .msg:hover .msg-actions { opacity: 1; }
 .msg-action { background: none; border: none; color: var(--txt3); cursor: pointer; padding: 4px; }
+
+/* Input */
 .input-area { padding: 16px 0 24px; }
 .input-wrap { display: flex; gap: 12px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: 30px; padding: 8px 8px 8px 20px; align-items: center; }
 .input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: 14px; padding: 10px 0; }
-.send-btn { width: 42px; height: 42px; background: var(--accent); color: #000; border: none; border-radius: 50%; cursor: pointer; }
+.send-btn { width: 42px; height: 42px; background: var(--accent); color: #000; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
 .send-btn:disabled { opacity: 0.3; }
+
+/* Streaming */
 .stream-cursor { display: inline-block; width: 2px; height: 1.2em; background: var(--accent); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
 @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
 .token-fade { animation: fadeIn 0.05s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Toast */
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #000; padding: 8px 16px; border-radius: 20px; font-size: 12px; z-index: 1000; }
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
+
+/* Modals */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
 .modal-overlay.open { display: flex; }
-.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 24px; width: 400px; max-width: 90%; text-align: center; }
+.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 24px; width: 400px; max-width: 90%; max-height: 80vh; overflow-y: auto; }
 .modal h2 { margin-bottom: 16px; }
-.modal p { margin-bottom: 20px; color: var(--txt3); }
-.telegram-login-btn { display: inline-flex; align-items: center; gap: 10px; background: #26A5E4; color: white; border: none; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer; margin: 10px 0; }
-.telegram-login-btn:hover { opacity: 0.9; }
+.modal input, .modal textarea { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 12px; border-radius: 8px; margin-bottom: 12px; }
 .modal-btn { width: 100%; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 8px; }
 .modal-btn.sec { background: transparent; border: 1px solid var(--bdr); color: var(--txt); }
-.tier-card { border: 1px solid var(--bdr); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
+.modal-btn.danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
+
+/* Telegram Login Button */
+.telegram-login-btn { display: inline-flex; align-items: center; gap: 10px; background: #26A5E4; color: white; border: none; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer; margin: 10px 0; width: 100%; justify-content: center; }
+.telegram-login-btn:hover { opacity: 0.9; }
+
+/* Tier Cards */
+.tier-card { border: 1px solid var(--bdr); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+.tier-card:hover { border-color: var(--accent); background: var(--accent-bg); }
 .tier-card.selected { border-color: var(--accent); background: var(--accent-bg); }
 .tier-name { font-weight: 700; font-size: 18px; }
 .tier-price { font-size: 24px; font-weight: 700; margin: 8px 0; }
-.wallet-box { background: var(--bg3); padding: 12px; border-radius: 8px; text-align: center; font-family: monospace; font-size: 11px; margin-bottom: 12px; cursor: pointer; }
+.tier-price span { font-size: 12px; font-weight: 400; color: var(--txt3); }
+
+/* Wallet Box */
+.wallet-box { background: var(--bg3); padding: 12px; border-radius: 8px; text-align: center; font-family: monospace; font-size: 11px; margin-bottom: 12px; cursor: pointer; word-break: break-all; }
+
+/* Profile Section */
 .profile-section { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--bdr); }
 .project-item { padding: 10px; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; align-items: center; }
 
+/* Responsive */
 @media (max-width: 768px) {
   .sidebar { position: fixed; left: -300px; top: 0; bottom: 0; z-index: 200; }
   .sidebar.open { left: 0; }
@@ -98,7 +137,7 @@ body { background: var(--bg); color: var(--txt); font-family: -apple-system, Bli
 <div id="loginModal" class="modal-overlay">
   <div class="modal">
     <h2>🔐 Sign In to CAPITAN AI</h2>
-    <p>Connect with your Telegram account</p>
+    <p>Connect with your Telegram account to continue</p>
     <div id="telegramLoginWidget"></div>
     <button class="modal-btn sec" id="closeLoginModal">Cancel</button>
   </div>
@@ -164,7 +203,7 @@ body { background: var(--bg); color: var(--txt); font-family: -apple-system, Bli
 <script>
 // Configuration
 const API_URL = 'https://capitan-ai-jxu8.onrender.com';
-const TELEGRAM_BOT_USERNAME = 'capitan_ai_bot';
+const TELEGRAM_BOT_ID = 'capitan_ai_bot';
 let currentUser = null;
 let authToken = localStorage.getItem('auth_token');
 let S = { loading: false, chats: [], activeChat: null, messages: [], draft: '', streamAbort: null, sidebarOpen: window.innerWidth > 768 };
@@ -233,47 +272,46 @@ class TokenStreamer {
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
-// Telegram Login
+// Telegram Login - Using Official Widget
 function initTelegramLogin() {
   const widget = document.getElementById('telegramLoginWidget');
   if (!widget) return;
   
-  widget.innerHTML = `
-    <button class="telegram-login-btn" onclick="handleTelegramLogin()">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.6-1.38-.97-2.23-1.56-.99-.67-.35-1.04.22-1.64.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.06-.02-.09-.02-.02-.06-.01-.09-.01-.02 0-.04.01-.06.02l-3.84 2.42c-.18.11-.34.18-.5.18-.16 0-.32-.07-.44-.18l-1.44-1.02c-.36-.26-.39-.34-.39-.47 0-.11.03-.2.18-.3l7.02-2.71c.31-.12.6-.19.87-.19.55 0 .81.25.7.79z" fill="white"/>
-      </svg>
-      Login with Telegram
-    </button>
-  `;
+  // Create the official Telegram login script
+  const script = document.createElement('script');
+  script.src = 'https://telegram.org/js/telegram-widget.js?22';
+  script.setAttribute('data-telegram-login', TELEGRAM_BOT_ID);
+  script.setAttribute('data-size', 'large');
+  script.setAttribute('data-auth-url', `${API_URL}/api/auth/telegram/callback`);
+  script.setAttribute('data-request-access', 'write');
+  script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  script.async = true;
+  widget.innerHTML = '';
+  widget.appendChild(script);
 }
 
-async function handleTelegramLogin() {
-  // Use Telegram Login Widget redirect
-  const redirectUrl = encodeURIComponent(`${window.location.origin}/auth/telegram`);
-  window.location.href = `https://oauth.telegram.org/auth?bot_id=${TELEGRAM_BOT_USERNAME}&origin=${window.location.origin}&embed=1&request_access=write`;
-}
-
-async function handleTelegramCallback() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const tgAuth = urlParams.get('tgAuth');
-  
-  if (tgAuth) {
-    try {
-      const data = JSON.parse(decodeURIComponent(tgAuth));
-      const res = await api.verifyTelegram(data);
-      authToken = res.token; currentUser = res.user;
-      localStorage.setItem('auth_token', authToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      document.getElementById('loginModal').classList.remove('open');
-      await loadChats();
-      render();
-      toast(`Welcome ${currentUser.name || currentUser.telegram_username || 'User'}!`);
-    } catch(e) { toast('Login failed: ' + e.message); }
+// Called by Telegram widget after successful auth
+window.onTelegramAuth = async function(user) {
+  console.log('Telegram auth success:', user);
+  try {
+    const res = await api.verifyTelegram(user);
+    authToken = res.token;
+    currentUser = res.user;
+    localStorage.setItem('auth_token', authToken);
+    document.getElementById('loginModal').classList.remove('open');
+    await loadChats();
+    render();
+    toast(`Welcome ${currentUser.name || currentUser.telegram_username || 'User'}!`);
+  } catch(e) {
+    toast('Login failed: ' + e.message);
+    console.error(e);
   }
-}
+};
 
-function showLoginModal() { document.getElementById('loginModal').classList.add('open'); initTelegramLogin(); }
+function showLoginModal() { 
+  document.getElementById('loginModal').classList.add('open'); 
+  initTelegramLogin();
+}
 
 // Profile Modal
 async function showProfileModal() {
@@ -294,7 +332,7 @@ async function showProfileModal() {
       <button class="modal-btn sec" id="workspaceFromProfileBtn">🗂️ Work Area</button>
       <button class="modal-btn sec" id="supportFromProfileBtn">🆘 Support</button>
       <button class="modal-btn sec" id="logoutBtn" style="color:var(--red)">🚪 Logout</button>
-      <button class="modal-btn sec" id="deleteAccountBtn" style="color:var(--red)">🗑️ Delete Account</button>
+      <button class="modal-btn danger" id="deleteAccountBtn">🗑️ Delete Account</button>
     </div>
   `;
   document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
@@ -306,7 +344,7 @@ async function showProfileModal() {
   document.getElementById('workspaceFromProfileBtn')?.addEventListener('click', () => { document.getElementById('profileModal').classList.remove('open'); showWorkspaceModal(); });
   document.getElementById('supportFromProfileBtn')?.addEventListener('click', () => { document.getElementById('profileModal').classList.remove('open'); document.getElementById('supportModal').classList.add('open'); });
   document.getElementById('logoutBtn')?.addEventListener('click', async () => { await api.logout(); authToken = null; currentUser = null; localStorage.clear(); window.location.reload(); });
-  document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => { if (confirm('Delete account permanently?')) { await api.deleteAccount(); authToken = null; currentUser = null; localStorage.clear(); window.location.reload(); } });
+  document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => { if (confirm('Delete account permanently? All data will be lost.')) { await api.deleteAccount(); authToken = null; currentUser = null; localStorage.clear(); window.location.reload(); } });
   document.getElementById('profileModal').classList.add('open');
 }
 
@@ -314,9 +352,9 @@ async function showProfileModal() {
 async function showUpgradeModal() {
   const config = await api.getPaymentConfig();
   document.getElementById('tierList').innerHTML = `
-    <div class="tier-card" onclick="selectTier('plus')"><div class="tier-name">🔶 Plus</div><div class="tier-price">$8<span>/mo</span></div><div>✓ 50 messages/day</div><div>✓ Groq Llama 3.3</div><div>✓ Web search</div></div>
-    <div class="tier-card" onclick="selectTier('pro')"><div class="tier-name">💎 Pro</div><div class="tier-price">$17<span>/mo</span></div><div>✓ 150 messages/day</div><div>✓ Claude 3.5 Sonnet</div><div>✓ Live markets</div><div>✓ Projects</div></div>
-    <div class="tier-card" onclick="selectTier('pro_max')"><div class="tier-name">👑 Pro Max</div><div class="tier-price">$30<span>/mo</span></div><div>✓ Unlimited messages</div><div>✓ GPT-4o + Claude Ensemble</div><div>✓ All features</div></div>
+    <div class="tier-card" onclick="selectTier('plus')"><div class="tier-name">🔶 Plus</div><div class="tier-price">$8<span>/mo</span></div><div>✓ 50 messages/day</div><div>✓ Groq Llama 3.3 70B</div><div>✓ Web search</div><div>✓ File uploads</div></div>
+    <div class="tier-card" onclick="selectTier('pro')"><div class="tier-name">💎 Pro</div><div class="tier-price">$17<span>/mo</span></div><div>✓ 150 messages/day</div><div>✓ Claude 3.5 Sonnet AI</div><div>✓ Live market data</div><div>✓ Projects</div><div>✓ Financial news</div></div>
+    <div class="tier-card" onclick="selectTier('pro_max')"><div class="tier-name">👑 Pro Max</div><div class="tier-price">$30<span>/mo</span></div><div>✓ Unlimited messages</div><div>✓ GPT-4o + Claude Ensemble</div><div>✓ Advanced reasoning</div><div>✓ Priority support</div><div>✓ All features</div></div>
   `;
   window.selectedTier = null;
   document.getElementById('paySection').style.display = 'none';
@@ -349,7 +387,7 @@ async function showProjectsModal() {
   const projects = await api.getProjects();
   document.getElementById('projectsList').innerHTML = projects.projects.map(p => `
     <div class="project-item"><div><strong>${escapeHtml(p.name)}</strong><br><small>${escapeHtml(p.description || '')}</small></div><button onclick="deleteProject('${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer">🗑️</button></div>
-  `).join('') || '<div style="text-align:center;color:var(--txt3);padding:16px">No projects</div>';
+  `).join('') || '<div style="text-align:center;color:var(--txt3);padding:16px">No projects yet. Create your first project!</div>';
   document.getElementById('projectsModal').classList.add('open');
 }
 
@@ -360,10 +398,10 @@ document.getElementById('createProjectBtn')?.addEventListener('click', async () 
   document.getElementById('projectName').value = '';
   document.getElementById('projectDesc').value = '';
   showProjectsModal();
-  toast('Project created');
+  toast('Project created!');
 });
 
-window.deleteProject = async (id) => { if (confirm('Delete?')) { await api.deleteProject(id); showProjectsModal(); toast('Deleted'); } };
+window.deleteProject = async (id) => { if (confirm('Delete this project?')) { await api.deleteProject(id); showProjectsModal(); toast('Project deleted'); } };
 
 // Workspace Modal
 async function showWorkspaceModal() {
@@ -372,13 +410,13 @@ async function showWorkspaceModal() {
 document.getElementById('createWorkspaceBtn')?.addEventListener('click', async () => {
   const code = 'CAP-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   await api.createWorkspace('My Workspace', code);
-  toast(`Room created: ${code}`);
+  toast(`Room created! Code: ${code}`);
 });
 document.getElementById('joinWorkspaceBtn')?.addEventListener('click', async () => {
   const code = document.getElementById('workspaceCode').value.trim().toUpperCase();
   if (!code) { toast('Enter room code'); return; }
   await api.joinWorkspace(code);
-  toast('Joined workspace');
+  toast('Joined workspace!');
 });
 
 // Chat Functions
@@ -438,23 +476,33 @@ function render() {
 function renderSidebar() {
   const el = document.getElementById('chatsList');
   if (!el) return;
-  if (!S.chats.length) { el.innerHTML = '<div style="padding:16px;color:var(--txt3);text-align:center">No conversations</div>'; return; }
+  if (!S.chats.length) { el.innerHTML = '<div style="padding:16px;color:var(--txt3);text-align:center">No conversations yet. Start a new chat!</div>'; return; }
   el.innerHTML = S.chats.map(c => `<div class="sb-chat-item ${S.activeChat === c.id ? 'active' : ''}" onclick="loadChat('${c.id}')"><span>${escapeHtml(c.title || 'Chat')}</span><button class="sb-chat-del" onclick="event.stopPropagation(); deleteChat('${c.id}')">✕</button></div>`).join('');
 }
 
 function renderMessages() {
   if (!S.messages.length) {
-    return `<div class="welcome"><h1>CAPITAN AI</h1><p>Your enterprise intelligence platform</p><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('What is CAPITAN AI?')">🤖 About CAPITAN</div><div class="wp-pill" onclick="quickSend('Write Python code for a trading bot')">💻 Trading Bot</div><div class="wp-pill" onclick="quickSend('Explain DCF valuation')">📊 Finance</div></div></div>`;
+    return `<div class="welcome"><h1>CAPITAN AI</h1><p>Your enterprise intelligence platform</p><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('What is CAPITAN AI?')">🤖 About CAPITAN</div><div class="wp-pill" onclick="quickSend('Write Python code for a trading bot')">💻 Trading Bot</div><div class="wp-pill" onclick="quickSend('Explain DCF valuation')">📊 Finance</div><div class="wp-pill" onclick="quickSend('What are current market trends?')">📈 Markets</div></div></div>`;
   }
-  return S.messages.map((m, i) => m.role === 'user' ? `<div class="msg user"><div class="msg-user-bubble">${escapeHtml(m.content)}</div></div>` : `<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${m.content ? m.content : ''}</div><div class="msg-actions"><button class="msg-action" onclick="copyText('${escapeHtml(m.content)}')">📋</button><button class="msg-action" onclick="regen()">🔄</button></div></div>`).join('');
+  return S.messages.map((m, i) => m.role === 'user' ? `<div class="msg user"><div class="msg-user-bubble">${escapeHtml(m.content)}</div></div>` : `<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${m.content ? formatMD(m.content) : ''}</div><div class="msg-actions"><button class="msg-action" onclick="copyText('${escapeHtml(m.content)}')">📋</button><button class="msg-action" onclick="regen()">🔄</button><button class="msg-action" onclick="shareMsg('${escapeHtml(m.content)}')">📤</button></div></div>`).join('');
+}
+
+function formatMD(t) {
+  if (!t) return '';
+  t = t.replace(/```(\w*)\n([\s\S]*?)```/g, (_, l, c) => `<pre><code>${escapeHtml(c.trim())}</code></pre>`);
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/\n/g, '<br>');
+  return t;
 }
 
 async function loadChat(id) { S.activeChat = id; S.messages = []; render(); saveMessages(); }
-async function deleteChat(id) { if (!confirm('Delete?')) return; await api.deleteChat(id); S.chats = S.chats.filter(c => c.id !== id); if (S.activeChat === id) newChat(); renderSidebar(); toast('Deleted'); }
+async function deleteChat(id) { if (!confirm('Delete this chat?')) return; await api.deleteChat(id); S.chats = S.chats.filter(c => c.id !== id); if (S.activeChat === id) newChat(); renderSidebar(); toast('Chat deleted'); }
 function newChat() { if (S.streamAbort) S.streamAbort(); S.activeChat = null; S.messages = []; render(); saveMessages(); }
 function quickSend(msg) { const i = document.getElementById('msgInput'); if (i) { i.value = msg; sendMsg(); } }
 function regen() { if (S.messages.length >= 2) { S.messages.pop(); sendMsg(); } }
 function copyText(t) { navigator.clipboard.writeText(t); toast('Copied!'); }
+function shareMsg(t) { if (navigator.share) navigator.share({ text: t }).catch(()=>{}); else copyText(t); }
 function scrollChat() { const m = document.getElementById('chatMsgs'); if (m) m.scrollTop = m.scrollHeight; }
 function saveMessages() { if (S.activeChat && S.messages.length) localStorage.setItem(`chat_${S.activeChat}`, JSON.stringify(S.messages)); }
 function handleLogoClick() { toast(`CAPITAN AI v27.0 - ${currentUser?.tier || 'Free'} tier`); }
@@ -471,10 +519,16 @@ document.getElementById('closeSupportModal')?.addEventListener('click', () => do
 // Initialize
 async function init() {
   if (authToken) {
-    try { currentUser = await api.getMe(); await loadChats(); render(); } catch(e) { showLoginModal(); }
-  } else { showLoginModal(); }
-  
-  handleTelegramCallback();
+    try { 
+      currentUser = await api.getMe(); 
+      await loadChats(); 
+      render(); 
+    } catch(e) { 
+      showLoginModal(); 
+    }
+  } else { 
+    showLoginModal(); 
+  }
 }
 
 init();
