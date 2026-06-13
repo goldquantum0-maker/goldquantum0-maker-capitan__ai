@@ -48,6 +48,7 @@ console.log('Service Worker registration failed:', err);
 --txt:#FFFFFF;--txt2:#CCCCCC;--txt3:#999999;--txt4:#777777;
 --accent:#A0A0A4;--accent-hover:#B8B8BC;--accent-bg:rgba(160,160,164,0.12);
 --red:#F87171;--green:#4ade80;--amber:#fbbf24;
+--orange:#F97316;--orange-bg:rgba(249,115,22,0.15);
 --icon:#9CA3AF;--icon-hover:#FFFFFF;
 --radius:14px;--r-sm:10px;--r-xs:7px;--r-lg:18px;
 --fs-xs:10px;--fs-sm:11px;--fs-md:12px;--fs-lg:14px;--fs-xl:17px;
@@ -63,6 +64,7 @@ console.log('Service Worker registration failed:', err);
 --txt:#000000;--txt2:#333333;--txt3:#666666;--txt4:#999999;
 --accent:#6B6B70;--accent-hover:#8A8A90;--accent-bg:rgba(107,107,112,0.10);
 --red:#DC2626;--green:#16A34A;--amber:#D97706;
+--orange:#EA580C;
 --icon:#6B7280;--icon-hover:#000000;
 --shadow:0 12px 40px rgba(0,0,0,.06);
 }
@@ -80,7 +82,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .sb-logo{display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:transform .2s;width:32px;height:32px;flex-shrink:0}
 .sb-logo:hover{transform:scale(1.08)}.sb-logo:active{transform:scale(.95)}
 .sb-logo.pulse svg{animation:logoPulse .7s ease-in-out infinite}
-.thinking-logo{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;animation:logoPulse .7s ease-in-out infinite;vertical-align:middle;margin-right:5px;flex-shrink:0}
 .icon-svg{width:15px;height:15px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .icon-svg.sm{width:12px;height:12px}.icon-svg.lg{width:18px;height:18px}
 
@@ -236,7 +237,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;align-items:center;justify-content:center;padding:16px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeIn .18s ease}
 .modal-overlay.open{display:flex}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r-lg);padding:24px;width:460px;max-width:94vw;max-height:82vh;overflow-y:auto;box-shadow:var(--shadow);animation:modalIn .2s ease}
+.modal{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r-lg);padding:24px;width:460px;max-width:94vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow);animation:modalIn .2s ease}
 @keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .modal h2{font-size:var(--fs-lg);font-weight:700;margin-bottom:4px;color:var(--txt)}
 .modal p{font-size:var(--fs-xs);color:var(--txt3);margin-bottom:10px}
@@ -263,11 +264,110 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 @keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 @keyframes tOut{from{opacity:1}to{opacity:0}}
 
+/* Profile Modal Card Styles */
+.profile-card{
+  background:var(--bg3);
+  border-radius:var(--r-lg);
+  margin-bottom:16px;
+  overflow:hidden;
+  transition:all .2s;
+}
+.profile-card-header{
+  padding:16px;
+  border-bottom:1px solid var(--bdr);
+}
+.profile-card-item{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:14px 16px;
+  cursor:pointer;
+  transition:background .1s;
+  border-bottom:1px solid var(--bdr);
+}
+.profile-card-item:last-child{border-bottom:none}
+.profile-card-item:hover{background:var(--bg4)}
+.profile-card-icon{
+  width:40px;height:40px;
+  background:var(--accent-bg);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+}
+.profile-card-info{flex:1}
+.profile-card-title{font-size:var(--fs-sm);font-weight:600;color:var(--txt)}
+.profile-card-subtitle{font-size:9px;color:var(--txt4);margin-top:2px}
+.profile-card-badge{
+  background:var(--accent-bg);
+  padding:4px 8px;
+  border-radius:12px;
+  font-size:9px;
+  color:var(--accent);
+  font-weight:600;
+}
+.profile-locked{
+  opacity:0.6;
+  filter:grayscale(0.3);
+}
+.avatar-container{
+  position:relative;
+  display:inline-block;
+}
+.avatar{
+  width:80px;height:80px;
+  background:var(--orange);
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:32px;
+  font-weight:600;
+  color:#fff;
+  margin:0 auto 12px;
+}
+.avatar-edit{
+  position:absolute;
+  bottom:4px;
+  right:4px;
+  background:var(--bg2);
+  border:1px solid var(--bdr);
+  border-radius:50%;
+  width:28px;height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:all .12s;
+}
+.avatar-edit:hover{background:var(--bg3)}
+.telegram-login-card{
+  background:var(--accent-bg);
+  border:1px solid var(--accent);
+  border-radius:var(--r-lg);
+  padding:16px;
+  text-align:center;
+  margin-bottom:16px;
+  cursor:pointer;
+  transition:all .2s;
+}
+.telegram-login-card:hover{
+  background:var(--accent-bg);
+  transform:translateY(-1px);
+}
+.telegram-login-card .telegram-icon{
+  font-size:32px;
+  margin-bottom:8px;
+}
+
 .wallet-box{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r-xs);padding:10px 12px;font-size:8px;color:var(--txt3);font-family:'SF Mono','Fira Code',monospace;word-break:break-all;margin-bottom:8px;cursor:pointer;user-select:all}
 .news-item{padding:10px 12px;border-bottom:1px solid var(--bdr);font-size:10px;cursor:pointer;transition:all .12s;border-radius:var(--r-xs);margin:2px 0}
 .news-item:hover{background:var(--bg3)}.news-item .news-source{font-size:7px;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 .news-item .news-headline{color:var(--txt);font-weight:500;margin:3px 0;line-height:1.3}
-.news-item .news-time{font-size:7px;color:var(--txt4)}.news-item .news-summary{font-size:9px;color:var(--txt3);margin-top:3px;line-height:1.3}
+.business-indicator{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;background:var(--accent-bg);color:var(--accent)}
+.business-indicator.active{background:var(--green);color:#000}
+.business-indicator.off{background:var(--bg4);color:var(--txt4)}
 
 @media(min-width:769px){
   .toggle-sidebar{display:none}
@@ -294,7 +394,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 <button class="toggle-sidebar" id="toggleSidebar" aria-label="Menu"><svg class="icon-svg lg" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
 
 <!-- Modals -->
-<div id="profileModal" class="modal-overlay"><div class="modal"><h2>👤 Profile</h2><div id="profileContent"></div><button class="modal-btn sec" id="closeProfileModal">Close</button></div></div>
+<div id="profileModal" class="modal-overlay"><div class="modal"><div id="profileContent"></div><button class="modal-btn sec" id="closeProfileModal">Close</button></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade</h2><div class="tier-grid" id="tierCards"></div><div id="paySection" style="display:none"><div class="pill-tabs"><button class="pill-tab active" data-coin="BTC">BTC</button><button class="pill-tab" data-coin="ETH">ETH</button></div><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Transaction hash"><button class="modal-btn" id="verifyUpgrade">Verify & Activate</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
 <div id="adminModal" class="modal-overlay"><div class="modal" style="width:480px"><h2>Admin</h2><div id="adminContent"></div><button class="modal-btn sec" id="closeAdmin">Close</button></div></div>
 <div id="libraryModal" class="modal-overlay"><div class="modal"><h2>📁 Library</h2><div id="libraryList" style="max-height:180px;overflow-y:auto;margin-bottom:8px"></div><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" placeholder="Content..." style="min-height:50px;resize:vertical"></textarea><button class="modal-btn" id="libSave">Save</button><button class="modal-btn sec" id="closeLibrary">Close</button></div></div>
@@ -308,12 +408,12 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);font-size:var
 
 <script>
 // Configuration
-const CFG={API:'https://capitan-ai-jxu8.onrender.com',POLL_CHATS:4000,POLL_WS:2500,POLL_MARKETS:10000,MAX_MSG:4000,STREAM_DELAY:12,WS_MAX:{free:0,plus:10,pro:25,pro_max:50,founder:999}};
+const CFG={API:'https://capitan-ai-jxu8.onrender.com',POLL_CHATS:4000,POLL_WS:2500,POLL_MARKETS:10000,MAX_MSG:4000,STREAM_DELAY:12,WS_MAX:{free:0,plus:10,pro:25,pro_max:50,founder:100}};
 const $=(s,d=document)=>d.querySelector(s);
 const $$=(s,d=document)=>d.querySelectorAll(s);
 
 // State
-const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinking:false,businessMode:false,sidebarOpen:window.innerWidth>768,connected:'checking',isOnline:navigator.onLine,chats:[],activeChat:null,messages:[],library:[],payConfig:null,markets:null,tickerData:[],marketCategory:'global',ws:{code:null,id:null,messages:[],members:[],notes:[],timer:null},draft:'',wsDraft:'',selTier:null,selCoin:'BTC',logoClicks:0,logoClickTimer:null,greeting:window.CAPITAN_GREETING||'Good day',streamAbort:null,splashDone:false,themeMode:localStorage.getItem('cap_theme_mode')||'system'};
+const S={session:null,token:null,tier:'free',prevTier:null,loading:false,thinking:false,businessMode:false,sidebarOpen:window.innerWidth>768,connected:'checking',isOnline:navigator.onLine,chats:[],activeChat:null,messages:[],library:[],payConfig:null,markets:null,tickerData:[],marketCategory:'global',ws:{code:null,id:null,messages:[],members:[],notes:[],timer:null},draft:'',wsDraft:'',selTier:null,selCoin:'BTC',logoClicks:0,logoClickTimer:null,greeting:window.CAPITAN_GREETING||'Good day',streamAbort:null,splashDone:false,themeMode:localStorage.getItem('cap_theme_mode')||'system',user:null};
 
 // Warmup ping
 async function warmupBackend(){try{await fetch(`${CFG.API}/health`,{method:'GET'});}catch(e){}}
@@ -343,6 +443,7 @@ async libDel(id){return this.r(`/api/library/${id}`,{method:'DELETE'})}
 async upload(f){const fd=new FormData();fd.append('file',f);return this.r('/api/upload',{method:'POST',body:fd})}
 async payCfg(){return this.r('/api/payment-config')}
 async upgrade(tier,txid,coin){return this.r('/api/upgrade',{method:'POST',body:JSON.stringify({tier,txid,currency:coin})})}
+async founder(code){return this.r('/api/founder',{method:'POST',body:JSON.stringify({code})})}
 async admin(){return this.r('/api/admin',{method:'POST'})}
 async markets(){return this.r('/api/markets')}
 async marketsPrices(cat){return this.r(`/api/markets/prices?category=${cat||'all'}`)}
@@ -426,12 +527,13 @@ function esc(t){if(t===null||t===undefined)return'';const d=document.createEleme
 function escAttr(t){return String(t||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');}
 function saveDrafts(){S.draft=$('#msgInput')?.value||'';S.wsDraft=$('#wsMessageInput')?.value||'';localStorage.setItem('cap_draft',S.draft);localStorage.setItem('cap_ws_draft',S.wsDraft);}
 
-// Telegram Login Handler - ONLY telegram auth, no founder
+// Telegram Login Handler
 window.onTelegramAuth = async function(user) {
   try {
     const res = await api.verifyTelegram(user);
     S.token = res.token;
     S.tier = res.user.tier;
+    S.user = res.user;
     localStorage.setItem('ct', res.token);
     localStorage.setItem('cap_tier', res.user.tier);
     closeModals();
@@ -441,6 +543,26 @@ window.onTelegramAuth = async function(user) {
   } catch(e) { toast('Login failed: ' + e.message); }
 };
 
+// Founder Login (Fixed)
+async function handleFounderLogin() {
+  const code = prompt("Enter founder code:");
+  if (!code) return;
+  try {
+    const res = await api.founder(code);
+    if (res.verified) {
+      S.token = res.token;
+      S.tier = res.tier;
+      S.user = res.user;
+      localStorage.setItem('ct', res.token);
+      localStorage.setItem('cap_tier', res.tier);
+      closeModals();
+      render();
+      toast('Founder access granted!');
+      loadChats();
+    }
+  } catch(e) { toast('Invalid founder code'); }
+}
+
 async function init(){
   console.log('CAPITAN AI v25.0 | Store Ready');
   applyTheme();
@@ -449,7 +571,7 @@ async function init(){
   await warmupBackend();
   await checkHealth();
   const saved=localStorage.getItem('ct');
-  if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier}catch(e){localStorage.removeItem('ct');await api.sess()}}
+  if(saved){S.token=saved;try{const s=await api.getSess();S.session=s;S.tier=s.tier;if(s.user_data) S.user=s.user_data;}catch(e){localStorage.removeItem('ct');await api.sess()}}
   else{await api.sess()}
   if(S.prevTier!==S.tier){S.activeChat=null;S.messages=[];S.chats=[];localStorage.setItem('cap_tier',S.tier);['cap_messages','cap_activeChat','cap_chats'].forEach(k=>localStorage.removeItem(k));}
   if(!S.activeChat){const restored=restoreState();if(restored&&S.messages.length>0)toast('Messages restored');}
@@ -472,12 +594,11 @@ async function loadLib(){try{const d=await api.lib();S.library=d.items||[];rende
 function updateTicker(){const track=$('#tickerTrack');if(!track||!S.tickerData.length)return;const items=S.tickerData.map(([sym,info])=>{let price='—',change='0.00';if(info&&typeof info==='object'){price=typeof info.price==='number'?info.price.toFixed(2):(info.price||'—');change=typeof info.change==='number'?info.change.toFixed(2):'0.00';}const cls=parseFloat(change)>=0?'positive':'negative';const sign=parseFloat(change)>=0?'+':'';return`<span class="sb-ticker-item"><span class="ticker-symbol">${esc(String(sym))}</span><span class="ticker-price">${price}</span><span class="ticker-change ${cls}">${sign}${change}%</span></span>`;});track.innerHTML=items.join('')+items.join('');}
 
 function toggleBusinessMode(){S.businessMode=!S.businessMode;localStorage.setItem('cap_business',S.businessMode);if(S.businessMode)document.body.classList.add('business-mode');else document.body.classList.remove('business-mode');const mt=$('#businessToggle');if(mt){mt.textContent=S.businessMode?'ON':'OFF';mt.className=S.businessMode?'business-indicator active':'business-indicator off';}toast('Business Mode '+(S.businessMode?'ON':'OFF'));}
-function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;openAdmin();}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0;},1500);}}
+function handleLogoClick(){S.logoClicks++;if(S.logoClickTimer)clearTimeout(S.logoClickTimer);if(S.logoClicks>=5){S.logoClicks=0;handleFounderLogin();}else{S.logoClickTimer=setTimeout(()=>{S.logoClicks=0;},1500);}}
 function pulseLogo(active){document.querySelectorAll('.sb-logo,.thinking-logo').forEach(l=>{if(active)l.classList.add('pulse');else l.classList.remove('pulse');});}
 
 function render(){
   const app=$('#app');
-  const tier=S.tier.toUpperCase();
   const isMobile=window.innerWidth<=768;
   app.innerHTML=`<aside class="sidebar ${isMobile?'sidebar-mobile':''}" id="sidebar">
 <div class="sb-header"><span class="sb-logo" onclick="handleLogoClick()">${ICONS.capitanLogo}</span><span class="sb-brand-name">CAPITAN AI</span><div class="profile-icon" onclick="showProfileModal()">👤</div></div>
@@ -578,58 +699,117 @@ function selUp(t){S.selTier=t;$$('.tier-card').forEach(c=>c.classList.remove('se
 function updateWallet(){const el=$('#walletAddr');if(!el||!S.payConfig?.wallets)return;el.textContent=S.payConfig.wallets[S.selCoin]||'Unavailable';el.onclick=()=>{navigator.clipboard.writeText(el.textContent);toast('Address copied!');}}
 async function verifyUp(){const txid=$('#txidInput')?.value.trim();if(!S.selTier||S.selTier==='free'){toast('Select tier','warning');return;}if(!txid){toast('Enter TXID','warning');return;}try{const r=await api.upgrade(S.selTier,txid,S.selCoin);S.prevTier=S.tier;S.tier=r.tier;S.token=r.token;localStorage.setItem('ct',r.token);localStorage.setItem('cap_tier',r.tier);S.activeChat=null;S.messages=[];S.chats=[];$('#upgradeModal').classList.remove('open');render();toast('🎉 '+r.tier.toUpperCase()+'!','success');}catch(e){toast(e.message,'error');}}
 
-async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Msgs</div></div></div>`;}catch(e){$('#adminContent').innerHTML=`<div style="color:var(--red)">${e.message}</div>`;}}
-
-// Profile Modal - ALL settings here
+// Profile Modal - Modern Card Design
 function showProfileModal(){
   const isAuthenticated = !!S.token && S.tier !== 'free';
   const tierNames = {free:'Free',plus:'Plus',pro:'Pro',pro_max:'Pro Max',founder:'Founder'};
-  const profileContent = document.getElementById('profileContent');
-  profileContent.innerHTML = `
-    <div style="text-align:center;margin-bottom:16px">
-      <div style="width:60px;height:60px;background:var(--accent-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px">👤</div>
-      <div style="font-weight:600;font-size:16px">${isAuthenticated ? 'Telegram User' : 'Guest User'}</div>
-      <div style="font-size:11px;color:var(--txt3);margin-top:2px">${isAuthenticated ? 'Authenticated via Telegram' : 'Sign in to save your data'}</div>
-      <div style="margin-top:8px"><span class="business-indicator" style="background:var(--accent-bg);color:var(--accent)">${tierNames[S.tier] || 'Free'}</span></div>
-    </div>
-    ${!isAuthenticated ? `<div style="margin-bottom:20px"><div id="telegramLoginWidget"></div></div>` : ''}
-    <div class="profile-section" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--bdr)">
-      <div class="sb-setting-item" onclick="openUpgrade()" style="padding:10px 0"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.zap}</div><div><div class="sb-setting-label">Upgrade Plan</div><div class="sb-setting-value">Get more features</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
-      <div class="sb-setting-item" onclick="openMoney()" style="padding:10px 0"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.chart}</div><div><div class="sb-setting-label">Market Data</div><div class="sb-setting-value">Live prices & news</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
-      <div class="sb-setting-item" onclick="openTechUpdates()" style="padding:10px 0"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.zap}</div><div><div class="sb-setting-label">Tech News</div><div class="sb-setting-value">AI & Startups</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
-      <div class="sb-setting-item" onclick="openWorkspace()" style="padding:10px 0"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.briefcase}</div><div><div class="sb-setting-label">Work Area</div><div class="sb-setting-value">Collaborate globally</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
-      <div class="sb-setting-item" onclick="openBusiness()" style="padding:10px 0"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.briefcase}</div><div><div class="sb-setting-label">Business Mode</div><div class="sb-setting-value">Professional environment</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
-    </div>
-    <div class="profile-section" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--bdr)">
-      <div class="sb-setting-item" onclick="setThemeMode('system')" style="padding:10px 0"><div class="sb-setting-icon">${ICONS.monitor}</div><div><div class="sb-setting-label">System Theme</div></div><span class="sb-setting-check">${S.themeMode==='system'?'✓':''}</span></div>
-      <div class="sb-setting-item" onclick="setThemeMode('dark')" style="padding:10px 0"><div class="sb-setting-icon">${ICONS.moon}</div><div><div class="sb-setting-label">Dark Mode</div></div><span class="sb-setting-check">${S.themeMode==='dark'?'✓':''}</span></div>
-      <div class="sb-setting-item" onclick="setThemeMode('light')" style="padding:10px 0"><div class="sb-setting-icon">${ICONS.sun}</div><div><div class="sb-setting-label">Light Mode</div></div><span class="sb-setting-check">${S.themeMode==='light'?'✓':''}</span></div>
-    </div>
-    <div class="profile-section">
-      <div class="sb-setting-item" onclick="openSupport()" style="padding:10px 0"><div class="sb-setting-icon">${ICONS.chat}</div><div><div class="sb-setting-label">Support</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
-      <div class="sb-setting-item" onclick="openPrivacy()" style="padding:10px 0"><div class="sb-setting-icon">${ICONS.lock}</div><div><div class="sb-setting-label">Privacy Policy</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>
-      ${isAuthenticated ? `<div class="sb-setting-item" onclick="logout()" style="padding:10px 0"><div class="sb-setting-icon" style="color:var(--red)">🚪</div><div><div class="sb-setting-label" style="color:var(--red)">Logout</div></div></div>` : ''}
+  const userInitial = (S.user?.name || S.user?.telegram_username || 'U').charAt(0).toUpperCase();
+  const displayName = S.user?.name || S.user?.telegram_username || 'Guest User';
+  const tier = S.tier;
+  const isProOrHigher = (tier === 'pro' || tier === 'pro_max' || tier === 'founder');
+  const isPlusOrHigher = (tier === 'plus' || isProOrHigher);
+  
+  let content = `
+    <div style="text-align:center;margin-bottom:20px">
+      <div class="avatar-container">
+        <div class="avatar">${userInitial}</div>
+        <div class="avatar-edit" onclick="editProfile()">✏️</div>
+      </div>
+      <div style="font-weight:600;font-size:18px;margin-top:8px">${esc(displayName)}</div>
+      <div style="display:inline-block;margin-top:6px"><span class="profile-card-badge">${tierNames[tier]}</span></div>
     </div>
   `;
+  
+  // Telegram login card (only for non-authenticated)
   if(!isAuthenticated){
-    const widget = document.getElementById('telegramLoginWidget');
-    if(widget){
-      const script = document.createElement('script');
-      script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.setAttribute('data-telegram-login', 'capitan_ai_bot');
-      script.setAttribute('data-size', 'large');
-      script.setAttribute('data-radius', '12');
-      script.setAttribute('data-request-access', 'write');
-      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-      script.async = true;
-      widget.innerHTML = '';
-      widget.appendChild(script);
-    }
+    content += `
+      <div class="telegram-login-card" onclick="initTelegramLogin()">
+        <div class="telegram-icon">📱</div>
+        <div style="font-weight:600;margin-bottom:4px">Sign in with Telegram</div>
+        <div style="font-size:11px;color:var(--txt3)">Save your data across devices</div>
+      </div>
+    `;
   }
+  
+  // MY CAPITAN Section
+  content += `<div class="section-header" style="padding:8px 0 4px">MY CAPITAN</div>`;
+  content += `<div class="profile-card"><div class="profile-card-item" onclick="openLib()"><div class="profile-card-icon">😊</div><div class="profile-card-info"><div class="profile-card-title">Personalization</div><div class="profile-card-subtitle">Customize your experience</div></div></div>`;
+  content += `<div class="profile-card-item" onclick="openMemory()"><div class="profile-card-icon">📖</div><div class="profile-card-info"><div class="profile-card-title">Memory</div><div class="profile-card-subtitle">AI remembers your context</div></div></div>`;
+  
+  // Apps card (locked for free)
+  if(isPlusOrHigher){
+    content += `<div class="profile-card-item" onclick="openApps()"><div class="profile-card-icon">▦</div><div class="profile-card-info"><div class="profile-card-title">Apps</div><div class="profile-card-subtitle">Markets, News, Business tools</div></div></div>`;
+  } else {
+    content += `<div class="profile-card-item profile-locked" onclick="openUpgrade()"><div class="profile-card-icon">▦</div><div class="profile-card-info"><div class="profile-card-title">Apps <span style="color:var(--orange);font-size:10px">(Pro required)</span></div><div class="profile-card-subtitle">Unlock with upgrade</div></div></div>`;
+  }
+  content += `</div>`;
+  
+  // ACCOUNT Section
+  content += `<div class="section-header" style="padding:8px 0 4px">ACCOUNT</div>`;
+  content += `<div class="profile-card">`;
+  
+  // Workspace card (locked for free)
+  if(isPlusOrHigher){
+    const seats = {plus:10,pro:25,pro_max:50,founder:100}[tier] || 0;
+    content += `<div class="profile-card-item" onclick="openWorkspace()"><div class="profile-card-icon">💼</div><div class="profile-card-info"><div class="profile-card-title">Workspace</div><div class="profile-card-subtitle">${seats} seats - Collaborate globally</div></div></div>`;
+  } else {
+    content += `<div class="profile-card-item profile-locked" onclick="openUpgrade()"><div class="profile-card-icon">💼</div><div class="profile-card-info"><div class="profile-card-title">Workspace <span style="color:var(--orange);font-size:10px">(Plus required)</span></div><div class="profile-card-subtitle">Upgrade to collaborate</div></div></div>`;
+  }
+  
+  // Upgrade card (hide for Pro Max)
+  if(tier !== 'pro_max'){
+    const upgradeText = tier === 'free' ? 'Upgrade to Plus' : (tier === 'plus' ? 'Upgrade to Pro' : 'Upgrade to Pro Max');
+    content += `<div class="profile-card-item" onclick="openUpgrade()"><div class="profile-card-icon">⭐</div><div class="profile-card-info"><div class="profile-card-title">${upgradeText}</div><div class="profile-card-subtitle">Get more features</div></div></div>`;
+  }
+  
+  // Trusted contact (Support)
+  content += `<div class="profile-card-item" onclick="openSupport()"><div class="profile-card-icon">👥</div><div class="profile-card-info"><div class="profile-card-title">Trusted contact</div><div class="profile-card-subtitle">24/7 support</div></div></div>`;
+  content += `</div>`;
+  
+  // SETTINGS Section
+  content += `<div class="section-header" style="padding:8px 0 4px">SETTINGS</div>`;
+  content += `<div class="profile-card">`;
+  content += `<div class="profile-card-item" onclick="setThemeMode('dark')"><div class="profile-card-icon">🌙</div><div class="profile-card-info"><div class="profile-card-title">Dark Mode</div></div>${S.themeMode==='dark'?'<span style="color:var(--accent)">✓</span>':''}</div>`;
+  content += `<div class="profile-card-item" onclick="setThemeMode('light')"><div class="profile-card-icon">☀️</div><div class="profile-card-info"><div class="profile-card-title">Light Mode</div></div>${S.themeMode==='light'?'<span style="color:var(--accent)">✓</span>':''}</div>`;
+  content += `<div class="profile-card-item" onclick="setThemeMode('system')"><div class="profile-card-icon">🖥️</div><div class="profile-card-info"><div class="profile-card-title">System Theme</div></div>${S.themeMode==='system'?'<span style="color:var(--accent)">✓</span>':''}</div>`;
+  content += `<div class="profile-card-item" onclick="openPrivacy()"><div class="profile-card-icon">🔒</div><div class="profile-card-info"><div class="profile-card-title">Privacy Policy</div></div></div>`;
+  if(isAuthenticated){
+    content += `<div class="profile-card-item" onclick="logout()"><div class="profile-card-icon">🚪</div><div class="profile-card-info"><div class="profile-card-title" style="color:var(--red)">Logout</div></div></div>`;
+    content += `<div class="profile-card-item" onclick="deleteAccount()"><div class="profile-card-icon">🗑️</div><div class="profile-card-info"><div class="profile-card-title" style="color:var(--red)">Delete Account</div></div></div>`;
+  }
+  content += `</div>`;
+  
+  $('#profileContent').innerHTML = content;
   $('#profileModal').classList.add('open');
 }
 
-function logout(){api.logout();S.token=null;localStorage.removeItem('ct');localStorage.removeItem('cap_tier');window.location.reload();}
+function initTelegramLogin(){
+  const widget = document.createElement('script');
+  widget.src = 'https://telegram.org/js/telegram-widget.js?22';
+  widget.setAttribute('data-telegram-login', 'capitan_ai_bot');
+  widget.setAttribute('data-size', 'large');
+  widget.setAttribute('data-radius', '12');
+  widget.setAttribute('data-request-access', 'write');
+  widget.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  widget.async = true;
+  const tempDiv = document.createElement('div');
+  tempDiv.appendChild(widget);
+  toast('Opening Telegram login...');
+}
+
+function editProfile(){
+  const newName = prompt("Enter your name:", S.user?.name || '');
+  if(newName && newName.trim()){
+    api.updateProfile(newName);
+    if(S.user) S.user.name = newName;
+    toast('Name updated!');
+    showProfileModal();
+  }
+}
+
+function openMemory(){toast('Memory feature - AI remembers your context');}
+function openApps(){toast('Apps - Markets, News, Business tools');}
+async function deleteAccount(){if(confirm('Permanently delete your account? All data will be lost.')){await api.deleteAccount();logout();}}
 function openWorkspace(){if(S.tier==='free'){toast('Upgrade to Plus or Pro','warning');openUpgrade();return;}$('#workspaceModal').classList.add('open');switchWSTab('create');}
 function openMoney(){if(S.tier!=='pro'&&S.tier!=='pro_max'&&S.tier!=='founder'){toast('Pro tier required','warning');return;}$('#moneyModal').classList.add('open');loadMarketData(S.marketCategory);}
 async function openTechUpdates(){if(S.tier!=='pro'&&S.tier!=='pro_max'&&S.tier!=='founder'){toast('Pro tier required','warning');return;}$('#techModal').classList.add('open');const nc=$('#techNewsContent');if(!nc)return;nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">Loading...</div>';try{const data=await api.techNews();const news=Array.isArray(data)?data:(data?.news||data?.articles||[]);if(news.length>0){nc.innerHTML=news.map(n=>`<div class="news-item" onclick="window.open('${n.url}','_blank')"><div class="news-source">${n.source}</div><div class="news-headline">${esc(n.headline)}</div></div>`).join('');}else{nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">No news available.</div>';}}catch(e){nc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red)">Failed to load.</div>';}}
@@ -638,6 +818,9 @@ function openPrivacy(){$('#privacyModal').classList.add('open');}
 function openBusiness(){if(S.tier!=='pro'&&S.tier!=='pro_max'&&S.tier!=='founder'){toast('Pro tier required','warning');openUpgrade();return;}$('#businessModal').classList.add('open');const t=$('#businessToggle');if(t){t.textContent=S.businessMode?'ON':'OFF';t.className=S.businessMode?'business-indicator active':'business-indicator off';}}
 async function loadMarketData(cat){const pc=$('#marketsPricesContent');if(!pc)return;pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">Loading...</div>';try{const pd=await api.marketsPrices(cat);const prices=pd?.prices||pd?.data||pd||{};let entries=Object.entries(prices);if(entries.length>0){pc.innerHTML=entries.map(([n,i])=>{let price='—';if(i&&typeof i==='object'){price=typeof i.price==='number'?i.price.toFixed(2):(i.price||'—');}else if(typeof i==='number'){price=i.toFixed(2);}return`<div style="padding:8px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;font-size:11px"><span style="font-weight:600">${esc(String(n))}</span><span><strong>$${price}</strong></span></div>`;}).join('');}else{pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--txt3)">No data available.</div>';}}catch(e){pc.innerHTML='<div style="text-align:center;padding:18px;color:var(--red)">Failed to load.</div>';}}
 
+async function openAdmin(){if(S.tier!=='founder')return;$('#adminModal').classList.add('open');$('#adminContent').innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Loading...</div>';try{const d=await api.admin();$('#adminContent').innerHTML=`<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Sessions</div></div><div class="stat-card"><div class="stat-val">${d.paid_sessions}</div><div class="stat-lbl">Paid</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Msgs</div></div></div>`;}catch(e){$('#adminContent').innerHTML=`<div style="color:var(--red)">${e.message}</div>`;}}
+
+function logout(){api.logout();S.token=null;localStorage.removeItem('ct');localStorage.removeItem('cap_tier');window.location.reload();}
 function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;const sb=$('#sidebar');const ov=$('#overlay');if(window.innerWidth<=768){S.sidebarOpen?(sb.classList.add('open'),ov?.classList.add('visible')):(sb.classList.remove('open'),ov?.classList.remove('visible'));}}
 function closeSidebar(){S.sidebarOpen=false;const sb=$('#sidebar');const ov=$('#overlay');if(sb)sb.classList.remove('open');if(ov)ov.classList.remove('visible');}
 function updateBtn(){const b=$('#sendBtn');const i=$('#msgInput');if(b)b.disabled=S.loading||!i?.value.trim();}
@@ -682,7 +865,7 @@ S.draft=localStorage.getItem('cap_draft')||'';
 S.wsDraft=localStorage.getItem('cap_ws_draft')||'';
 document.addEventListener('DOMContentLoaded',init);
 window.CAPITAN={S,api,init,sendMsg,newChat,setThemeMode,toggleSidebar,handleLogoClick,openFounder,toggleBusinessMode,openSupport,showProfileModal};
-console.log('CAPITAN AI v25.0 | Store Ready | AMOLED Optimized');
+console.log('CAPITAN AI v25.0 | Store Ready | Founder Fixed');
 </script>
 </body>
 </html>
