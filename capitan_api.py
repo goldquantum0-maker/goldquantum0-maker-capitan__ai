@@ -1,7 +1,7 @@
 """
 CAPITAN AI — Enterprise Backend v27.0 - FULLY RESTORED
 CLOSEAI Technologies
-Complete: Telegram Auth | Full Intelligence | PWA | SVG Icons | All Features
+Complete: Telegram Auth | Full Intelligence | PWA | All Features
 """
 
 import os
@@ -23,7 +23,7 @@ from hashlib import sha256
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, Response, HTMLResponse
+from fastapi.responses import JSONResponse, FileResponse, Response, HTMLResponse, RedirectResponse
 from pydantic import BaseModel, EmailStr
 from pydantic_settings import BaseSettings
 import psycopg2
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_BOT_USERNAME: str = "capitan_ai_bot"
     
-    # Frontend URL
+    # Frontend URL for redirects
     FRONTEND_URL: str = "https://capitan.pages.dev"
     
     # AI Providers
@@ -118,7 +118,7 @@ def get_db():
         conn.close()
 
 def init_db():
-    """Create all 20+ tables if they don't exist"""
+    """Create all tables if they don't exist"""
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -372,7 +372,7 @@ def init_db():
                 ''')
                 
                 conn.commit()
-        logger.info("✅ All 20+ database tables ready")
+        logger.info("✅ All database tables ready")
     except Exception as e:
         logger.warning(f"Database init: {e}")
 
@@ -516,6 +516,24 @@ def check_telegram_authorization(data: dict) -> Optional[dict]:
         "username": data.get('username'),
         "photo_url": data.get('photo_url')
     }
+
+@app.get("/api/auth/telegram/callback")
+async def telegram_callback(request: Request):
+    """Handle Telegram OAuth callback - redirects to frontend with data"""
+    # Get all query parameters
+    params = dict(request.query_params)
+    
+    if not params:
+        # No params, redirect to frontend
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/")
+    
+    # Encode the Telegram data to pass to frontend
+    import urllib.parse
+    tg_data = urllib.parse.urlencode(params)
+    redirect_url = f"{settings.FRONTEND_URL}/?tgAuth={urllib.parse.quote(tg_data)}"
+    
+    logger.info(f"Telegram callback received, redirecting to frontend")
+    return RedirectResponse(url=redirect_url)
 
 @app.post("/api/auth/telegram/verify")
 async def verify_telegram_login(req: dict):
@@ -1771,7 +1789,7 @@ async def get_manifest():
         "start_url": "/",
         "display": "standalone",
         "background_color": "#000000",
-        "theme_color": "#000000",
+        "theme_color": "#4ADE80",
         "orientation": "portrait",
         "icons": [
             {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
@@ -1810,7 +1828,8 @@ async def root():
         "endpoints": [
             "/health - Health check",
             "/api/session - Anonymous session",
-            "/api/auth/telegram/verify - Telegram auth",
+            "/api/auth/telegram/callback - Telegram OAuth callback",
+            "/api/auth/telegram/verify - Telegram auth verification",
             "/api/auth/me - Get current user",
             "/api/chat - Chat endpoint",
             "/api/chats - Chat history",
@@ -1861,6 +1880,7 @@ if __name__ == "__main__":
     print(f"👑 Founder Key: {settings.FOUNDER_KEY[:10]}...")
     print(f"🌐 PWA: Enabled (manifest.json, icons)")
     print(f"📁 All Features: Projects | Workspaces | Library | File Uploads | Markets | News | Search")
+    print(f"📞 Telegram Callback URL: {settings.FRONTEND_URL}/?tgAuth=...")
     print(f"{'='*60}")
     print(f"📍 Backend URL: http://0.0.0.0:{port}")
     print(f"📍 Health Check: http://0.0.0.0:{port}/health")
