@@ -6,17 +6,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="CAPITAN AI">
-    <meta name="theme-color" content="#0ea5e9">
+    <meta name="theme-color" content="#4f46e5">
     <meta name="description" content="CAPITAN AI — Enterprise Intelligence by CLOSEAI Technologies">
     <link rel="manifest" href="data:application/manifest+json,{
       \"name\":\"CAPITAN AI\",
       \"short_name\":\"CAPITAN\",
       \"start_url\":\".\",
       \"display\":\"standalone\",
-      \"background_color\":\"#0ea5e9\",
-      \"theme_color\":\"#0ea5e9\",
+      \"background_color\":\"#4f46e5\",
+      \"theme_color\":\"#4f46e5\",
       \"icons\":[{
-        \"src\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iMzYwIiB2aWV3Qm94PSIwIDAgNjQwIDM2MCI+PHJlY3Qgd2lkdGg9IjY0MCIgaGVpZ2h0PSIzNjAiIGZpbGw9IiMwZTZlOGUiLz48Y2lyY2xlIGN4PSIzMjAiIGN5PSIxODAiIHI9IjgwIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjgiLz48dGV4dCB4PSIzMjAiIHk9IjIwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOTAiIGZpbGw9IndoaXRlIiBmb250LXdlaWdodD0iYm9sZCI+QzwvdGV4dD48L3N2Zz4=\",
+        \"src\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iMzYwIiB2aWV3Qm94PSIwIDAgNjQwIDM2MCI+PHJlY3Qgd2lkdGg9IjY0MCIgaGVpZ2h0PSIzNjAiIGZpbGw9IiM0ZjQ2ZTUiLz48Y2lyY2xlIGN4PSIzMjAiIGN5PSIxODAiIHI9IjgwIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjgiLz48dGV4dCB4PSIzMjAiIHk9IjIxMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOTAiIGZpbGw9IndoaXRlIiBmb250LXdlaWdodD0iYm9sZCI+QzwvdGV4dD48L3N2Zz4=\",
         \"sizes\":\"640x360\",
         \"type\":\"image/svg+xml\"
       }]
@@ -26,71 +26,83 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        /* Light mode (default) */
+        /* LIGHT THEME - Aled Blue / Soft Indigo */
         :root, body.light {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f7f7f9;
-            --bg-tertiary: #efeff1;
-            --sidebar-bg: #f9f9fb;
+            --bg-primary: #eef2ff;
+            --bg-secondary: #e0e7ff;
+            --bg-tertiary: #c7d2fe;
+            --sidebar-bg: #e0e7ff;
             --surface: #ffffff;
-            --border: #e5e5e7;
-            --border-light: #efeff1;
-            --text-primary: #1d1d1f;
-            --text-secondary: #6e6e73;
-            --text-tertiary: #8e8e93;
-            --accent: #0ea5e9;
-            --accent-dark: #0284c7;
-            --accent-soft: #e0f2fe;
+            --border: #c7d2fe;
+            --border-light: #d9e4f5;
+            --text-primary: #1e1e2f;
+            --text-secondary: #4a4a6a;
+            --text-tertiary: #6c6c8a;
+            --accent: #4f46e5;
+            --accent-dark: #4338ca;
+            --accent-soft: #c7d2fe;
             --danger: #ef4444;
             --success: #10b981;
             --warning: #f59e0b;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-            --shadow-lg: 0 12px 28px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 12px rgba(79,70,229,0.12);
+            --shadow-lg: 0 12px 28px rgba(79,70,229,0.2);
             --sidebar-width: 280px;
             --transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
 
-        /* Dark mode - pure black */
+        /* DARK THEME - Deep dark with pure white text */
         body.dark {
-            --bg-primary: #000000;
-            --bg-secondary: #0d0d0d;
-            --bg-tertiary: #1c1c1e;
-            --sidebar-bg: #0a0a0a;
-            --surface: #0d0d0d;
-            --border: #2c2c2e;
-            --border-light: #1c1c1e;
-            --text-primary: #f5f5f7;
-            --text-secondary: #a1a1a6;
-            --text-tertiary: #6c6c70;
-            --accent: #38bdf8;
-            --accent-dark: #0ea5e9;
-            --accent-soft: #1e293b;
+            --bg-primary: #0f0f13;
+            --bg-secondary: #1a1a24;
+            --bg-tertiary: #25253a;
+            --sidebar-bg: #13131a;
+            --surface: #1a1a24;
+            --border: #2a2a3a;
+            --border-light: #20202c;
+            --text-primary: #f0f0f4;
+            --text-secondary: #c0c0d0;
+            --text-tertiary: #9090a0;
+            --accent: #818cf8;
+            --accent-dark: #6366f1;
+            --accent-soft: #2e2e4a;
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        /* System mode follows OS */
-        @media (prefers-color-scheme: dark) { body.system { --bg-primary: #000000; --bg-secondary: #0d0d0d; --bg-tertiary: #1c1c1e; --sidebar-bg: #0a0a0a; --border: #2c2c2e; --text-primary: #f5f5f7; --text-secondary: #a1a1a6; --accent: #38bdf8; } }
-        @media (prefers-color-scheme: light) { body.system { --bg-primary: #ffffff; --bg-secondary: #f7f7f9; --bg-tertiary: #efeff1; --sidebar-bg: #f9f9fb; --border: #e5e5e7; --text-primary: #1d1d1f; --text-secondary: #6e6e73; --accent: #0ea5e9; } }
+        /* SYSTEM MODE */
+        @media (prefers-color-scheme: dark) { body.system { --bg-primary: #0f0f13; --bg-secondary: #1a1a24; --bg-tertiary: #25253a; --sidebar-bg: #13131a; --border: #2a2a3a; --text-primary: #f0f0f4; --text-secondary: #c0c0d0; --accent: #818cf8; } }
+        @media (prefers-color-scheme: light) { body.system { --bg-primary: #eef2ff; --bg-secondary: #e0e7ff; --bg-tertiary: #c7d2fe; --sidebar-bg: #e0e7ff; --border: #c7d2fe; --text-primary: #1e1e2f; --text-secondary: #4a4a6a; --accent: #4f46e5; } }
 
         body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg-primary); color: var(--text-primary); font-size: 15px; line-height: 1.5; height: 100vh; overflow: hidden; transition: background 0.2s, color 0.2s; }
 
-        /* --- Splash Screen --- */
+        /* Splash Screen */
         .splash { position: fixed; inset: 0; z-index: 9999; background: var(--accent); display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s; }
         .splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
         .splash-logo { width: 120px; height: 120px; animation: pulseLogo 0.9s ease-in-out infinite; }
         @keyframes pulseLogo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.08); opacity: 0.85; } }
 
-        /* --- Layout --- */
+        /* Layout */
         .app { display: flex; height: 100%; width: 100%; position: relative; }
         .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1); flex-shrink: 0; z-index: 20; overflow-y: auto; }
         @media (min-width: 769px) { .sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-width))); position: fixed; height: 100%; } }
         @media (max-width: 768px) { .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); z-index: 30; } .sidebar.open { transform: translateX(0); } .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 25; display: none; animation: fadeIn 0.2s; } .overlay.open { display: block; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .toggle-sidebar { position: fixed; top: 14px; left: 14px; z-index: 35; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); color: var(--text-secondary); backdrop-filter: blur(8px); background: rgba(var(--bg-secondary-rgb, 255), 0.9); }
+        /* Top Bar: Sidebar Toggle (left) + Logo Button (right) */
+        .top-bar { position: fixed; top: 12px; left: 12px; right: 12px; z-index: 35; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+        .toggle-sidebar, .logo-btn { pointer-events: auto; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); color: var(--text-secondary); backdrop-filter: blur(8px); background: rgba(var(--bg-secondary-rgb, 255), 0.9); }
+        .toggle-sidebar:hover, .logo-btn:hover { background: var(--bg-tertiary); transform: scale(1.02); }
+        .logo-btn svg { width: 24px; height: 24px; }
+
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary); }
         .chat-container { max-width: 800px; margin: 0 auto; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0 16px; }
         .messages-area { flex: 1; overflow-y: auto; padding: 70px 0 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+
+        /* Dynamic Greeting */
+        .greeting-container { text-align: center; margin-bottom: 24px; animation: pulseGreeting 3s ease-in-out infinite; }
+        .greeting-text { font-size: 28px; font-weight: 600; background: linear-gradient(135deg, var(--accent), #f59e0b, var(--accent-dark)); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gradientShift 4s ease infinite; }
+        @keyframes pulseGreeting { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.92; transform: scale(1.01); } }
+        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
         /* Messages */
         .message { margin-bottom: 20px; animation: slideUp 0.2s ease; }
@@ -128,11 +140,12 @@
         .profile-section { padding: 14px 16px; border-top: 1px solid var(--border); margin-top: auto; cursor: pointer; transition: var(--transition); }
         .profile-section:hover { background: var(--bg-tertiary); }
         .profile-info { display: flex; align-items: center; gap: 14px; }
-        .avatar { width: 44px; height: 44px; background: var(--accent-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .profile-avatar-img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--accent-soft); }
         .profile-name { font-weight: 600; }
         .profile-tier { font-size: 12px; color: var(--accent); }
+        .telegram-badge { font-size: 10px; background: var(--accent-soft); padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
 
-        /* Modals - bottom sheet on mobile */
+        /* Modals */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: flex-end; justify-content: center; }
         @media (min-width: 769px) { .modal-overlay { align-items: center; } }
         .modal-overlay.open { display: flex; }
@@ -144,19 +157,22 @@
         .modal-setting { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border-light); cursor: pointer; }
         .crypto-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: var(--transition); }
         .crypto-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .work-area-snippet { background: var(--accent-soft); border-radius: 16px; padding: 16px; margin: 16px 0; font-size: 14px; }
+        .payment-steps { background: var(--bg-tertiary); border-radius: 14px; padding: 14px; margin: 12px 0; font-size: 13px; }
         .wallet-address { font-size: 12px; font-family: monospace; background: var(--bg-tertiary); padding: 12px; border-radius: 14px; word-break: break-all; cursor: pointer; margin: 8px 0; }
         .btn { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 16px; font-weight: 600; cursor: pointer; margin-top: 12px; transition: var(--transition); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--text-primary); color: var(--bg-primary); padding: 10px 20px; border-radius: 40px; font-size: 13px; z-index: 1100; animation: toastUp 0.2s ease; }
         @keyframes toastUp { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; margin-bottom: 10px; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; margin-bottom: 10px; }
+        .avatar-upload { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
         ::-webkit-scrollbar { width: 4px; }
     </style>
 </head>
 <body>
 
 <div class="splash" id="splashScreen">
-    <svg class="splash-logo" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg"><rect width="640" height="360" fill="#0ea5e9" rx="40"/><circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/><text x="320" y="210" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text></svg>
+    <svg class="splash-logo" viewBox="0 0 640 360"><rect width="640" height="360" fill="#4f46e5" rx="40"/><circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/><text x="320" y="210" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text></svg>
 </div>
 
 <div class="app">
@@ -164,54 +180,116 @@
         <div class="new-chat-btn" onclick="newChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>New chat</span></div>
         <div class="menu-item" onclick="openLibrary()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>My Library</span></div>
         <div><div class="collapsible-header" onclick="toggleAppearance()"><span>Appearance</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="appearanceArrow" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg></div>
-        <div class="collapsible-content" id="appearanceContent"><div class="theme-option" onclick="setTheme('light')"><span>Light</span><span id="themeLightCheck">✓</span></div><div class="theme-option" onclick="setTheme('dark')"><span>Dark</span><span id="themeDarkCheck" style="display:none;">✓</span></div><div class="theme-option" onclick="setTheme('system')"><span>System</span><span id="themeSystemCheck" style="display:none;">✓</span></div></div></div>
+        <div class="collapsible-content" id="appearanceContent"><div class="theme-option" onclick="setTheme('light')"><span>Light (Aled Blue)</span><span id="themeLightCheck">✓</span></div><div class="theme-option" onclick="setTheme('dark')"><span>Dark (Pure White)</span><span id="themeDarkCheck" style="display:none;">✓</span></div><div class="theme-option" onclick="setTheme('system')"><span>System</span><span id="themeSystemCheck" style="display:none;">✓</span></div></div></div>
         <div class="chat-history" id="chatHistoryList"><div style="padding:20px;text-align:center;color:var(--text-tertiary);">No conversations yet</div></div>
-        <div class="profile-section" onclick="openProfileModal()"><div class="profile-info"><div class="avatar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="profile-details"><div class="profile-name" id="profileName">Guest</div><div class="profile-tier" id="profileTier">Free</div></div></div></div>
+        <div class="profile-section" onclick="openProfileModal()"><div class="profile-info"><img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Ccircle cx='12' cy='8' r='4' fill='white'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='white'/%3E%3C/svg%3E" alt="avatar"><div class="profile-details"><div class="profile-name" id="profileName">Guest</div><div class="profile-tier" id="profileTier">Free</div><div id="telegramBadge" class="telegram-badge" style="display:none;">🔗 Telegram</div></div></div></div>
     </aside>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-    <button class="toggle-sidebar" id="toggleSidebarBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
-    <main class="main"><div class="chat-container"><div class="messages-area" id="messagesArea"><div style="text-align:center;padding:60px 20px;"><h2 style="margin-bottom:8px;">CAPITAN AI</h2><p style="color:var(--text-secondary);">Ask me anything — finance, code, research.</p></div></div><div class="input-area"><div class="input-wrapper"><button class="upload-btn" onclick="triggerFileUpload()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea><button class="send-btn" onclick="sendMessage()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div></div></main>
+    
+    <!-- Top Bar with Sidebar Toggle (left) and Logo Button (right) -->
+    <div class="top-bar">
+        <button class="toggle-sidebar" id="toggleSidebarBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+        <button class="logo-btn" id="logoBtn"><svg width="24" height="24" viewBox="0 0 640 360"><rect width="640" height="360" fill="currentColor" rx="20"/><circle cx="320" cy="180" r="70" fill="none" stroke="white" stroke-width="6"/><text x="320" y="208" text-anchor="middle" font-family="Arial" font-size="70" fill="white" font-weight="bold">C</text></svg></button>
+    </div>
+
+    <main class="main">
+        <div class="chat-container">
+            <div class="messages-area" id="messagesArea"></div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <button class="upload-btn" onclick="triggerFileUpload()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                    <textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+                    <button class="send-btn" onclick="sendMessage()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
 
 <!-- Modals -->
-<div id="profileModal" class="modal-overlay"><div class="modal"><h2>Profile</h2><div style="text-align:center;margin-bottom:16px;"><div class="avatar" style="width:70px;height:70px;margin:0 auto;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="profile-name" id="modalProfileName" style="margin-top:10px;">Guest</div><div class="profile-tier" id="modalProfileTier">Free</div></div><div class="modal-setting" onclick="openUpgradeModal()"><span>Upgrade Plan</span><span>→</span></div><div class="modal-setting" onclick="initTelegramLogin()"><span>Connect Telegram</span><span>→</span></div><div class="modal-setting" onclick="logout()" style="color:var(--danger);"><span>Sign Out</span></div><button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button></div></div>
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>Upgrade</h2><div class="crypto-card" onclick="selectTier('plus')"><div style="font-weight:600;">Plus — $8/mo</div><div style="font-size:13px;">50 msgs · Groq 3.3 · Work Area</div></div><div class="crypto-card" onclick="selectTier('pro')"><div style="font-weight:600;">Pro — $17/mo</div><div style="font-size:13px;">150 msgs · Claude 3.5 · Live Markets</div></div><div class="crypto-card" onclick="selectTier('pro_max')"><div style="font-weight:600;">Pro Max — $30/mo</div><div style="font-size:13px;">Unlimited · GPT-4o+Claude · Priority</div></div><div id="paymentSection" style="display:none;margin-top:16px;"><div style="display:flex;gap:10px;"><button class="btn" style="flex:1;" onclick="setCoin('BTC')">BTC</button><button class="btn" style="flex:1;" onclick="setCoin('ETH')">ETH</button></div><div class="wallet-address" id="walletAddress" onclick="copyWallet()">Loading...</div><input type="text" id="txidInput" placeholder="Transaction ID"><button class="btn" onclick="verifyPayment()">Verify Payment</button></div><button class="btn btn-outline" onclick="closeModal('upgradeModal')">Close</button></div></div>
-<div id="libraryModal" class="modal-overlay"><div class="modal"><h2>My Library</h2><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" rows="3" placeholder="Content"></textarea><button class="btn" onclick="saveLibraryItem()">Save</button><div id="libraryList" style="margin-top:16px;"></div><button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button></div></div>
-<!-- Founder Secret Modal -->
-<div id="founderModal" class="modal-overlay"><div class="modal"><h2>Founder Access</h2><input type="password" id="founderCode" placeholder="Enter founder code"><button class="btn" onclick="verifyFounderAccess()">Authenticate</button><button class="btn btn-outline" onclick="closeModal('founderModal')">Cancel</button></div></div>
+<div id="profileModal" class="modal-overlay"><div class="modal"><h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="70" height="70" style="border-radius:50%;object-fit:cover;background:var(--accent-soft);"><button class="btn" style="margin:0;width:auto;padding:8px 16px;" onclick="uploadProfilePhoto()">Change Photo</button></div><div id="modalProfileName" style="font-weight:600;margin-top:8px;">Guest</div><div id="modalProfileTier" style="color:var(--accent);margin-bottom:16px;">Free</div><div id="telegramStatus" style="margin-bottom:16px;"></div><div class="modal-setting" onclick="openUpgradeModal()"><span>Upgrade Plan</span><span>→</span></div><div class="modal-setting" onclick="initTelegramLogin()"><span>Connect Telegram</span><span>→</span></div><div class="modal-setting" onclick="openDataControl()"><span>Data & Legal (Privacy/T&C)</span><span>→</span></div><div class="modal-setting" onclick="logout()" style="color:var(--danger);"><span>Sign Out</span></div><button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button></div></div>
+
+<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>🚀 Upgrade CAPITAN AI</h2><div class="crypto-card" onclick="selectTier('plus')"><div style="font-weight:700;">Plus — $8/month</div><div style="font-size:13px;">50 msgs · Groq 3.3 · Work Area (10 seats) · 20MB files (PDF, DOCX, PPTX)</div></div><div class="crypto-card" onclick="selectTier('pro')"><div style="font-weight:700;">Pro — $17/month</div><div style="font-size:13px;">150 msgs · Claude 3.5 · Work Area (25 seats) · 50MB files + Live Markets</div></div><div class="crypto-card" onclick="selectTier('pro_max')"><div style="font-weight:700;">Pro Max — $30/month</div><div style="font-size:13px;">Unlimited · GPT-4o+Claude · Work Area (50 seats) · 100MB files · Priority</div></div><div class="work-area-snippet"><strong>🌍 Work Area — Collaborate from Anywhere</strong><br>Real-time workspaces. Share files, chat, and work with AI alongside your team. Used globally by professionals, students, and enterprises. Join from any device, any time.</div><div class="payment-steps"><strong>💳 How to Pay (3 simple steps):</strong><br>1️⃣ Copy BTC or ETH address below<br>2️⃣ Send exact amount from your wallet<br>3️⃣ Paste Transaction ID (TXID) → Verify</div><div id="paymentSection" style="display:none;margin-top:16px;"><div style="display:flex;gap:10px;"><button class="btn" style="flex:1;" onclick="setCoin('BTC')">BTC</button><button class="btn" style="flex:1;" onclick="setCoin('ETH')">ETH</button></div><div class="wallet-address" id="walletAddress" onclick="copyWallet()">Loading...</div><input type="text" id="txidInput" placeholder="Transaction ID (TXID)"><button class="btn" onclick="verifyPayment()">Verify Payment</button></div><button class="btn btn-outline" onclick="closeModal('upgradeModal')">Close</button></div></div>
+
+<div id="libraryModal" class="modal-overlay"><div class="modal"><h2>📚 My Library</h2><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" rows="3" placeholder="Content"></textarea><button class="btn" onclick="saveLibraryItem()">Save</button><div id="libraryList" style="margin-top:16px;"></div><button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button></div></div>
+
+<div id="aboutModal" class="modal-overlay"><div class="modal"><h2>About CAPITAN AI</h2><div class="work-area-snippet"><strong>🌍 Work Area — Global Collaboration</strong><br>Work Areas are real-time collaborative spaces where teams can chat, share files, and work with AI together. Accessible from anywhere in the world, on any device. Perfect for remote teams, students, and enterprises.<br><br>✅ Real-time messaging & AI assistance<br>✅ File sharing & document analysis<br>✅ Tier-based seats (Plus:10, Pro:25, Pro Max:50)<br>✅ Used across 50+ countries</div><div class="work-area-snippet" style="margin-top:12px;"><strong>⚡ CAPITAN Capabilities</strong><br>• Financial modeling & market analysis<br>• Code generation & debugging<br>• Document analysis (PDF, DOCX, PPTX, XLSX)<br>• Research & reasoning (chain-of-thought)<br>• Web search & live data</div><button class="btn btn-outline" onclick="closeModal('aboutModal')">Close</button></div></div>
+
+<div id="dataControlModal" class="modal-overlay"><div class="modal"><h2>Data & Legal</h2><div class="modal-setting" onclick="showPrivacyPolicy()"><span>Privacy Policy</span><span>→</span></div><div class="modal-setting" onclick="showTerms()"><span>Terms & Conditions</span><span>→</span></div><div class="modal-setting" onclick="exportUserData()"><span>Export My Data</span><span>→</span></div><div class="modal-setting" onclick="deleteAccount()" style="color:var(--danger);"><span>Delete Account</span><span>→</span></div><button class="btn btn-outline" onclick="closeModal('dataControlModal')">Close</button></div></div>
+
+<!-- Founder Secret Modal (5 clicks on logo button) -->
+<div id="founderModal" class="modal-overlay"><div class="modal"><h2>🔐 Founder Access</h2><input type="password" id="founderCode" placeholder="Enter founder code"><button class="btn" onclick="verifyFounderAccess()">Authenticate</button><button class="btn btn-outline" onclick="closeModal('founderModal')">Cancel</button></div></div>
 
 <script>
     const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
     const WALLETS = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
-    let state = { token: localStorage.getItem('ct') || null, tier: 'free', user: null, activeChatId: null, chats: [], messages: [], loading: false, library: [], theme: localStorage.getItem('theme') || 'light', selectedTier: null, selectedCoin: 'BTC', founderClickCount: 0 };
+    
+    let state = {
+        token: localStorage.getItem('ct') || null,
+        tier: 'free',
+        user: null,
+        activeChatId: null,
+        chats: [],
+        messages: [],
+        loading: false,
+        library: [],
+        theme: localStorage.getItem('theme') || 'light',
+        selectedTier: null,
+        selectedCoin: 'BTC',
+        founderClickCount: 0,
+        profilePhoto: localStorage.getItem('profilePhoto') || null
+    };
 
-    function escapeHtml(s) { return s?.replace(/[&<>]/g, function(m){ return m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m; }) || ''; }
+    // Helper functions
+    function escapeHtml(s) { return s?.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m) || ''; }
     function toast(msg) { let t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
     function scrollBottom() { let area = document.getElementById('messagesArea'); if(area) area.scrollTop = area.scrollHeight; }
 
+    // Dynamic Greeting based on user's local time
+    function getDynamicGreeting() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return { text: "Good morning ☀️", emoji: "🌅" };
+        if (hour >= 12 && hour < 17) return { text: "Good afternoon 🌤️", emoji: "☀️" };
+        if (hour >= 17 && hour < 21) return { text: "Good evening 🌙", emoji: "🌆" };
+        if (hour >= 21 && hour < 24) return { text: "Good night, night owl 🌟", emoji: "🌙" };
+        return { text: "Early bird or still working? 🚀", emoji: "🌃" };
+    }
+
+    function updateGreeting() { let greeting = getDynamicGreeting(); document.getElementById('messagesArea').querySelector('.greeting-container')?.remove(); }
+
     // Theme
-    function setTheme(theme) { state.theme = theme; document.body.className = theme; localStorage.setItem('theme', theme); document.getElementById('themeLightCheck').style.display = theme === 'light' ? 'inline' : 'none'; document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none'; document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none'; toast(`Theme: ${theme}`); }
+    function setTheme(theme) { state.theme = theme; document.body.className = theme; localStorage.setItem('theme', theme); document.getElementById('themeLightCheck').style.display = theme === 'light' ? 'inline' : 'none'; document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none'; document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none'; toast(`Theme: ${theme === 'light' ? 'Aled Blue' : theme === 'dark' ? 'Dark with White Text' : 'System'}`); }
     let appearanceOpen = false;
     function toggleAppearance() { appearanceOpen = !appearanceOpen; document.getElementById('appearanceContent').classList.toggle('open', appearanceOpen); document.getElementById('appearanceArrow').style.transform = appearanceOpen ? 'rotate(180deg)' : 'rotate(0deg)'; }
     function toggleSidebar() { let sidebar = document.getElementById('sidebar'), overlay = document.getElementById('overlay'); if(window.innerWidth <= 768) { sidebar.classList.toggle('open'); overlay.classList.toggle('open'); } else { sidebar.classList.toggle('collapsed'); } }
     function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
 
-    // Founder secret space - 5 taps on logo
-    function handleFounderTap() { state.founderClickCount++; if(state.founderClickCount >= 5) { state.founderClickCount = 0; document.getElementById('founderModal').classList.add('open'); } setTimeout(() => { state.founderClickCount = 0; }, 2000); }
-    async function verifyFounderAccess() { let code = document.getElementById('founderCode').value; if(code === 'Osinachi@3500') { try { let res = await fetch(`${CFG.API}/api/founder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) }); let data = await res.json(); if(data.token) { state.token = data.token; state.tier = 'founder'; state.user = data.user; localStorage.setItem('ct', data.token); updateProfileUI(); toast('Founder access granted'); closeModal('founderModal'); loadChats(); } else { toast('Invalid'); } } catch(e) { toast('Verification failed'); } } else { toast('Invalid code'); } }
+    // Founder secret space - 5 clicks on logo button (top right)
+    function handleLogoClick() { state.founderClickCount++; if(state.founderClickCount >= 5) { state.founderClickCount = 0; document.getElementById('founderModal').classList.add('open'); } setTimeout(() => { state.founderClickCount = 0; }, 2000); }
+    async function verifyFounderAccess() { let code = document.getElementById('founderCode').value; if(code === 'Osinachi@3500') { try { let res = await fetch(`${CFG.API}/api/founder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) }); let data = await res.json(); if(data.token) { state.token = data.token; state.tier = 'founder'; state.user = data.user; localStorage.setItem('ct', data.token); updateProfileUI(); toast('Founder access granted'); closeModal('founderModal'); loadChats(); } else { toast('Invalid code'); } } catch(e) { toast('Verification failed'); } } else { toast('Invalid code'); } }
 
+    // API
     async function apiCall(endpoint, opts = {}) { let headers = { 'Content-Type': 'application/json' }; if(state.token) headers['Authorization'] = `Bearer ${state.token}`; let res = await fetch(`${CFG.API}${endpoint}`, { ...opts, headers }); if(res.status === 401) { logout(); throw new Error('Session expired'); } if(!res.ok) throw new Error(await res.text()); return res.json(); }
+    
     async function initSession() { try { if(state.token) { let sess = await apiCall('/api/session'); state.tier = sess.tier; state.user = sess.user_data; } else { let sess = await apiCall('/api/session'); state.token = sess.token; state.tier = sess.tier; localStorage.setItem('ct', state.token); } updateProfileUI(); } catch(e) { console.warn(e); } }
-    function updateProfileUI() { let name = state.user?.name || state.user?.telegram_username || 'Guest'; document.getElementById('profileName').innerText = name; document.getElementById('profileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); document.getElementById('modalProfileName').innerText = name; document.getElementById('modalProfileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); }
+    
+    function updateProfileUI() { let name = state.user?.name || state.user?.telegram_username || 'Guest'; document.getElementById('profileName').innerText = name; document.getElementById('profileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); document.getElementById('modalProfileName').innerText = name; document.getElementById('modalProfileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); let telegramConnected = state.user?.telegram_username; document.getElementById('telegramBadge').style.display = telegramConnected ? 'inline-block' : 'none'; document.getElementById('telegramStatus').innerHTML = telegramConnected ? `<span style="background:var(--accent-soft);padding:6px 12px;border-radius:20px;">✅ Connected as @${state.user.telegram_username}</span>` : `<button class="btn" style="margin:0;padding:8px;" onclick="initTelegramLogin()">Connect Telegram</button>`; if(state.profilePhoto) { document.getElementById('profileAvatar').src = state.profilePhoto; document.getElementById('modalAvatar').src = state.profilePhoto; } }
+    
+    async function uploadProfilePhoto() { let input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = async (e) => { let file = e.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = (ev) => { let photoUrl = ev.target.result; state.profilePhoto = photoUrl; localStorage.setItem('profilePhoto', photoUrl); document.getElementById('profileAvatar').src = photoUrl; document.getElementById('modalAvatar').src = photoUrl; toast('Profile photo updated!'); }; reader.readAsDataURL(file); }; input.click(); }
 
+    // Chat functions
     async function loadChats() { try { let data = await apiCall('/api/chats'); state.chats = data.chats || []; renderChatHistory(); } catch(e) {} }
     async function loadChat(id) { try { let data = await apiCall(`/api/chats/${id}`); state.messages = data.messages || []; state.activeChatId = id; renderMessages(); renderChatHistory(); } catch(e) { toast('Failed to load'); } }
     async function newChat() { state.activeChatId = null; state.messages = []; renderMessages(); renderChatHistory(); document.getElementById('messageInput').focus(); }
     async function deleteChat(id) { if(!confirm('Delete?')) return; await apiCall(`/api/chats/${id}`, { method: 'DELETE' }); if(state.activeChatId === id) await newChat(); await loadChats(); toast('Deleted'); }
+    
     async function sendMessage() { let input = document.getElementById('messageInput'); let text = input.value.trim(); if(!text || state.loading) return; input.value = ''; state.messages.push({ role: 'user', content: text }); renderMessages(); state.loading = true; let aiIdx = state.messages.length; state.messages.push({ role: 'assistant', content: '' }); renderMessages(); try { let res = await apiCall('/api/chat', { method: 'POST', body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.activeChatId }) }); state.messages[aiIdx].content = res.content || 'No response'; state.activeChatId = res.chat_id; renderMessages(); await loadChats(); } catch(err) { state.messages[aiIdx].content = `Error: ${err.message}`; renderMessages(); toast(err.message); } finally { state.loading = false; } }
+    
     function formatMarkdown(t) { if(!t) return ''; return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre><code>$2</code></pre>').replace(/\n/g,'<br>'); }
-    function renderMessages() { let c = document.getElementById('messagesArea'); if(!c) return; if(!state.messages.length) { c.innerHTML = '<div style="text-align:center;padding:60px 20px;"><h2 style="margin-bottom:8px;">CAPITAN AI</h2><p style="color:var(--text-secondary);">Ask me anything — finance, code, research.</p></div>'; return; } c.innerHTML = state.messages.map((m,i)=>`<div class="message ${m.role}"><div class="message-content">${m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content)}</div></div>`).join(''); scrollBottom(); }
+    
+    function renderMessages() { let c = document.getElementById('messagesArea'); if(!c) return; let greeting = getDynamicGreeting(); if(!state.messages.length) { c.innerHTML = `<div style="text-align:center;padding:40px 20px;"><div class="greeting-container"><div class="greeting-text">${greeting.text}</div></div><p style="color:var(--text-secondary);margin-top:12px;">Ask me anything — finance, code, research, or upload documents for analysis.</p></div>`; return; } c.innerHTML = state.messages.map((m,i)=>`<div class="message ${m.role}"><div class="message-content">${m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content)}</div></div>`).join(''); scrollBottom(); }
+    
     function renderChatHistory() { let c = document.getElementById('chatHistoryList'); if(!c) return; if(!state.chats.length) { c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);">No conversations yet</div>'; return; } c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);">✕</button></div>`).join(''); }
 
     // Library
@@ -220,29 +298,39 @@
     async function deleteLib(id) { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); openLibrary(); }
     function viewLib(id) { let item = state.library.find(i=>i.id===id); if(item) { document.getElementById('libName').value = item.name; document.getElementById('libContent').value = item.content; } }
 
+    // File upload with AI reading capability
+    async function triggerFileUpload() { let inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg'; inp.onchange = async (e) => { let file = e.target.files[0]; if(!file) return; let maxSize = state.tier === 'pro_max' ? 100 : (state.tier === 'pro' ? 50 : (state.tier === 'plus' ? 20 : 5)); if(file.size/(1024*1024) > maxSize) { toast(`Max ${maxSize}MB for ${state.tier} tier`); if(state.tier === 'free') toast('Upgrade to Plus or Pro for larger files'); return; } let fd = new FormData(); fd.append('file', file); try { let res = await fetch(`${CFG.API}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: fd }); let data = await res.json(); toast(`📄 Uploaded: ${file.name}`); state.messages.push({ role: 'user', content: `[Uploaded document: ${file.name}]\n\nPlease analyze this document and provide insights.` }); renderMessages(); sendMessage(); } catch(e) { toast('Upload failed'); } }; inp.click(); }
+
     // Upgrade
     function openUpgradeModal() { document.getElementById('upgradeModal').classList.add('open'); }
     function selectTier(tier) { state.selectedTier = tier; document.getElementById('paymentSection').style.display = 'block'; updateWalletDisplay(); }
     function setCoin(c) { state.selectedCoin = c; updateWalletDisplay(); }
     function updateWalletDisplay() { document.getElementById('walletAddress').innerText = WALLETS[state.selectedCoin]; }
-    function copyWallet() { navigator.clipboard.writeText(document.getElementById('walletAddress').innerText); toast('Copied!'); }
+    function copyWallet() { navigator.clipboard.writeText(document.getElementById('walletAddress').innerText); toast('Address copied!'); }
     async function verifyPayment() { let txid = document.getElementById('txidInput').value.trim(); if(!state.selectedTier||!txid) { toast('Select tier and enter TXID'); return; } try { let res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) }); state.tier = res.tier; state.token = res.token; localStorage.setItem('ct', res.token); updateProfileUI(); closeModal('upgradeModal'); toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`); } catch(e) { toast('Verification failed'); } }
 
-    // File upload
-    function triggerFileUpload() { if(state.tier === 'free') { toast('Upgrade to Plus or Pro'); openUpgradeModal(); return; } let inp = document.createElement('input'); inp.type = 'file'; inp.onchange = async (e) => { let f = e.target.files[0]; if(!f) return; let max = state.tier === 'pro_max' ? 100 : (state.tier === 'pro' ? 50 : 20); if(f.size/(1024*1024) > max) { toast(`Max ${max}MB`); return; } let fd = new FormData(); fd.append('file', f); try { await fetch(`${CFG.API}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: fd }); toast(`Uploaded: ${f.name}`); state.messages.push({ role: 'user', content: `[Upload: ${f.name}]` }); renderMessages(); } catch(e) { toast('Upload failed'); } }; inp.click(); }
+    // Data Control (Privacy & T&C)
+    function openDataControl() { document.getElementById('dataControlModal').classList.add('open'); }
+    function showPrivacyPolicy() { alert("CAPITAN AI Privacy Policy\n\nWe collect:\n- Chat messages to provide AI responses\n- Telegram ID if you connect\n- Usage data for service improvement\n\nWe do NOT sell your data. All chats are encrypted.\n\nContact: closeaitechnologies@protonmail.com"); }
+    function showTerms() { alert("CAPITAN AI Terms & Conditions\n\n1. AI responses are for informational purposes only\n2. Not financial or medical advice\n3. You must be 18+ to use paid features\n4. We reserve right to suspend abusive accounts\n5. Crypto payments are non-refundable\n\nBy using CAPITAN AI, you agree to these terms."); }
+    async function exportUserData() { try { let chats = await apiCall('/api/chats'); let dataStr = JSON.stringify({ user: state.user, chats, exportDate: new Date().toISOString() }, null, 2); let blob = new Blob([dataStr], {type: 'application/json'}); let url = URL.createObjectURL(blob); let a = document.createElement('a'); a.href = url; a.download = `capitan-data-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url); toast('Data exported!'); } catch(e) { toast('Export failed'); } }
+    async function deleteAccount() { if(confirm('Permanently delete your account? All chats, library, and data will be lost.')) { try { await apiCall('/api/auth/delete-account', { method: 'DELETE' }); logout(); } catch(e) { toast('Failed to delete account'); } } }
 
-    // Telegram Login with correct bot name
+    // Telegram Login
     window.onTelegramAuth = async function(user) { try { let res = await fetch(`${CFG.API}/api/auth/telegram/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: user }) }); let data = await res.json(); if(data.token) { state.token = data.token; state.user = data.user; state.tier = data.user.tier; localStorage.setItem('ct', data.token); updateProfileUI(); await loadChats(); toast(`Welcome ${data.user.name || user.first_name}!`); closeModal('profileModal'); } else { toast('Login failed'); } } catch(e) { toast('Telegram error'); } };
     function initTelegramLogin() { let script = document.createElement('script'); script.src = 'https://telegram.org/js/telegram-widget.js?22'; script.setAttribute('data-telegram-login', 'Capitan_ai_Bot'); script.setAttribute('data-size', 'large'); script.setAttribute('data-radius', '12'); script.setAttribute('data-request-access', 'write'); script.setAttribute('data-onauth', 'onTelegramAuth(user)'); script.async = true; document.body.appendChild(script); toast('Opening Telegram...'); setTimeout(() => script.remove(), 5000); }
 
-    function openProfileModal() { document.getElementById('profileModal').classList.add('open'); }
+    function openProfileModal() { document.getElementById('profileModal').classList.add('open'); updateProfileUI(); }
     function logout() { localStorage.removeItem('ct'); state.token = null; state.user = null; state.tier = 'free'; state.activeChatId = null; state.messages = []; state.chats = []; updateProfileUI(); renderMessages(); renderChatHistory(); toast('Logged out'); }
 
-    // PWA Service Worker registration
+    // About modal on logo click
+    function openAboutModal() { document.getElementById('aboutModal').classList.add('open'); }
+
+    // PWA Service Worker
     if('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(e=>console.log('SW failed:',e)); }); }
 
     // Init
-    async function init() { setTheme(state.theme); await initSession(); await loadChats(); renderMessages(); document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar); document.addEventListener('click', (e) => { if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') && !document.getElementById('sidebar').contains(e.target) && !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar(); }); document.querySelector('.new-chat-btn')?.addEventListener('click', handleFounderTap); setTimeout(() => { let splash = document.getElementById('splashScreen'); if(splash) splash.classList.add('hide'); }, 1600); }
+    async function init() { setTheme(state.theme); await initSession(); await loadChats(); renderMessages(); document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar); document.getElementById('logoBtn').addEventListener('click', openAboutModal); document.getElementById('logoBtn').addEventListener('dblclick', handleLogoClick); document.addEventListener('click', (e) => { if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') && !document.getElementById('sidebar').contains(e.target) && !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar(); }); setTimeout(() => { let splash = document.getElementById('splashScreen'); if(splash) splash.classList.add('hide'); }, 1600); }
     init();
 </script>
 </body>
