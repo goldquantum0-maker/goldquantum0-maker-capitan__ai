@@ -1,826 +1,1115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#ffffff">
-  <title>CAPITAN AI — Enterprise Intelligence</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ffffff">
+    <title>CAPITAN AI — Enterprise Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    :root {
-      --bg: #ffffff;
-      --sidebar-bg: #f7f7f8;
-      --surface: #ffffff;
-      --surface-secondary: #f9f9fa;
-      --border: #e5e5e7;
-      --border-light: #ececee;
-      --text-primary: #171717;
-      --text-secondary: #6e6e73;
-      --text-tertiary: #8e8e93;
-      --accent: #0ea5e9;
-      --accent-dark: #0284c7;
-      --accent-soft: #e0f2fe;
-      --danger: #ef4444;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-      --shadow-lg: 0 12px 24px rgba(0,0,0,0.12);
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 24px;
-      --sidebar-width: 280px;
-      --sidebar-collapsed: 0px;
-      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+        /* Theme Variables - Light (default) */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f7f8;
+            --bg-tertiary: #f0f0f2;
+            --text-primary: #171717;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #8e8e93;
+            --border: #e5e5e7;
+            --border-light: #ececee;
+            --accent: #0ea5e9;
+            --accent-dark: #0284c7;
+            --accent-soft: #e0f2fe;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 24px rgba(0,0,0,0.12);
+            --sidebar-width: 280px;
+        }
 
-    body {
-      font-family: 'Inter', -apple-system, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text-primary);
-      font-size: 14px;
-      line-height: 1.5;
-      height: 100vh;
-      overflow: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
+        /* Dark Theme */
+        body.dark {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #252525;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #ededed;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border: #333333;
+            --border-light: #3a3a3a;
+            --accent: #38bdf8;
+            --accent-dark: #0ea5e9;
+            --accent-soft: #1e3a5f;
+        }
 
-    /* Layout */
-    .app {
-      display: flex;
-      height: 100%;
-      width: 100%;
-      position: relative;
-    }
+        /* System Theme follows OS preference */
+        @media (prefers-color-scheme: dark) {
+            body.system {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #252525;
+                --bg-tertiary: #2a2a2a;
+                --text-primary: #ededed;
+                --text-secondary: #a1a1aa;
+                --text-tertiary: #71717a;
+                --border: #333333;
+                --border-light: #3a3a3a;
+                --accent: #38bdf8;
+                --accent-dark: #0ea5e9;
+                --accent-soft: #1e3a5f;
+            }
+        }
 
-    /* Sidebar — ChatGPT style */
-    .sidebar {
-      width: var(--sidebar-width);
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      transition: var(--transition);
-      flex-shrink: 0;
-      overflow-y: auto;
-      z-index: 20;
-    }
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
 
-    .sidebar.collapsed {
-      width: 0;
-      overflow: hidden;
-      border-right: none;
-    }
+        .app {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
 
-    .sidebar-header {
-      padding: 16px 16px 12px;
-      border-bottom: 1px solid var(--border-light);
-    }
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+            overflow-y: auto;
+            z-index: 20;
+        }
 
-    .new-chat-btn {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: var(--transition);
-      font-family: inherit;
-    }
+        .sidebar.collapsed {
+            width: 0;
+            overflow: hidden;
+            border-right: none;
+        }
 
-    .new-chat-btn:hover {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-    }
+        /* Sidebar Toggle Button */
+        .sidebar-toggle {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 30;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 20px;
+        }
 
-    /* Navigation sections */
-    .nav-section {
-      padding: 12px 0;
-    }
+        .sidebar-toggle:hover {
+            background: var(--bg-tertiary);
+            transform: scale(1.02);
+        }
 
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 16px;
-      margin: 0 8px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: var(--transition);
-      color: var(--text-secondary);
-      font-size: 13px;
-    }
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
 
-    .nav-item:hover {
-      background: var(--surface-secondary);
-      color: var(--text-primary);
-    }
+        /* Chat Container */
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 0 24px;
+        }
 
-    .nav-item.active {
-      background: var(--accent-soft);
-      color: var(--accent-dark);
-    }
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 0 24px;
+            scroll-behavior: smooth;
+        }
 
-    /* Chat history */
-    .chat-history {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
-    }
+        /* Message Bubbles */
+        .message {
+            margin-bottom: 24px;
+            animation: fadeIn 0.25s ease;
+        }
 
-    .history-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      margin: 2px 0;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 13px;
-      color: var(--text-secondary);
-      transition: var(--transition);
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .history-item:hover {
-      background: var(--surface-secondary);
-      color: var(--text-primary);
-    }
+        .message.user {
+            display: flex;
+            justify-content: flex-end;
+        }
 
-    .history-item.active {
-      background: var(--accent-soft);
-      color: var(--accent-dark);
-      font-weight: 500;
-    }
+        .message.user .message-content {
+            background: var(--accent);
+            color: white;
+            border-radius: 20px 20px 4px 20px;
+            padding: 10px 16px;
+            max-width: 85%;
+        }
 
-    .delete-chat {
-      opacity: 0;
-      transition: var(--transition);
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-tertiary);
-    }
+        .message.assistant .message-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 20px 20px 20px 4px;
+            padding: 10px 16px;
+            max-width: 95%;
+        }
 
-    .history-item:hover .delete-chat {
-      opacity: 1;
-    }
+        .message-content {
+            font-size: 14px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
 
-    /* Main chat area */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: var(--bg);
-    }
+        .message-content pre {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+            font-size: 12px;
+        }
 
-    .chat-container {
-      max-width: 800px;
-      margin: 0 auto;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      padding: 0 24px;
-    }
+        .message-content code {
+            font-family: monospace;
+            background: var(--bg-tertiary);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
 
-    .messages-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 32px 0 24px;
-      scroll-behavior: smooth;
-    }
+        /* Input Area */
+        .input-area {
+            padding: 0 0 24px;
+        }
 
-    /* Message bubbles — ChatGPT style */
-    .message {
-      margin-bottom: 24px;
-      animation: fadeIn 0.25s ease;
-    }
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 8px 12px;
+            transition: all 0.2s;
+        }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        .input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
 
-    .message.user {
-      display: flex;
-      justify-content: flex-end;
-    }
+        .input-field {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 14px;
+            resize: none;
+            padding: 8px 0;
+            color: var(--text-primary);
+        }
 
-    .message.user .message-content {
-      background: var(--accent);
-      color: white;
-      border-radius: var(--radius-xl) var(--radius-xl) 4px var(--radius-xl);
-      padding: 10px 16px;
-      max-width: 85%;
-    }
+        .send-btn {
+            background: var(--accent);
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
 
-    .message.assistant .message-content {
-      background: var(--surface-secondary);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) 4px;
-      padding: 10px 16px;
-      max-width: 95%;
-    }
+        .send-btn:hover {
+            background: var(--accent-dark);
+            transform: scale(1.02);
+        }
 
-    .message-content {
-      font-size: 14px;
-      line-height: 1.6;
-      word-break: break-word;
-    }
+        /* Settings Panel */
+        .settings-panel {
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+        }
 
-    /* Code blocks */
-    .message-content pre {
-      background: #1e1e2e;
-      color: #e2e2e4;
-      padding: 12px;
-      border-radius: var(--radius-sm);
-      overflow-x: auto;
-      margin: 8px 0;
-      font-size: 12px;
-    }
+        .settings-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+        }
 
-    .message-content code {
-      font-family: 'SF Mono', monospace;
-      font-size: 0.9em;
-      background: rgba(0,0,0,0.05);
-      padding: 2px 5px;
-      border-radius: 4px;
-    }
+        .settings-header:hover {
+            background: var(--bg-tertiary);
+        }
 
-    /* Message actions */
-    .message-actions {
-      display: flex;
-      gap: 6px;
-      margin-top: 6px;
-      opacity: 0;
-      transition: opacity 0.15s;
-    }
+        .settings-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
 
-    .message:hover .message-actions {
-      opacity: 0.6;
-    }
+        .settings-content.open {
+            max-height: 400px;
+        }
 
-    .action-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 6px;
-      color: var(--text-tertiary);
-      transition: var(--transition);
-    }
+        .setting-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            border-top: 1px solid var(--border-light);
+        }
 
-    .action-btn:hover {
-      background: var(--surface-secondary);
-      color: var(--text-primary);
-    }
+        .setting-item:hover {
+            background: var(--bg-tertiary);
+        }
 
-    /* Input area */
-    .input-area {
-      padding: 0 0 24px;
-    }
+        /* Chat History Items */
+        .chat-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-light);
+        }
 
-    .input-wrapper {
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-      padding: 8px 12px;
-      transition: var(--transition);
-    }
+        .chat-item:hover {
+            background: var(--bg-tertiary);
+        }
 
-    .input-wrapper:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
+        .chat-item.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
 
-    .input-field {
-      flex: 1;
-      border: none;
-      outline: none;
-      background: transparent;
-      font-family: inherit;
-      font-size: 14px;
-      resize: none;
-      padding: 8px 0;
-      max-height: 150px;
-      color: var(--text-primary);
-    }
+        /* Upgrade Cards */
+        .tier-comparison {
+            display: grid;
+            gap: 12px;
+            margin-top: 16px;
+        }
 
-    .input-field::placeholder {
-      color: var(--text-tertiary);
-    }
+        .tier-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
 
-    .send-btn {
-      background: var(--accent);
-      border: none;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: var(--transition);
-      flex-shrink: 0;
-    }
+        .tier-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
 
-    .send-btn:hover {
-      background: var(--accent-dark);
-      transform: scale(1.02);
-    }
+        /* Dashboard Stats */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
 
-    .send-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
 
-    /* Typing indicator */
-    .typing-indicator {
-      display: flex;
-      gap: 4px;
-      padding: 8px 0;
-    }
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+        }
 
-    .typing-indicator span {
-      width: 6px;
-      height: 6px;
-      background: var(--text-tertiary);
-      border-radius: 50%;
-      animation: pulse 1.4s infinite;
-    }
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
 
-    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        .modal-overlay.open {
+            display: flex;
+        }
 
-    @keyframes pulse {
-      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-      30% { opacity: 1; transform: translateY(-4px); }
-    }
+        .modal {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 520px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+            box-shadow: var(--shadow-lg);
+        }
 
-    /* Streaming cursor */
-    .stream-cursor {
-      display: inline-block;
-      width: 2px;
-      height: 1em;
-      background: var(--accent);
-      margin-left: 2px;
-      animation: blink 0.8s infinite;
-      vertical-align: middle;
-    }
+        /* Library Items */
+        .library-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-light);
+        }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
+        .library-item:hover {
+            background: var(--bg-tertiary);
+        }
 
-    /* Modals */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+        }
 
-    .modal-overlay.open {
-      display: flex;
-    }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
 
-    .modal {
-      background: var(--surface);
-      border-radius: var(--radius-lg);
-      width: 90%;
-      max-width: 520px;
-      max-height: 85vh;
-      overflow-y: auto;
-      padding: 24px;
-      box-shadow: var(--shadow-lg);
-    }
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
 
-    .modal h2 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--text-primary);
-      color: white;
-      padding: 8px 18px;
-      border-radius: 40px;
-      font-size: 13px;
-      z-index: 1100;
-      animation: toastIn 0.2s ease;
-    }
-
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-      to { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .sidebar {
-        position: fixed;
-        left: -280px;
-        height: 100%;
-        z-index: 30;
-      }
-      .sidebar.open {
-        left: 0;
-      }
-      .chat-container {
-        padding: 0 16px;
-      }
-      .menu-toggle {
-        display: flex;
-      }
-    }
-
-    .menu-toggle {
-      display: none;
-      position: fixed;
-      top: 14px;
-      left: 16px;
-      z-index: 25;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    /* Dashboard grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .stat-card {
-      background: var(--surface-secondary);
-      padding: 14px;
-      border-radius: var(--radius-md);
-      text-align: center;
-    }
-    .stat-number {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-  </style>
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+                z-index: 25;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .chat-container {
+                padding: 0 16px;
+            }
+        }
+    </style>
 </head>
-<body>
+<body class="light">
 
 <div class="app">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <button class="new-chat-btn" id="newChatBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New chat
-      </button>
-    </div>
-    <div class="nav-section">
-      <div class="nav-item" id="profileNavBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
-        Profile
-      </div>
-      <div class="nav-item" id="workspaceNavBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        Work Area
-      </div>
-      <div class="nav-item" id="libraryNavBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        Library
-      </div>
-    </div>
-    <div class="chat-history" id="chatHistoryList">
-      <div style="padding: 12px; color: var(--text-tertiary); font-size: 12px; text-align: center;">No conversations yet</div>
-    </div>
-    <div style="padding: 16px; border-top: 1px solid var(--border-light); font-size: 11px; color: var(--text-tertiary); text-align: center;">
-      CLOSEAI Technologies © 2026
-    </div>
-  </aside>
-
-  <button class="menu-toggle" id="menuToggle">☰</button>
-
-  <main class="main">
-    <div class="chat-container">
-      <div class="messages-area" id="messagesArea">
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40vh; text-align: center;">
-          <h2 style="font-weight: 500; margin-bottom: 12px;">CAPITAN AI</h2>
-          <p style="color: var(--text-secondary);">Ask me anything — finance, code, research, or creative tasks.</p>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div style="padding: 16px;">
+            <button class="btn" onclick="newChat()" style="margin-top: 0;">
+                + New Conversation
+            </button>
         </div>
-      </div>
-      <div class="input-area">
-        <div class="input-wrapper">
-          <textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
+
+        <!-- Chat History -->
+        <div style="flex: 1; overflow-y: auto;" id="chatHistoryList">
+            <div style="padding: 20px; text-align: center; color: var(--text-tertiary); font-size: 13px;">
+                No conversations yet
+            </div>
         </div>
-      </div>
-    </div>
-  </main>
+
+        <!-- Settings Section -->
+        <div class="settings-panel">
+            <div class="settings-header" onclick="toggleSettings()">
+                <span>⚙️ Settings</span>
+                <span id="settingsArrow">▼</span>
+            </div>
+            <div class="settings-content" id="settingsContent">
+                <div class="setting-item" onclick="toggleTheme('light')">
+                    <span>☀️ Light Mode</span>
+                    <span id="themeLightCheck" style="color: var(--accent);">✓</span>
+                </div>
+                <div class="setting-item" onclick="toggleTheme('dark')">
+                    <span>🌙 Dark Mode</span>
+                    <span id="themeDarkCheck" style="color: var(--accent); display: none;">✓</span>
+                </div>
+                <div class="setting-item" onclick="toggleTheme('system')">
+                    <span>🖥️ System Theme</span>
+                    <span id="themeSystemCheck" style="color: var(--accent); display: none;">✓</span>
+                </div>
+                <div class="setting-item" onclick="openUpgrade()">
+                    <span>💎 Upgrade Plan</span>
+                    <span>→</span>
+                </div>
+                <div class="setting-item" onclick="showOwnerDashboard()">
+                    <span>📊 Owner Dashboard</span>
+                    <span>→</span>
+                </div>
+                <div class="setting-item" onclick="openLibrary()">
+                    <span>📚 My Library</span>
+                    <span>→</span>
+                </div>
+                <div class="setting-item" onclick="initTelegramLogin()">
+                    <span>🔐 Telegram Login</span>
+                    <span>→</span>
+                </div>
+                <div class="setting-item" onclick="logout()" style="color: var(--danger);">
+                    <span>🚪 Sign Out</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+
+    <!-- Main Chat Area -->
+    <main class="main">
+        <div class="chat-container">
+            <div class="messages-area" id="messagesArea">
+                <div style="text-align: center; padding: 60px 20px;">
+                    <h2 style="margin-bottom: 12px;">CAPITAN AI</h2>
+                    <p style="color: var(--text-secondary);">Ask me anything — finance, code, research, or creative tasks.</p>
+                </div>
+            </div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+                    <button class="send-btn" onclick="sendMessage()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
 
 <!-- Modals -->
-<div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
-<div id="workspaceModal" class="modal-overlay"><div class="modal" id="workspaceModalContent"></div></div>
-<div id="libraryModal" class="modal-overlay"><div class="modal" id="libraryModalContent"></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal" id="upgradeModalContent"></div></div>
+<div id="dashboardModal" class="modal-overlay"><div class="modal" id="dashboardModalContent"></div></div>
+<div id="libraryModal" class="modal-overlay"><div class="modal" id="libraryModalContent"></div></div>
 
 <script>
-  // ---------- CONFIGURATION ----------
-  const CFG = {
-    API: 'https://capitan-ai-jxu8.onrender.com',
-    STREAM_DELAY: 12,
-    TIERS: { free: 'free', plus: 'plus', pro: 'pro', pro_max: 'pro_max', founder: 'founder' },
-    TIER_LIMITS: { free: 20, plus: 50, pro: 150, pro_max: 999999, founder: 999999 }
-  };
-
-  // State
-  let state = {
-    token: localStorage.getItem('ct') || null,
-    tier: 'free',
-    user: null,
-    activeChatId: null,
-    chats: [],
-    messages: [],
-    loading: false,
-    streaming: false,
-    library: [],
-    wsRoom: null,
-    dashboardData: null
-  };
-
-  // Helper: fetch with auth
-  async function apiCall(endpoint, options = {}) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
-    const res = await fetch(`${CFG.API}${endpoint}`, { ...options, headers });
-    if (res.status === 401) { logout(); throw new Error('Session expired'); }
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  }
-
-  // Session init
-  async function initSession() {
-    try {
-      if (state.token) {
-        const sess = await apiCall('/api/session');
-        state.tier = sess.tier;
-        state.user = sess.user_data || null;
-      } else {
-        const sess = await apiCall('/api/session');
-        state.token = sess.token;
-        state.tier = sess.tier;
-        localStorage.setItem('ct', state.token);
-      }
-    } catch (e) { console.warn(e); }
-  }
-
-  // Load chats
-  async function loadChats() {
-    try {
-      const data = await apiCall('/api/chats');
-      state.chats = data.chats || [];
-      renderChatHistory();
-    } catch(e) {}
-  }
-
-  async function loadChat(chatId) {
-    try {
-      const data = await apiCall(`/api/chats/${chatId}`);
-      state.messages = data.messages || [];
-      state.activeChatId = chatId;
-      renderMessages();
-    } catch(e) { toast('Failed to load chat'); }
-  }
-
-  async function newChat() {
-    if (state.streaming) return;
-    state.activeChatId = null;
-    state.messages = [];
-    renderMessages();
-    document.getElementById('messageInput').focus();
-  }
-
-  async function sendMessage() {
-    const input = document.getElementById('messageInput');
-    const text = input.value.trim();
-    if (!text || state.loading) return;
-    input.value = '';
-    state.messages.push({ role: 'user', content: text });
-    renderMessages();
-    state.loading = true;
-    scrollToBottom();
-
-    const aiMsgIndex = state.messages.length;
-    state.messages.push({ role: 'assistant', content: '' });
-    renderMessages();
-
-    try {
-      const res = await apiCall('/api/chat', {
-        method: 'POST',
-        body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.activeChatId })
-      });
-      const fullContent = res.content || '';
-      state.messages[aiMsgIndex].content = fullContent;
-      state.activeChatId = res.chat_id;
-      renderMessages(true); // final render
-      await loadChats();
-    } catch (err) {
-      state.messages[aiMsgIndex].content = `Error: ${err.message}`;
-      renderMessages();
-      toast(err.message);
-    } finally {
-      state.loading = false;
-      scrollToBottom();
-    }
-  }
-
-  async function deleteChat(chatId) {
-    if (!confirm('Delete this conversation?')) return;
-    await apiCall(`/api/chats/${chatId}`, { method: 'DELETE' });
-    if (state.activeChatId === chatId) await newChat();
-    await loadChats();
-  }
-
-  // Render Messages with streaming + markdown
-  function renderMessages(skipStream = false) {
-    const container = document.getElementById('messagesArea');
-    if (!container) return;
-    if (state.messages.length === 0) {
-      container.innerHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40vh; text-align: center;"><h2 style="font-weight: 500;">CAPITAN AI</h2><p style="color: var(--text-secondary);">Ask me anything — finance, code, research, or creative tasks.</p></div>`;
-      return;
-    }
-    let html = '';
-    for (let i = 0; i < state.messages.length; i++) {
-      const msg = state.messages[i];
-      const isUser = msg.role === 'user';
-      html += `<div class="message ${isUser ? 'user' : 'assistant'}">
-        <div class="message-content" id="msg-${i}">${isUser ? escapeHtml(msg.content) : formatMarkdown(msg.content)}</div>
-        ${!isUser ? `<div class="message-actions"><button class="action-btn" onclick="copyText('${escapeAttr(msg.content)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>` : ''}
-      </div>`;
-    }
-    container.innerHTML = html;
-    if (!skipStream && state.loading && state.messages.length > 0 && state.messages[state.messages.length-1].content === '') {
-      const lastMsgDiv = document.getElementById(`msg-${state.messages.length-1}`);
-      if (lastMsgDiv) lastMsgDiv.innerHTML = '<span class="stream-cursor"></span>';
-    }
-    scrollToBottom();
-  }
-
-  function formatMarkdown(text) {
-    if (!text) return '';
-    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-               .replace(/\*(.*?)\*/g, '<em>$1</em>')
-               .replace(/`(.*?)`/g, '<code>$1</code>')
-               .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-               .replace(/\n/g, '<br>');
-  }
-
-  function renderChatHistory() {
-    const container = document.getElementById('chatHistoryList');
-    if (!container) return;
-    if (!state.chats.length) {
-      container.innerHTML = '<div style="padding: 12px; color: var(--text-tertiary); font-size: 12px; text-align: center;">No conversations yet</div>';
-      return;
-    }
-    container.innerHTML = state.chats.map(chat => `
-      <div class="history-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')">
-        <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(chat.title || 'Chat')}</span>
-        <button class="delete-chat" onclick="event.stopPropagation(); deleteChat('${chat.id}')">✕</button>
-      </div>
-    `).join('');
-  }
-
-  // Profile Modal
-  async function showProfile() {
-    const modal = document.getElementById('profileModalContent');
-    modal.innerHTML = `<h2>Profile</h2><div style="text-align:center; margin-bottom:12px"><div style="background:var(--accent-soft); width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto">👤</div><h3>${state.user?.name || 'User'}</h3><span style="background:var(--accent-soft);padding:4px 10px;border-radius:20px;font-size:12px">${state.tier.toUpperCase()}</span></div>
-    <div class="nav-item" onclick="document.getElementById('profileModal').classList.remove('open'); initTelegramLogin()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Connect Telegram</div>
-    <div class="nav-item" onclick="document.getElementById('profileModal').classList.remove('open'); showUpgrade()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Upgrade Plan</div>
-    <div class="nav-item" onclick="logout()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sign Out</div>
-    <button class="new-chat-btn" style="margin-top:16px" onclick="document.getElementById('profileModal').classList.remove('open')">Close</button>`;
-    document.getElementById('profileModal').classList.add('open');
-  }
-
-  // Work Area — owner dashboard & tier-restricted rooms
-  async function showWorkArea() {
-    const modalDiv = document.getElementById('workspaceModalContent');
-    modalDiv.innerHTML = `<h2>Work Area</h2><p style="margin-bottom:12px">Create collaborative rooms (same tier only). Pro/Pro Max owners get dashboard.</p>
-    <button class="new-chat-btn" id="createRoomBtn" style="margin-bottom:12px">+ Create New Room</button>
-    <div id="roomsList">Loading...</div>
-    <button class="new-chat-btn" style="margin-top:12px" onclick="document.getElementById('workspaceModal').classList.remove('open')">Close</button>`;
-    document.getElementById('workspaceModal').classList.add('open');
-    try {
-      const rooms = await apiCall('/api/workspace/my-rooms');
-      const listDiv = document.getElementById('roomsList');
-      if (rooms.length === 0) listDiv.innerHTML = '<div style="padding:12px;text-align:center">No rooms yet. Create one to collaborate.</div>';
-      else {
-        listDiv.innerHTML = rooms.map(r => `<div style="padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px"><strong>${r.code}</strong> (${r.members_count || 0} members)<br><button class="action-btn" onclick="joinRoom('${r.code}')">Join</button> ${r.owner_id === state.user?.id ? `<button class="action-btn" onclick="showOwnerDashboard('${r.code}')">📊 Dashboard</button>` : ''}</div>`).join('');
-      }
-    } catch(e) { toast('Failed to load rooms'); }
-    document.getElementById('createRoomBtn').onclick = async () => {
-      try { const res = await apiCall('/api/workspace/create', { method: 'POST', body: JSON.stringify({ tier: state.tier }) }); toast(`Room created: ${res.code}`); showWorkArea(); } catch(e) { toast(e.message); }
+    // ============================================================
+    // CONFIGURATION
+    // ============================================================
+    const CFG = {
+        API: 'https://capitan-ai-jxu8.onrender.com',
+        STREAM_DELAY: 12
     };
-  }
-  async function joinRoom(code) { try { await apiCall('/api/workspace/join', { method: 'POST', body: JSON.stringify({ room_code: code }) }); toast('Joined!'); showWorkArea(); } catch(e) { toast(e.message); } }
-  async function showOwnerDashboard(code) {
-    const data = await apiCall(`/api/workspace/dashboard/${code}`);
-    alert(`Dashboard\nMembers: ${data.members?.length || 0}\nMessages: ${data.message_count || 0}\nCreated: ${data.created_at}`);
-  }
 
-  // Library
-  async function showLibrary() {
-    const lib = await apiCall('/api/library');
-    state.library = lib.items || [];
-    const modalDiv = document.getElementById('libraryModalContent');
-    modalDiv.innerHTML = `<h2>Library</h2><input type="text" id="libName" placeholder="Name" style="width:100%;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px"><textarea id="libContent" rows="2" placeholder="Content" style="width:100%;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px"></textarea><button class="new-chat-btn" id="saveLibBtn">Save</button><div id="libList">${state.library.map(i => `<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid var(--border)"><span>${escapeHtml(i.name)}</span><button onclick="deleteLibItem('${i.id}')">🗑️</button></div>`).join('')}</div><button class="new-chat-btn" style="margin-top:12px" onclick="document.getElementById('libraryModal').classList.remove('open')">Close</button>`;
-    document.getElementById('libraryModal').classList.add('open');
-    document.getElementById('saveLibBtn').onclick = async () => {
-      const name = document.getElementById('libName').value;
-      const content = document.getElementById('libContent').value;
-      if (!name || !content) return toast('Required');
-      await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) });
-      toast('Saved'); showLibrary();
+    // State
+    let state = {
+        token: localStorage.getItem('ct') || null,
+        tier: 'free',
+        user: null,
+        activeChatId: null,
+        chats: [],
+        messages: [],
+        loading: false,
+        library: [],
+        theme: localStorage.getItem('theme') || 'light',
+        sidebarOpen: window.innerWidth > 768,
+        settingsOpen: false
     };
-  }
-  async function deleteLibItem(id) { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); showLibrary(); }
 
-  // Upgrade Modal
-  function showUpgrade() {
-    const modalDiv = document.getElementById('upgradeModalContent');
-    modalDiv.innerHTML = `<h2>Upgrade Plan</h2><div class="stats-grid"><div class="stat-card"><div class="stat-number">Plus</div><div>$8/mo</div><button class="action-btn" onclick="alert('Crypto payment: BTC/ETH')">Upgrade</button></div><div class="stat-card"><div class="stat-number">Pro</div><div>$17/mo</div><button class="action-btn" onclick="alert('Crypto payment')">Upgrade</button></div><div class="stat-card"><div class="stat-number">Pro Max</div><div>$30/mo</div><button class="action-btn" onclick="alert('Crypto payment')">Upgrade</button></div></div><button class="new-chat-btn" onclick="document.getElementById('upgradeModal').classList.remove('open')">Close</button>`;
-    document.getElementById('upgradeModal').classList.add('open');
-  }
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
 
-  function logout() { localStorage.clear(); location.reload(); }
-  function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.innerText = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
-  function escapeHtml(str) { return str?.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}) || ''; }
-  function escapeAttr(str) { return String(str || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n'); }
-  function copyText(text) { navigator.clipboard.writeText(text); toast('Copied!'); }
-  function scrollToBottom() { const area = document.getElementById('messagesArea'); if(area) area.scrollTop = area.scrollHeight; }
-  window.onTelegramAuth = async (user) => { const res = await apiCall('/api/verifyTelegram', { method: 'POST', body: JSON.stringify(user) }); state.token = res.token; localStorage.setItem('ct', res.token); location.reload(); };
-  function initTelegramLogin() { const script = document.createElement('script'); script.src = 'https://telegram.org/js/telegram-widget.js?22'; script.setAttribute('data-telegram-login', 'capitan_ai_bot'); script.setAttribute('data-size', 'large'); script.setAttribute('data-onauth', 'onTelegramAuth(user)'); document.body.appendChild(script); setTimeout(()=>script.remove(), 100); }
+    function formatMarkdown(text) {
+        if (!text) return '';
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+            .replace(/\n/g, '<br>');
+    }
 
-  async function bootstrap() {
-    await initSession();
-    await loadChats();
-    renderChatHistory();
-    document.getElementById('newChatBtn').onclick = () => newChat();
-    document.getElementById('profileNavBtn').onclick = showProfile;
-    document.getElementById('workspaceNavBtn').onclick = showWorkArea;
-    document.getElementById('libraryNavBtn').onclick = showLibrary;
-    document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
-    newChat();
-  }
-  bootstrap();
+    function toast(message) {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast';
+        toastEl.textContent = message;
+        document.body.appendChild(toastEl);
+        setTimeout(() => toastEl.remove(), 2500);
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('open');
+    }
+
+    function scrollToBottom() {
+        const area = document.getElementById('messagesArea');
+        if (area) area.scrollTop = area.scrollHeight;
+    }
+
+    // ============================================================
+    // THEME MANAGEMENT
+    // ============================================================
+    function applyTheme() {
+        document.body.className = state.theme;
+        localStorage.setItem('theme', state.theme);
+        
+        const lightCheck = document.getElementById('themeLightCheck');
+        const darkCheck = document.getElementById('themeDarkCheck');
+        const systemCheck = document.getElementById('themeSystemCheck');
+        if (lightCheck) lightCheck.style.display = state.theme === 'light' ? 'inline' : 'none';
+        if (darkCheck) darkCheck.style.display = state.theme === 'dark' ? 'inline' : 'none';
+        if (systemCheck) systemCheck.style.display = state.theme === 'system' ? 'inline' : 'none';
+    }
+
+    function toggleTheme(theme) {
+        state.theme = theme;
+        applyTheme();
+        toast(`Theme switched to ${theme}`);
+    }
+
+    function toggleSettings() {
+        state.settingsOpen = !state.settingsOpen;
+        const content = document.getElementById('settingsContent');
+        const arrow = document.getElementById('settingsArrow');
+        if (state.settingsOpen) {
+            content.classList.add('open');
+            arrow.innerHTML = '▲';
+        } else {
+            content.classList.remove('open');
+            arrow.innerHTML = '▼';
+        }
+    }
+
+    // ============================================================
+    // SIDEBAR TOGGLE
+    // ============================================================
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        state.sidebarOpen = !state.sidebarOpen;
+        
+        if (window.innerWidth <= 768) {
+            if (state.sidebarOpen) {
+                sidebar.classList.add('open');
+            } else {
+                sidebar.classList.remove('open');
+            }
+        } else {
+            if (state.sidebarOpen) {
+                sidebar.classList.remove('collapsed');
+            } else {
+                sidebar.classList.add('collapsed');
+            }
+        }
+    }
+
+    // ============================================================
+    // API CALLS
+    // ============================================================
+    async function apiCall(endpoint, options = {}) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+        
+        const res = await fetch(`${CFG.API}${endpoint}`, { ...options, headers });
+        if (res.status === 401) {
+            logout();
+            throw new Error('Session expired');
+        }
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || 'Request failed');
+        }
+        return res.json();
+    }
+
+    async function initSession() {
+        try {
+            if (state.token) {
+                const sess = await apiCall('/api/session');
+                state.tier = sess.tier;
+                state.user = sess.user_data;
+            } else {
+                const sess = await apiCall('/api/session');
+                state.token = sess.token;
+                state.tier = sess.tier;
+                localStorage.setItem('ct', state.token);
+            }
+        } catch (e) {
+            console.warn('Session init failed:', e);
+            toast('Connection issue. Retrying...');
+        }
+    }
+
+    // ============================================================
+    // CHAT FUNCTIONS
+    // ============================================================
+    function renderChatHistory() {
+        const container = document.getElementById('chatHistoryList');
+        if (!container) return;
+        
+        if (state.chats.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-tertiary); font-size: 13px;">No conversations yet</div>';
+            return;
+        }
+        
+        container.innerHTML = state.chats.map(chat => `
+            <div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')">
+                <span style="flex: 1; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(chat.title || 'Chat')}</span>
+                <button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background: none; border: none; color: var(--text-tertiary); cursor: pointer;">🗑️</button>
+            </div>
+        `).join('');
+    }
+
+    function renderMessages() {
+        const container = document.getElementById('messagesArea');
+        if (!container) return;
+        
+        if (state.messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <h2 style="margin-bottom: 12px;">CAPITAN AI</h2>
+                    <p style="color: var(--text-secondary);">Ask me anything — finance, code, research, or creative tasks.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = state.messages.map((msg, idx) => `
+            <div class="message ${msg.role}">
+                <div class="message-content">${msg.role === 'user' ? escapeHtml(msg.content) : formatMarkdown(msg.content)}</div>
+            </div>
+        `).join('');
+        
+        scrollToBottom();
+    }
+
+    async function loadChats() {
+        try {
+            const data = await apiCall('/api/chats');
+            state.chats = data.chats || [];
+            renderChatHistory();
+        } catch (e) {
+            console.warn('Load chats failed:', e);
+        }
+    }
+
+    async function loadChat(chatId) {
+        try {
+            const data = await apiCall(`/api/chats/${chatId}`);
+            state.messages = data.messages || [];
+            state.activeChatId = chatId;
+            renderMessages();
+            renderChatHistory();
+        } catch (e) {
+            toast('Failed to load chat');
+        }
+    }
+
+    async function newChat() {
+        state.activeChatId = null;
+        state.messages = [];
+        renderMessages();
+        renderChatHistory();
+        document.getElementById('messageInput').focus();
+    }
+
+    async function deleteChat(chatId) {
+        if (!confirm('Delete this conversation?')) return;
+        try {
+            await apiCall(`/api/chats/${chatId}`, { method: 'DELETE' });
+            if (state.activeChatId === chatId) await newChat();
+            await loadChats();
+            toast('Chat deleted');
+        } catch (e) {
+            toast('Failed to delete');
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if (!text || state.loading) return;
+        
+        input.value = '';
+        state.messages.push({ role: 'user', content: text });
+        renderMessages();
+        state.loading = true;
+
+        const aiIndex = state.messages.length;
+        state.messages.push({ role: 'assistant', content: '' });
+        renderMessages();
+
+        try {
+            const res = await apiCall('/api/chat', {
+                method: 'POST',
+                body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.activeChatId })
+            });
+            state.messages[aiIndex].content = res.content || 'No response';
+            state.activeChatId = res.chat_id;
+            renderMessages();
+            await loadChats();
+        } catch (err) {
+            state.messages[aiIndex].content = `Error: ${err.message}`;
+            renderMessages();
+            toast(err.message);
+        } finally {
+            state.loading = false;
+        }
+    }
+
+    // ============================================================
+    // TELEGRAM LOGIN (COMPLETE)
+    // ============================================================
+    window.onTelegramAuth = async function(user) {
+        try {
+            toast('Verifying Telegram...');
+            const res = await fetch(`${CFG.API}/api/auth/telegram/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: user })
+            });
+            const data = await res.json();
+            if (data.token) {
+                state.token = data.token;
+                state.user = data.user;
+                state.tier = data.user.tier;
+                localStorage.setItem('ct', data.token);
+                toast(`Welcome ${data.user.name || user.first_name}!`);
+                await loadChats();
+                closeModal('dashboardModal');
+                renderMessages();
+            } else {
+                toast('Login failed');
+            }
+        } catch (e) {
+            toast('Telegram login error: ' + e.message);
+        }
+    };
+
+    function initTelegramLogin() {
+        // Remove existing script if any
+        const existing = document.querySelector('script[data-telegram-login]');
+        if (existing) existing.remove();
+        
+        const script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-widget.js?22';
+        script.setAttribute('data-telegram-login', 'capitan_ai_bot');
+        script.setAttribute('data-size', 'large');
+        script.setAttribute('data-radius', '12');
+        script.setAttribute('data-request-access', 'write');
+        script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+        script.async = true;
+        document.body.appendChild(script);
+        
+        toast('Opening Telegram login...');
+        setTimeout(() => script.remove(), 5000);
+    }
+
+    // ============================================================
+    // UPGRADE MODAL
+    // ============================================================
+    function openUpgrade() {
+        const modal = document.getElementById('upgradeModalContent');
+        modal.innerHTML = `
+            <h2>💎 Upgrade CAPITAN AI</h2>
+            <p>Choose the plan that fits your needs</p>
+            <div class="tier-comparison">
+                <div class="tier-card" onclick="selectTier('plus')">
+                    <div class="tier-name">Plus</div>
+                    <div class="tier-price">$8<span style="font-size: 14px;">/month</span></div>
+                    <ul class="tier-features" style="list-style: none; margin-top: 12px;">
+                        <li>✅ 50 messages/day</li>
+                        <li>✅ Groq Llama 3.3 70B AI</li>
+                        <li>✅ Work Area (10 seats)</li>
+                        <li>✅ File uploads (20MB)</li>
+                        <li>✅ Web search</li>
+                    </ul>
+                </div>
+                <div class="tier-card" onclick="selectTier('pro')">
+                    <div class="tier-name">Pro</div>
+                    <div class="tier-price">$17<span style="font-size: 14px;">/month</span></div>
+                    <ul class="tier-features" style="list-style: none; margin-top: 12px;">
+                        <li>✅ 150 messages/day</li>
+                        <li>✅ Claude 3.5 Sonnet AI</li>
+                        <li>✅ Work Area (25 seats)</li>
+                        <li>✅ Live markets & news</li>
+                        <li>✅ Code execution</li>
+                    </ul>
+                </div>
+                <div class="tier-card" onclick="selectTier('pro_max')">
+                    <div class="tier-name">Pro Max</div>
+                    <div class="tier-price">$30<span style="font-size: 14px;">/month</span></div>
+                    <ul class="tier-features" style="list-style: none; margin-top: 12px;">
+                        <li>✅ Unlimited messages</li>
+                        <li>✅ GPT-4o + Claude Ensemble</li>
+                        <li>✅ Work Area (50 seats)</li>
+                        <li>✅ Advanced reasoning</li>
+                        <li>✅ Priority support</li>
+                    </ul>
+                </div>
+            </div>
+            <p style="margin-top: 16px; font-size: 12px; color: var(--text-tertiary);">Contact support for Founder tier access.</p>
+            <button class="btn btn-secondary" onclick="closeModal('upgradeModal')">Close</button>
+        `;
+        document.getElementById('upgradeModal').classList.add('open');
+    }
+
+    function selectTier(tier) {
+        toast(`Upgrade to ${tier} - Contact support for payment details`);
+    }
+
+    // ============================================================
+    // OWNER DASHBOARD
+    // ============================================================
+    async function showOwnerDashboard() {
+        const modal = document.getElementById('dashboardModalContent');
+        modal.innerHTML = `<div style="text-align: center;">Loading dashboard...</div>`;
+        document.getElementById('dashboardModal').classList.add('open');
+        
+        try {
+            let stats = null;
+            try {
+                stats = await apiCall('/api/admin');
+            } catch (e) {}
+            
+            modal.innerHTML = `
+                <h2>📊 Owner Dashboard</h2>
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">${state.tier}</div>
+                        <div>Current Tier</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${state.chats.length}</div>
+                        <div>Total Chats</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${state.messages.length}</div>
+                        <div>Current Messages</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats?.total_users || 'N/A'}</div>
+                        <div>Platform Users</div>
+                    </div>
+                </div>
+                <div style="margin-top: 16px;">
+                    <p><strong>📝 Your Activity</strong></p>
+                    <p style="font-size: 13px;">• Telegram connected: ${state.user?.telegram_username ? '✅ Yes' : '❌ No'}</p>
+                    <p style="font-size: 13px;">• Total conversations: ${state.chats.length}</p>
+                </div>
+                <button class="btn btn-secondary" onclick="closeModal('dashboardModal')">Close</button>
+            `;
+        } catch (e) {
+            modal.innerHTML = `
+                <h2>📊 Owner Dashboard</h2>
+                <p>Sign in with Telegram to see full dashboard stats.</p>
+                <button class="btn" onclick="initTelegramLogin()">Login with Telegram</button>
+                <button class="btn btn-secondary" onclick="closeModal('dashboardModal')">Close</button>
+            `;
+        }
+    }
+
+    // ============================================================
+    // LIBRARY
+    // ============================================================
+    async function openLibrary() {
+        try {
+            const lib = await apiCall('/api/library');
+            state.library = lib.items || [];
+        } catch (e) {
+            state.library = [];
+        }
+        
+        const modal = document.getElementById('libraryModalContent');
+        modal.innerHTML = `
+            <h2>📚 My Library</h2>
+            <div style="margin-bottom: 16px;">
+                <input type="text" id="libName" placeholder="Item name" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); margin-bottom: 8px;">
+                <textarea id="libContent" rows="3" placeholder="Content" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);"></textarea>
+                <button class="btn" onclick="saveLibraryItem()">Save to Library</button>
+            </div>
+            <div id="libraryList">
+                ${state.library.length === 0 ? '<p style="text-align: center; color: var(--text-tertiary);">No saved items</p>' : 
+                    state.library.map(item => `
+                        <div class="library-item">
+                            <div style="flex: 1; cursor: pointer;" onclick="viewLibraryItem('${item.id}')">
+                                <strong>${escapeHtml(item.name)}</strong>
+                                <div style="font-size: 11px; color: var(--text-tertiary);">${new Date(item.created).toLocaleDateString()}</div>
+                            </div>
+                            <button onclick="deleteLibraryItem('${item.id}')" style="background: none; border: none; color: var(--danger); cursor: pointer;">🗑️</button>
+                        </div>
+                    `).join('')
+                }
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal('libraryModal')">Close</button>
+        `;
+        document.getElementById('libraryModal').classList.add('open');
+    }
+
+    async function saveLibraryItem() {
+        const name = document.getElementById('libName')?.value.trim();
+        const content = document.getElementById('libContent')?.value.trim();
+        if (!name || !content) {
+            toast('Name and content required');
+            return;
+        }
+        try {
+            await apiCall('/api/library', {
+                method: 'POST',
+                body: JSON.stringify({ name, type: 'note', content })
+            });
+            toast('Saved to library!');
+            openLibrary();
+        } catch (e) {
+            toast('Failed to save');
+        }
+    }
+
+    async function deleteLibraryItem(id) {
+        if (!confirm('Delete this item?')) return;
+        try {
+            await apiCall(`/api/library/${id}`, { method: 'DELETE' });
+            toast('Deleted');
+            openLibrary();
+        } catch (e) {
+            toast('Failed to delete');
+        }
+    }
+
+    async function viewLibraryItem(id) {
+        const item = state.library.find(i => i.id === id);
+        if (item) {
+            const nameInput = document.getElementById('libName');
+            const contentInput = document.getElementById('libContent');
+            if (nameInput) nameInput.value = item.name;
+            if (contentInput) contentInput.value = item.content;
+        }
+    }
+
+    // ============================================================
+    // LOGOUT
+    // ============================================================
+    function logout() {
+        localStorage.removeItem('ct');
+        state.token = null;
+        state.user = null;
+        state.tier = 'free';
+        state.activeChatId = null;
+        state.messages = [];
+        state.chats = [];
+        toast('Logged out');
+        renderMessages();
+        renderChatHistory();
+    }
+
+    // ============================================================
+    // KEEP-ALIVE PING (Prevents Render cold starts)
+    // ============================================================
+    function startKeepAlive() {
+        setInterval(async () => {
+            try {
+                await fetch(`${CFG.API}/health`);
+                console.log('Keep-alive ping sent');
+            } catch (e) {
+                console.log('Keep-alive failed');
+            }
+        }, 14 * 60 * 1000); // Every 14 minutes
+    }
+
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
+    async function init() {
+        applyTheme();
+        await initSession();
+        await loadChats();
+        renderMessages();
+        
+        // Sidebar toggle listener
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        
+        // Close sidebar on click outside (mobile)
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            if (window.innerWidth <= 768 && state.sidebarOpen && sidebar && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                toggleSidebar();
+            }
+        });
+        
+        startKeepAlive();
+        console.log('CAPITAN AI Frontend Ready');
+    }
+
+    // Start the app
+    init();
 </script>
 </body>
 </html>
