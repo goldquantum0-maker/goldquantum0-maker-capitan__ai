@@ -2,799 +2,606 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<meta name="application-name" content="CAPITAN AI">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CAPITAN AI">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
-<meta name="color-scheme" content="dark">
-<meta name="description" content="CAPITAN AI — Enterprise Intelligence by CLOSEAI Technologies">
-<meta name="format-detection" content="telephone=no">
 <title>CAPITAN AI</title>
 <link rel="manifest" href="/manifest.json">
-
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='22'/%3E%3Cpath d='M32 28 H68 M50 28 V72 M38 72 H62 M32 45 C 32 62, 68 62, 68 45' fill='none' stroke='%23FFFFFF' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='22'/%3E%3Cpath d='M32 28 H68 M50 28 V72 M38 72 H62 M32 45 C 32 62, 68 62, 68 45' fill='none' stroke='%23FFFFFF' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<script>
-(function(){
-  // Immediate synchronous theme initialization to eliminate visual layout flashes
-  var t = localStorage.getItem('cap_theme_mode') || 'system';
-  if(t === 'light') { document.documentElement.classList.add('light'); }
-  else if(t === 'dark') { document.documentElement.classList.remove('light'); }
-  else {
-    var d = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if(!d) document.documentElement.classList.add('light');
-  }
-  var h = new Date().getHours();
-  window.CAPITAN_GREETING = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Good night, night owl';
-  
-  if('serviceWorker' in navigator && window.location.protocol === 'https:'){
-    window.addEventListener('load', function(){
-      navigator.serviceWorker.register('/sw.js').then(function(reg){
-        console.log('Service Worker operational:', reg.scope);
-      }).catch(function(err){
-        console.log('Service Worker context bypassed:', err);
-      });
-    });
-  }
-})();
-</script>
-
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000' rx='22'/%3E%3Cpath d='M32 28 H68 M50 28 V72 M38 72 H62 M32 45 C 32 62, 68 62, 68 45' fill='none' stroke='%23FFFFFF' stroke-width='5.5'/%3E%3C/svg%3E">
 <style>
-/* ── ULTRALIGHT & ACCELERATED GRAPHICS CORE SYSTEM ── */
-:root {
-  --bg: #000000; --bg2: #050505; --bg3: #0a0a0a; --bg4: #111111;
-  --bdr: #161616; --bdr2: #222222; --bdr3: #333333;
-  --txt: #FFFFFF; --txt2: #FFFFFF; --txt3: #AAAAAA; --txt4: #666666;
-  --accent: #FFFFFF; --accent-hover: #E0E0E0; --accent-bg: rgba(255,255,255,0.08);
-  --red: #EF4444; --green: #22C55E; --amber: #F59E0B;
-  --icon: #888888; --icon-hover: #FFFFFF;
-  --radius: 12px; --r-sm: 8px; --r-xs: 4px; --r-lg: 16px;
-  --fs-xs: 11px; --fs-sm: 13px; --fs-md: 14px; --fs-lg: 16px; --fs-xl: 20px;
-  --lh: 1.6; --safe: env(safe-area-inset-bottom, 0px);
-  --shadow: 0 12px 40px rgba(0,0,0,0.85);
-  --transition: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --sidebar-w: 340px; /* Optimized wider spatial canvas */
-}
-
-:root.light {
-  --bg: #FFFFFF; --bg2: #F9F9F9; --bg3: #F0F0F0; --bg4: #E5E5E5;
-  --bdr: #E5E5E5; --bdr2: #D4D4D4; --bdr3: #A3A3A3;
-  --txt: #000000; --txt2: #000000; --txt3: #404040; --txt4: #737373;
-  --accent: #000000; --accent-hover: #262626; --accent-bg: rgba(0,0,0,0.06);
-  --red: #DC2626; --green: #16A34A; --amber: #D97706;
-  --icon: #666666; --icon-hover: #000000;
-  --shadow: 0 12px 40px rgba(0,0,0,0.06);
-}
-
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { font-size: 14px; height: 100%; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
-body { 
-  background: var(--bg); color: var(--txt); font-family: var(--font); 
-  font-size: var(--fs-sm); font-weight: 400; line-height: var(--lh); 
-  height: 100vh; height: 100dvh; overflow: hidden; 
-  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility; transform: translateZ(0);
-}
-
-#app { display: flex; height: 100vh; height: 100dvh; position: relative; overflow: hidden; }
-pre, code { font-family: 'SF Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important; }
-
-/* ── Accelerated Structural Elements ── */
-.sidebar {
-  width: var(--sidebar-w); min-width: var(--sidebar-w);
-  background: var(--bg); border-right: 1px solid var(--bdr);
-  display: flex; flex-direction: column; z-index: 100;
-  overflow-y: auto; overflow-x: hidden; will-change: width, transform, opacity;
-  transition: width var(--transition), min-width var(--transition), transform var(--transition), opacity var(--transition);
-  height: 100%; flex-shrink: 0;
-}
-.sidebar.collapsed { width: 0; min-width: 0; opacity: 0; pointer-events: none; transform: translate3d(-20px, 0, 0); border-right: none; }
-.sidebar-mobile { position: fixed; left: 0; top: 0; bottom: 0; transform: translate3d(-105%, 0, 0); box-shadow: var(--shadow); z-index: 200; }
-.sidebar-mobile.open { transform: translate3d(0, 0, 0); }
-
-.main {
-  flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); position: relative; min-width: 0; will-change: padding;
-}
-.chat-container { flex: 1; display: flex; flex-direction: column; max-width: 880px; margin: 0 auto; width: 100%; min-height: 0; padding: 0 24px; position: relative; }
-.chat-messages { flex: 1; overflow-y: auto; padding: 80px 0 32px; will-change: scroll-position; -webkit-overflow-scrolling: touch; }
-
-/* ── Absolute Controls Position Layer ── */
-.top-interface-bar {
-  position: absolute; top: 16px; left: 24px; right: 24px; height: 44px;
-  display: flex; align-items: center; justify-content: space-between; z-index: 90; pointer-events: none;
-}
-.top-interface-bar button { pointer-events: auto; }
-
-.toggle-desktop {
-  background: var(--bg2); border: 1px solid var(--bdr2); color: var(--icon);
-  width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all var(--transition); box-shadow: var(--shadow);
-}
-.toggle-desktop:hover { color: var(--icon-hover); border-color: var(--bdr3); background: var(--bg3); }
-
-.action-new-convo-top {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: var(--bg2); border: 1px solid var(--bdr2); color: var(--txt);
-  padding: 0 16px; height: 36px; border-radius: 18px; cursor: pointer;
-  font-size: var(--fs-xs); font-weight: 600; font-family: var(--font);
-  transition: all var(--transition); box-shadow: var(--shadow);
-}
-.action-new-convo-top:hover { border-color: var(--bdr3); background: var(--bg3); transform: translateY(-1px); }
-.action-new-convo-top:active { transform: translateY(0); }
-
-/* ── Fast Splash Engine ── */
-.splash-screen { position: fixed; inset: 0; z-index: 9999; background: #000000; display: flex; align-items: center; justify-content: center; transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s; }
-.splash-screen.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-.splash-logo { display: flex; align-items: center; justify-content: center; animation: logoPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-@keyframes logoPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: 0.75; } }
-
-/* ── SVG Anchor/Capitan Corporate Identity ── */
-.sb-logo { display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: transform var(--transition); width: 36px; height: 36px; flex-shrink: 0; }
-.sb-logo:hover { transform: scale(1.05); }
-.sb-logo.pulse svg { animation: logoPulse 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-.icon-svg { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
-.icon-svg.lg { width: 22px; height: 22px; }
-.icon-svg.sm { width: 14px; height: 14px; }
-
-/* ── Typography & UI Refinements ── */
-.sb-header { padding: 24px 24px 18px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; }
-.sb-brand-name { font-size: var(--fs-md); font-weight: 700; color: var(--txt); letter-spacing: 0.03em; }
-.sb-ticker { flex-shrink: 0; overflow: hidden; background: var(--bg2); border-bottom: 1px solid var(--bdr); padding: 6px 0; }
-.sb-ticker-track { display: flex; gap: 20px; animation: tickerScroll 25s linear infinite; white-space: nowrap; padding: 2px 12px; }
-@keyframes tickerScroll { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-50%,0,0); } }
-.sb-ticker-item { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; }
-.sb-ticker-item .ticker-symbol { color: var(--txt3); }
-.sb-ticker-item .ticker-change.positive { color: var(--green); }
-.sb-ticker-item .ticker-change.negative { color: var(--red); }
-
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root { --bg: #000; --bg2: #0a0a0a; --bg3: #111; --bdr: #1a1a1a; --txt: #fff; --txt2: #ccc; --txt3: #666; --accent: #A0A0A4; --green: #22C55E; --red: #EF4444; }
+body { background: var(--bg); color: var(--txt); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; overflow: hidden; }
+#app { display: flex; height: 100vh; }
+.sidebar { width: 280px; background: var(--bg2); border-right: 1px solid var(--bdr); display: flex; flex-direction: column; overflow-y: auto; transition: left 0.3s; }
+.sb-header { padding: 20px; border-bottom: 1px solid var(--bdr); display: flex; align-items: center; gap: 12px; }
+.sb-logo { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
+.sb-brand-name { font-size: 18px; font-weight: 600; }
+.btn-new-convo { margin: 16px; padding: 10px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-new-convo:hover { opacity: 0.9; }
 .sb-section { border-bottom: 1px solid var(--bdr); }
-.sb-section-header { font-size: 10px; color: var(--txt4); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; padding: 18px 24px 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; transition: color var(--transition); }
-.sb-section-header:hover { color: var(--txt3); }
-.sb-section-arrow { font-size: 8px; transition: transform 0.2s ease; color: var(--txt4); }
+.sb-section-header { padding: 12px 20px; font-size: 11px; color: var(--txt3); text-transform: uppercase; cursor: pointer; display: flex; justify-content: space-between; }
+.sb-section-header:hover { color: var(--txt2); }
+.sb-section-arrow { transition: transform 0.2s; }
 .sb-section-header.open .sb-section-arrow { transform: rotate(90deg); }
-.sb-section-body { overflow: hidden; transition: max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1); max-height: 0; }
-.sb-section-body.open { max-height: 1000px; }
-
-.sb-setting-item { display: flex; align-items: center; gap: 14px; padding: 14px 24px; cursor: pointer; transition: background 0.12s ease; min-height: 56px; border-bottom: 1px solid var(--bdr); }
-.sb-setting-item:last-child { border-bottom: none; }
+.sb-section-body { overflow: hidden; transition: max-height 0.3s; max-height: 0; }
+.sb-section-body.open { max-height: 500px; }
+.sb-setting-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--bdr); }
 .sb-setting-item:hover { background: var(--bg3); }
-.sb-setting-icon { width: 32px; height: 32px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.sb-setting-info { flex: 1; min-width: 0; }
-.sb-setting-label { font-size: var(--fs-sm); color: var(--txt); font-weight: 500; }
-.sb-setting-value { font-size: 11px; color: var(--txt4); margin-top: 2px; }
-.sb-setting-chevron { color: var(--txt4); display: flex; align-items: center; }
-.sb-setting-check { font-size: var(--fs-sm); color: var(--txt); font-weight: 700; }
-
-.sb-chat-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 24px; cursor: pointer; color: var(--txt3); font-size: var(--fs-sm); font-weight: 400; transition: all 0.12s ease; border-bottom: 1px solid var(--bdr); }
-.sb-chat-item:hover { background: var(--bg3); color: var(--txt); }
+.sb-setting-icon { width: 28px; height: 28px; background: var(--bg3); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.sb-setting-label { font-size: 13px; }
+.sb-setting-value { font-size: 10px; color: var(--txt3); margin-top: 2px; }
+.sb-chat-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; }
+.sb-chat-item:hover { background: var(--bg3); }
 .sb-chat-item.active { background: var(--bg3); color: var(--txt); font-weight: 600; }
-.sb-chat-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sb-chat-del { background: none; border: none; color: transparent; cursor: pointer; padding: 4px 8px; border-radius: var(--r-xs); transition: all 0.12s; }
-.sb-chat-item:hover .sb-chat-del { color: var(--txt4); }
-.sb-chat-del:hover { color: var(--red) !important; background: var(--bg4); }
-.sb-footer { padding: 18px 24px; text-align: center; font-size: 10px; color: var(--txt4); letter-spacing: .04em; border-top: 1px solid var(--bdr); font-weight: 500; }
-
-/* ── Presentation Architecture ── */
-.welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 45h; text-align: center; padding: 40px 20px; animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-@keyframes fadeUp { from { opacity: 0; transform: translate3d(0, 6px, 0); } to { opacity: 1; transform: translate3d(0,0,0); } }
-.welcome-pills { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 600px; margin-top: 24px; }
-.wp-pill { padding: 12px 20px; border: 1px solid var(--bdr2); border-radius: 24px; font-size: var(--fs-sm); color: var(--txt2); cursor: pointer; transition: all 0.15s; font-weight: 500; display: flex; align-items: center; gap: 8px; background: var(--bg); }
-.wp-pill:hover { border-color: var(--bdr3); background: var(--bg3); transform: translateY(-1px); }
-
-.msg { margin-bottom: 28px; animation: msgIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-@keyframes msgIn { from { opacity: 0; transform: translate3d(0, 4px, 0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+.sb-chat-del { background: none; border: none; color: var(--txt3); cursor: pointer; }
+.sb-chat-del:hover { color: var(--red); }
+.sb-footer { padding: 16px; text-align: center; font-size: 10px; color: var(--txt3); border-top: 1px solid var(--bdr); }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.chat-container { flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; padding: 0 20px; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 80px 0 20px; }
+.welcome { text-align: center; padding: 40px; }
+.welcome h2 { font-size: 28px; margin-bottom: 12px; }
+.welcome-pills { display: flex; gap: 12px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+.wp-pill { padding: 10px 20px; border: 1px solid var(--bdr); border-radius: 30px; cursor: pointer; transition: all 0.2s; }
+.wp-pill:hover { background: var(--bg2); border-color: var(--accent); }
+.msg { margin-bottom: 24px; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 .msg.user { display: flex; justify-content: flex-end; }
-.msg-user-bubble { background: var(--bg2); border: 1px solid var(--bdr2); border-radius: 18px 18px 4px 18px; padding: 12px 18px; max-width: 82%; color: var(--txt); font-size: var(--fs-sm); line-height: var(--lh); word-break: break-word; }
-.msg-ai-label { font-size: 11px; color: var(--txt4); margin-bottom: 8px; font-weight: 700; letter-spacing: .06em; }
-.msg-ai-body { color: var(--txt); line-height: var(--lh); font-size: var(--fs-md); word-break: break-word; }
-
-/* Text rendering optimization inside response blocks */
-.msg-ai-body p { margin-bottom: 12px; }
-.msg-ai-body p:last-child { margin-bottom: 0; }
-.msg-ai-body code { background: var(--bg3); padding: 3px 6px; border-radius: 4px; font-size: 0.9em; border: 1px solid var(--bdr2); color: var(--txt); }
-.msg-ai-body pre { background: var(--bg2); border: 1px solid var(--bdr2); border-radius: var(--radius); padding: 16px; overflow-x: auto; margin: 14px 0; }
-.msg-ai-body pre code { background: none; border: none; padding: 0; font-size: 12px; color: var(--txt2); }
-.msg-ai-body ul, .msg-ai-body ol { padding-left: 24px; margin: 10px 0; }
-.msg-ai-body li { margin-bottom: 6px; }
-.msg-ai-body h1, .msg-ai-body h2, .msg-ai-body h3 { margin: 20px 0 10px; font-weight: 600; color: var(--txt); line-height: 1.3; }
-.msg-ai-body blockquote { border-left: 3px solid var(--bdr3); padding-left: 16px; color: var(--txt3); margin: 14px 0; font-style: italic; }
-.msg-ai-body hr { border: none; border-top: 1px solid var(--bdr); margin: 18px 0; }
-
-.msg-actions { display: flex; gap: 8px; margin-top: 10px; opacity: 0; transition: opacity 0.15s; }
+.msg-user-bubble { background: var(--bg2); border: 1px solid var(--bdr); padding: 10px 16px; border-radius: 18px 18px 4px 18px; max-width: 80%; }
+.msg-ai-label { font-size: 11px; color: var(--txt3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.msg-ai-body { line-height: 1.6; font-size: 14px; }
+.msg-ai-body pre { background: var(--bg2); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid var(--bdr); }
+.msg-ai-body code { background: var(--bg2); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+.msg-ai-body p { margin-bottom: 8px; }
+.msg-actions { display: flex; gap: 8px; margin-top: 8px; opacity: 0.5; transition: opacity 0.2s; }
 .msg:hover .msg-actions { opacity: 1; }
-.msg-action { background: none; border: none; color: var(--txt4); cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.12s; display: flex; align-items: center; }
-.msg-action:hover { color: var(--txt); background: var(--bg3); }
-.msg-action.liked { color: var(--green); } .msg-action.disliked { color: var(--red); }
-
-.stream-cursor { display: inline-block; width: 2px; height: 1.15em; background: var(--txt); margin-left: 2px; animation: cursorBlink 0.6s step-end infinite; vertical-align: text-bottom; }
-@keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-.token-fade { animation: tokenIn 0.08s ease-out forwards; }
-@keyframes tokenIn { from { opacity: 0; transform: translate3d(0, 1px, 0); } to { opacity: 1; transform: translate3d(0,0,0); } }
-
-/* ── Interactive Workspace Block ── */
-.input-area { padding: 12px 0 calc(20px + var(--safe)); flex-shrink: 0; background: var(--bg); position: relative; z-index: 10; }
-.input-wrap { display: flex; gap: 12px; background: var(--bg2); border: 1px solid var(--bdr2); border-radius: 28px; padding: 6px 6px 6px 20px; align-items: center; transition: all var(--transition); }
-.input-wrap:focus-within { border-color: var(--txt4); }
-.input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: var(--fs-md); padding: 8px 0; font-family: var(--font); -webkit-appearance: none; }
-.input-field::placeholder { color: var(--txt4); }
-.input-field:disabled { opacity: 0.5; }
-.upload-btn, .send-btn { width: 38px; height: 38px; background: none; border: none; color: var(--icon); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all var(--transition); flex-shrink: 0; }
-.upload-btn:hover { color: var(--icon-hover); background: var(--bg4); }
-.send-btn { background: var(--accent); color: var(--bg); }
-.send-btn:hover:not(:disabled) { transform: scale(1.03); background: var(--accent-hover); }
-.send-btn:disabled { opacity: 0.08; cursor: not-allowed; transform: none; }
-:root.light .send-btn { color: #FFFFFF; }
-
-/* ── Overlay Modal Interface Layer ── */
-.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 150; opacity: 0; transition: opacity 0.2s ease; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
-.overlay.visible { display: block; opacity: 1; }
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 300; align-items: center; justify-content: center; padding: 20px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: fadeIn 0.18s ease-out; }
+.msg-action { background: none; border: none; color: var(--txt3); cursor: pointer; padding: 4px; font-size: 14px; }
+.msg-action:hover { color: var(--txt); }
+.thinking { display: flex; align-items: center; gap: 8px; color: var(--txt3); }
+.stream-cursor { display: inline-block; width: 2px; height: 1.2em; background: var(--accent); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.token-fade { animation: tokenIn 0.05s ease; }
+@keyframes tokenIn { from { opacity: 0; transform: translateY(1px); } to { opacity: 1; transform: translateY(0); } }
+.input-area { padding: 16px 0 24px; background: var(--bg); }
+.input-wrap { display: flex; gap: 12px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: 30px; padding: 8px 8px 8px 20px; align-items: center; }
+.input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: 14px; padding: 8px 0; }
+.input-field::placeholder { color: var(--txt3); }
+.send-btn { width: 36px; height: 36px; background: var(--accent); color: #000; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: transform 0.1s; }
+.send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.send-btn:hover:not(:disabled) { transform: scale(1.05); }
+.upload-btn { background: none; border: none; color: var(--txt3); cursor: pointer; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.upload-btn:hover { color: var(--txt); background: var(--bg3); }
+.top-bar { position: fixed; top: 16px; right: 20px; z-index: 100; display: flex; gap: 8px; }
+.toggle-sidebar { position: fixed; top: 16px; left: 16px; background: var(--bg2); border: 1px solid var(--bdr); color: var(--txt); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 100; font-size: 20px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #000; padding: 8px 16px; border-radius: 20px; font-size: 12px; z-index: 1000; animation: fadeInUp 0.2s ease; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.modal { background: var(--bg2); border: 1px solid var(--bdr2); border-radius: var(--radius); padding: 28px; width: 460px; max-width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow); animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
-@keyframes modalIn { from { opacity: 0; transform: scale(0.97) translate3d(0, 8px, 0); } to { opacity: 1; transform: scale(1) translate3d(0,0,0); } }
-
-.modal h2 { font-size: var(--fs-lg); font-weight: 700; margin-bottom: 6px; color: var(--txt); }
-.modal p { font-size: var(--fs-xs); color: var(--txt3); margin-bottom: 16px; }
-.modal input, .modal textarea { width: 100%; background: var(--bg3); border: 1px solid var(--bdr2); color: var(--txt); padding: 12px 16px; border-radius: var(--r-sm); font-size: var(--fs-sm); margin-bottom: 12px; outline: none; font-family: var(--font); }
-.modal input:focus, .modal textarea:focus { border-color: var(--txt4); }
-.modal-btn { width: 100%; background: var(--txt); color: var(--bg); border: none; padding: 12px; border-radius: var(--r-sm); cursor: pointer; font-weight: 600; font-size: var(--fs-sm); margin-top: 6px; font-family: var(--font); transition: all var(--transition); text-align: center; }
-.modal-btn:hover { opacity: 0.88; }
-.modal-btn.sec { background: transparent; border: 1px solid var(--bdr2); color: var(--txt2); margin-top: 6px; }
-.modal-btn.sec:hover { background: var(--bg3); border-color: var(--bdr3); }
-
-.pill-tabs { display: flex; gap: 6px; margin-bottom: 14px; background: var(--bg3); padding: 4px; border-radius: 20px; }
-.pill-tab { flex: 1; padding: 8px 12px; border: none; border-radius: 16px; background: none; color: var(--txt3); font-size: var(--fs-xs); cursor: pointer; font-family: var(--font); font-weight: 600; text-align: center; transition: all 0.12s; }
-.pill-tab.active { background: var(--bg); color: var(--txt); }
-
-.tier-grid { display: grid; gap: 10px; margin-bottom: 16px; }
-.tier-card { border: 1px solid var(--bdr2); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all var(--transition); background: var(--bg); }
-.tier-card:hover { border-color: var(--bdr3); }
-.tier-card.selected { border-color: var(--txt); background: var(--accent-bg); }
-.tier-card-name { font-weight: 700; font-size: var(--fs-sm); color: var(--txt); }
-.tier-card-price { font-size: var(--fs-xl); font-weight: 700; color: var(--txt); margin: 4px 0; }
-.tier-card-price span { font-size: var(--fs-xs); color: var(--txt3); font-weight: 400; }
-.tier-card-features { list-style: none; padding: 0; margin-top: 8px; }
-.tier-card-features li { font-size: var(--fs-xs); color: var(--txt2); padding: 3px 0; display: flex; align-items: center; gap: 6px; }
-
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-.stat-card { padding: 14px; background: var(--bg3); border: 1px solid var(--bdr2); border-radius: var(--r-sm); text-align: center; }
-.stat-val { font-size: var(--fs-xl); font-weight: 700; color: var(--txt); }
-.stat-lbl { font-size: 9px; color: var(--txt4); text-transform: uppercase; margin-top: 2px; }
-
-.toast { position: fixed; bottom: 24px; left: 50%; transform: translate3d(-50%, 0, 0); background: var(--txt); color: var(--bg); padding: 10px 24px; border-radius: 24px; font-size: var(--fs-xs); font-weight: 600; z-index: 400; box-shadow: var(--shadow); transition: opacity 0.2s, transform 0.2s; pointer-events: none; white-space: nowrap; }
-.wallet-box { background: var(--bg3); border: 1px solid var(--bdr2); border-radius: var(--r-sm); padding: 12px; font-size: var(--fs-xs); color: var(--txt3); word-break: break-all; margin-bottom: 12px; cursor: pointer; text-align: center; }
-
-.news-item { padding: 12px 4px; border-bottom: 1px solid var(--bdr); font-size: var(--fs-sm); cursor: pointer; transition: background 0.12s; }
-.news-item:hover { background: var(--accent-bg); }
-.news-item .news-source { font-size: 9px; color: var(--txt4); text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
-.news-item .news-headline { color: var(--txt); font-weight: 600; margin: 4px 0 2px; line-height: 1.4; }
-.news-item .news-summary { font-size: var(--fs-xs); color: var(--txt3); line-height: 1.4; }
-.news-item .news-time { font-size: 9px; color: var(--txt4); margin-top: 4px; }
-
-.business-indicator { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; background: var(--bdr2); color: var(--txt4); }
-.business-indicator.active { background: var(--green); color: #000000; }
-.business-indicator.off { background: var(--bdr2); color: var(--txt4); }
-#offlineBanner { position: fixed; top: 0; left: 0; right: 0; z-index: 500; background: var(--amber); color: #000000; text-align: center; padding: 6px; font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.02em; }
-
-.toggle-sidebar { position: absolute; top: 16px; left: 16px; z-index: 180; background: var(--bg2); border: 1px solid var(--bdr2); color: var(--icon); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: var(--shadow); }
-
-/* ── Responsive Adaptation Layer ── */
-@media(min-width: 769px) {
-  .toggle-sidebar { display: none; }
-  .toggle-desktop { display: flex; }
-  .sidebar-mobile { position: relative; transform: none; box-shadow: none; z-index: 100; }
-}
-@media(max-width: 768px) {
-  .toggle-sidebar { display: flex; }
-  .toggle-desktop { display: none; }
-  .sidebar { display: none; }
-  .sidebar-mobile { display: flex; flex-direction: column; width: 310px; min-width: 310px; }
-  .msg-user-bubble { max-width: 90%; }
-  .chat-messages { padding-top: 76px; }
-  .top-interface-bar { left: 68px; right: 16px; }
+.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 12px; padding: 24px; width: 420px; max-width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal h2 { margin-bottom: 12px; font-size: 20px; }
+.modal p { margin-bottom: 16px; color: var(--txt3); font-size: 13px; }
+.modal input, .modal textarea { width: 100%; background: var(--bg3); border: 1px solid var(--bdr); color: var(--txt); padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
+.modal-btn { width: 100%; padding: 10px; background: var(--accent); color: #000; border: none; border-radius: 6px; cursor: pointer; margin-top: 8px; font-weight: 600; }
+.modal-btn.sec { background: transparent; border: 1px solid var(--bdr); color: var(--txt); }
+.tier-card { border: 1px solid var(--bdr); border-radius: 10px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+.tier-card:hover { border-color: var(--accent); }
+.tier-card.selected { border-color: var(--accent); background: var(--bg3); }
+.tier-card-name { font-weight: 700; font-size: 16px; }
+.tier-card-price { font-size: 24px; font-weight: 700; margin: 8px 0; }
+.tier-card-price span { font-size: 12px; font-weight: 400; color: var(--txt3); }
+.wallet-box { background: var(--bg3); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; margin-bottom: 12px; cursor: pointer; text-align: center; }
+.news-item { padding: 12px; border-bottom: 1px solid var(--bdr); cursor: pointer; }
+.news-item:hover { background: var(--bg3); }
+.news-source { font-size: 10px; color: var(--accent); text-transform: uppercase; }
+.news-headline { font-weight: 600; margin: 4px 0; }
+.business-indicator { display: inline-flex; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.business-indicator.active { background: var(--green); color: #000; }
+.business-indicator.off { background: var(--bg3); color: var(--txt3); }
+#offlineBanner { position: fixed; top: 0; left: 0; right: 0; background: var(--amber); color: #000; text-align: center; padding: 6px; font-size: 12px; z-index: 500; }
+@media (max-width: 768px) {
+    .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; z-index: 200; }
+    .sidebar.open { left: 0; }
+    .toggle-sidebar { display: flex; }
+    .chat-messages { padding-top: 60px; }
+    .chat-container { padding: 0 12px; }
 }
 </style>
 </head>
 <body>
 
-<div class="splash-screen" id="splashScreen">
-  <span class="splash-logo">
-    <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100" height="100" rx="22" fill="#000000"/>
-      <path d="M32 28 H68 M50 28 V72 M38 72 H62 M32 45 C 32 62, 68 62, 68 45" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </span>
-</div>
-
 <div id="app"></div>
-<div class="overlay" id="overlay"></div>
-
-<button class="toggle-sidebar" id="toggleSidebar" aria-label="Open Navigation">
-  <svg class="icon-svg lg" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-</button>
-
-<div id="moneyModal" class="modal-overlay"><div class="modal" style="width: 520px;"><h2>💰 Market Operations</h2><p>Real-time asset validation.</p><div id="marketsPricesContent" style="max-height: 340px; overflow-y: auto;"></div><div id="marketsNewsContent" style="max-height: 340px; overflow-y: auto; display: none;"></div><div class="pill-tabs" style="margin-top: 14px;"><button class="pill-tab active" id="marketTabPrices">Asset Prices</button><button class="pill-tab" id="marketTabNews">Terminal News</button></div><button class="modal-btn sec" id="closeMoney">Close Terminal</button></div></div>
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade Account Hierarchy</h2><p>Instant activation via decentralized settlement network.</p><div class="tier-grid" id="tierCards"></div><div id="paySection" style="display: none;"><div class="pill-tabs"><button class="pill-tab active" data-coin="BTC">Bitcoin (BTC)</button><button class="pill-tab" data-coin="ETH">Ethereum (ETH)</button></div><p style="font-size: 11px; margin-bottom: 6px;">Remit payment to the institutional address below:</p><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Enter Transaction ID / Hash Key"><button class="modal-btn" id="verifyUpgrade">Verify Settlement</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
-<div id="founderModal" class="modal-overlay"><div class="modal"><h2>🔐 Access Control Verification</h2><p>Enter administrative access credentials.</p><input type="password" id="founderCode" placeholder="Administrative Passcode" autocomplete="off"><button class="modal-btn" id="verifyFounder">Authenticate Identity</button><button class="modal-btn sec" id="closeFounder">Cancel</button></div></div>
-<div id="adminModal" class="modal-overlay"><div class="modal" style="width: 520px;"><h2>Admin Operations Panel</h2><div id="adminContent"></div><button class="modal-btn sec" id="closeAdmin">Exit Session</button></div></div>
-<div id="libraryModal" class="modal-overlay"><div class="modal"><h2>📁 Strategic Asset Library</h2><p>Store specialized knowledge sets.</p><div id="libraryList" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px;"></div><input type="text" id="libName" placeholder="Asset Identifier Name"><textarea id="libContent" placeholder="Resource payload configuration..." style="min-height: 80px; resize: vertical;"></textarea><button class="modal-btn" id="libSave">Commit To Archive</button><button class="modal-btn sec" id="closeLibrary">Close</button></div></div>
-<div id="workspaceModal" class="modal-overlay"><div class="modal" style="width: 520px;"><h2>🗂️ Collaboration Core</h2><p>Synchronized environment access point.</p><div class="pill-tabs"><button class="pill-tab active" id="wsTabCreate">Provision</button><button class="pill-tab" id="wsTabJoin">Attach</button><button class="pill-tab" id="wsTabChat">Comms</button></div><div id="wsCreatePanel"><button class="modal-btn" id="wsCreateBtn">Deploy Virtual Space</button><div id="wsRoomDisplay" style="display: none; text-align: center; margin-top: 12px; padding: 16px; background: var(--bg3); border-radius: var(--radius); border: 1px solid var(--bdr2);"><div style="font-size: 10px; color: var(--txt4);">SPACE KEY IDENTIFIER</div><div style="font-size: 22px; font-weight: 700; font-family: monospace; letter-spacing: 0.05em; margin-top: 4px;" id="wsRoomCode">—</div></div></div><div id="wsJoinPanel" style="display: none;"><input type="text" id="wsJoinInput" placeholder="Target Space Identifier Key" style="text-transform: uppercase;"><button class="modal-btn" id="wsJoinBtn">Establish Node Connection</button></div><div id="wsChatPanel" style="display: none;"><div id="wsNotesDisplay" style="background: var(--bg3); padding: 12px; margin-bottom: 12px; max-height: 100px; overflow-y: auto; font-size: var(--fs-xs); border: 1px solid var(--bdr); display: none;"></div><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><span style="font-size: 11px; color: var(--txt4); font-weight: 600;">Shared Manifest</span><button id="wsEditNote" style="background: none; border: 1px solid var(--bdr2); color: var(--txt3); padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer;">Modify</button></div><textarea id="wsNotesEditor" style="min-height: 60px; resize: vertical; display: none;"></textarea><button id="wsSaveNote" class="modal-btn" style="display: none; margin-bottom: 12px; padding: 8px;">Commit Manifest Changes</button><div style="max-height: 180px; overflow-y: auto; margin-bottom: 12px; padding: 12px; background: var(--bg3); border-radius: var(--r-sm); border: 1px solid var(--bdr2);" id="wsMessages"></div><div style="display: flex; gap: 8px;"><input type="text" id="wsMessageInput" placeholder="Broadcast to workspace nodes..." style="margin-bottom: 0;"><button class="modal-btn" id="wsSendBtn" style="width: auto; margin-top: 0; padding: 0 16px;">Transmit</button></div></div><button class="modal-btn sec" id="closeWorkspace">Terminate Connection Context</button></div></div>
-<div id="privacyModal" class="modal-overlay"><div class="modal"><h2>🔒 Security Matrix & Paradigm Policy</h2><div style="font-size: var(--fs-xs); color: var(--txt3); line-height: 1.7; overflow-y: auto; max-height: 60vh;"><p><strong>CAPITAN AI</strong> by CLOSEAI Technologies. Volatile in-memory execution paradigm. Zero transactional history permanence on local host nodes.</p><p style="margin-top: 12px;"><strong>Operational Disclaimer:</strong> Systems output configurations are for processing acceleration only. No asset management directives or structural advice implied.</p><p style="margin-top: 12px;"><strong>Account Levels:</strong> Base Tier, Enhanced Plus ($8/interval), and Institutional Pro ($17/interval). Asset validation transactions processed via atomic crypto rails.</p></div><button class="modal-btn sec" id="closePrivacy">Acknowledge</button></div></div>
-<div id="supportModal" class="modal-overlay"><div class="modal"><h2>🆘 Helpdesk Gateway</h2><div style="font-size: var(--fs-xs); color: var(--txt3); line-height: 1.7;"><p>System operations assistance nexus:</p><p style="margin-top: 12px;"><strong>Encrypted Transmission:</strong> <a href="mailto:closeaitechnologies@protonmail.com" style="color: var(--txt); font-weight: 600;">closeaitechnologies@protonmail.com</a></p><p style="margin-top: 4px;"><strong>Processing SLA window:</strong> 24–48 Operational Hours</p></div><button class="modal-btn sec" id="closeSupport">Close Gateway</button></div></div>
-<div id="techModal" class="modal-overlay"><div class="modal" style="width: 540px;"><h2>💻 Strategic Intelligence Feed</h2><p style="font-size: var(--fs-xs); color: var(--txt4)">Target fields: Artificial Intelligence · Distributed Systems · High Tech Venture Capital</p><div id="techNewsContent" style="max-height: 380px; overflow-y: auto; margin-top: 8px;"></div><button class="modal-btn sec" id="closeTech">Dismiss Feed</button></div></div>
-<div id="newsReaderModal" class="modal-overlay"><div class="modal" style="width: 540px;"><h2 id="newsReaderTitle">Terminal Feed Content</h2><div style="font-size: var(--fs-sm); line-height: 1.7; margin-top: 12px; color: var(--txt2);" id="newsReaderContent"></div><button class="modal-btn sec" id="closeNewsReader">Return to Core Panel</button></div></div>
-<div id="businessModal" class="modal-overlay"><div class="modal"><h2>Corporate Business Layer Context</h2><p>Toggle high-sanitization presentation formatting variables.</p><div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--bg3); border-radius: var(--r-sm); border: 1px solid var(--bdr2); margin-bottom: 14px;"><span style="font-weight: 600;">Corporate Interface Mode</span><span id="businessToggle" class="business-indicator off" onclick="window.toggleBusinessMode?.()">OFF</span></div><button class="modal-btn sec" id="closeBusiness">Dismiss Configuration</button></div></div>
-<div id="offlineBanner" style="display: none;">System disconnected. Operating within local cached structural environment context.</div>
+<div class="modal-overlay" id="upgradeModal"><div class="modal"><h2>⚡ Upgrade Account</h2><div id="tierCards"></div><div id="paySection" style="display:none"><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Transaction ID"><button class="modal-btn" id="verifyUpgrade">Verify Payment</button></div><button class="modal-btn sec" id="closeUpgrade">Close</button></div></div>
+<div class="modal-overlay" id="founderModal"><div class="modal"><h2>🔐 Founder Access</h2><input type="password" id="founderCode" placeholder="Founder Code"><button class="modal-btn" id="verifyFounder">Authenticate</button><button class="modal-btn sec" id="closeFounder">Close</button></div></div>
+<div class="modal-overlay" id="adminModal"><div class="modal" style="width:500px"><h2>Admin Panel</h2><div id="adminContent"></div><button class="modal-btn sec" id="closeAdmin">Close</button></div></div>
+<div class="modal-overlay" id="libraryModal"><div class="modal"><h2>📁 Library</h2><div id="libraryList" style="max-height:200px;overflow-y:auto;margin-bottom:12px"></div><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" placeholder="Content..." rows="3"></textarea><button class="modal-btn" id="libSave">Save</button><button class="modal-btn sec" id="closeLibrary">Close</button></div></div>
+<div class="modal-overlay" id="workspaceModal"><div class="modal" style="width:500px"><h2>🗂️ Work Area</h2><div class="pill-tabs" style="display:flex;gap:8px;margin-bottom:16px"><button class="pill-tab active" id="wsTabCreate">Create</button><button class="pill-tab" id="wsTabJoin">Join</button><button class="pill-tab" id="wsTabChat">Chat</button></div><div id="wsCreatePanel"><button class="modal-btn" id="wsCreateBtn">Create Room</button><div id="wsRoomDisplay" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:8px;text-align:center"><div style="font-size:10px">ROOM CODE</div><div style="font-size:24px;font-weight:700" id="wsRoomCode">—</div></div></div><div id="wsJoinPanel" style="display:none"><input type="text" id="wsJoinInput" placeholder="Room Code"><button class="modal-btn" id="wsJoinBtn">Join Room</button></div><div id="wsChatPanel" style="display:none"><div id="wsNotesDisplay" style="background:var(--bg3);padding:12px;margin-bottom:12px;border-radius:8px;display:none"></div><textarea id="wsNotesEditor" placeholder="Notes..." rows="2" style="display:none;margin-bottom:8px"></textarea><button id="wsSaveNote" style="display:none;margin-bottom:8px" class="modal-btn">Save Notes</button><div id="wsMessages" style="max-height:200px;overflow-y:auto;margin-bottom:12px;padding:8px;background:var(--bg3);border-radius:8px"></div><div style="display:flex;gap:8px"><input type="text" id="wsMessageInput" placeholder="Message..." style="flex:1"><button id="wsSendBtn" class="modal-btn" style="width:auto;padding:10px 20px">Send</button></div></div><button class="modal-btn sec" id="closeWorkspace">Close</button></div></div>
+<div class="modal-overlay" id="privacyModal"><div class="modal"><h2>🔒 Privacy & Service</h2><div style="font-size:13px;line-height:1.6"><p>CAPITAN AI by CLOSEAI Technologies. No permanent conversation storage.</p><p style="margin-top:12px">Service Terms: AI responses for informational purposes only. Not financial advice.</p></div><button class="modal-btn sec" id="closePrivacy">Close</button></div></div>
+<div class="modal-overlay" id="supportModal"><div class="modal"><h2>🆘 Support</h2><div style="font-size:13px"><p>Email: <a href="mailto:closeaitechnologies@protonmail.com" style="color:var(--accent)">closeaitechnologies@protonmail.com</a></p><p>Response: 24-48 hours</p></div><button class="modal-btn sec" id="closeSupport">Close</button></div></div>
+<div class="modal-overlay" id="moneyModal"><div class="modal" style="width:520px"><h2>💰 Market Data</h2><div class="pill-tabs" style="display:flex;gap:8px;margin-bottom:16px"><button class="pill-tab active" id="marketTabPrices">Prices</button><button class="pill-tab" id="marketTabNews">News</button></div><div id="marketsPricesContent" style="max-height:300px;overflow-y:auto"></div><div id="marketsNewsContent" style="max-height:300px;overflow-y:auto;display:none"></div><button class="modal-btn sec" id="closeMoney">Close</button></div></div>
+<div class="modal-overlay" id="techModal"><div class="modal" style="width:520px"><h2>💻 Tech News</h2><div id="techNewsContent" style="max-height:400px;overflow-y:auto"></div><button class="modal-btn sec" id="closeTech">Close</button></div></div>
+<div class="modal-overlay" id="businessModal"><div class="modal"><h2>Business Mode</h2><div style="display:flex;justify-content:space-between;align-items:center;padding:16px;background:var(--bg3);border-radius:8px;margin-bottom:16px"><span>Corporate Interface</span><span id="businessToggle" class="business-indicator off">OFF</span></div><button class="modal-btn sec" id="closeBusiness">Close</button></div></div>
+<div id="offlineBanner" style="display:none">Offline - Check your connection</div>
 
 <script>
-// Structural Configuration
-const CFG = {
-  API: 'https://capitan-ai-jxu8.onrender.com',
-  POLL_CHATS: 4000,
-  POLL_WS: 2500,
-  POLL_MARKETS: 10000,
-  MAX_MSG: 4000,
-  STREAM_DELAY: 8,
-  WS_MAX: { free: 0, plus: 7, pro: 20, founder: 999 }
+// ================================================================
+// CONFIGURATION
+// ================================================================
+const API_URL = 'https://capitan-ai-jxu8.onrender.com';
+const CFG = { STREAM_DELAY: 8, WS_MAX: { free: 0, plus: 7, pro: 20, founder: 999 } };
+
+// ================================================================
+// STATE
+// ================================================================
+let S = {
+    session: null, token: localStorage.getItem('cap_token'), tier: 'free',
+    loading: false, chats: [], activeChat: null, messages: [],
+    library: [], payConfig: null, markets: null, tickerData: [],
+    ws: { code: null, id: null, messages: [], notes: [], timer: null },
+    sidebarOpen: window.innerWidth > 768, draft: '', wsDraft: '',
+    sidebarSections: { account: false, tools: false, appearance: false, privacy: false, support: false, chats: true },
+    businessMode: false, themeMode: localStorage.getItem('theme') || 'dark', streamAbort: null, isOnline: navigator.onLine
 };
 
-const $ = (s, d = document) => d.querySelector(s);
-const $$ = (s, d = document) => d.querySelectorAll(s);
-
-// Global Runtime State
-const S = {
-  session: null, token: null, tier: 'free', prevTier: null, loading: false, thinking: false, businessMode: false,
-  sidebarOpen: window.innerWidth > 768,
-  sidebarSections: { account: false, tools: false, appearance: false, privacy: false, support: false, chats: true },
-  connected: 'checking', isOnline: navigator.onLine, chats: [], activeChat: null, messages: [], library: [],
-  payConfig: null, markets: null, tickerData: [], ws: { code: null, id: null, messages: [], members: [], notes: [], timer: null },
-  draft: '', wsDraft: '', selTier: null, selCoin: 'BTC', logoClicks: 0, logoClickTimer: null,
-  greeting: window.CAPITAN_GREETING || 'System Operational', streamAbort: null, splashDone: false,
-  themeMode: localStorage.getItem('cap_theme_mode') || 'system'
-};
-
-async function warmupBackend() { try { await fetch(`${CFG.API}/health`, { method: 'GET' }); } catch(e){} }
-
-function saveState() {
-  if (S.activeChat && S.messages.length > 0) {
-    localStorage.setItem('cap_activeChat', S.activeChat);
-    localStorage.setItem('cap_messages', JSON.stringify(S.messages));
-  }
-  if (S.chats.length > 0) localStorage.setItem('cap_chats', JSON.stringify(S.chats));
-}
-
-function restoreState() {
-  const chat = localStorage.getItem('cap_activeChat');
-  const msgs = localStorage.getItem('cap_messages');
-  const chats = localStorage.getItem('cap_chats');
-  let r = false;
-  if (chat && msgs) { try { S.activeChat = chat; S.messages = JSON.parse(msgs); r = true; } catch(e){} }
-  if (chats) { try { S.chats = JSON.parse(chats); r = true; } catch(e){} }
-  return r;
-}
-
-window.addEventListener('beforeunload', () => { saveState(); saveDrafts(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
-
-function applyTheme() {
-  const m = S.themeMode;
-  const h = document.documentElement;
-  if (m === 'light') { h.classList.add('light'); }
-  else if (m === 'dark') { h.classList.remove('light'); }
-  else {
-    const d = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (d) { h.classList.remove('light'); } else { h.classList.add('light'); }
-  }
-}
-
-function setThemeMode(m) {
-  S.themeMode = m;
-  localStorage.setItem('cap_theme_mode', m);
-  applyTheme();
-  render();
-  toast('Theme Paradigm: ' + (m === 'system' ? 'Device Profile' : m === 'dark' ? 'Pure Dark' : 'Pure Light'));
-}
-
-window.addEventListener('online', () => { S.isOnline = true; $('#offlineBanner').style.display = 'none'; warmupBackend(); });
-window.addEventListener('offline', () => { S.isOnline = false; $('#offlineBanner').style.display = 'block'; });
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (S.themeMode === 'system') applyTheme(); });
-
-// Encapsulated Atomic API Engine
+// ================================================================
+// API CLASS
+// ================================================================
 class Api {
-  constructor(b) { this.b = b; this.t = 0; }
-  async r(p, o = {}) {
-    if (!S.isOnline && p !== '/health') throw new Error('Network Connection Offline');
-    const h = { ...o.headers };
-    if (!(o.body instanceof FormData)) h['Content-Type'] = 'application/json';
-    if (S.token) h['Authorization'] = `Bearer ${S.token}`;
-    try {
-      const r = await fetch(`${this.b}${p}`, { ...o, headers: h });
-      
-      // Dynamic continuous synchronization context verification
-      const refreshedToken = r.headers.get('X-Refreshed-Token');
-      if (refreshedToken) { S.token = refreshedToken; localStorage.setItem('ct', refreshedToken); }
-      
-      if (r.status === 401) {
-        localStorage.removeItem('ct'); S.token = null;
-        await this.sess();
-        throw new Error('Structural Context Re-initialized');
-      }
-      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || `Response Abort Code ${r.status}`); }
-      const ct = r.headers.get('content-type');
-      return ct && ct.includes('json') ? await r.json() : await r.text();
-    } catch (e) {
-      if (this.t < 2 && e.message.includes('500')) { this.t++; await new Promise(res => setTimeout(res, 400)); return this.r(p, o); }
-      this.t = 0; throw e;
+    async request(path, options = {}) {
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        if (S.token) headers['Authorization'] = `Bearer ${S.token}`;
+        const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+        if (res.status === 401) {
+            localStorage.removeItem('cap_token');
+            S.token = null;
+            await this.createSession();
+            return this.request(path, options);
+        }
+        if (res.status === 429) throw new Error('Rate limit exceeded');
+        const data = await res.json();
+        return data;
     }
-  }
-  async sess() {
-    const d = await this.r('/api/session');
-    S.session = { id: d.id, tier: d.tier, count: d.msg_count || 0 };
-    S.tier = d.tier; S.token = d.token;
-    localStorage.setItem('ct', d.token);
-    return d;
-  }
-  async getSess() { return this.r('/api/session'); }
-  async chats() { return this.r('/api/chats'); }
-  async chat(id) { return this.r(`/api/chats/${id}`); }
-  async send(msgs, cid) { return this.r('/api/chat', { method: 'POST', body: JSON.stringify({ messages: msgs, chat_id: cid }) }); }
-  async delChat(id) { return this.r(`/api/chats/${id}`, { method: 'DELETE' }); }
-  async lib() { return this.r('/api/library'); }
-  async libCreate(n, t, c) { return this.r('/api/library', { method: 'POST', body: JSON.stringify({ name: n, type: t, content: c }) }); }
-  async libDel(id) { return this.r(`/api/library/${id}`, { method: 'DELETE' }); }
-  async upload(f) { const fd = new FormData(); fd.append('file', f); return this.r('/api/upload', { method: 'POST', body: fd }); }
-  async payCfg() { return this.r('/api/payment-config'); }
-  async upgrade(tier, txid, coin) { return this.r('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier, txid, currency: coin }) }); }
-  async founder(code) { return this.r('/api/founder', { method: 'POST', body: JSON.stringify({ code }) }); }
-  async admin() { return this.r('/api/admin', { method: 'POST' }); }
-  async marketsPrices() { return this.r('/api/markets/prices?category=crypto'); }
-  async marketsNews() { return this.r('/api/markets/news?category=crypto'); }
-  async techNews() { return this.r('/api/news/tech'); }
-  async health() { return this.r('/health'); }
-  async wsCreate(code, max) { return this.r('/api/workspace/create', { method: 'POST', body: JSON.stringify({ room_code: code, max_members: max }) }); }
-  async wsJoin(code) { return this.r('/api/workspace/join', { method: 'POST', body: JSON.stringify({ room_code: code }) }); }
-  async wsMsg(code, msg) { return this.r('/api/workspace/message', { method: 'POST', body: JSON.stringify({ room_code: code, message: msg }) }); }
-  async wsGetMsgs(code) { return this.r(`/api/workspace/messages?room_code=${encodeURIComponent(code)}`); }
-  async wsSaveNotes(code, c) { return this.r('/api/workspace/notes', { method: 'POST', body: JSON.stringify({ room_code: code, content: c }) }); }
-  async wsGetNotes(code) { return this.r(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`); }
+    async createSession() {
+        const data = await this.request('/api/session');
+        S.session = data; S.token = data.token; S.tier = data.tier;
+        localStorage.setItem('cap_token', data.token);
+        return data;
+    }
+    async getChats() { return this.request('/api/chats'); }
+    async getChat(id) { return this.request(`/api/chats/${id}`); }
+    async deleteChat(id) { return this.request(`/api/chats/${id}`, { method: 'DELETE' }); }
+    async sendMessage(messages, chatId) { return this.request('/api/chat', { method: 'POST', body: JSON.stringify({ messages, chat_id: chatId }) }); }
+    async getPaymentConfig() { return this.request('/api/payment-config'); }
+    async upgrade(tier, txid, currency) { return this.request('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier, txid, currency }) }); }
+    async founder(code) { return this.request('/api/founder', { method: 'POST', body: JSON.stringify({ code }) }); }
+    async getAdmin() { return this.request('/api/admin', { method: 'POST' }); }
+    async getMarketsPrices() { return this.request('/api/markets/prices'); }
+    async getMarketsNews() { return this.request('/api/markets/news'); }
+    async getTechNews() { return this.request('/api/news/tech'); }
+    async searchWeb(q) { return this.request(`/api/search?q=${encodeURIComponent(q)}`); }
+    async getLibrary() { return this.request('/api/library'); }
+    async saveLibrary(name, content) { return this.request('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) }); }
+    async deleteLibrary(id) { return this.request(`/api/library/${id}`, { method: 'DELETE' }); }
+    async createWorkspace(code, max) { return this.request('/api/workspace/create', { method: 'POST', body: JSON.stringify({ room_code: code, max_members: max }) }); }
+    async joinWorkspace(code) { return this.request('/api/workspace/join', { method: 'POST', body: JSON.stringify({ room_code: code }) }); }
+    async sendWorkspaceMessage(code, msg) { return this.request('/api/workspace/message', { method: 'POST', body: JSON.stringify({ room_code: code, message: msg }) }); }
+    async getWorkspaceMessages(code) { return this.request(`/api/workspace/messages?room_code=${encodeURIComponent(code)}`); }
+    async saveWorkspaceNotes(code, content) { return this.request('/api/workspace/notes', { method: 'POST', body: JSON.stringify({ room_code: code, content }) }); }
+    async getWorkspaceNotes(code) { return this.request(`/api/workspace/notes?room_code=${encodeURIComponent(code)}`); }
 }
-const api = new Api(CFG.API);
+const api = new Api();
 
-// Scalable Structural Vector Asset Mapping
-const SVG = (w, h, d) => `<svg class="icon-svg" viewBox="0 0 24 24" width="${w || 16}" height="${h || 16}">${d}</svg>`;
-const BRAND_LOGO_SVG = `<svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M25 25 H75 M50 25 V75 M35 75 H65 M25 45 C 25 66, 75 66, 75 45" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
-const ICONS = {
-  plus: SVG(16, 16, '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
-  folder: SVG(16, 16, '<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>'),
-  briefcase: SVG(16, 16, '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>'),
-  chart: SVG(16, 16, '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'),
-  zap: SVG(16, 16, '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'),
-  sun: SVG(16, 16, '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'),
-  moon: SVG(16, 16, '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'),
-  lock: SVG(16, 16, '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>'),
-  send: SVG(16, 16, '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'),
-  settings: SVG(16, 16, '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>'),
-  chat: SVG(16, 16, '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>'),
-  monitor: SVG(16, 16, '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'),
-  copy: SVG(16, 16, '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>'),
-  thumbsUp: SVG(16, 16, '<path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>'),
-  thumbsDown: SVG(16, 16, '<path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10zM17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/>'),
-  share: SVG(16, 16, '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>'),
-  moneyIcon: SVG(15, 15, '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'),
-  codeIcon: SVG(15, 15, '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
-  mathIcon: SVG(15, 15, '<path d="M18 4l-6 16M6 8h12M6 16h12"/>'),
-  chevron: SVG(10, 10, '<polyline points="9 18 15 12 9 6"/>'),
-  sidebarToggle: SVG(16,16,'<rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><line x1="9" y1="3" x2="9" y2="21" stroke-width="2"/>')
-};
-
-// Hardware Accelerated Non-Blocking Streamer
+// ================================================================
+// TOKEN STREAMER
+// ================================================================
 class TokenStreamer {
-  constructor(c, target, d = 8) { this.c = c; this.target = target; this.d = d; this.index = 0; this.tokens = this.tokenize(c); this.running = false; this.timer = null; this.onDone = null; }
-  tokenize(t) { const r = []; const reg = /([^\s]+|\s+)/g; let m; while((m = reg.exec(t)) !== null) r.push(m[0]); return r; }
-  start() { this.running = true; if (S.streamAbort) { try { S.streamAbort(); } catch(e){} } S.streamAbort = () => this.stop(); this.next(); }
-  next() {
-    if (!this.running || this.index >= this.tokens.length) { this.finish(); return; }
-    const s = document.createElement('span'); s.className = 'token-fade'; s.textContent = this.tokens[this.index];
-    this.target.appendChild(s); this.index++;
-    if(this.index % 3 === 0) this.scroll();
-    this.timer = setTimeout(() => this.next(), this.d);
-  }
-  stop() { this.running = false; if (this.timer) clearTimeout(this.timer); if (this.index < this.tokens.length) { this.target.appendChild(document.createTextNode(this.tokens.slice(this.index).join(''))); this.scroll(); } this.finish(); }
-  finish() { const cur = this.target.querySelector('.stream-cursor'); if (cur) cur.remove(); this.target.innerHTML = fmtMD(this.c); S.streamAbort = null; this.running = false; this.scroll(); if (this.onDone) this.onDone(); }
-  scroll() { const m = $('#chatMsgs'); if (m) m.scrollTop = m.scrollHeight; }
+    constructor(content, container, delay = 8) {
+        this.content = content; this.container = container; this.delay = delay;
+        this.index = 0; this.tokens = this.tokenize(content); this.running = false; this.onDone = null;
+    }
+    tokenize(text) { const tokens = []; const regex = /([^\s]+|\s+)/g; let m; while ((m = regex.exec(text)) !== null) tokens.push(m[0]); return tokens; }
+    start() { this.running = true; if (S.streamAbort) S.streamAbort(); S.streamAbort = () => this.stop(); this.next(); }
+    next() {
+        if (!this.running || this.index >= this.tokens.length) { this.finish(); return; }
+        const span = document.createElement('span'); span.className = 'token-fade'; span.textContent = this.tokens[this.index];
+        this.container.appendChild(span); this.index++; this.scroll(); this.timer = setTimeout(() => this.next(), this.delay);
+    }
+    stop() { this.running = false; if (this.timer) clearTimeout(this.timer); if (this.index < this.tokens.length) this.container.appendChild(document.createTextNode(this.tokens.slice(this.index).join(''))); this.finish(); }
+    finish() { const cursor = this.container.querySelector('.stream-cursor'); if (cursor) cursor.remove(); this.container.innerHTML = this.formatMarkdown(this.content); S.streamAbort = null; this.scroll(); if (this.onDone) this.onDone(); }
+    scroll() { const msgs = document.getElementById('chatMsgs'); if (msgs) msgs.scrollTop = msgs.scrollHeight; }
+    formatMarkdown(text) {
+        if (!text) return '';
+        text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${this.escape(code.trim())}</code></pre>`);
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\n/g, '<br>');
+        return text;
+    }
+    escape(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 }
 
-// Performant Abstract Structural Tree Markdown Parser
-function fmtMD(text) {
-  if (!text) return '';
-  const blocks = [];
-  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-    const idx = blocks.length; blocks.push(`<pre><code class="lang-${esc(lang)}">${esc(code.trim())}</code></pre>`); return `\x00C${idx}\x00`;
-  });
-  const inline = [];
-  text = text.replace(/`([^`\n]+)`/g, (_, code) => { const idx = inline.length; inline.push(`<code>${esc(code)}</code>`); return `\x00I${idx}\x00`; });
-  text = esc(text);
-  text = text.replace(/\x00C(\d+)\x00/g, (_, i) => blocks[i]).replace(/\x00I(\d+)\x00/g, (_, i) => inline[i]);
-  text = text.replace(/^###\s(.+)$/gm, '<h3>$1</h3>').replace(/^##\s(.+)$/gm, '<h2>$1</h2>').replace(/^#\s(.+)$/gm, '<h1>$1</h1>');
-  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
-  text = text.replace(/^&gt;\s(.+)$/gm, '<blockquote>$1</blockquote>').replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr>');
-  text = text.replace(/^[\*\-\+]\s(.+)$/gm, '<li>$1</li>'); text = text.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-  return text.split('\n').join('<br>').replace(/<\/h[1-3]><br>/g, (m) => m.replace('<br>', '')).replace(/<\/ul><br>/g, '</ul>').replace(/<\/pre><br>/g, '</pre>');
-}
-
-function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = String(t); return d.innerHTML; }
-function escAttr(t) { return String(t || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n'); }
-function saveDrafts() { S.draft = $('#msgInput')?.value || ''; S.wsDraft = $('#wsMessageInput')?.value || ''; localStorage.setItem('cap_draft', S.draft); localStorage.setItem('cap_ws_draft', S.wsDraft); }
-
-async function init() {
-  applyTheme();
-  S.businessMode = localStorage.getItem('cap_business') === 'true';
-  S.prevTier = localStorage.getItem('cap_tier') || 'free';
-  await warmupBackend();
-  await checkHealth();
-  const token = localStorage.getItem('ct');
-  if (token) { S.token = token; try { const s = await api.getSess(); S.session = s; S.tier = s.tier; } catch(e) { localStorage.removeItem('ct'); await api.sess(); } }
-  else { await api.sess(); }
-  if (S.prevTier !== S.tier) { S.activeChat = null; S.messages = []; S.chats = []; localStorage.setItem('cap_tier', S.tier); }
-  if (!S.activeChat) { restoreState(); }
-  await Promise.allSettled([loadChats(), loadPayCfg(), loadMarkets()]);
-  render();
-  setupListeners();
-  startTasks();
-  if (window.innerWidth > 768) { S.sidebarOpen = true; updateSidebar(); }
-  if (S.businessMode) document.body.classList.add('business-mode');
-  setTimeout(() => { const s = $('#splashScreen'); if (s) { s.classList.add('hide'); S.splashDone = true; } }, 350);
-}
-
-async function checkHealth() { try { const h = await api.health(); S.connected = h.ai === 'connected' ? 'online' : 'degraded'; } catch(e) { S.connected = 'offline'; } }
-function startTasks() { setInterval(async () => { if (!S.loading) await loadChats(); }, CFG.POLL_CHATS); setInterval(checkHealth, 30000); setInterval(async () => { await loadMarkets(); updateTicker(); }, CFG.POLL_MARKETS); }
-async function loadChats() { try { const d = await api.chats(); S.chats = d.chats || []; renderSidebarChats(); } catch(e){} }
-async function loadPayCfg() { try { S.payConfig = await api.payCfg(); } catch(e){} }
-async function loadMarkets() { try { const d = await api.marketsPrices(); const p = d?.prices || d?.data || {}; const entries = Array.isArray(p) ? p.map((item, i) => [item?.symbol || item?.name || `asset${i}`, item]) : Object.entries(p); S.tickerData = entries.slice(0, 8); S.markets = { prices: {} }; } catch(e){} }
-
-function updateTicker() {
-  const track = $('#tickerTrack'); if (!track || !S.tickerData.length) return;
-  const items = S.tickerData.map(([sym, info]) => {
-    let pr = '—', ch = '0.00'; if (info && typeof info === 'object') { pr = typeof info.price === 'number' ? info.price.toFixed(2) : (info.price || '—'); ch = typeof info.change === 'number' ? info.change.toFixed(2) : '0.00'; }
-    const cls = parseFloat(ch) >= 0 ? 'positive' : 'negative'; const sign = parseFloat(ch) >= 0 ? '+' : '';
-    return `<span class="sb-ticker-item"><span class="ticker-symbol">${esc(String(sym))}</span><span class="ticker-price">${pr}</span><span class="ticker-change ${cls}">${sign}${ch}%</span></span>`;
-  });
-  track.innerHTML = items.join('') + items.join('');
-}
-
-function toggleBusinessMode() {
-  S.businessMode = !S.businessMode; localStorage.setItem('cap_business', S.businessMode);
-  if (S.businessMode) document.body.classList.add('business-mode'); else document.body.classList.remove('business-mode');
-  const t = $('#businessToggle'); if (t) { t.textContent = S.businessMode ? 'ON' : 'OFF'; t.className = S.businessMode ? 'business-indicator active' : 'business-indicator off'; }
-  toast('Business View Profile: ' + (S.businessMode ? 'Activated' : 'Disabled'));
-}
-
-function handleLogoClick() { S.logoClicks++; if (S.logoClickTimer) clearTimeout(S.logoClickTimer); if (S.logoClicks >= 5) { S.logoClicks = 0; openFounder(); } else { S.logoClickTimer = setTimeout(() => { S.logoClicks = 0; }, 1500); } }
-function pulseLogo(act) { document.querySelectorAll('.sb-logo').forEach(l => { if (act) l.classList.add('pulse'); else l.classList.remove('pulse'); }); }
-
-function toggleSidebarSection(headerEl) {
-  const body = headerEl.nextElementSibling; const isOpen = body.classList.contains('open');
-  if (isOpen) { body.classList.remove('open'); body.style.maxHeight = '0'; headerEl.classList.remove('open'); }
-  else { body.classList.add('open'); body.style.maxHeight = body.scrollHeight + 'px'; headerEl.classList.add('open'); }
-  S.sidebarSections[headerEl.dataset.section] = !isOpen;
-}
-
-// Global Core Layout Interface Compiler
+// ================================================================
+// RENDER FUNCTIONS
+// ================================================================
 function render() {
-  const app = $('#app'); const tier = S.tier.toUpperCase(); const isMobile = window.innerWidth <= 768;
-  app.innerHTML = `
-<aside class="sidebar ${isMobile ? 'sidebar-mobile' : ''} ${!isMobile && !S.sidebarOpen ? 'collapsed' : ''}" id="sidebar">
-  <div class="sb-header">
-    <span class="sb-logo" onclick="handleLogoClick()">${BRAND_LOGO_SVG}</span>
-    <span class="sb-brand-name">CAPITAN AI</span>
-    ${isMobile ? `<button style="background:none;border:none;color:var(--icon);cursor:pointer;margin-left:auto;font-size:18px" onclick="closeSidebar()">✕</button>` : ''}
-  </div>
-  ${(S.tier === 'pro' || S.tier === 'founder') && S.tickerData.length > 0 ? `<div class="sb-ticker"><div class="sb-ticker-track" id="tickerTrack"></div></div>` : ''}
-  
-  <div class="sb-section"><div class="sb-section-header" data-section="account" onclick="toggleSidebarSection(this)">Identity Tier <span class="sb-section-arrow">▶</span></div><div class="sb-section-body">${S.tier !== 'founder' ? `<div class="sb-setting-item" onclick="openUpgrade()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.zap}</div><div class="sb-setting-info"><div class="sb-setting-label">Upgrade Permissions</div><div class="sb-setting-value">${tier} Authentication Context</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>` : `<div class="sb-setting-item" onclick="openAdmin()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.settings}</div><div class="sb-setting-info"><div class="sb-setting-label">System Architecture</div><div class="sb-setting-value">Founder Console Mode</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>`}</div></div>
-  <div class="sb-section"><div class="sb-section-header" data-section="tools" onclick="toggleSidebarSection(this)">Execution Operations <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="openLib()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.folder}</div><div class="sb-setting-info"><div class="sb-setting-label">Data Repositories</div><div class="sb-setting-value">Strategic structural storage</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>${S.tier !== 'free' ? `<div class="sb-setting-item" onclick="openWS()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.briefcase}</div><div class="sb-setting-info"><div class="sb-setting-label">Collaboration Hub</div><div class="sb-setting-value">${CFG.WS_MAX[S.tier] || 7} Authorized Seats</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>` : ''}${S.tier === 'pro' || S.tier === 'founder' ? `<div class="sb-setting-item" onclick="openMoney()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.chart}</div><div class="sb-setting-info"><div class="sb-setting-label">Market Tracking</div><div class="sb-setting-value">Asset indices & feeds</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div><div class="sb-setting-item" onclick="openTechUpdates()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.zap}</div><div class="sb-setting-info"><div class="sb-setting-label">Intelligence Feeds</div><div class="sb-setting-value">Technology sector reports</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div><div class="sb-setting-item" onclick="openBusiness()"><div class="sb-setting-icon" style="background:var(--accent-bg)">${ICONS.briefcase}</div><div class="sb-setting-info"><div class="sb-setting-label">Sanitized Formatting</div><div class="sb-setting-value"><span class="business-indicator ${S.businessMode ? 'active' : 'off'}">${S.businessMode ? 'ON' : 'OFF'}</span></div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div>` : ''}</div></div>
-  <div class="sb-section"><div class="sb-section-header" data-section="appearance" onclick="toggleSidebarSection(this)">Interface Profiles <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="setThemeMode('system')"><div class="sb-setting-icon">${ICONS.monitor}</div><div class="sb-setting-info"><div class="sb-setting-label">Device Architecture Sync</div></div><span class="sb-setting-check">${S.themeMode === 'system' ? '✓' : ''}</span></div><div class="sb-setting-item" onclick="setThemeMode('dark')"><div class="sb-setting-icon">${ICONS.moon}</div><div class="sb-setting-info"><div class="sb-setting-label">Pure Dark Framework</div></div><span class="sb-setting-check">${S.themeMode === 'dark' ? '✓' : ''}</span></div><div class="sb-setting-item" onclick="setThemeMode('light')"><div class="sb-setting-icon">${ICONS.sun}</div><div class="sb-setting-info"><div class="sb-setting-label">Pure Light Framework</div></div><span class="sb-setting-check">${S.themeMode === 'light' ? '✓' : ''}</span></div></div></div>
-  <div class="sb-section"><div class="sb-section-header" data-section="privacy" onclick="toggleSidebarSection(this)">Security Paradigms <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="openPrivacy()"><div class="sb-setting-icon">${ICONS.lock}</div><div class="sb-setting-info"><div class="sb-setting-label">System Disclaimers</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div></div></div>
-  <div class="sb-section"><div class="sb-section-header" data-section="support" onclick="toggleSidebarSection(this)">Nexus Helpdesk <span class="sb-section-arrow">▶</span></div><div class="sb-section-body"><div class="sb-setting-item" onclick="openSupport()"><div class="sb-setting-icon">${ICONS.chat}</div><div class="sb-setting-info"><div class="sb-setting-label">Operational Support</div></div><span class="sb-setting-chevron">${ICONS.chevron}</span></div></div></div>
-  <div class="sb-section" style="flex:1; overflow-y:auto; border-bottom:none;"><div class="sb-section-header open" data-section="chats" onclick="toggleSidebarSection(this)">Active Processing Channels <span class="sb-section-arrow">▶</span></div><div class="sb-section-body open" id="chatsList">${renderChatsHTML()}</div></div>
-  <div class="sb-footer">CLOSEAI Technologies © 2026</div>
-</aside>
-
-<main class="main">
-  <div class="top-interface-bar">
-    <button class="toggle-desktop" id="toggleDesktop" style="pointer-events: auto;" aria-label="Toggle Navigation Plane">${ICONS.sidebarToggle}</button>
-    <button class="action-new-convo-top" onclick="newChat()" style="pointer-events: auto;">${ICONS.plus} New Channel</button>
-  </div>
-  <div class="chat-container">
-    <div class="chat-messages" id="chatMsgs">${renderMsgsHTML()}</div>
-    <div class="input-area">
-      <div class="input-wrap">
-        <button class="upload-btn" onclick="${S.tier !== 'free' ? 'uploadFile()' : 'openUpgrade()'}" aria-label="Attach Object Context">${ICONS.plus}</button>
-        <input type="text" class="input-field" id="msgInput" placeholder="Initialize cognitive command execution stream..." autocomplete="off" maxlength="${CFG.MAX_MSG}" value="${esc(S.draft)}" ${S.loading ? 'disabled' : ''} oninput="handleTyping()"/>
-        <button class="send-btn" id="sendBtn" ${S.loading ? 'disabled' : ''} onclick="sendMsg()" aria-label="Transmit Request Payload">${ICONS.send}</button>
-      </div>
-    </div>
-  </div>
-</main>`;
-  updateTicker();
-  if (S.sidebarOpen && isMobile) { $('#sidebar').classList.add('open'); $('#overlay').classList.add('visible'); }
-  if (S.messages.length > 0) scrollBottom();
+    const app = document.getElementById('app');
+    const tier = S.tier.toUpperCase();
+    const isMobile = window.innerWidth <= 768;
+    app.innerHTML = `
+        <aside class="sidebar ${isMobile && S.sidebarOpen ? 'open' : ''}" id="sidebar">
+            <div class="sb-header"><div class="sb-logo" onclick="handleLogoClick()">C</div><div class="sb-brand-name">CAPITAN AI</div></div>
+            <button class="btn-new-convo" onclick="newChat()">+ New Conversation</button>
+            <div class="sb-section"><div class="sb-section-header ${S.sidebarSections.account ? 'open' : ''}" onclick="toggleSection('account')">Account <span class="sb-section-arrow">▶</span></div><div class="sb-section-body ${S.sidebarSections.account ? 'open' : ''}" id="section-account"><div class="sb-setting-item" onclick="openUpgrade()"><div class="sb-setting-icon">⬆️</div><div><div class="sb-setting-label">Upgrade Plan</div><div class="sb-setting-value">${tier} Tier</div></div></div></div></div>
+            <div class="sb-section"><div class="sb-section-header ${S.sidebarSections.tools ? 'open' : ''}" onclick="toggleSection('tools')">Tools <span class="sb-section-arrow">▶</span></div><div class="sb-section-body ${S.sidebarSections.tools ? 'open' : ''}" id="section-tools"><div class="sb-setting-item" onclick="openLibrary()"><div class="sb-setting-icon">📁</div><div><div class="sb-setting-label">Library</div></div></div><div class="sb-setting-item" onclick="openWorkspace()"><div class="sb-setting-icon">🗂️</div><div><div class="sb-setting-label">Work Area</div></div></div><div class="sb-setting-item" onclick="openMarkets()"><div class="sb-setting-icon">📈</div><div><div class="sb-setting-label">Market Data</div></div></div><div class="sb-setting-item" onclick="openTechNews()"><div class="sb-setting-icon">💻</div><div><div class="sb-setting-label">Tech News</div></div></div><div class="sb-setting-item" onclick="toggleBusinessMode()"><div class="sb-setting-icon">💼</div><div><div class="sb-setting-label">Business Mode</div><div class="sb-setting-value"><span class="business-indicator ${S.businessMode ? 'active' : 'off'}">${S.businessMode ? 'ON' : 'OFF'}</span></div></div></div></div></div>
+            <div class="sb-section"><div class="sb-section-header ${S.sidebarSections.appearance ? 'open' : ''}" onclick="toggleSection('appearance')">Appearance <span class="sb-section-arrow">▶</span></div><div class="sb-section-body ${S.sidebarSections.appearance ? 'open' : ''}" id="section-appearance"><div class="sb-setting-item" onclick="setTheme('dark')"><div class="sb-setting-icon">🌙</div><div><div class="sb-setting-label">Dark Mode</div></div></div><div class="sb-setting-item" onclick="setTheme('light')"><div class="sb-setting-icon">☀️</div><div><div class="sb-setting-label">Light Mode</div></div></div></div></div>
+            <div class="sb-section"><div class="sb-section-header ${S.sidebarSections.privacy ? 'open' : ''}" onclick="toggleSection('privacy')">Privacy <span class="sb-section-arrow">▶</span></div><div class="sb-section-body ${S.sidebarSections.privacy ? 'open' : ''}" id="section-privacy"><div class="sb-setting-item" onclick="openPrivacy()"><div class="sb-setting-icon">🔒</div><div><div class="sb-setting-label">Privacy Policy</div></div></div></div></div>
+            <div class="sb-section"><div class="sb-section-header ${S.sidebarSections.support ? 'open' : ''}" onclick="toggleSection('support')">Support <span class="sb-section-arrow">▶</span></div><div class="sb-section-body ${S.sidebarSections.support ? 'open' : ''}" id="section-support"><div class="sb-setting-item" onclick="openSupport()"><div class="sb-setting-icon">🆘</div><div><div class="sb-setting-label">Contact Support</div></div></div></div></div>
+            <div class="sb-section"><div class="sb-section-header ${S.sidebarSections.chats ? 'open' : ''}" onclick="toggleSection('chats')">Recent Chats <span class="sb-section-arrow">▶</span></div><div class="sb-section-body ${S.sidebarSections.chats ? 'open' : ''}" id="section-chats"><div id="chatsList">${renderChats()}</div></div></div>
+            <div class="sb-footer">CLOSEAI Technologies © 2026</div>
+        </aside>
+        <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
+        <main class="main"><div class="chat-container"><div class="chat-messages" id="chatMsgs">${renderMessages()}</div><div class="input-area"><div class="input-wrap"><button class="upload-btn" onclick="uploadFile()">📎</button><input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." value="${escapeHtml(S.draft)}" onkeypress="if(event.key==='Enter') sendMsg()" ${S.loading ? 'disabled' : ''}><button class="send-btn" onclick="sendMsg()" ${S.loading ? 'disabled' : ''}>➤</button></div></div></div></main>
+    `;
+    if (S.messages.length) setTimeout(() => { const msgs = document.getElementById('chatMsgs'); if (msgs) msgs.scrollTop = msgs.scrollHeight; }, 100);
 }
 
-function handleTyping() { const i = $('#msgInput'); if (!i) return; S.draft = i.value; const b = $('#sendBtn'); if (b) b.disabled = S.loading || !i.value.trim(); pulseLogo(i.value.length > 0); }
-function welcomeHTML() { return `<div class="welcome"><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('Deconstruct current decentralized asset movements')">${ICONS.moneyIcon} Market Analytics</div><div class="wp-pill" onclick="quickSend('Generate high-optimization architecture template for: ')">${ICONS.codeIcon} Code Optimization</div><div class="wp-pill" onclick="quickSend('Solve programmatic matrix optimization computation: ')">${ICONS.mathIcon} Advanced Computation</div></div></div>`; }
-function renderChatsHTML() { if (!S.chats.length) return '<div style="padding:16px 24px;font-size:12px;color:var(--txt4);text-align:center">No active channels</div>'; return S.chats.map(c => `<div class="sb-chat-item ${S.activeChat === c.id ? 'active' : ''}" onclick="loadChat('${c.id}')"><span>${esc(c.title || 'In-Memory Process Stream')}</span><button class="sb-chat-del" onclick="event.stopPropagation();delChat('${c.id}')">✕</button></div>`).join(''); }
-
-function renderMsgsHTML() {
-  if (!S.messages.length) return welcomeHTML();
-  return S.messages.map((m, i) => m.role === 'user' ? `<div class="msg user"><div class="msg-user-bubble">${esc(m.content)}</div></div>` : `<div class="msg"><div class="msg-ai-label">CAPITAN AI SYSTEM ENGINE</div><div class="msg-ai-body" id="msgBody${i}">${fmtMD(m.content)}</div><div class="msg-actions"><button class="msg-action" onclick="copyText(\`${escAttr(m.content)}\`)">${ICONS.copy}</button><button class="msg-action ${m.liked ? 'liked' : ''}" onclick="likeMsg(${i})">${ICONS.thumbsUp}</button><button class="msg-action ${m.disliked ? 'disliked' : ''}" onclick="dislikeMsg(${i})">${ICONS.thumbsDown}</button><button class="msg-action" onclick="shareMsg(\`${escAttr(m.content)}\`)">${ICONS.share}</button><button class="msg-action" onclick="regen()">${ICONS.zap}</button></div></div>`).join('');
+function renderChats() {
+    if (!S.chats.length) return '<div style="padding: 12px 20px; color: #666;">No conversations</div>';
+    return S.chats.map(c => `<div class="sb-chat-item ${S.activeChat === c.id ? 'active' : ''}" onclick="loadChat('${c.id}')"><span>${escapeHtml(c.title || 'Chat')}</span><button class="sb-chat-del" onclick="event.stopPropagation(); deleteChat('${c.id}')">✕</button></div>`).join('');
 }
 
-function likeMsg(i) { if (S.messages[i]) { S.messages[i].liked = !S.messages[i].liked; S.messages[i].disliked = false; renderMsgs(); saveState(); } }
-function dislikeMsg(i) { if (S.messages[i]) { S.messages[i].disliked = !S.messages[i].disliked; S.messages[i].liked = false; renderMsgs(); saveState(); } }
-function shareMsg(c) { if (navigator.share) { navigator.share({ text: c }).catch(() => {}); } else { navigator.clipboard.writeText(c); toast('Payload Transferred to Clipboard'); } }
+function renderMessages() {
+    if (!S.messages.length) return `<div class="welcome"><h2>Welcome to CAPITAN AI</h2><p>Your enterprise intelligence platform</p><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('What is CAPITAN AI?')">🤖 About CAPITAN</div><div class="wp-pill" onclick="quickSend('Write Python code for a trading bot')">💻 Trading Bot</div><div class="wp-pill" onclick="quickSend('Explain DCF valuation')">📊 Finance</div><div class="wp-pill" onclick="quickSend('What are current market trends?')">📈 Markets</div></div></div>`;
+    return S.messages.map((m, i) => m.role === 'user' 
+        ? `<div class="msg user"><div class="msg-user-bubble">${escapeHtml(m.content)}</div></div>`
+        : `<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${m.content ? formatMarkdown(m.content) : ''}</div><div class="msg-actions"><button class="msg-action" onclick="copyText('${escapeAttr(m.content)}')">📋</button><button class="msg-action" onclick="likeMsg(${i})">👍</button><button class="msg-action" onclick="regen()">🔄</button><button class="msg-action" onclick="shareMsg('${escapeAttr(m.content)}')">📤</button></div></div>`).join('');
+}
+
+function formatMarkdown(text) {
+    if (!text) return '';
+    text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${escapeHtml(code.trim())}</code></pre>`);
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\n/g, '<br>');
+    return text;
+}
+
+function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+function escapeAttr(text) { return String(text || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n'); }
+
+// ================================================================
+// CORE FUNCTIONS
+// ================================================================
+async function init() {
+    applyTheme();
+    S.businessMode = localStorage.getItem('businessMode') === 'true';
+    await api.createSession();
+    await loadChats();
+    await loadPaymentConfig();
+    await loadMarkets();
+    render();
+    startPolling();
+    if (S.businessMode) document.body.classList.add('business-mode');
+    setInterval(checkConnection, 30000);
+}
+
+async function loadChats() {
+    try { const data = await api.getChats(); S.chats = data.chats || []; renderChatsList(); } catch(e) { console.error(e); }
+}
+function renderChatsList() { const el = document.getElementById('chatsList'); if (el) el.innerHTML = renderChats(); }
+
+async function loadChat(id) {
+    S.activeChat = id; S.messages = [];
+    try { const data = await api.getChat(id); S.messages = data.messages || []; render(); saveState(); } catch(e) { toast(e.message); }
+}
+
+async function deleteChat(id) {
+    if (!confirm('Delete this chat?')) return;
+    await api.deleteChat(id);
+    S.chats = S.chats.filter(c => c.id !== id);
+    if (S.activeChat === id) newChat();
+    renderChatsList();
+    toast('Chat deleted');
+}
+
+function newChat() { if (S.streamAbort) S.streamAbort(); S.activeChat = null; S.messages = []; render(); saveState(); if (window.innerWidth <= 768) closeSidebar(); }
 
 async function sendMsg() {
-  if (!S.isOnline) { toast('Network Stream Offline', 'warning'); return; }
-  const inp = $('#msgInput'); if (!inp) return; const msg = inp.value.trim(); if (!msg || S.loading) return;
-  inp.value = ''; S.draft = ''; S.loading = true; S.thinking = true;
-  const sBtn = $('#sendBtn'); if (sBtn) sBtn.disabled = true; pulseLogo(true);
-  S.messages.push({ role: 'user', content: msg }); renderMsgs();
-  const aiIdx = S.messages.length; S.messages.push({ role: 'assistant', content: '' }); renderMsgs();
-  const target = $(`#msgBody${aiIdx}`); if (target) { target.innerHTML = '<span class="stream-cursor"></span>'; scrollBottom(); }
-  try {
-    const r = await api.send(S.messages.slice(0, -1), S.activeChat); const final = r.content || '';
-    S.messages[S.messages.length - 1].content = final; S.activeChat = r.chat_id; S.session.count = (S.session.count || 0) + 1;
-    loadChats();
-    if (target) { target.innerHTML = ''; if (final.includes('```')) { target.innerHTML = fmtMD(final); scrollBottom(); } else { await new Promise(res => { const str = new TokenStreamer(final, target, CFG.STREAM_DELAY); str.onDone = res; str.start(); }); } } else { renderMsgs(); }
-    scrollBottom(); saveState();
-  } catch (e) { S.messages[S.messages.length - 1].content = `Operational Error: ${e.message}`; renderMsgs(); toast(e.message, 'error'); }
-  finally { S.loading = false; S.thinking = false; const b = $('#sendBtn'); if (b) b.disabled = true; pulseLogo(false); if (S.streamAbort) { try { S.streamAbort(); } catch(e){} } }
+    const input = document.getElementById('msgInput');
+    const msg = input?.value.trim();
+    if (!msg || S.loading) return;
+    input.value = ''; S.draft = ''; S.loading = true; render();
+    
+    S.messages.push({ role: 'user', content: msg });
+    const aiIndex = S.messages.length;
+    S.messages.push({ role: 'assistant', content: '' });
+    render();
+    
+    const target = document.getElementById(`msgBody${aiIndex}`);
+    if (target) { target.innerHTML = '<span class="stream-cursor"></span>'; scrollChat(); }
+    
+    try {
+        const response = await api.sendMessage(S.messages.slice(0, -1), S.activeChat);
+        S.activeChat = response.chat_id;
+        S.messages[aiIndex].content = response.content;
+        await loadChats();
+        if (target) {
+            target.innerHTML = '';
+            if (response.content.includes('```')) {
+                target.innerHTML = formatMarkdown(response.content);
+                scrollChat();
+            } else {
+                const streamer = new TokenStreamer(response.content, target, CFG.STREAM_DELAY);
+                streamer.onDone = () => { saveState(); };
+                streamer.start();
+                await new Promise(resolve => { const check = setInterval(() => { if (!streamer.running) { clearInterval(check); resolve(); } }, 50); });
+            }
+        }
+        render(); saveState();
+        if (response.remaining !== 'unlimited' && response.remaining <= 3) toast(`${response.remaining} messages left today`);
+    } catch(e) { S.messages[aiIndex].content = `Error: ${e.message}`; render(); toast(e.message); }
+    finally { S.loading = false; render(); if (S.streamAbort) S.streamAbort(); }
 }
 
-async function quickSend(p) { const inp = $('#msgInput'); if (inp) { inp.value = p; handleTyping(); inp.focus(); } }
-async function regen() {
-  if (S.messages.length < 2) return; S.messages.pop(); S.loading = true; S.thinking = true; pulseLogo(true);
-  S.messages.push({ role: 'assistant', content: '' }); renderMsgs();
-  const idx = S.messages.length - 1; const target = $(`#msgBody${idx}`); if (target) target.innerHTML = '<span class="stream-cursor"></span>';
-  try {
-    const r = await api.send(S.messages.slice(0, -1), S.activeChat); const final = r.content || ''; S.messages[S.messages.length - 1].content = final;
-    if (target) { target.innerHTML = ''; if (final.includes('```')) { target.innerHTML = fmtMD(final); } else { await new Promise(res => { const str = new TokenStreamer(final, target, CFG.STREAM_DELAY); str.onDone = res; str.start(); }); } }
-    scrollBottom(); saveState();
-  } catch(e) { toast(e.message, 'error'); } finally { S.loading = false; S.thinking = false; pulseLogo(false); }
+function quickSend(msg) { const input = document.getElementById('msgInput'); if (input) { input.value = msg; sendMsg(); } }
+function regen() { if (S.messages.length >= 2) { S.messages.pop(); sendMsg(); } }
+function copyText(text) { navigator.clipboard.writeText(text); toast('Copied!'); }
+function likeMsg(i) { toast('Thanks for your feedback!'); }
+function shareMsg(content) { if (navigator.share) navigator.share({ text: content }).catch(()=>{}); else copyText(content); }
+function scrollChat() { const msgs = document.getElementById('chatMsgs'); if (msgs) msgs.scrollTop = msgs.scrollHeight; }
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2000); }
+function saveState() { if (S.activeChat && S.messages.length) localStorage.setItem('cap_messages', JSON.stringify(S.messages)); }
+function startPolling() { setInterval(loadChats, 5000); }
+function checkConnection() { S.isOnline = navigator.onLine; document.getElementById('offlineBanner').style.display = S.isOnline ? 'none' : 'block'; }
+
+// ================================================================
+// UI FUNCTIONS
+// ================================================================
+function toggleSidebar() { S.sidebarOpen = !S.sidebarOpen; const sb = document.getElementById('sidebar'); if (sb) sb.classList.toggle('open', S.sidebarOpen); }
+function closeSidebar() { S.sidebarOpen = false; const sb = document.getElementById('sidebar'); if (sb) sb.classList.remove('open'); }
+function toggleSection(section) { S.sidebarSections[section] = !S.sidebarSections[section]; const body = document.getElementById(`section-${section}`); const header = body?.previousElementSibling; if (body) body.classList.toggle('open', S.sidebarSections[section]); if (header) header.classList.toggle('open', S.sidebarSections[section]); }
+function setTheme(mode) { S.themeMode = mode; localStorage.setItem('theme', mode); applyTheme(); toast(`Theme: ${mode === 'dark' ? 'Dark' : 'Light'}`); }
+function applyTheme() { const isDark = S.themeMode === 'dark'; document.documentElement.style.setProperty('--bg', isDark ? '#000' : '#fff'); document.documentElement.style.setProperty('--bg2', isDark ? '#0a0a0a' : '#f5f5f5'); document.documentElement.style.setProperty('--bg3', isDark ? '#111' : '#e5e5e5'); document.documentElement.style.setProperty('--txt', isDark ? '#fff' : '#000'); document.documentElement.style.setProperty('--txt2', isDark ? '#ccc' : '#333'); document.documentElement.style.setProperty('--txt3', isDark ? '#666' : '#999'); }
+function toggleBusinessMode() { S.businessMode = !S.businessMode; localStorage.setItem('businessMode', S.businessMode); if (S.businessMode) document.body.classList.add('business-mode'); else document.body.classList.remove('business-mode'); const btn = document.getElementById('businessToggle'); if (btn) { btn.textContent = S.businessMode ? 'ON' : 'OFF'; btn.className = `business-indicator ${S.businessMode ? 'active' : 'off'}`; } toast(`Business Mode: ${S.businessMode ? 'ON' : 'OFF'}`); }
+function handleLogoClick() { toast('CAPITAN AI v25.0'); }
+
+// ================================================================
+// MODAL FUNCTIONS
+// ================================================================
+function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+async function loadPaymentConfig() {
+    try { S.payConfig = await api.getPaymentConfig(); } catch(e) { console.error(e); }
 }
-
-async function loadChat(id) { S.activeChat = id; S.messages = []; try { const c = await api.chat(id); S.messages = c.messages || []; renderMsgs(); scrollBottom(); saveState(); } catch(e) { toast(e.message, 'error'); } }
-async function delChat(id) { if (!confirm('Confirm processing channel termination?')) return; try { await api.delChat(id); S.chats = S.chats.filter(c => c.id !== id); if (S.activeChat === id) newChat(); loadChats(); toast('Channel Terminated'); } catch(e) { toast(e.message, 'error'); } }
-function newChat() { if (S.streamAbort) { try { S.streamAbort(); } catch(e){} } S.activeChat = null; S.messages = []; render(); if (window.innerWidth <= 768) closeSidebar(); }
-
-async function uploadFile() {
-  if (S.tier === 'free') { toast('Account Elevation Required', 'warning'); return; }
-  const i = document.createElement('input'); i.type = 'file'; const max = S.tier === 'founder' ? 500 : S.tier === 'pro' ? 50 : 10;
-  i.onchange = async e => { const f = e.target.files[0]; if (!f) return; if (f.size / (1024 * 1024) > max) { toast(`Max capacity threshold is ${max}MB`, 'error'); return; } try { const r = await api.upload(f); toast('Asset Stream Connected'); if (S.activeChat) { S.messages.push({ role: 'user', content: `[Attached Asset Element: ${f.name}]` }); renderMsgs(); saveState(); } } catch(err) { toast(err.message, 'error'); } }; i.click();
-}
-
-function genRoomCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return `CAP-${Array.from({ length: 3 }, () => c[Math.floor(Math.random() * c.length)]).join('')}-${Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join('')}`; }
-async function wsCreate() { if (S.tier === 'free') { toast('Operational Access Violation', 'warning'); openUpgrade(); return; } const code = genRoomCode(); const max = CFG.WS_MAX[S.tier] || 7; try { const r = await api.wsCreate(code, max); S.ws = { code, id: r.room_id, messages: [], members: [], notes: [], timer: null }; $('#wsRoomCode').textContent = code; $('#wsRoomDisplay').style.display = 'block'; toast('Space Environment Created'); wsPoll(); } catch(e) { toast(e.message, 'error'); } }
-async function wsJoin() { if (S.tier === 'free') { toast('Operational Access Violation', 'warning'); openUpgrade(); return; } const code = $('#wsJoinInput')?.value.trim().toUpperCase(); if (!code) return; try { const r = await api.wsJoin(code); S.ws = { ...S.ws, code, id: r.room_id, messages: r.messages || [], members: r.members || [] }; switchWSTab('chat'); renderWSMsgs(); wsPoll(); } catch(e) { toast(e.message, 'error'); } }
-async function wsSend() { const inp = $('#wsMessageInput'); if (!inp) return; const msg = inp.value.trim(); if (!msg || !S.ws.code) return; inp.value = ''; try { const r = await api.wsMsg(S.ws.code, msg); S.ws.messages = r.messages || []; renderWSMsgs(); } catch(e) { toast(e.message, 'error'); } }
-async function wsSaveNotes() { const c = $('#wsNotesEditor')?.value; if (!c || !S.ws.code) return; try { const r = await api.wsSaveNotes(S.ws.code, c); S.ws.notes = r.notes || []; renderWSNotes(); toast('Manifest Synced'); } catch(e) { toast(e.message, 'error'); } }
-
-function wsPoll() { if (S.ws.timer) clearInterval(S.ws.timer); S.ws.timer = setInterval(async () => { if (!S.ws.code) { clearInterval(S.ws.timer); return; } try { const [md, nd] = await Promise.all([api.wsGetMsgs(S.ws.code), api.wsGetNotes(S.ws.code)]); S.ws.messages = md.messages || []; S.ws.notes = nd.notes || []; renderWSMsgs(); renderWSNotes(); } catch(e){} }, CFG.POLL_WS); }
-function renderWSMsgs() { const c = $('#wsMessages'); if (!c) return; if (!S.ws.messages.length) { c.innerHTML = '<div style="font-size:11px;color:var(--txt4);text-align:center">Zero communications logs</div>'; return; } c.innerHTML = S.ws.messages.map(m => `<div style="padding:6px 0; border-bottom:1px solid var(--bdr); font-size:11px;"><div style="display:flex; justify-content:space-between;"><span style="font-weight:600;">${esc(m.author)}</span></div><div style="margin-top:2px; color:var(--txt2);">${fmtMD(m.message)}</div></div>`).join(''); c.scrollTop = c.scrollHeight; }
-function renderWSNotes() { const c = $('#wsNotesDisplay'); if (!c) return; if (!S.ws.notes.length) { c.style.display = 'none'; return; } c.style.display = 'block'; c.innerHTML = S.ws.notes.map(n => `<div style="font-size:11px; color:var(--txt2);">${fmtMD(n.content)}</div>`).join(''); }
-function switchWSTab(t) { ['create', 'join', 'chat'].forEach(k => { const p = $('#ws' + k.charAt(0).toUpperCase() + k.slice(1) + 'Panel'); if (p) p.style.display = k === t ? 'block' : 'none'; }); $$('#workspaceModal .pill-tab').forEach(b => b.classList.remove('active')); $('#wsTab' + t.charAt(0).toUpperCase() + t.slice(1))?.classList.add('active'); }
-
-function openLib() { $('#libraryModal').classList.add('open'); loadLib(); }
-async function loadLib() { try { const d = await api.lib(); S.library = d.items || []; renderLibList(); } catch(e){} }
-function renderLibList() { const c = $('#libraryList'); if (!c) return; if (!S.library.length) { c.innerHTML = '<div style="font-size:11px;color:var(--txt4);text-align:center">Archive index empty</div>'; return; } c.innerHTML = S.library.map(i => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:12px;"><span style="cursor:pointer;font-weight:500;" onclick="viewLib('${i.id}')">${esc(i.name)}</span><button onclick="delLib('${i.id}')" style="background:none;border:none;color:var(--txt4);cursor:pointer;">✕</button></div>`).join(''); }
-function viewLib(id) { const i = S.library.find(x => x.id === id); if (!i) return; $('#libName').value = i.name; $('#libContent').value = i.content; }
-async function saveLib() { const n = $('#libName')?.value.trim(); const c = $('#libContent')?.value.trim(); if (!n || !c) return; try { await api.libCreate(n, 'note', c); $('#libName').value = ''; $('#libContent').value = ''; await loadLib(); toast('Archive Track Committed'); } catch(e) { toast(e.message, 'error'); } }
-async function delLib(id) { if (!confirm('Purge resource item from archive index?')) return; try { await api.libDel(id); await loadLib(); toast('Item Purged'); } catch(e) { toast(e.message, 'error'); } }
 
 function openUpgrade() {
-  $('#upgradeModal').classList.add('open'); if (!S.payConfig) return; const { benefits } = S.payConfig;
-  $('#tierCards').innerHTML = `<div class="tier-card ${S.tier === 'free' ? 'selected' : ''}" onclick="selUp('free')"><div class="tier-card-name">🔹 Base Account Tier</div><div class="tier-card-price">$0</div><ul class="tier-card-features"><li>✓ 10 commands per cycle</li><li>✓ Direct response matrix</li></ul></div><div class="tier-card" onclick="selUp('plus')"><div class="tier-card-name">🔶 Plus Operations Framework</div><div class="tier-card-price">$8<span>/mo</span></div><ul class="tier-card-features">${(benefits?.plus || []).map(b => `<li>✓ ${b}</li>`).join('')}</ul></div><div class="tier-card" onclick="selUp('pro')"><div class="tier-card-name">💎 Enterprise Pro Tier</div><div class="tier-card-price">$17<span>/mo</span></div><ul class="tier-card-features">${(benefits?.pro || []).map(b => `<li>✓ ${b}</li>`).join('')}</ul></div>`;
-  $$('#paySection .pill-tab').forEach(tab => tab.onclick = () => { $$('#paySection .pill-tab').forEach(p => p.classList.remove('active')); tab.classList.add('active'); S.selCoin = tab.dataset.coin; updateWallet(); });
-  $('#verifyUpgrade').onclick = verifyUp;
-}
-function selUp(t) { S.selTier = t; $$('.tier-card').forEach(c => c.classList.remove('selected')); if (t === 'free') { $$('.tier-card')[0]?.classList.add('selected'); } else if (t === 'plus') { $$('.tier-card')[1]?.classList.add('selected'); } else if (t === 'pro') { $$('.tier-card')[2]?.classList.add('selected'); } if (t !== 'free') { $('#paySection').style.display = 'block'; updateWallet(); } else { $('#paySection').style.display = 'none'; } }
-function updateWallet() { const e = $('#walletAddr'); if (!e || !S.payConfig?.wallets) return; e.textContent = S.payConfig.wallets[S.selCoin] || 'Network Endpoint Mapping Refused'; e.onclick = () => { navigator.clipboard.writeText(e.textContent); toast('Crypto Address Key Copied'); }; }
-async function verifyUp() { const tx = $('#txidInput')?.value.trim(); if (!S.selTier || S.selTier === 'free' || !tx) return; try { const r = await api.upgrade(S.selTier, tx, S.selCoin); S.prevTier = S.tier; S.tier = r.tier; S.token = r.token; localStorage.setItem('ct', r.token); $('#upgradeModal').classList.remove('open'); render(); toast('Permission Elevation Dynamic Acknowledged: ' + r.tier.toUpperCase()); } catch(err) { toast(err.message, 'error'); } }
-
-function openFounder() { $('#founderModal').classList.add('open'); }
-async function verifyFounder() { const c = $('#founderCode')?.value; if (!c) return; try { const r = await api.founder(c); S.tier = 'founder'; S.token = r.token; localStorage.setItem('ct', r.token); $('#founderModal').classList.remove('open'); render(); toast('Administrative Superuser Context Enabled', 'success'); } catch(e) { toast('Credential Mapping Match Aborted', 'error'); } }
-async function openAdmin() { if (S.tier !== 'founder') return; $('#adminModal').classList.add('open'); try { const d = await api.admin(); $('#adminContent').innerHTML = `<div class="stat-grid"><div class="stat-card"><div class="stat-val">${d.total_sessions}</div><div class="stat-lbl">Active Node Sessions</div></div><div class="stat-card"><div class="stat-val">${d.total_messages}</div><div class="stat-lbl">Processed Transactions</div></div></div>`; } catch(e){} }
-
-function openSupport() { $('#supportModal').classList.add('open'); }
-function openMoney() { if (S.tier !== 'pro' && S.tier !== 'founder') return; $('#moneyModal').classList.add('open'); loadMarketData(); }
-async function openTechUpdates() { if (S.tier !== 'pro' && S.tier !== 'founder') return; $('#techModal').classList.add('open'); const c = $('#techNewsContent'); if (!c) return; c.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--txt4);">Connecting stream network interface...</div>'; try { const data = await api.techNews(); const news = Array.isArray(data) ? data : (data?.news || data?.articles || []); if (news.length > 0) { c.innerHTML = news.map(n => `<div class="news-item" onclick="openNewsArticle('${escAttr(n.url || n.link)}','${escAttr(n.headline || n.title)}','${escAttr(n.summary || n.description)}','')"><div class="news-source">${esc(n.source?.name || n.source || 'INTEL')}</div><div class="news-headline">${esc(n.headline || n.title)}</div></div>`).join(''); } else { c.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--txt4);">Feed connection timed out empty.</div>'; } } catch(e) { c.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--red);">Feed Interface Failure.</div>'; } }
-
-async function loadMarketData() {
-  const pc = $('#marketsPricesContent'); if (!pc) return; pc.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--txt4);">Connecting terminal liquidity asset feeds...</div>';
-  try {
-    const [pd, nd] = await Promise.all([api.marketsPrices().catch(() => ({})), api.marketsNews().catch(() => ({}))]);
-    const prices = pd?.prices || pd?.data || pd || {}; let entries = Array.isArray(prices) ? prices.map((item, i) => [item?.symbol || item?.name || `Asset${i}`, item]) : Object.entries(prices);
-    if (entries.length > 0) { pc.innerHTML = entries.map(([n, i]) => `<div style="padding:10px 0; border-bottom:1px solid var(--bdr); display:flex; justify-content:space-between; font-size:12px;"><span style="font-weight:600;">${esc(String(n))}</span><span><strong>${typeof i.price === 'number' ? i.price.toFixed(2) : (i.price || '—')}</strong></span></div>`).join(''); } else { pc.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--txt4);">Asset ledger configuration empty.</div>'; }
-    const news = nd?.news || nd?.articles || (Array.isArray(nd) ? nd : []); const nc = $('#marketsNewsContent');
-    if (nc && news.length > 0) { nc.innerHTML = news.map(n => `<div class="news-item" onclick="window.open('${escAttr(n.url || n.link)}','_blank')"><div class="news-source">${esc(n.source || 'CRYPTO')}</div><div class="news-headline">${esc(n.headline || n.title)}</div></div>`).join(''); }
-  } catch(e) { pc.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--red);">Feeds Integration Aborted.</div>'; }
+    if (!S.payConfig) return;
+    const benefits = S.payConfig.benefits;
+    const cards = document.getElementById('tierCards');
+    cards.innerHTML = `
+        <div class="tier-card" onclick="selectTier('plus')"><div class="tier-card-name">🔶 Plus</div><div class="tier-card-price">$8<span>/mo</span></div>${benefits.plus.map(b => `<div>✓ ${b}</div>`).join('')}</div>
+        <div class="tier-card" onclick="selectTier('pro')"><div class="tier-card-name">💎 Pro</div><div class="tier-card-price">$17<span>/mo</span></div>${benefits.pro.map(b => `<div>✓ ${b}</div>`).join('')}</div>
+    `;
+    openModal('upgradeModal');
 }
 
-function openNewsArticle(url) { if (url) window.open(url, '_blank'); }
-function openBusiness() { if (S.tier !== 'pro' && S.tier !== 'founder') return; $('#businessModal').classList.add('open'); const t = $('#businessToggle'); if (t) { t.textContent = S.businessMode ? 'ON' : 'OFF'; t.className = S.businessMode ? 'business-indicator active' : 'business-indicator off'; } }
-function openPrivacy() { $('#privacyModal').classList.add('open'); }
-function openWS() { if (S.tier === 'free') return; $('#workspaceModal').classList.add('open'); switchWSTab('create'); }
-
-function toggleSidebar() { S.sidebarOpen = !S.sidebarOpen; updateSidebar(); }
-function closeSidebar() { S.sidebarOpen = false; updateSidebar(); }
-function updateSidebar() {
-  const sb = $('#sidebar'); const ov = $('#overlay'); if (!sb) return;
-  if (window.innerWidth <= 768) { S.sidebarOpen ? (sb.classList.add('open'), ov?.classList.add('visible')) : (sb.classList.remove('open'), ov?.classList.remove('visible')); }
-  else { sb.classList.toggle('collapsed', !S.sidebarOpen); }
+async function verifyUpgrade() {
+    const tier = window.selectedTier;
+    const txid = document.getElementById('txidInput')?.value;
+    if (!tier || !txid) { toast('Select tier and enter TXID'); return; }
+    try {
+        const res = await api.upgrade(tier, txid, 'BTC');
+        S.tier = res.tier; S.token = res.token; localStorage.setItem('cap_token', res.token);
+        closeModal('upgradeModal');
+        toast(`Upgraded to ${res.tier.toUpperCase()}!`);
+        render();
+    } catch(e) { toast(e.message); }
 }
 
-function scrollBottom() { const c = $('#chatMsgs'); if (c) requestAnimationFrame(() => { c.scrollTop = c.scrollHeight; }); }
-function toast(m, type = 'info') {
-  const ex = $('.toast'); if (ex) ex.remove();
-  const t = document.createElement('div'); t.className = 'toast'; t.textContent = m;
-  t.style.background = type === 'info' ? 'var(--txt)' : 'var(--bg2)'; t.style.color = type === 'info' ? 'var(--bg)' : 'var(--txt)';
-  t.style.border = `1px solid var(--bdr3)`; document.body.appendChild(t); setTimeout(() => t.remove(), 2000);
+function openFounder() { openModal('founderModal'); }
+async function verifyFounder() {
+    const code = document.getElementById('founderCode')?.value;
+    if (!code) return;
+    try {
+        const res = await api.founder(code);
+        S.tier = res.tier; S.token = res.token; localStorage.setItem('cap_token', res.token);
+        closeModal('founderModal');
+        toast('Founder access granted!');
+        render();
+    } catch(e) { toast('Invalid code'); }
 }
 
-function copyText(t) { navigator.clipboard.writeText(t).then(() => toast('Text Element Synced to Clipboard')); }
-function renderMsgs() { const c = $('#chatMsgs'); if (c) { c.innerHTML = renderMsgsHTML(); scrollBottom(); } }
-function renderSidebarChats() { const c = $('#chatsList'); if (c) c.innerHTML = renderChatsHTML(); }
-
-function setupListeners() {
-  $('#toggleSidebar')?.addEventListener('click', toggleSidebar);
-  $('#toggleDesktop')?.addEventListener('click', toggleSidebar);
-  $('#overlay')?.addEventListener('click', closeSidebar);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { const a = document.activeElement; if (a?.id === 'msgInput') { e.preventDefault(); sendMsg(); } else if (a?.id === 'wsMessageInput') { e.preventDefault(); wsSend(); } }
-    if (e.key === 'Escape') { $$('.modal-overlay').forEach(m => m.classList.remove('open')); if (window.innerWidth <= 768) closeSidebar(); }
-  });
-  $$('.modal-overlay').forEach(o => o.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); }));
-  $('#closeUpgrade')?.addEventListener('click', () => $('#upgradeModal').classList.remove('open'));
-  $('#closeFounder')?.addEventListener('click', () => $('#founderModal').classList.remove('open'));
-  $('#closeAdmin')?.addEventListener('click', () => $('#adminModal').classList.remove('open'));
-  $('#closeLibrary')?.addEventListener('click', () => $('#libraryModal').classList.remove('open'));
-  $('#closeWorkspace')?.addEventListener('click', () => { $('#workspaceModal').classList.remove('open'); if (S.ws.timer) { clearInterval(S.ws.timer); S.ws.timer = null; } });
-  $('#closePrivacy')?.addEventListener('click', () => $('#privacyModal').classList.remove('open'));
-  $('#closeSupport')?.addEventListener('click', () => $('#supportModal').classList.remove('open'));
-  $('#closeMoney')?.addEventListener('click', () => $('#moneyModal').classList.remove('open'));
-  $('#closeTech')?.addEventListener('click', () => $('#techModal').classList.remove('open'));
-  $('#closeNewsReader')?.addEventListener('click', () => $('#newsReaderModal').classList.remove('open'));
-  $('#closeBusiness')?.addEventListener('click', () => $('#businessModal').classList.remove('open'));
-  $('#libSave')?.addEventListener('click', saveLib);
-  $('#wsCreateBtn')?.addEventListener('click', wsCreate);
-  $('#wsJoinBtn')?.addEventListener('click', wsJoin);
-  $('#wsSendBtn')?.addEventListener('click', wsSend);
-  $('#wsEditNote')?.addEventListener('click', () => { const nc = S.ws.notes.map(n => n.content).join('\n'); const ed = $('#wsNotesEditor'); const sb = $('#wsSaveNote'); if (ed) { ed.value = nc; ed.style.display = 'block'; } if (sb) sb.style.display = 'block'; });
-  $('#wsSaveNote')?.addEventListener('click', wsSaveNotes);
-  $('#wsTabCreate')?.addEventListener('click', () => switchWSTab('create'));
-  $('#wsTabJoin')?.addEventListener('click', () => switchWSTab('join'));
-  $('#wsTabChat')?.addEventListener('click', () => switchWSTab('chat'));
-  $('#verifyFounder')?.addEventListener('click', verifyFounder);
-  $('#marketTabPrices')?.addEventListener('click', () => { $('#marketsPricesContent').style.display = 'block'; $('#marketsNewsContent').style.display = 'none'; $('#marketTabPrices').classList.add('active'); $('#marketTabNews').classList.remove('active'); });
-  $('#marketTabNews')?.addEventListener('click', () => { $('#marketsPricesContent').style.display = 'none'; $('#marketsNewsContent').style.display = 'block'; $('#marketTabNews').classList.add('active'); $('#marketTabPrices').classList.remove('active'); });
-  window.addEventListener('resize', () => { if (window.innerWidth > 768) { $('#sidebar')?.classList.remove('open'); $('#overlay')?.classList.remove('visible'); } updateSidebar(); });
+async function openAdmin() {
+    if (S.tier !== 'founder') { toast('Founder access required'); return; }
+    try {
+        const data = await api.getAdmin();
+        document.getElementById('adminContent').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div class="stat-card"><div class="stat-val">${data.total_sessions}</div><div class="stat-lbl">Sessions</div></div>
+                <div class="stat-card"><div class="stat-val">${data.total_messages}</div><div class="stat-lbl">Messages</div></div>
+            </div>
+            <div style="max-height:200px;overflow-y:auto">${data.sessions?.map(s => `<div style="padding:8px;border-bottom:1px solid var(--bdr)">${s.id} - ${s.tier}</div>`).join('')}</div>
+        `;
+        openModal('adminModal');
+    } catch(e) { toast(e.message); }
 }
 
-document.addEventListener('DOMContentLoaded', init);
-S.draft = localStorage.getItem('cap_draft') || '';
+async function loadLibrary() {
+    try { const data = await api.getLibrary(); S.library = data.items || []; renderLibrary(); } catch(e) { console.error(e); }
+}
+function renderLibrary() {
+    const list = document.getElementById('libraryList');
+    if (!list) return;
+    if (!S.library.length) { list.innerHTML = '<div style="color:#666">Empty</div>'; return; }
+    list.innerHTML = S.library.map(i => `<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid var(--bdr)"><span onclick="viewLibraryItem('${i.id}')" style="cursor:pointer">${escapeHtml(i.name)}</span><button onclick="deleteLibraryItem('${i.id}')" style="background:none;border:none;color:red;cursor:pointer">✕</button></div>`).join('');
+}
+async function saveLibraryItem() {
+    const name = document.getElementById('libName')?.value;
+    const content = document.getElementById('libContent')?.value;
+    if (!name || !content) { toast('Name and content required'); return; }
+    try { await api.saveLibrary(name, content); await loadLibrary(); toast('Saved!'); document.getElementById('libName').value = ''; document.getElementById('libContent').value = ''; } catch(e) { toast(e.message); }
+}
+async function deleteLibraryItem(id) { try { await api.deleteLibrary(id); await loadLibrary(); toast('Deleted'); } catch(e) { toast(e.message); } }
+
+async function loadMarkets() {
+    try {
+        const prices = await api.getMarketsPrices();
+        const news = await api.getMarketsNews();
+        S.markets = { prices: prices.prices || {}, news: news.news || [] };
+    } catch(e) { console.error(e); }
+}
+
+function openMarkets() {
+    if (S.tier !== 'pro' && S.tier !== 'founder') { toast('Pro tier required'); return; }
+    openModal('moneyModal');
+    const pricesEl = document.getElementById('marketsPricesContent');
+    const newsEl = document.getElementById('marketsNewsContent');
+    if (S.markets?.prices) {
+        pricesEl.innerHTML = Object.entries(S.markets.prices).slice(0,15).map(([k,v]) => `<div style="padding:8px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between"><span>${k}</span><span>$${v.price}</span></div>`).join('') || '<div>No data</div>';
+    }
+    if (S.markets?.news) {
+        newsEl.innerHTML = S.markets.news.slice(0,10).map(n => `<div class="news-item" onclick="window.open('${n.url}','_blank')"><div class="news-source">${n.source}</div><div class="news-headline">${escapeHtml(n.headline)}</div></div>`).join('');
+    }
+}
+
+async function openTechNews() {
+    if (S.tier !== 'pro' && S.tier !== 'founder') { toast('Pro tier required'); return; }
+    openModal('techModal');
+    try {
+        const data = await api.getTechNews();
+        const news = data.news || [];
+        document.getElementById('techNewsContent').innerHTML = news.map(n => `<div class="news-item" onclick="window.open('${n.url}','_blank')"><div class="news-source">${n.source}</div><div class="news-headline">${escapeHtml(n.headline)}</div></div>`).join('') || '<div>No tech news</div>';
+    } catch(e) { document.getElementById('techNewsContent').innerHTML = '<div>Failed to load</div>'; }
+}
+
+// Workspace functions
+async function createWorkspace() {
+    const code = 'CAP-' + Math.random().toString(36).substring(2,8).toUpperCase();
+    const max = CFG.WS_MAX[S.tier] || 7;
+    try {
+        const res = await api.createWorkspace(code, max);
+        document.getElementById('wsRoomCode').textContent = code;
+        document.getElementById('wsRoomDisplay').style.display = 'block';
+        S.ws.code = code; S.ws.id = res.room_id;
+        startWorkspacePolling();
+        toast('Room created!');
+    } catch(e) { toast(e.message); }
+}
+async function joinWorkspace() {
+    const code = document.getElementById('wsJoinInput')?.value.trim().toUpperCase();
+    if (!code) return;
+    try {
+        await api.joinWorkspace(code);
+        S.ws.code = code;
+        startWorkspacePolling();
+        switchWorkspaceTab('chat');
+        toast('Joined!');
+    } catch(e) { toast(e.message); }
+}
+async function sendWorkspaceMessage() {
+    const msg = document.getElementById('wsMessageInput')?.value;
+    if (!msg || !S.ws.code) return;
+    document.getElementById('wsMessageInput').value = '';
+    try {
+        await api.sendWorkspaceMessage(S.ws.code, msg);
+        await loadWorkspaceMessages();
+    } catch(e) { toast(e.message); }
+}
+async function loadWorkspaceMessages() {
+    if (!S.ws.code) return;
+    try {
+        const msgs = await api.getWorkspaceMessages(S.ws.code);
+        const container = document.getElementById('wsMessages');
+        if (container) {
+            container.innerHTML = msgs.messages?.map(m => `<div style="padding:4px 0;border-bottom:1px solid var(--bdr)"><strong>${escapeHtml(m.author)}</strong>: ${escapeHtml(m.message)}</div>`).join('') || '<div>No messages</div>';
+            container.scrollTop = container.scrollHeight;
+        }
+        const notes = await api.getWorkspaceNotes(S.ws.code);
+        const notesDiv = document.getElementById('wsNotesDisplay');
+        if (notesDiv && notes.notes?.length) {
+            notesDiv.innerHTML = notes.notes.map(n => `<div>${escapeHtml(n.content)}</div>`).join('');
+            notesDiv.style.display = 'block';
+        }
+    } catch(e) { console.error(e); }
+}
+async function saveWorkspaceNotes() {
+    const content = document.getElementById('wsNotesEditor')?.value;
+    if (!content || !S.ws.code) return;
+    try {
+        await api.saveWorkspaceNotes(S.ws.code, content);
+        await loadWorkspaceMessages();
+        toast('Notes saved');
+    } catch(e) { toast(e.message); }
+}
+function startWorkspacePolling() {
+    if (S.ws.timer) clearInterval(S.ws.timer);
+    S.ws.timer = setInterval(loadWorkspaceMessages, 3000);
+}
+function switchWorkspaceTab(tab) {
+    document.getElementById('wsCreatePanel').style.display = tab === 'create' ? 'block' : 'none';
+    document.getElementById('wsJoinPanel').style.display = tab === 'join' ? 'block' : 'none';
+    document.getElementById('wsChatPanel').style.display = tab === 'chat' ? 'block' : 'none';
+    if (tab === 'chat') loadWorkspaceMessages();
+}
+function openWorkspace() {
+    if (S.tier === 'free') { toast('Upgrade to Plus or Pro'); return; }
+    openModal('workspaceModal');
+    switchWorkspaceTab('create');
+}
+function openLibrary() { openModal('libraryModal'); loadLibrary(); }
+function openPrivacy() { openModal('privacyModal'); }
+function openSupport() { openModal('supportModal'); }
+function uploadFile() { toast('Upload feature - Pro tier'); }
+
+// Event listeners
+document.getElementById('closeUpgrade')?.addEventListener('click', () => closeModal('upgradeModal'));
+document.getElementById('closeFounder')?.addEventListener('click', () => closeModal('founderModal'));
+document.getElementById('closeAdmin')?.addEventListener('click', () => closeModal('adminModal'));
+document.getElementById('closeLibrary')?.addEventListener('click', () => closeModal('libraryModal'));
+document.getElementById('closeWorkspace')?.addEventListener('click', () => { closeModal('workspaceModal'); if (S.ws.timer) { clearInterval(S.ws.timer); S.ws.timer = null; } });
+document.getElementById('closePrivacy')?.addEventListener('click', () => closeModal('privacyModal'));
+document.getElementById('closeSupport')?.addEventListener('click', () => closeModal('supportModal'));
+document.getElementById('closeMoney')?.addEventListener('click', () => closeModal('moneyModal'));
+document.getElementById('closeTech')?.addEventListener('click', () => closeModal('techModal'));
+document.getElementById('closeBusiness')?.addEventListener('click', () => closeModal('businessModal'));
+document.getElementById('libSave')?.addEventListener('click', saveLibraryItem);
+document.getElementById('verifyUpgrade')?.addEventListener('click', verifyUpgrade);
+document.getElementById('verifyFounder')?.addEventListener('click', verifyFounder);
+document.getElementById('wsCreateBtn')?.addEventListener('click', createWorkspace);
+document.getElementById('wsJoinBtn')?.addEventListener('click', joinWorkspace);
+document.getElementById('wsSendBtn')?.addEventListener('click', sendWorkspaceMessage);
+document.getElementById('wsSaveNote')?.addEventListener('click', saveWorkspaceNotes);
+document.getElementById('wsTabCreate')?.addEventListener('click', () => switchWorkspaceTab('create'));
+document.getElementById('wsTabJoin')?.addEventListener('click', () => switchWorkspaceTab('join'));
+document.getElementById('wsTabChat')?.addEventListener('click', () => switchWorkspaceTab('chat'));
+document.getElementById('wsEditNote')?.addEventListener('click', () => {
+    const editor = document.getElementById('wsNotesEditor');
+    const saveBtn = document.getElementById('wsSaveNote');
+    if (editor) { editor.style.display = 'block'; editor.value = S.ws.notes?.map(n => n.content).join('\n') || ''; }
+    if (saveBtn) saveBtn.style.display = 'block';
+});
+document.getElementById('marketTabPrices')?.addEventListener('click', () => {
+    document.getElementById('marketsPricesContent').style.display = 'block';
+    document.getElementById('marketsNewsContent').style.display = 'none';
+});
+document.getElementById('marketTabNews')?.addEventListener('click', () => {
+    document.getElementById('marketsPricesContent').style.display = 'none';
+    document.getElementById('marketsNewsContent').style.display = 'block';
+});
+document.getElementById('businessToggle')?.addEventListener('click', toggleBusinessMode);
+window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
+window.addEventListener('online', () => { S.isOnline = true; document.getElementById('offlineBanner').style.display = 'none'; });
+window.addEventListener('offline', () => { S.isOnline = false; document.getElementById('offlineBanner').style.display = 'block'; });
+
+init();
+window.selectTier = (tier) => {
+    window.selectedTier = tier;
+    document.getElementById('paySection').style.display = 'block';
+    const wallets = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
+    document.getElementById('walletAddr').innerHTML = `Send to: ${wallets.BTC}`;
+    document.getElementById('walletAddr').onclick = () => { navigator.clipboard.writeText(wallets.BTC); toast('Address copied'); };
+};
 </script>
 </body>
 </html>
