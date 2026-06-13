@@ -7,439 +7,86 @@
 <meta name="theme-color" content="#000000">
 <title>CAPITAN AI</title>
 <link rel="manifest" href="/manifest.json">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #000000;
-  --bg2: #050505;
-  --bg3: #0a0a0a;
-  --bg4: #111111;
-  --bdr: #1a1a1a;
-  --bdr2: #222222;
-  --txt: #FFFFFF;
-  --txt2: #CCCCCC;
-  --txt3: #666666;
-  --accent: #4ADE80;
-  --accent-hover: #22C55E;
-  --accent-bg: rgba(74,222,128,0.12);
-  --red: #EF4444;
-  --green: #22C55E;
-  --amber: #F59E0B;
-  --icon: #888888;
-  --icon-hover: #FFFFFF;
-  --radius: 12px;
-  --r-sm: 8px;
-  --fs-xs: 11px;
-  --fs-sm: 13px;
-  --fs-md: 14px;
-  --fs-lg: 16px;
-  --fs-xl: 20px;
-  --lh: 1.5;
-  --safe: env(safe-area-inset-bottom, 0px);
-  --transition: 0.2s ease;
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --sidebar-w: 300px;
+  --bg: #000000; --bg2: #050505; --bg3: #0a0a0a; --bdr: #1a1a1a;
+  --txt: #FFFFFF; --txt2: #CCCCCC; --txt3: #666666;
+  --accent: #4ADE80; --accent-hover: #22C55E; --accent-bg: rgba(74,222,128,0.12);
+  --radius: 12px; --sidebar-w: 300px;
 }
-
 :root.light {
-  --bg: #FFFFFF;
-  --bg2: #F5F5F7;
-  --bg3: #EBEBED;
-  --bg4: #E0E0E3;
-  --bdr: #E5E5E5;
-  --bdr2: #D4D4D4;
-  --txt: #000000;
-  --txt2: #333333;
-  --txt3: #666666;
-  --icon: #999999;
+  --bg: #FFFFFF; --bg2: #F5F5F7; --bg3: #EBEBED; --bdr: #E0E0E0;
+  --txt: #000000; --txt2: #333333; --txt3: #666666;
 }
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: var(--bg);
-  color: var(--txt);
-  font-family: var(--font);
-  font-size: var(--fs-sm);
-  height: 100vh;
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+body { background: var(--bg); color: var(--txt); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; overflow: hidden; }
+#app { display: flex; height: 100vh; }
 
-#app { display: flex; height: 100vh; position: relative; }
-
-/* Sidebar - Simplified */
-.sidebar {
-  width: var(--sidebar-w);
-  min-width: var(--sidebar-w);
-  background: var(--bg2);
-  border-right: 1px solid var(--bdr);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  transition: transform var(--transition);
-  z-index: 100;
-}
-
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--bdr);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sb-logo {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--accent), #fff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  cursor: pointer;
-}
-
-.btn-new-convo {
-  margin: 16px;
-  padding: 12px;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  border-radius: var(--radius);
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all var(--transition);
-}
-
-.btn-new-convo:hover { background: var(--accent-hover); transform: scale(1.02); }
-
-.sb-section-header {
-  padding: 12px 16px;
-  font-size: 11px;
-  color: var(--txt3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.chats-list {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.sb-chat-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--bdr);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background var(--transition);
-}
-
+.sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--bg2); border-right: 1px solid var(--bdr); display: flex; flex-direction: column; overflow-y: auto; transition: transform 0.2s; z-index: 100; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; align-items: center; }
+.sb-logo { font-size: 20px; font-weight: 700; background: linear-gradient(135deg, var(--accent), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
+.btn-new-convo { margin: 16px; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; }
+.btn-new-convo:hover { background: var(--accent-hover); }
+.sb-chat-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; }
 .sb-chat-item:hover { background: var(--bg3); }
 .sb-chat-item.active { background: var(--accent-bg); color: var(--accent); }
-.sb-chat-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sb-chat-del { background: none; border: none; color: var(--txt3); cursor: pointer; padding: 4px 8px; border-radius: 4px; }
-.sb-chat-del:hover { color: var(--red); background: var(--bg4); }
+.sb-chat-del { background: none; border: none; color: var(--txt3); cursor: pointer; }
+.sidebar-footer { padding: 16px; text-align: center; font-size: 10px; color: var(--txt3); border-top: 1px solid var(--bdr); }
 
-.sidebar-footer {
-  padding: 16px;
-  text-align: center;
-  font-size: 9px;
-  color: var(--txt3);
-  border-top: 1px solid var(--bdr);
-}
-
-/* Main Chat Area */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-
-.top-bar {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  z-index: 90;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.profile-btn {
-  background: var(--bg2);
-  border: 1px solid var(--bdr2);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all var(--transition);
-  font-size: 18px;
-}
-
-.profile-btn:hover { background: var(--bg3); border-color: var(--accent); }
-
-.toggle-sidebar {
-  background: var(--bg2);
-  border: 1px solid var(--bdr2);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.chat-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  max-width: 800px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 0 20px;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 80px 0 20px;
-}
-
-/* Welcome Screen */
-.welcome {
-  text-align: center;
-  padding: 40px;
-  animation: fadeIn 0.3s ease;
-}
-
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.top-bar { position: absolute; top: 16px; right: 20px; z-index: 90; display: flex; gap: 12px; }
+.profile-btn { background: var(--bg2); border: 1px solid var(--bdr); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.toggle-sidebar { position: fixed; top: 16px; left: 16px; background: var(--bg2); border: 1px solid var(--bdr); width: 40px; height: 40px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 180; }
+.chat-container { flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; padding: 0 20px; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 80px 0 20px; }
+.welcome { text-align: center; padding: 40px; }
 .welcome h1 { font-size: 32px; margin-bottom: 12px; background: linear-gradient(135deg, var(--accent), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.welcome p { color: var(--txt3); margin-bottom: 24px; }
-
-.welcome-pills {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.wp-pill {
-  padding: 10px 20px;
-  border: 1px solid var(--bdr2);
-  border-radius: 30px;
-  cursor: pointer;
-  transition: all var(--transition);
-  background: var(--bg2);
-}
-
+.welcome-pills { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+.wp-pill { padding: 10px 20px; border: 1px solid var(--bdr); border-radius: 30px; cursor: pointer; background: var(--bg2); }
 .wp-pill:hover { border-color: var(--accent); background: var(--accent-bg); }
-
-/* Messages */
-.msg { margin-bottom: 24px; animation: fadeIn 0.2s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg { margin-bottom: 20px; }
 .msg.user { display: flex; justify-content: flex-end; }
-.msg-user-bubble {
-  background: var(--accent-bg);
-  border: 1px solid var(--accent);
-  padding: 10px 16px;
-  border-radius: 18px 18px 4px 18px;
-  max-width: 80%;
-}
-.msg-ai-label { font-size: 10px; color: var(--txt3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.msg-user-bubble { background: var(--accent-bg); border: 1px solid var(--accent); padding: 10px 16px; border-radius: 18px 18px 4px 18px; max-width: 80%; }
+.msg-ai-label { font-size: 10px; color: var(--txt3); margin-bottom: 6px; }
 .msg-ai-body { line-height: 1.6; }
 .msg-ai-body pre { background: var(--bg3); padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; }
 .msg-ai-body code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; }
-.msg-actions { display: flex; gap: 8px; margin-top: 8px; opacity: 0.5; transition: opacity var(--transition); }
+.msg-actions { display: flex; gap: 8px; margin-top: 8px; opacity: 0.5; }
 .msg:hover .msg-actions { opacity: 1; }
 .msg-action { background: none; border: none; color: var(--txt3); cursor: pointer; padding: 4px; }
-.msg-action:hover { color: var(--txt); }
-
-/* Input Area */
-.input-area { padding: 16px 0 24px; background: var(--bg); }
-.input-wrap {
-  display: flex;
-  gap: 12px;
-  background: var(--bg2);
-  border: 1px solid var(--bdr2);
-  border-radius: 30px;
-  padding: 8px 8px 8px 20px;
-  align-items: center;
-}
-.input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
-.input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: var(--fs-md); padding: 10px 0; }
-.send-btn {
-  width: 42px;
-  height: 42px;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--transition);
-}
-.send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.send-btn:hover:not(:disabled) { transform: scale(1.05); }
-
-/* Thinking / Streaming */
-.thinking { display: flex; align-items: center; gap: 8px; color: var(--txt3); }
+.input-area { padding: 16px 0 24px; }
+.input-wrap { display: flex; gap: 12px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: 30px; padding: 8px 8px 8px 20px; align-items: center; }
+.input-field { flex: 1; background: none; border: none; outline: none; color: var(--txt); font-size: 14px; padding: 10px 0; }
+.send-btn { width: 42px; height: 42px; background: var(--accent); color: #000; border: none; border-radius: 50%; cursor: pointer; }
+.send-btn:disabled { opacity: 0.3; }
 .stream-cursor { display: inline-block; width: 2px; height: 1.2em; background: var(--accent); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-.token-fade { animation: tokenFade 0.05s ease; }
-@keyframes tokenFade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Toast */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: #000;
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-size: 12px;
-  font-weight: 600;
-  z-index: 1000;
-  animation: toastIn 0.2s ease;
-}
-@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-
-/* Modal */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.95);
-  z-index: 300;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  backdrop-filter: blur(8px);
-}
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+.token-fade { animation: fadeIn 0.05s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #000; padding: 8px 16px; border-radius: 20px; font-size: 12px; z-index: 1000; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
 .modal-overlay.open { display: flex; }
-.modal {
-  background: var(--bg2);
-  border: 1px solid var(--bdr2);
-  border-radius: var(--radius);
-  padding: 24px;
-  width: 480px;
-  max-width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-.modal h2 { margin-bottom: 16px; font-size: 20px; }
-.modal input, .modal textarea {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--bdr);
-  color: var(--txt);
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
-.modal-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
-}
+.modal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 24px; width: 400px; max-width: 90%; text-align: center; }
+.modal h2 { margin-bottom: 16px; }
+.modal p { margin-bottom: 20px; color: var(--txt3); }
+.telegram-login-btn { display: inline-flex; align-items: center; gap: 10px; background: #26A5E4; color: white; border: none; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer; margin: 10px 0; }
+.telegram-login-btn:hover { opacity: 0.9; }
+.modal-btn { width: 100%; padding: 12px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 8px; }
 .modal-btn.sec { background: transparent; border: 1px solid var(--bdr); color: var(--txt); }
-
-/* Tier Cards */
-.tier-card {
-  border: 1px solid var(--bdr2);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-.tier-card:hover { border-color: var(--accent); background: var(--accent-bg); }
+.tier-card { border: 1px solid var(--bdr); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
 .tier-card.selected { border-color: var(--accent); background: var(--accent-bg); }
 .tier-name { font-weight: 700; font-size: 18px; }
 .tier-price { font-size: 24px; font-weight: 700; margin: 8px 0; }
-.tier-price span { font-size: 12px; font-weight: 400; color: var(--txt3); }
-.tier-features { list-style: none; margin-top: 12px; }
-.tier-features li { font-size: 12px; padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+.wallet-box { background: var(--bg3); padding: 12px; border-radius: 8px; text-align: center; font-family: monospace; font-size: 11px; margin-bottom: 12px; cursor: pointer; }
+.profile-section { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--bdr); }
+.project-item { padding: 10px; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; align-items: center; }
 
-/* Wallet Box */
-.wallet-box {
-  background: var(--bg3);
-  padding: 12px;
-  border-radius: 8px;
-  font-family: monospace;
-  font-size: 11px;
-  text-align: center;
-  margin-bottom: 12px;
-  cursor: pointer;
-}
-
-/* Profile Section in Modal */
-.profile-section {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--bdr);
-}
-.profile-avatar {
-  width: 60px;
-  height: 60px;
-  background: var(--accent-bg);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  margin-bottom: 12px;
-}
-.profile-info { margin-bottom: 8px; }
-.profile-info label { font-size: 10px; color: var(--txt3); display: block; margin-bottom: 2px; }
-.profile-info value { font-weight: 600; }
-
-/* Project Item */
-.project-item {
-  padding: 12px;
-  border-bottom: 1px solid var(--bdr);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.project-name { font-weight: 600; }
-.project-desc { font-size: 10px; color: var(--txt3); margin-top: 2px; }
-
-/* Responsive */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    left: -300px;
-    top: 0;
-    bottom: 0;
-    z-index: 200;
-  }
+  .sidebar { position: fixed; left: -300px; top: 0; bottom: 0; z-index: 200; }
   .sidebar.open { left: 0; }
-  .toggle-sidebar { display: flex; position: fixed; top: 16px; left: 16px; z-index: 180; }
+  .toggle-sidebar { display: flex; }
   .top-bar { right: 16px; }
   .chat-messages { padding-top: 70px; }
-  .chat-container { padding: 0 12px; }
-  .modal { width: 95%; }
 }
 </style>
 </head>
@@ -447,77 +94,112 @@ body {
 
 <div id="app"></div>
 
-<!-- Modals -->
-<div id="authModal" class="modal-overlay"><div class="modal"><h2>🔐 Sign In to CAPITAN AI</h2><p>Enter your email to receive a magic link</p><input type="email" id="authEmail" placeholder="your@email.com"><button class="modal-btn" id="sendMagicLinkBtn">Send Magic Link</button><div id="authStatus"></div><button class="modal-btn sec" id="closeAuthModal">Cancel</button></div></div>
+<!-- Login Modal -->
+<div id="loginModal" class="modal-overlay">
+  <div class="modal">
+    <h2>🔐 Sign In to CAPITAN AI</h2>
+    <p>Connect with your Telegram account</p>
+    <div id="telegramLoginWidget"></div>
+    <button class="modal-btn sec" id="closeLoginModal">Cancel</button>
+  </div>
+</div>
 
-<div id="profileModal" class="modal-overlay"><div class="modal"><h2>👤 My Profile</h2><div id="profileContent"></div><button class="modal-btn sec" id="closeProfileModal">Close</button></div></div>
+<!-- Profile Modal -->
+<div id="profileModal" class="modal-overlay">
+  <div class="modal">
+    <h2>👤 My Profile</h2>
+    <div id="profileContent"></div>
+    <button class="modal-btn sec" id="closeProfileModal">Close</button>
+  </div>
+</div>
 
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>⚡ Upgrade Plan</h2><div id="tierList"></div><div id="paySection" style="display:none"><div class="wallet-box" id="walletAddr"></div><input type="text" id="txidInput" placeholder="Transaction ID"><button class="modal-btn" id="verifyUpgradeBtn">Verify Payment</button></div><button class="modal-btn sec" id="closeUpgradeModal">Close</button></div></div>
+<!-- Upgrade Modal -->
+<div id="upgradeModal" class="modal-overlay">
+  <div class="modal">
+    <h2>⚡ Upgrade Plan</h2>
+    <div id="tierList"></div>
+    <div id="paySection" style="display:none">
+      <div class="wallet-box" id="walletAddr"></div>
+      <input type="text" id="txidInput" placeholder="Transaction ID">
+      <button class="modal-btn" id="verifyUpgradeBtn">Verify Payment</button>
+    </div>
+    <button class="modal-btn sec" id="closeUpgradeModal">Close</button>
+  </div>
+</div>
 
-<div id="projectsModal" class="modal-overlay"><div class="modal"><h2>📁 Projects</h2><input type="text" id="projectName" placeholder="Project name"><textarea id="projectDesc" placeholder="Description"></textarea><button id="createProjectBtn" class="modal-btn">Create Project</button><div id="projectsList"></div><button class="modal-btn sec" id="closeProjectsModal">Close</button></div></div>
+<!-- Projects Modal -->
+<div id="projectsModal" class="modal-overlay">
+  <div class="modal">
+    <h2>📁 Projects</h2>
+    <input type="text" id="projectName" placeholder="Project name">
+    <textarea id="projectDesc" placeholder="Description" rows="2"></textarea>
+    <button class="modal-btn" id="createProjectBtn">Create Project</button>
+    <div id="projectsList" style="margin-top: 16px;"></div>
+    <button class="modal-btn sec" id="closeProjectsModal">Close</button>
+  </div>
+</div>
 
-<div id="workspaceModal" class="modal-overlay"><div class="modal"><h2>🗂️ Work Area</h2><div id="workspaceContent"></div><button class="modal-btn sec" id="closeWorkspaceModal">Close</button></div></div>
+<!-- Workspace Modal -->
+<div id="workspaceModal" class="modal-overlay">
+  <div class="modal">
+    <h2>🗂️ Work Area</h2>
+    <input type="text" id="workspaceCode" placeholder="Room code">
+    <button class="modal-btn" id="createWorkspaceBtn">Create Workspace</button>
+    <button class="modal-btn sec" id="joinWorkspaceBtn">Join Workspace</button>
+    <div id="workspaceMessages" style="margin-top: 16px; max-height: 200px; overflow-y: auto;"></div>
+    <button class="modal-btn sec" id="closeWorkspaceModal">Close</button>
+  </div>
+</div>
 
-<div id="supportModal" class="modal-overlay"><div class="modal"><h2>🆘 Support</h2><p>Email: <a href="mailto:closeaitechnologies@protonmail.com" style="color:var(--accent)">closeaitechnologies@protonmail.com</a></p><p>Response: 24-48 hours</p><button class="modal-btn sec" id="closeSupportModal">Close</button></div></div>
-
-<div id="offlineBanner" style="display:none;position:fixed;top:0;left:0;right:0;background:var(--amber);color:#000;text-align:center;padding:6px;z-index:500">Offline Mode</div>
+<!-- Support Modal -->
+<div id="supportModal" class="modal-overlay">
+  <div class="modal">
+    <h2>🆘 Support</h2>
+    <p>Email: closeaitechnologies@protonmail.com</p>
+    <p>Response: 24-48 hours</p>
+    <button class="modal-btn sec" id="closeSupportModal">Close</button>
+  </div>
+</div>
 
 <script>
 // Configuration
 const API_URL = 'https://capitan-ai-jxu8.onrender.com';
+const TELEGRAM_BOT_USERNAME = 'capitan_ai_bot';
 let currentUser = null;
 let authToken = localStorage.getItem('auth_token');
-let S = {
-  loading: false,
-  chats: [],
-  activeChat: null,
-  messages: [],
-  draft: '',
-  streamAbort: null,
-  sidebarOpen: window.innerWidth > 768
-};
+let S = { loading: false, chats: [], activeChat: null, messages: [], draft: '', streamAbort: null, sidebarOpen: window.innerWidth > 768 };
 
 // API Class
 class Api {
   async request(path, options = {}) {
-    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    const headers = { 'Content-Type': 'application/json' };
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-    
     const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-    
     if (res.status === 401) {
-      authToken = null;
-      localStorage.removeItem('auth_token');
-      currentUser = null;
-      showAuthModal();
+      authToken = null; localStorage.removeItem('auth_token'); currentUser = null;
+      showLoginModal();
       throw new Error('Session expired');
     }
-    
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Error ${res.status}`);
-    }
-    
+    if (!res.ok) throw new Error(`Error ${res.status}`);
     return res.json();
   }
-  
-  async sendMagicLink(email) { return this.request('/api/auth/magic-link', { method: 'POST', body: JSON.stringify({ email }) }); }
-  async verifyMagicLink(token) { return this.request('/api/auth/verify', { method: 'POST', body: JSON.stringify({ token }) }); }
+  async verifyTelegram(data) { return this.request('/api/auth/telegram/verify', { method: 'POST', body: JSON.stringify({ data }) }); }
   async getMe() { return this.request('/api/auth/me'); }
   async logout() { return this.request('/api/auth/logout', { method: 'POST' }); }
   async updateProfile(name) { return this.request('/api/auth/update-profile', { method: 'POST', body: JSON.stringify({ name }) }); }
   async deleteAccount() { return this.request('/api/auth/delete-account', { method: 'DELETE' }); }
-  
   async getChats() { return this.request('/api/chats'); }
   async sendMessage(messages, chatId) { return this.request('/api/chat', { method: 'POST', body: JSON.stringify({ messages, chat_id: chatId }) }); }
   async deleteChat(id) { return this.request(`/api/chats/${id}`, { method: 'DELETE' }); }
-  
   async getProjects() { return this.request('/api/projects'); }
   async createProject(name, desc) { return this.request('/api/projects', { method: 'POST', body: JSON.stringify({ name, description: desc }) }); }
   async deleteProject(id) { return this.request(`/api/projects/${id}`, { method: 'DELETE' }); }
-  
   async getPaymentConfig() { return this.request('/api/payment-config'); }
-  async upgrade(tier, txid, currency) { return this.request('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier, txid, currency }) }); }
+  async upgrade(tier, txid) { return this.request('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier, txid, currency: 'BTC' }) }); }
+  async createWorkspace(name, code) { return this.request('/api/workspace/create', { method: 'POST', body: JSON.stringify({ name, room_code: code }) }); }
+  async joinWorkspace(code) { return this.request('/api/workspace/join', { method: 'POST', body: JSON.stringify({ room_code: code }) }); }
+  async sendWorkspaceMessage(code, msg) { return this.request('/api/workspace/message', { method: 'POST', body: JSON.stringify({ room_code: code, message: msg }) }); }
+  async getWorkspaceMessages(code) { return this.request(`/api/workspace/messages?room_code=${code}`); }
 }
 const api = new Api();
 
@@ -528,19 +210,14 @@ class TokenStreamer {
     this.index = 0; this.tokens = this.tokenize(content); this.running = false;
   }
   tokenize(t) { const r = []; const rg = /([^\s]+|\s+)/g; let m; while ((m = rg.exec(t)) !== null) r.push(m[0]); return r; }
-  start() {
-    this.running = true;
-    if (S.streamAbort) S.streamAbort();
-    S.streamAbort = () => this.stop();
-    this.next();
-  }
+  start() { this.running = true; if (S.streamAbort) S.streamAbort(); S.streamAbort = () => this.stop(); this.next(); }
   next() {
     if (!this.running || this.index >= this.tokens.length) { this.finish(); return; }
     const s = document.createElement('span'); s.className = 'token-fade'; s.textContent = this.tokens[this.index];
     this.container.appendChild(s); this.index++; this.scroll(); setTimeout(() => this.next(), this.delay);
   }
   stop() { this.running = false; if (this.index < this.tokens.length) this.container.appendChild(document.createTextNode(this.tokens.slice(this.index).join(''))); this.finish(); }
-  finish() { const cur = this.container.querySelector('.stream-cursor'); if (cur) cur.remove(); this.container.innerHTML = this.formatMD(this.content); S.streamAbort = null; this.scroll(); }
+  finish() { const c = this.container.querySelector('.stream-cursor'); if (c) c.remove(); this.container.innerHTML = this.formatMD(this.content); S.streamAbort = null; this.scroll(); }
   scroll() { const m = document.getElementById('chatMsgs'); if (m) m.scrollTop = m.scrollHeight; }
   formatMD(t) {
     if (!t) return '';
@@ -553,133 +230,93 @@ class TokenStreamer {
   escape(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 }
 
-// Helper Functions
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
-function toast(msg) {
-  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
-  document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
+// Telegram Login
+function initTelegramLogin() {
+  const widget = document.getElementById('telegramLoginWidget');
+  if (!widget) return;
+  
+  widget.innerHTML = `
+    <button class="telegram-login-btn" onclick="handleTelegramLogin()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.6-1.38-.97-2.23-1.56-.99-.67-.35-1.04.22-1.64.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.06-.02-.09-.02-.02-.06-.01-.09-.01-.02 0-.04.01-.06.02l-3.84 2.42c-.18.11-.34.18-.5.18-.16 0-.32-.07-.44-.18l-1.44-1.02c-.36-.26-.39-.34-.39-.47 0-.11.03-.2.18-.3l7.02-2.71c.31-.12.6-.19.87-.19.55 0 .81.25.7.79z" fill="white"/>
+      </svg>
+      Login with Telegram
+    </button>
+  `;
 }
 
-// ================================================================
-// AUTH MODAL
-// ================================================================
-function showAuthModal() {
-  document.getElementById('authModal').classList.add('open');
-  document.getElementById('authStatus').innerHTML = '';
+async function handleTelegramLogin() {
+  // Use Telegram Login Widget redirect
+  const redirectUrl = encodeURIComponent(`${window.location.origin}/auth/telegram`);
+  window.location.href = `https://oauth.telegram.org/auth?bot_id=${TELEGRAM_BOT_USERNAME}&origin=${window.location.origin}&embed=1&request_access=write`;
 }
 
-async function sendMagicLink() {
-  const email = document.getElementById('authEmail').value;
-  if (!email) { toast('Enter email'); return; }
-  document.getElementById('authStatus').innerHTML = 'Sending...';
-  try {
-    const res = await api.sendMagicLink(email);
-    document.getElementById('authStatus').innerHTML = `✅ Magic link sent to ${email}. Check console for test link.`;
-    if (res.url) console.log('Magic link:', res.url);
-  } catch(e) { document.getElementById('authStatus').innerHTML = `❌ ${e.message}`; }
-}
-
-async function handleAuthCallback() {
+async function handleTelegramCallback() {
   const urlParams = new URLSearchParams(window.location.search);
-  const token = urlParams.get('token');
-  if (token) {
+  const tgAuth = urlParams.get('tgAuth');
+  
+  if (tgAuth) {
     try {
-      const res = await api.verifyMagicLink(token);
-      authToken = res.token;
-      currentUser = res.user;
+      const data = JSON.parse(decodeURIComponent(tgAuth));
+      const res = await api.verifyTelegram(data);
+      authToken = res.token; currentUser = res.user;
       localStorage.setItem('auth_token', authToken);
-      localStorage.setItem('current_user', JSON.stringify(currentUser));
       window.history.replaceState({}, document.title, window.location.pathname);
-      document.getElementById('authModal').classList.remove('open');
+      document.getElementById('loginModal').classList.remove('open');
       await loadChats();
       render();
-      toast(`Welcome ${currentUser.name || currentUser.email}!`);
-    } catch(e) { toast('Invalid or expired link'); }
-  } else if (!authToken) {
-    showAuthModal();
+      toast(`Welcome ${currentUser.name || currentUser.telegram_username || 'User'}!`);
+    } catch(e) { toast('Login failed: ' + e.message); }
   }
 }
 
-// ================================================================
-// PROFILE MODAL
-// ================================================================
+function showLoginModal() { document.getElementById('loginModal').classList.add('open'); initTelegramLogin(); }
+
+// Profile Modal
 async function showProfileModal() {
   if (!currentUser) return;
+  const tierInfo = { free: 'Free', plus: 'Plus', pro: 'Pro', pro_max: 'Pro Max', founder: 'Founder' };
   const content = document.getElementById('profileContent');
-  const tierInfo = { free: 'Free', plus: 'Plus', pro: 'Pro', pro_max: 'Pro Max' };
   content.innerHTML = `
     <div class="profile-section">
-      <div class="profile-avatar">👤</div>
-      <div class="profile-info"><label>Name</label><value><input type="text" id="profileName" value="${escapeHtml(currentUser.name || '')}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr);padding:8px;border-radius:6px;"></value></div>
-      <div class="profile-info"><label>Email</label><value>${escapeHtml(currentUser.email)}</value></div>
-      <div class="profile-info"><label>Member Since</label><value>${new Date(currentUser.created_at).toLocaleDateString()}</value></div>
-      <div class="profile-info"><label>Current Plan</label><value><strong style="color:var(--accent)">${tierInfo[currentUser.tier]}</strong></value></div>
+      <div><label>Telegram</label><div style="font-weight:600">@${escapeHtml(currentUser.telegram_username || 'unknown')}</div></div>
+      <div><label>Name</label><input type="text" id="profileName" value="${escapeHtml(currentUser.name || '')}" style="width:100%;background:var(--bg3);border:1px solid var(--bdr);padding:8px;border-radius:6px;margin-top:4px"></div>
+      <div><label>Plan</label><div style="color:var(--accent);font-weight:600">${tierInfo[currentUser.tier]}</div></div>
+      <div><label>Member Since</label><div>${new Date(currentUser.created_at).toLocaleDateString()}</div></div>
       <button class="modal-btn" id="saveProfileBtn" style="margin-top:12px">Save Changes</button>
-    </div>
-    <div class="profile-section">
-      <div class="profile-info"><label>Appearance</label><value><select id="themeSelect" style="background:var(--bg3);border:1px solid var(--bdr);padding:8px;border-radius:6px;width:100%"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></value></div>
-      <div class="profile-info"><label>Font Size</label><value><select id="fontSizeSelect" style="background:var(--bg3);border:1px solid var(--bdr);padding:8px;border-radius:6px;width:100%"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></value></div>
     </div>
     <div class="profile-section">
       <button class="modal-btn" id="upgradeFromProfileBtn" style="background:var(--accent);color:#000">⚡ Upgrade Plan</button>
       <button class="modal-btn sec" id="projectsFromProfileBtn">📁 My Projects</button>
       <button class="modal-btn sec" id="workspaceFromProfileBtn">🗂️ Work Area</button>
       <button class="modal-btn sec" id="supportFromProfileBtn">🆘 Support</button>
-      <button class="modal-btn sec" id="privacyFromProfileBtn">🔒 Privacy Policy</button>
       <button class="modal-btn sec" id="logoutBtn" style="color:var(--red)">🚪 Logout</button>
-      <button class="modal-btn sec" id="deleteAccountBtn" style="color:var(--red);border-color:var(--red)">🗑️ Delete Account</button>
+      <button class="modal-btn sec" id="deleteAccountBtn" style="color:var(--red)">🗑️ Delete Account</button>
     </div>
   `;
-  
   document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
     const name = document.getElementById('profileName').value;
-    try { await api.updateProfile(name); currentUser.name = name; localStorage.setItem('current_user', JSON.stringify(currentUser)); toast('Profile updated'); } catch(e) { toast(e.message); }
+    await api.updateProfile(name); currentUser.name = name; toast('Profile updated');
   });
   document.getElementById('upgradeFromProfileBtn')?.addEventListener('click', () => { document.getElementById('profileModal').classList.remove('open'); showUpgradeModal(); });
   document.getElementById('projectsFromProfileBtn')?.addEventListener('click', () => { document.getElementById('profileModal').classList.remove('open'); showProjectsModal(); });
   document.getElementById('workspaceFromProfileBtn')?.addEventListener('click', () => { document.getElementById('profileModal').classList.remove('open'); showWorkspaceModal(); });
   document.getElementById('supportFromProfileBtn')?.addEventListener('click', () => { document.getElementById('profileModal').classList.remove('open'); document.getElementById('supportModal').classList.add('open'); });
-  document.getElementById('privacyFromProfileBtn')?.addEventListener('click', () => toast('Privacy Policy: Your data is encrypted. No third-party sharing.'));
   document.getElementById('logoutBtn')?.addEventListener('click', async () => { await api.logout(); authToken = null; currentUser = null; localStorage.clear(); window.location.reload(); });
-  document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => { if (confirm('Permanently delete your account? All data will be lost.')) { await api.deleteAccount(); authToken = null; currentUser = null; localStorage.clear(); window.location.reload(); } });
-  
-  document.getElementById('themeSelect').value = localStorage.getItem('theme') || 'dark';
-  document.getElementById('fontSizeSelect').value = localStorage.getItem('fontSize') || 'medium';
-  document.getElementById('themeSelect').onchange = () => { localStorage.setItem('theme', document.getElementById('themeSelect').value); applyTheme(); };
-  document.getElementById('fontSizeSelect').onchange = () => { const s = document.getElementById('fontSizeSelect').value; localStorage.setItem('fontSize', s); document.body.style.fontSize = s === 'small' ? '12px' : s === 'large' ? '16px' : '14px'; };
-  
+  document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => { if (confirm('Delete account permanently?')) { await api.deleteAccount(); authToken = null; currentUser = null; localStorage.clear(); window.location.reload(); } });
   document.getElementById('profileModal').classList.add('open');
 }
 
-function applyTheme() {
-  const theme = localStorage.getItem('theme') || 'dark';
-  if (theme === 'light') document.documentElement.classList.add('light');
-  else if (theme === 'dark') document.documentElement.classList.remove('light');
-  else { const d = window.matchMedia('(prefers-color-scheme: dark)').matches; if (!d) document.documentElement.classList.add('light'); else document.documentElement.classList.remove('light'); }
-}
-
-// ================================================================
-// UPGRADE MODAL
-// ================================================================
+// Upgrade Modal
 async function showUpgradeModal() {
   const config = await api.getPaymentConfig();
-  const tiers = config.tiers;
   document.getElementById('tierList').innerHTML = `
-    ${Object.entries(tiers).map(([key, t]) => `
-      <div class="tier-card" onclick="selectTier('${key}')">
-        <div class="tier-name">${t.features.name}</div>
-        <div class="tier-price">$${t.price}<span>/mo</span></div>
-        <div class="tier-features">
-          <li>📨 ${t.features.msg_limit === Infinity ? 'Unlimited' : t.features.msg_limit} messages/day</li>
-          <li>🤖 AI: ${t.features.ai_model}</li>
-          <li>👥 ${t.features.workspace_seats} workspace seats</li>
-          ${t.features.projects_enabled ? '<li>📁 Projects included</li>' : ''}
-          ${t.features.live_markets ? '<li>📈 Live market data</li>' : ''}
-          ${t.features.web_search ? '<li>🔍 Web search</li>' : ''}
-        </div>
-      </div>
-    `).join('')}
+    <div class="tier-card" onclick="selectTier('plus')"><div class="tier-name">🔶 Plus</div><div class="tier-price">$8<span>/mo</span></div><div>✓ 50 messages/day</div><div>✓ Groq Llama 3.3</div><div>✓ Web search</div></div>
+    <div class="tier-card" onclick="selectTier('pro')"><div class="tier-name">💎 Pro</div><div class="tier-price">$17<span>/mo</span></div><div>✓ 150 messages/day</div><div>✓ Claude 3.5 Sonnet</div><div>✓ Live markets</div><div>✓ Projects</div></div>
+    <div class="tier-card" onclick="selectTier('pro_max')"><div class="tier-name">👑 Pro Max</div><div class="tier-price">$30<span>/mo</span></div><div>✓ Unlimited messages</div><div>✓ GPT-4o + Claude Ensemble</div><div>✓ All features</div></div>
   `;
   window.selectedTier = null;
   document.getElementById('paySection').style.display = 'none';
@@ -691,7 +328,7 @@ window.selectTier = (tier) => {
   document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
   event.target.closest('.tier-card').classList.add('selected');
   const wallets = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
-  document.getElementById('walletAddr').innerHTML = `Send to: ${wallets.BTC}`;
+  document.getElementById('walletAddr').innerHTML = `Send BTC to: ${wallets.BTC}`;
   document.getElementById('walletAddr').onclick = () => { navigator.clipboard.writeText(wallets.BTC); toast('Address copied'); };
   document.getElementById('paySection').style.display = 'block';
 };
@@ -700,61 +337,51 @@ document.getElementById('verifyUpgradeBtn')?.addEventListener('click', async () 
   const txid = document.getElementById('txidInput').value;
   if (!window.selectedTier || !txid) { toast('Select tier and enter TXID'); return; }
   try {
-    await api.upgrade(window.selectedTier, txid, 'BTC');
-    toast('Upgrade successful! New tier activated.');
+    await api.upgrade(window.selectedTier, txid);
+    toast('Upgrade successful!');
     document.getElementById('upgradeModal').classList.remove('open');
-    if (currentUser) { currentUser.tier = window.selectedTier; localStorage.setItem('current_user', JSON.stringify(currentUser)); }
+    if (currentUser) { currentUser.tier = window.selectedTier; }
   } catch(e) { toast(e.message); }
 });
 
-// ================================================================
-// PROJECTS MODAL
-// ================================================================
+// Projects Modal
 async function showProjectsModal() {
   const projects = await api.getProjects();
   document.getElementById('projectsList').innerHTML = projects.projects.map(p => `
-    <div class="project-item">
-      <div><div class="project-name">${escapeHtml(p.name)}</div><div class="project-desc">${escapeHtml(p.description || '')}</div></div>
-      <button onclick="deleteProject('${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer">🗑️</button>
-    </div>
-  `).join('') || '<div style="padding:20px;text-align:center;color:var(--txt3)">No projects yet</div>';
+    <div class="project-item"><div><strong>${escapeHtml(p.name)}</strong><br><small>${escapeHtml(p.description || '')}</small></div><button onclick="deleteProject('${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer">🗑️</button></div>
+  `).join('') || '<div style="text-align:center;color:var(--txt3);padding:16px">No projects</div>';
   document.getElementById('projectsModal').classList.add('open');
 }
 
 document.getElementById('createProjectBtn')?.addEventListener('click', async () => {
   const name = document.getElementById('projectName').value;
-  const desc = document.getElementById('projectDesc').value;
   if (!name) { toast('Project name required'); return; }
-  await api.createProject(name, desc);
+  await api.createProject(name, document.getElementById('projectDesc').value);
   document.getElementById('projectName').value = '';
   document.getElementById('projectDesc').value = '';
   showProjectsModal();
   toast('Project created');
 });
 
-window.deleteProject = async (id) => {
-  if (confirm('Delete project?')) { await api.deleteProject(id); showProjectsModal(); toast('Deleted'); }
-};
+window.deleteProject = async (id) => { if (confirm('Delete?')) { await api.deleteProject(id); showProjectsModal(); toast('Deleted'); } };
 
-// ================================================================
-// WORKSPACE MODAL
-// ================================================================
-function showWorkspaceModal() {
-  document.getElementById('workspaceContent').innerHTML = `
-    <p>Create or join a workspace to collaborate with others worldwide.</p>
-    <input type="text" id="workspaceCode" placeholder="Room code" style="margin:12px 0">
-    <button id="createWorkspaceBtn" class="modal-btn" style="margin-bottom:8px">Create Workspace</button>
-    <button id="joinWorkspaceBtn" class="modal-btn sec">Join Workspace</button>
-    <div id="workspaceMessages" style="margin-top:16px;max-height:200px;overflow-y:auto"></div>
-  `;
-  document.getElementById('createWorkspaceBtn')?.addEventListener('click', () => toast('Workspace creation - Coming soon'));
-  document.getElementById('joinWorkspaceBtn')?.addEventListener('click', () => toast('Join workspace - Coming soon'));
+// Workspace Modal
+async function showWorkspaceModal() {
   document.getElementById('workspaceModal').classList.add('open');
 }
+document.getElementById('createWorkspaceBtn')?.addEventListener('click', async () => {
+  const code = 'CAP-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  await api.createWorkspace('My Workspace', code);
+  toast(`Room created: ${code}`);
+});
+document.getElementById('joinWorkspaceBtn')?.addEventListener('click', async () => {
+  const code = document.getElementById('workspaceCode').value.trim().toUpperCase();
+  if (!code) { toast('Enter room code'); return; }
+  await api.joinWorkspace(code);
+  toast('Joined workspace');
+});
 
-// ================================================================
-// CHAT FUNCTIONS
-// ================================================================
+// Chat Functions
 async function loadChats() {
   if (!currentUser) return;
   try { const res = await api.getChats(); S.chats = res.chats || []; renderSidebar(); } catch(e) { console.error(e); }
@@ -765,15 +392,12 @@ async function sendMsg() {
   const msg = input?.value.trim();
   if (!msg || S.loading || !currentUser) return;
   input.value = ''; S.draft = ''; S.loading = true; render();
-  
   S.messages.push({ role: 'user', content: msg });
   const aiIdx = S.messages.length;
   S.messages.push({ role: 'assistant', content: '' });
   render();
-  
   const target = document.getElementById(`msgBody${aiIdx}`);
   if (target) { target.innerHTML = '<span class="stream-cursor"></span>'; scrollChat(); }
-  
   try {
     const res = await api.sendMessage(S.messages.slice(0, -1), S.activeChat);
     S.activeChat = res.chat_id;
@@ -795,28 +419,16 @@ function render() {
   const isMobile = window.innerWidth <= 768;
   app.innerHTML = `
     <aside class="sidebar ${isMobile && S.sidebarOpen ? 'open' : ''}" id="sidebar">
-      <div class="sidebar-header">
-        <div class="sb-logo" onclick="handleLogoClick()">CAPITAN AI</div>
-      </div>
+      <div class="sidebar-header"><div class="sb-logo" onclick="handleLogoClick()">CAPITAN AI</div></div>
       <button class="btn-new-convo" onclick="newChat()">+ New Conversation</button>
-      <div class="sb-section-header">Recent Chats</div>
-      <div class="chats-list" id="chatsList"></div>
+      <div style="padding: 12px 16px; font-size: 11px; color: var(--txt3);">Recent Chats</div>
+      <div id="chatsList" style="flex:1; overflow-y:auto;"></div>
       <div class="sidebar-footer">CLOSEAI Technologies © 2026</div>
     </aside>
     <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
     <main class="main">
-      <div class="top-bar">
-        <button class="profile-btn" onclick="showProfileModal()">👤</button>
-      </div>
-      <div class="chat-container">
-        <div class="chat-messages" id="chatMsgs">${renderMessages()}</div>
-        <div class="input-area">
-          <div class="input-wrap">
-            <input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." value="${escapeHtml(S.draft)}" onkeypress="if(event.key==='Enter') sendMsg()" ${S.loading ? 'disabled' : ''}>
-            <button class="send-btn" onclick="sendMsg()" ${S.loading ? 'disabled' : ''}>➤</button>
-          </div>
-        </div>
-      </div>
+      <div class="top-bar"><button class="profile-btn" onclick="showProfileModal()">👤</button></div>
+      <div class="chat-container"><div class="chat-messages" id="chatMsgs">${renderMessages()}</div><div class="input-area"><div class="input-wrap"><input type="text" class="input-field" id="msgInput" placeholder="Ask anything..." value="${escapeHtml(S.draft)}" onkeypress="if(event.key==='Enter') sendMsg()" ${S.loading ? 'disabled' : ''}><button class="send-btn" onclick="sendMsg()" ${S.loading ? 'disabled' : ''}>➤</button></div></div></div>
     </main>
   `;
   renderSidebar();
@@ -827,83 +439,46 @@ function renderSidebar() {
   const el = document.getElementById('chatsList');
   if (!el) return;
   if (!S.chats.length) { el.innerHTML = '<div style="padding:16px;color:var(--txt3);text-align:center">No conversations</div>'; return; }
-  el.innerHTML = S.chats.map(c => `
-    <div class="sb-chat-item ${S.activeChat === c.id ? 'active' : ''}" onclick="loadChat('${c.id}')">
-      <span>${escapeHtml(c.title || 'Chat')}</span>
-      <button class="sb-chat-del" onclick="event.stopPropagation(); deleteChat('${c.id}')">✕</button>
-    </div>
-  `).join('');
+  el.innerHTML = S.chats.map(c => `<div class="sb-chat-item ${S.activeChat === c.id ? 'active' : ''}" onclick="loadChat('${c.id}')"><span>${escapeHtml(c.title || 'Chat')}</span><button class="sb-chat-del" onclick="event.stopPropagation(); deleteChat('${c.id}')">✕</button></div>`).join('');
 }
 
 function renderMessages() {
   if (!S.messages.length) {
-    return `<div class="welcome"><h1>CAPITAN AI</h1><p>Your enterprise intelligence platform</p><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('What is CAPITAN AI?')">🤖 About CAPITAN</div><div class="wp-pill" onclick="quickSend('Write Python code for a trading bot')">💻 Trading Bot</div><div class="wp-pill" onclick="quickSend('Explain DCF valuation')">📊 Finance</div><div class="wp-pill" onclick="quickSend('What are current market trends?')">📈 Markets</div></div></div>`;
+    return `<div class="welcome"><h1>CAPITAN AI</h1><p>Your enterprise intelligence platform</p><div class="welcome-pills"><div class="wp-pill" onclick="quickSend('What is CAPITAN AI?')">🤖 About CAPITAN</div><div class="wp-pill" onclick="quickSend('Write Python code for a trading bot')">💻 Trading Bot</div><div class="wp-pill" onclick="quickSend('Explain DCF valuation')">📊 Finance</div></div></div>`;
   }
-  return S.messages.map((m, i) => m.role === 'user'
-    ? `<div class="msg user"><div class="msg-user-bubble">${escapeHtml(m.content)}</div></div>`
-    : `<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${m.content ? formatMD(m.content) : ''}</div><div class="msg-actions"><button class="msg-action" onclick="copyText('${escapeAttr(m.content)}')">📋</button><button class="msg-action" onclick="regen()">🔄</button></div></div>`
-  ).join('');
+  return S.messages.map((m, i) => m.role === 'user' ? `<div class="msg user"><div class="msg-user-bubble">${escapeHtml(m.content)}</div></div>` : `<div class="msg"><div class="msg-ai-label">CAPITAN AI</div><div class="msg-ai-body" id="msgBody${i}">${m.content ? m.content : ''}</div><div class="msg-actions"><button class="msg-action" onclick="copyText('${escapeHtml(m.content)}')">📋</button><button class="msg-action" onclick="regen()">🔄</button></div></div>`).join('');
 }
 
-function formatMD(t) {
-  if (!t) return '';
-  t = t.replace(/```(\w*)\n([\s\S]*?)```/g, (_, l, c) => `<pre><code>${escapeHtml(c.trim())}</code></pre>`);
-  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
-  t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  t = t.replace(/\n/g, '<br>');
-  return t;
-}
-
-function escapeAttr(t) { return String(t || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n'); }
-
-async function loadChat(id) {
-  toast('Loading chat...');
-  S.activeChat = id;
-  S.messages = [];
-  render();
-  saveMessages();
-}
-
-async function deleteChat(id) {
-  if (!confirm('Delete this chat?')) return;
-  await api.deleteChat(id);
-  S.chats = S.chats.filter(c => c.id !== id);
-  if (S.activeChat === id) newChat();
-  renderSidebar();
-  toast('Chat deleted');
-}
-
+async function loadChat(id) { S.activeChat = id; S.messages = []; render(); saveMessages(); }
+async function deleteChat(id) { if (!confirm('Delete?')) return; await api.deleteChat(id); S.chats = S.chats.filter(c => c.id !== id); if (S.activeChat === id) newChat(); renderSidebar(); toast('Deleted'); }
 function newChat() { if (S.streamAbort) S.streamAbort(); S.activeChat = null; S.messages = []; render(); saveMessages(); }
 function quickSend(msg) { const i = document.getElementById('msgInput'); if (i) { i.value = msg; sendMsg(); } }
 function regen() { if (S.messages.length >= 2) { S.messages.pop(); sendMsg(); } }
 function copyText(t) { navigator.clipboard.writeText(t); toast('Copied!'); }
 function scrollChat() { const m = document.getElementById('chatMsgs'); if (m) m.scrollTop = m.scrollHeight; }
 function saveMessages() { if (S.activeChat && S.messages.length) localStorage.setItem(`chat_${S.activeChat}`, JSON.stringify(S.messages)); }
-function handleLogoClick() { toast(`CAPITAN AI v26.0 - ${currentUser?.tier || 'Free'} tier`); }
+function handleLogoClick() { toast(`CAPITAN AI v27.0 - ${currentUser?.tier || 'Free'} tier`); }
 function toggleSidebar() { S.sidebarOpen = !S.sidebarOpen; const sb = document.getElementById('sidebar'); if (sb) sb.classList.toggle('open', S.sidebarOpen); }
 
 // Modal close handlers
-document.getElementById('closeAuthModal')?.addEventListener('click', () => document.getElementById('authModal').classList.remove('open'));
+document.getElementById('closeLoginModal')?.addEventListener('click', () => document.getElementById('loginModal').classList.remove('open'));
 document.getElementById('closeProfileModal')?.addEventListener('click', () => document.getElementById('profileModal').classList.remove('open'));
 document.getElementById('closeUpgradeModal')?.addEventListener('click', () => document.getElementById('upgradeModal').classList.remove('open'));
 document.getElementById('closeProjectsModal')?.addEventListener('click', () => document.getElementById('projectsModal').classList.remove('open'));
 document.getElementById('closeWorkspaceModal')?.addEventListener('click', () => document.getElementById('workspaceModal').classList.remove('open'));
 document.getElementById('closeSupportModal')?.addEventListener('click', () => document.getElementById('supportModal').classList.remove('open'));
-document.getElementById('sendMagicLinkBtn')?.addEventListener('click', sendMagicLink);
 
 // Initialize
-applyTheme();
-const storedUser = localStorage.getItem('current_user');
-if (storedUser) {
-  try { currentUser = JSON.parse(storedUser); } catch(e) {}
-}
-if (authToken && currentUser) {
-  loadChats().then(() => { render(); });
-} else {
-  handleAuthCallback();
+async function init() {
+  if (authToken) {
+    try { currentUser = await api.getMe(); await loadChats(); render(); } catch(e) { showLoginModal(); }
+  } else { showLoginModal(); }
+  
+  handleTelegramCallback();
 }
 
+init();
 window.addEventListener('resize', () => { if (window.innerWidth > 768) { const sb = document.getElementById('sidebar'); if (sb) sb.classList.remove('open'); } });
 </script>
 </body>
-</html> 
+</html>
