@@ -14,8 +14,8 @@
             box-sizing: border-box;
         }
 
-        /* LIGHT MODE (default - ChatGPT style) */
-        :root {
+        /* LIGHT MODE (default) */
+        :root, body.light {
             --bg-primary: #ffffff;
             --bg-secondary: #f9f9f9;
             --bg-tertiary: #efefef;
@@ -38,7 +38,7 @@
             --sidebar-width: 260px;
         }
 
-        /* DARK MODE - Pure black minimal */
+        /* DARK MODE - Pure black */
         body.dark {
             --bg-primary: #000000;
             --bg-secondary: #0d0d0d;
@@ -55,7 +55,7 @@
             --accent-soft: #1e293b;
         }
 
-        /* SYSTEM MODE - follows OS preference */
+        /* SYSTEM MODE */
         body.system {
             --bg-primary: #ffffff;
             --bg-secondary: #f9f9f9;
@@ -97,7 +97,6 @@
             transition: background 0.2s ease, color 0.2s ease;
         }
 
-        /* Layout */
         .app {
             display: flex;
             height: 100%;
@@ -105,7 +104,7 @@
             position: relative;
         }
 
-        /* Sidebar - ChatGPT style */
+        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
@@ -118,7 +117,6 @@
             overflow-y: auto;
         }
 
-        /* Desktop collapsed state */
         @media (min-width: 769px) {
             .sidebar.collapsed {
                 transform: translateX(calc(-1 * var(--sidebar-width)));
@@ -127,7 +125,6 @@
             }
         }
 
-        /* Mobile slide-out */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -152,7 +149,6 @@
             }
         }
 
-        /* Sidebar Toggle Button */
         .toggle-sidebar {
             position: fixed;
             top: 12px;
@@ -175,21 +171,12 @@
             background: var(--bg-tertiary);
         }
 
-        /* Main Chat Area */
         .main {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             background: var(--bg-primary);
-            margin-left: 0;
-            transition: margin-left 0.2s;
-        }
-
-        @media (min-width: 769px) {
-            .sidebar.collapsed ~ .main {
-                margin-left: 0;
-            }
         }
 
         .chat-container {
@@ -202,7 +189,6 @@
             padding: 0 20px;
         }
 
-        /* Messages Area */
         .messages-area {
             flex: 1;
             overflow-y: auto;
@@ -210,7 +196,6 @@
             scroll-behavior: smooth;
         }
 
-        /* Message Bubbles - ChatGPT style */
         .message {
             margin-bottom: 24px;
             animation: fadeIn 0.25s ease;
@@ -248,7 +233,6 @@
             word-break: break-word;
         }
 
-        /* Code blocks */
         .message-content pre {
             background: var(--bg-tertiary);
             padding: 12px;
@@ -265,7 +249,6 @@
             border-radius: 4px;
         }
 
-        /* Input Area */
         .input-area {
             padding: 0 0 20px;
         }
@@ -321,7 +304,117 @@
             transform: scale(1.02);
         }
 
-        /* Profile Section in Sidebar */
+        /* Sidebar Menu Items */
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            margin: 4px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .menu-item.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .new-chat-btn {
+            background: var(--bg-tertiary);
+            margin: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--accent-soft);
+        }
+
+        /* Collapsible Section */
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            margin: 4px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .collapsible-header:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible-content.open {
+            max-height: 200px;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px 8px 40px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .theme-option:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            margin: 2px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .chat-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .chat-item.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        /* Profile Section */
         .profile-section {
             padding: 12px 12px 16px;
             border-top: 1px solid var(--border);
@@ -368,75 +461,6 @@
             font-weight: 500;
         }
 
-        /* Sidebar Menu Items */
-        .menu-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 16px;
-            margin: 4px 8px;
-            border-radius: 10px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-        }
-
-        .menu-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        .menu-item.active {
-            background: var(--accent-soft);
-            color: var(--accent);
-        }
-
-        .new-chat-btn {
-            background: var(--bg-tertiary);
-            margin: 12px;
-            padding: 12px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .new-chat-btn:hover {
-            background: var(--accent-soft);
-        }
-
-        /* Chat History List */
-        .chat-history {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .chat-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            margin: 2px 0;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        .chat-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        .chat-item.active {
-            background: var(--accent-soft);
-            color: var(--accent);
-        }
-
         /* Modals */
         .modal-overlay {
             display: none;
@@ -457,7 +481,7 @@
             background: var(--bg-primary);
             border-radius: 20px;
             width: 90%;
-            max-width: 480px;
+            max-width: 500px;
             max-height: 80vh;
             overflow-y: auto;
             padding: 24px;
@@ -483,7 +507,30 @@
             background: var(--bg-tertiary);
         }
 
-        /* Toast */
+        /* Upgrade Crypto Cards */
+        .crypto-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .crypto-card:hover {
+            border-color: var(--accent);
+        }
+
+        .wallet-address {
+            font-size: 11px;
+            font-family: monospace;
+            background: var(--bg-tertiary);
+            padding: 8px;
+            border-radius: 8px;
+            word-break: break-all;
+            margin-top: 8px;
+        }
+
         .toast {
             position: fixed;
             bottom: 24px;
@@ -503,7 +550,6 @@
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 5px;
         }
@@ -515,7 +561,6 @@
             border-radius: 3px;
         }
 
-        /* Buttons */
         .btn {
             width: 100%;
             padding: 10px;
@@ -533,18 +578,56 @@
             border: 1px solid var(--border);
             color: var(--text-primary);
         }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="new-chat-btn" onclick="newChat()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>New chat</span>
         </div>
-        
+
+        <!-- Library in Sidebar -->
+        <div class="menu-item" onclick="openLibrary()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>My Library</span>
+        </div>
+
+        <!-- Appearance Collapsible Section -->
+        <div>
+            <div class="collapsible-header" onclick="toggleAppearance()">
+                <span>Appearance</span>
+                <svg id="appearanceArrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="collapsible-content" id="appearanceContent">
+                <div class="theme-option" onclick="setTheme('light')">
+                    <span>Light</span>
+                    <span id="themeLightCheck">✓</span>
+                </div>
+                <div class="theme-option" onclick="setTheme('dark')">
+                    <span>Dark</span>
+                    <span id="themeDarkCheck" style="display: none;">✓</span>
+                </div>
+                <div class="theme-option" onclick="setTheme('system')">
+                    <span>System</span>
+                    <span id="themeSystemCheck" style="display: none;">✓</span>
+                </div>
+            </div>
+        </div>
+
         <div class="chat-history" id="chatHistoryList">
             <div style="padding: 20px; text-align: center; color: var(--text-tertiary); font-size: 12px;">No conversations yet</div>
         </div>
@@ -563,15 +646,12 @@
         </div>
     </aside>
 
-    <!-- Overlay for mobile -->
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
-    <!-- Toggle Button -->
     <button class="toggle-sidebar" id="toggleSidebarBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
     </button>
 
-    <!-- Main Chat Area -->
     <main class="main">
         <div class="chat-container">
             <div class="messages-area" id="messagesArea">
@@ -603,57 +683,46 @@
             <div style="font-weight: 600;" id="modalProfileName">Guest User</div>
             <div style="font-size: 12px; color: var(--accent);" id="modalProfileTier">Free</div>
         </div>
-        
-        <div class="modal-setting" onclick="toggleThemeSelection('light')">
-            <span>☀️ Light Mode</span>
-            <span id="themeLightCheck">✓</span>
-        </div>
-        <div class="modal-setting" onclick="toggleThemeSelection('dark')">
-            <span>🌙 Dark Mode</span>
-            <span id="themeDarkCheck" style="display: none;">✓</span>
-        </div>
-        <div class="modal-setting" onclick="toggleThemeSelection('system')">
-            <span>🖥️ System Theme</span>
-            <span id="themeSystemCheck" style="display: none;">✓</span>
-        </div>
         <div class="modal-setting" onclick="openUpgradeModal()">
-            <span>💎 Upgrade Plan</span>
-            <span>→</span>
-        </div>
-        <div class="modal-setting" onclick="openLibrary()">
-            <span>📚 My Library</span>
+            <span>Upgrade Plan</span>
             <span>→</span>
         </div>
         <div class="modal-setting" onclick="initTelegramLogin()">
-            <span>🔐 Connect Telegram</span>
+            <span>Connect Telegram</span>
             <span>→</span>
         </div>
         <div class="modal-setting" onclick="logout()" style="color: var(--danger);">
-            <span>🚪 Sign Out</span>
+            <span>Sign Out</span>
         </div>
         <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>
     </div>
 </div>
 
-<!-- Upgrade Modal -->
+<!-- Upgrade Modal with Crypto Payments -->
 <div id="upgradeModal" class="modal-overlay">
     <div class="modal">
         <h2>Upgrade CAPITAN AI</h2>
-        <div style="margin-bottom: 16px;">
-            <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                <div style="font-weight: 600;">Plus — $8/mo</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">50 msgs/day · Groq 3.3 · Work Area (10 seats)</div>
-            </div>
-            <div style="padding: 12px; border-bottom: 1px solid var(--border);">
-                <div style="font-weight: 600;">Pro — $17/mo</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">150 msgs/day · Claude 3.5 · Work Area (25 seats) · Markets</div>
-            </div>
-            <div style="padding: 12px;">
-                <div style="font-weight: 600;">Pro Max — $30/mo</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">Unlimited · GPT-4o + Claude Ensemble · Priority support</div>
-            </div>
+        <div class="crypto-card" onclick="selectTier('plus')">
+            <div style="font-weight: 600;">Plus — $8/month</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">50 msgs/day · Groq 3.3 · Work Area (10 seats)</div>
         </div>
-        <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px;">Contact support for payment details.</p>
+        <div class="crypto-card" onclick="selectTier('pro')">
+            <div style="font-weight: 600;">Pro — $17/month</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">150 msgs/day · Claude 3.5 · Work Area (25 seats) · Live Markets</div>
+        </div>
+        <div class="crypto-card" onclick="selectTier('pro_max')">
+            <div style="font-weight: 600;">Pro Max — $30/month</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Unlimited · GPT-4o + Claude Ensemble · Priority Support</div>
+        </div>
+        <div id="paymentSection" style="display: none; margin-top: 16px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="btn" style="flex:1;" onclick="setCoin('BTC')">BTC</button>
+                <button class="btn" style="flex:1;" onclick="setCoin('ETH')">ETH</button>
+            </div>
+            <div class="wallet-address" id="walletAddress" onclick="copyWallet()">Loading...</div>
+            <input type="text" id="txidInput" placeholder="Enter Transaction ID (TXID)">
+            <button class="btn" onclick="verifyPayment()">Verify Payment</button>
+        </div>
         <button class="btn btn-outline" onclick="closeModal('upgradeModal')">Close</button>
     </div>
 </div>
@@ -662,12 +731,10 @@
 <div id="libraryModal" class="modal-overlay">
     <div class="modal">
         <h2>My Library</h2>
-        <div style="margin-bottom: 12px;">
-            <input type="text" id="libName" placeholder="Item name" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); margin-bottom: 8px;">
-            <textarea id="libContent" rows="3" placeholder="Content" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"></textarea>
-            <button class="btn" onclick="saveLibraryItem()">Save</button>
-        </div>
-        <div id="libraryList"></div>
+        <input type="text" id="libName" placeholder="Item name">
+        <textarea id="libContent" rows="3" placeholder="Content"></textarea>
+        <button class="btn" onclick="saveLibraryItem()">Save to Library</button>
+        <div id="libraryList" style="margin-top: 16px;"></div>
         <button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button>
     </div>
 </div>
@@ -675,6 +742,9 @@
 <script>
     // Configuration
     const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
+    
+    // Wallets from backend
+    const WALLETS = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
     
     // State
     let state = {
@@ -686,7 +756,9 @@
         messages: [],
         loading: false,
         library: [],
-        theme: localStorage.getItem('theme') || 'light'
+        theme: localStorage.getItem('theme') || 'light',
+        selectedTier: null,
+        selectedCoin: 'BTC'
     };
 
     // Helpers
@@ -695,20 +767,32 @@
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
     function scrollBottom() { const area = document.getElementById('messagesArea'); if (area) area.scrollTop = area.scrollHeight; }
 
-    // Theme Management
-    function applyTheme() {
-        document.body.className = state.theme;
-        localStorage.setItem('theme', state.theme);
-        const lightCheck = document.getElementById('themeLightCheck');
-        const darkCheck = document.getElementById('themeDarkCheck');
-        const systemCheck = document.getElementById('themeSystemCheck');
-        if (lightCheck) lightCheck.style.display = state.theme === 'light' ? 'inline' : 'none';
-        if (darkCheck) darkCheck.style.display = state.theme === 'dark' ? 'inline' : 'none';
-        if (systemCheck) systemCheck.style.display = state.theme === 'system' ? 'inline' : 'none';
+    // Theme
+    function setTheme(theme) {
+        state.theme = theme;
+        document.body.className = theme;
+        localStorage.setItem('theme', theme);
+        document.getElementById('themeLightCheck').style.display = theme === 'light' ? 'inline' : 'none';
+        document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none';
+        document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none';
+        toast(`Theme: ${theme}`);
     }
-    function toggleThemeSelection(theme) { state.theme = theme; applyTheme(); toast(`Theme: ${theme}`); closeModal('profileModal'); }
 
-    // Sidebar Toggle
+    let appearanceOpen = false;
+    function toggleAppearance() {
+        appearanceOpen = !appearanceOpen;
+        const content = document.getElementById('appearanceContent');
+        const arrow = document.getElementById('appearanceArrow');
+        if (appearanceOpen) {
+            content.classList.add('open');
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            content.classList.remove('open');
+            arrow.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // Sidebar
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
@@ -726,7 +810,7 @@
         overlay.classList.remove('open');
     }
 
-    // API Calls
+    // API
     async function apiCall(endpoint, options = {}) {
         const headers = { 'Content-Type': 'application/json' };
         if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
@@ -762,43 +846,6 @@
         if (tierEl) tierEl.textContent = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase();
         if (modalName) modalName.textContent = displayName;
         if (modalTier) modalTier.textContent = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase();
-    }
-
-    // Founder Tier - Private (only accessible via secret click)
-    let founderClickCount = 0;
-    let founderTimer = null;
-    function handleFounderAttempt() {
-        founderClickCount++;
-        if (founderTimer) clearTimeout(founderTimer);
-        founderTimer = setTimeout(() => { founderClickCount = 0; }, 1000);
-        if (founderClickCount >= 5) {
-            const code = prompt('Founder access is restricted. If you are the owner, enter the founder code:');
-            if (code === 'Osinachi@3500') {
-                verifyFounder(code);
-            } else {
-                toast('Access denied');
-            }
-            founderClickCount = 0;
-        }
-    }
-    async function verifyFounder(code) {
-        try {
-            const res = await fetch(`${CFG.API}/api/founder`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code })
-            });
-            const data = await res.json();
-            if (data.token) {
-                state.token = data.token;
-                state.tier = 'founder';
-                state.user = data.user;
-                localStorage.setItem('ct', data.token);
-                updateProfileUI();
-                toast('Founder access granted');
-                await loadChats();
-            } else { toast('Invalid code'); }
-        } catch(e) { toast('Verification failed'); }
     }
 
     // Chat Functions
@@ -863,25 +910,49 @@
     // Library
     async function openLibrary() {
         try { const lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) { state.library = []; }
-        const modal = document.getElementById('libraryModalContent');
-        document.getElementById('libraryList').innerHTML = state.library.map(item => `<div class="chat-item" style="justify-content:space-between"><span onclick="viewLibItem('${item.id}')">${escapeHtml(item.name)}</span><button onclick="deleteLibItem('${item.id}')">🗑️</button></div>`).join('');
+        const listDiv = document.getElementById('libraryList');
+        listDiv.innerHTML = state.library.map(item => `<div class="chat-item" style="justify-content:space-between"><span onclick="viewLibItem('${item.id}')">${escapeHtml(item.name)}</span><button onclick="deleteLibItem('${item.id}')">✕</button></div>`).join('');
         document.getElementById('libraryModal').classList.add('open');
     }
     async function saveLibraryItem() {
         const name = document.getElementById('libName').value.trim();
         const content = document.getElementById('libContent').value.trim();
-        if (!name || !content) { toast('Required'); return; }
+        if (!name || !content) { toast('Name and content required'); return; }
         await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) });
         toast('Saved'); openLibrary();
     }
     async function deleteLibItem(id) { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); openLibrary(); }
+    function viewLibItem(id) { const item = state.library.find(i => i.id === id); if (item) { document.getElementById('libName').value = item.name; document.getElementById('libContent').value = item.content; } }
 
-    // Modals
-    function openProfileModal() { document.getElementById('profileModal').classList.add('open'); }
+    // Upgrade with Crypto
     function openUpgradeModal() { document.getElementById('upgradeModal').classList.add('open'); }
+    function selectTier(tier) {
+        state.selectedTier = tier;
+        document.getElementById('paymentSection').style.display = 'block';
+        updateWalletDisplay();
+    }
+    function setCoin(coin) { state.selectedCoin = coin; updateWalletDisplay(); }
+    function updateWalletDisplay() { document.getElementById('walletAddress').textContent = WALLETS[state.selectedCoin]; }
+    function copyWallet() { navigator.clipboard.writeText(document.getElementById('walletAddress').textContent); toast('Address copied!'); }
+    async function verifyPayment() {
+        const txid = document.getElementById('txidInput').value.trim();
+        if (!state.selectedTier || !txid) { toast('Select tier and enter TXID'); return; }
+        try {
+            const res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) });
+            state.tier = res.tier;
+            state.token = res.token;
+            localStorage.setItem('ct', res.token);
+            updateProfileUI();
+            closeModal('upgradeModal');
+            toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`);
+        } catch(e) { toast('Verification failed: ' + e.message); }
+    }
+
+    // Profile
+    function openProfileModal() { document.getElementById('profileModal').classList.add('open'); }
     function logout() { localStorage.removeItem('ct'); state.token = null; state.user = null; state.tier = 'free'; state.activeChatId = null; state.messages = []; state.chats = []; updateProfileUI(); renderMessages(); renderChatHistory(); toast('Logged out'); }
 
-    // Telegram Login
+    // Telegram
     window.onTelegramAuth = async function(user) {
         try {
             const res = await fetch(`${CFG.API}/api/auth/telegram/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: user }) });
@@ -906,15 +977,12 @@
 
     // Init
     async function init() {
-        applyTheme();
+        setTheme(state.theme);
         await initSession();
         await loadChats();
         renderMessages();
         document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
         document.addEventListener('click', (e) => { const sidebar = document.getElementById('sidebar'); const toggle = document.getElementById('toggleSidebarBtn'); if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggle.contains(e.target)) closeSidebar(); });
-        // Founder access via logo click
-        const sidebarHeader = document.querySelector('.new-chat-btn');
-        if (sidebarHeader) sidebarHeader.addEventListener('click', handleFounderAttempt);
     }
     init();
 </script>
