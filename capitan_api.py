@@ -25,7 +25,7 @@ from contextlib import contextmanager
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 import psycopg2
 import uvicorn
@@ -35,9 +35,7 @@ import uvicorn
 # ================================================================
 app = FastAPI(title="CAPITAN AI API", version="28.1")
 
-# CORS – explicit origin from settings
-settings = None  # will be set after class definition
-
+# Settings with mandatory secrets
 class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
@@ -48,8 +46,6 @@ class Settings(BaseSettings):
     COINGECKO_KEY: str = ""
     SERPAPI_KEY: str = ""
     NEWS_API_KEY: str = ""
-    ETHERSCAN_API_KEY: str = ""  # for ETH tx verification
-    BLOCKCYPHER_TOKEN: str = ""  # optional, for BTC
 
     class Config:
         env_file = ".env"
@@ -72,7 +68,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # ================================================================
-# DATABASE – fixed context manager
+# DATABASE – fixed context manager (no swallowing, proper close)
 # ================================================================
 @contextmanager
 def get_db():
@@ -98,7 +94,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # existing tables
+                # Users table with daily limits
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -158,7 +154,7 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
-                # Add missing column if not exists
+                # Ensure reasoning_chain column exists
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS memories (
@@ -310,7 +306,7 @@ def get_current_user(request: Request):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # also check session validity (logout invalidation)
+                # Check session validity (logout invalidation)
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
                 if not c.fetchone():
                     return None
@@ -352,7 +348,7 @@ def get_current_session(request: Request):
                 if row:
                     return {"id": row[0], "tier": row[1], "daily_msg_count": row[2], "msg_reset_date": row[3], "is_user": False}
                 else:
-                    c.execute("INSERT INTO sessions (id, tier, daily_msg_count) VALUES (%s, %s, 0)", (session_id, tier))
+                    c.execute("INSERT INTO sessions (id, tier, daily_msg_count, msg_reset_date) VALUES (%s, %s, 0, CURRENT_DATE)", (session_id, tier))
                     conn.commit()
                     return {"id": session_id, "tier": tier, "daily_msg_count": 0, "is_user": False}
     except: pass
@@ -492,7 +488,6 @@ async def update_profile(req: dict, user: dict = Depends(get_current_user)):
     reasoning_depth = req.get("reasoning_depth")
     preferred_domain = req.get("preferred_domain")
     
-    # Validate and clamp
     valid_domains = ["general", "finance", "coding", "trading", "science", "math"]
     if preferred_domain and preferred_domain not in valid_domains:
         raise HTTPException(400, "Invalid domain")
@@ -530,11 +525,11 @@ async def get_anonymous_session():
     return {"id": session_id, "tier": "free", "token": token}
 
 # ================================================================
-# FOUNDER LOGIN – secured
+# FOUNDER LOGIN – secured, no default key
 # ================================================================
 @app.post("/api/founder")
 async def founder_login(req: dict, request: Request):
-    # rate limit
+    # Rate limiting
     identifier = request.client.host
     if not check_rate_limit(identifier, "founder_attempt", limit=5):
         raise HTTPException(429, "Too many attempts")
@@ -583,7 +578,7 @@ async def founder_login(req: dict, request: Request):
         raise HTTPException(500, "Founder login failed")
 
 # ================================================================
-# ELITE SYSTEM PROMPT – restructured
+# ELITE SYSTEM PROMPT – Restructured
 # ================================================================
 CORE_INSTRUCTIONS = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu.
 
@@ -617,6 +612,7 @@ FULL INTELLIGENCE DOMAINS (summary):
 - Scientist & Researcher
 """
 
+# Long domain catalog only for Pro+ tiers
 DOMAIN_CATALOG = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🏦 FINANCE ARCHITECT & ECONOMIST
@@ -718,9 +714,9 @@ def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int
     base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
     base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
     
-    # For free/plus tiers, trim the domain catalog to avoid truncation of core instructions
+    # Free/Plus tiers get only core instructions to avoid truncation
     if tier in ("free", "plus"):
-        prompt = base  # no long catalog
+        prompt = base
     else:
         prompt = base + "\n\n" + DOMAIN_CATALOG
     
@@ -730,7 +726,7 @@ def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int
     return prompt
 
 # ================================================================
-# RATE LIMITING – updated with optional key & limit
+# RATE LIMITING
 # ================================================================
 rate_store = {}
 def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
@@ -750,7 +746,6 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
 def enforce_daily_limit(user: dict = None, session: dict = None):
     today = datetime.now(timezone.utc).date()
     if user:
-        # user-specific limit
         tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
         daily_limit = tier_info["msg_limit"]
         if daily_limit == float("inf"):
@@ -810,7 +805,7 @@ def needs_web_search(q: str) -> bool:
     return bool(re.search(r'latest|current|today|news|right now|recent|202[3-9]', q.lower()))
 
 # ================================================================
-# AI MODEL CALL (unchanged structure)
+# REASONING ENGINE
 # ================================================================
 class ReasoningEngine:
     @staticmethod
@@ -831,6 +826,9 @@ class ReasoningEngine:
     def format_reasoning_chain(chain: List[str]) -> str:
         return "\n".join(chain) if chain else ""
 
+# ================================================================
+# AI MODEL CALL
+# ================================================================
 def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int = 1, domain: str = "general") -> Tuple[str, str, Optional[List[str]]]:
     reasoning_chain = None
     if reasoning_depth > 1 and domain in ["finance", "quant", "coding", "math", "science"]:
@@ -845,7 +843,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                     m["content"] += reasoning_text
                     break
     
-    # Pro Max: Ensemble (Claude + GPT-4o)
+    # Pro Max: Ensemble
     if tier == "pro_max" and settings.OPENROUTER_API_KEY:
         try:
             r1 = requests.post(
@@ -941,16 +939,7 @@ WALLETS = {
 }
 
 # ================================================================
-# PAYMENT VERIFICATION – on-chain check
-# ================================================================
-def verify_transaction(txid: str, currency: str, expected_tier: str) -> bool:
-    # placeholder for real blockchain verification
-    # In production, call BlockCypher (BTC) or Etherscan (ETH)
-    # For now, returns False (unverified) so that manual review is required
-    return False  # upgrade will stay pending until verified
-
-# ================================================================
-# CHAT ENDPOINT – with daily limits + fixed history
+# CHAT ENDPOINT
 # ================================================================
 class ChatRequest(BaseModel):
     messages: list
@@ -985,7 +974,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     # Enforce daily limit
     enforce_daily_limit(user, session)
     
-    # Rate limiting (per minute)
+    # Rate limiting
     identifier = user_id if user else session["id"]
     if not check_rate_limit(identifier, tier, tier_info.get("per_min_limit", 20)):
         raise HTTPException(429, "Rate limit exceeded. Please wait a moment.")
@@ -1030,7 +1019,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     except Exception as e:
         logger.error(f"Save error: {e}")
     
-    # Fetch recent history (last 20 messages)
+    # Fetch recent 20 messages
     history = []
     try:
         with get_db() as conn:
@@ -1044,7 +1033,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                 history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
     except: pass
     
-    # Web search if needed and tier permits
+    # Web search
     web_results = None
     if tier_info.get("web_search", False) and web_search_needed:
         try:
@@ -1085,14 +1074,8 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     }
 
 # ================================================================
-# REMAINING ENDPOINTS (chats, library, upload, etc.) – unchanged
+# CHAT HISTORY
 # ================================================================
-# ... (keep the rest of the endpoints exactly as they were, 
-# but ensure they use the new get_db() and daily limits where needed)
-# I'm not repeating them for brevity, but they remain identical to 
-# the original except for the fixes already noted.
-
-# For full completeness, I'll include a placeholder: 
 @app.get("/api/chats")
 def get_chats(request: Request):
     user = get_current_user(request)
@@ -1133,8 +1116,183 @@ def get_chats(request: Request):
         except: pass
     return {"chats": []}
 
-# ... include all other endpoints from the original file (delete, library, upload, upgrade with verification, workspace, market, admin, health, etc.)
-# I'll add the critical upgrade fix:
+@app.get("/api/chats/{chat_id}")
+def get_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user:
+                    c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = get_current_session(request)
+                    c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                
+                if not c.fetchone():
+                    raise HTTPException(404, "Chat not found")
+                
+                c.execute("""
+                    SELECT role, content, model, created
+                    FROM chat_messages WHERE chat_id=%s ORDER BY created ASC
+                """, (chat_id,))
+                rows = c.fetchall()
+                return {"messages": [
+                    {"id": i, "role": r[0], "content": r[1], "model": r[2] or "AI",
+                     "created": r[3].isoformat() if r[3] else None}
+                    for i, r in enumerate(rows)
+                ]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get chat error: {e}")
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/chats/{chat_id}")
+def delete_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user:
+                    c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND user_id=%s", (chat_id, user["id"]))
+                    c.execute("DELETE FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = get_current_session(request)
+                    c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, session["id"]))
+                    c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Delete error: {e}")
+        return {"deleted": False}
+
+# ================================================================
+# LIBRARY
+# ================================================================
+@app.get("/api/library")
+def get_library(user: dict = Depends(get_current_user)):
+    if not user:
+        return {"items": []}
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    SELECT id, name, content, created
+                    FROM library_items WHERE user_id = %s
+                    ORDER BY created DESC
+                """, (user["id"],))
+                rows = c.fetchall()
+                return {"items": [
+                    {"id": r[0], "name": r[1], "content": r[2],
+                     "created": r[3].isoformat() if r[3] else None}
+                    for r in rows
+                ]}
+    except:
+        return {"items": []}
+
+class LibraryItemRequest(BaseModel):
+    name: str
+    type: str = "note"
+    content: Optional[str] = ""
+
+@app.post("/api/library")
+def create_library_item(req: LibraryItemRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                item_id = f"lib_{sid()}"
+                c.execute("""
+                    INSERT INTO library_items (id, user_id, name, content)
+                    VALUES (%s, %s, %s, %s)
+                """, (item_id, user["id"], req.name, req.content or ""))
+                conn.commit()
+                return {"id": item_id, "created": True}
+    except:
+        return {"created": False}
+
+@app.delete("/api/library/{item_id}")
+def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM library_items WHERE id = %s AND user_id = %s", (item_id, user["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except:
+        return {"deleted": False}
+
+# ================================================================
+# FILE UPLOAD
+# ================================================================
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if not tier_info["file_upload"]:
+        raise HTTPException(403, "Upgrade to Plus or Pro for file uploads")
+    
+    contents = await file.read()
+    max_size = 100 if user["tier"] == "pro_max" else (50 if user["tier"] == "pro" else (20 if user["tier"] == "plus" else 10))
+    
+    if len(contents) / (1024 * 1024) > max_size:
+        raise HTTPException(400, f"Max {max_size}MB")
+    
+    file_id = f"file_{sid()}"
+    file_path = os.path.join(UPLOAD_DIR, file_id)
+    
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    INSERT INTO uploaded_files (id, user_id, filename, original_name, size, storage_path)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (file_id, user["id"], file_id, file.filename or "unknown", len(contents), file_path))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Save file error: {e}")
+    
+    return {
+        "id": file_id,
+        "filename": file.filename,
+        "size_mb": round(len(contents) / (1024 * 1024), 2)
+    }
+
+# ================================================================
+# PAYMENT & UPGRADE – with verification placeholder
+# ================================================================
+@app.get("/api/payment-config")
+def payment_config():
+    return {
+        "wallets": WALLETS,
+        "prices": {"plus": 8, "pro": 17, "pro_max": 30},
+        "benefits": UPGRADE_BENEFITS,
+        "tiers": {
+            "plus": {"price": 8, "features": TIER_CONFIG["plus"]},
+            "pro": {"price": 17, "features": TIER_CONFIG["pro"]},
+            "pro_max": {"price": 30, "features": TIER_CONFIG["pro_max"]}
+        }
+    }
+
+class UpgradeRequest(BaseModel):
+    tier: str
+    txid: str
+    currency: str = "BTC"
+
+def verify_transaction(txid: str, currency: str, expected_tier: str) -> bool:
+    # TODO: real blockchain verification via BlockCypher/Etherscan
+    return False
 
 @app.post("/api/upgrade")
 def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
@@ -1171,22 +1329,338 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
     else:
         return {"verified": False, "message": "Transaction submitted for review. Upgrade will be activated after confirmation."}
 
-# ... remaining endpoints as before (admin, health, etc.) with minor fixes.
+# ================================================================
+# WORKSPACES
+# ================================================================
+@app.post("/api/workspace/create")
+def workspace_create(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if tier_info["workspace_seats"] == 0:
+        raise HTTPException(403, "Work Area requires Plus or Pro tier")
+    
+    room_code = req.get("room_code", f"CAP-{sid()}")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                workspace_id = sid()
+                c.execute("""
+                    INSERT INTO workspaces (id, name, owner_id, room_code, max_members)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (workspace_id, req.get("name", "My Workspace"), user["id"], room_code.upper(), tier_info["workspace_seats"]))
+                
+                c.execute("""
+                    INSERT INTO workspace_members (workspace_id, user_id, role)
+                    VALUES (%s, %s, %s)
+                """, (workspace_id, user["id"], "admin"))
+                conn.commit()
+                return {"room_id": workspace_id, "room_code": room_code.upper(), "created": True}
+    except:
+        return {"created": False}
 
+@app.post("/api/workspace/join")
+def workspace_join(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    room_code = req.get("room_code", "").upper()
+    if not room_code:
+        raise HTTPException(400, "Room code required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, max_members FROM workspaces WHERE room_code = %s", (room_code,))
+                workspace = c.fetchone()
+                if not workspace:
+                    raise HTTPException(404, "Room not found")
+                
+                c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id = %s", (workspace[0],))
+                if c.fetchone()[0] >= workspace[1]:
+                    raise HTTPException(400, "Room is full")
+                
+                c.execute("""
+                    INSERT INTO workspace_members (workspace_id, user_id, role)
+                    VALUES (%s, %s, %s)
+                """, (workspace[0], user["id"], "member"))
+                conn.commit()
+                return {"joined": True, "room_id": workspace[0]}
+    except HTTPException:
+        raise
+    except:
+        return {"joined": False}
+
+@app.post("/api/workspace/message")
+def workspace_message(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    room_code = req.get("room_code", "").upper()
+    message = req.get("message", "")
+    
+    if not room_code or not message:
+        raise HTTPException(400, "Room code and message required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM workspaces WHERE room_code = %s", (room_code,))
+                workspace = c.fetchone()
+                if not workspace:
+                    raise HTTPException(404, "Room not found")
+                
+                is_ai = message.strip().startswith("@CAPITAN")
+                if is_ai:
+                    ai_response, _, _ = call_ai_model([{"role": "user", "content": message.replace('@CAPITAN', '').strip()}], user["tier"])
+                    if ai_response:
+                        c.execute("""
+                            INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai)
+                            VALUES (%s, %s, %s, %s, %s, 1)
+                        """, (sid(), workspace[0], user["id"], "CAPITAN AI", ai_response))
+                
+                c.execute("""
+                    INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (sid(), workspace[0], user["id"], user["name"], message))
+                conn.commit()
+                return {"sent": True}
+    except:
+        return {"sent": False}
+
+@app.get("/api/workspace/messages")
+def workspace_get_messages(room_code: str, user: dict = Depends(get_current_user)):
+    if not user:
+        return {"messages": []}
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM workspaces WHERE room_code = %s", (room_code.upper(),))
+                workspace = c.fetchone()
+                if not workspace:
+                    return {"messages": []}
+                
+                c.execute("""
+                    SELECT u.name, wm.role FROM workspace_members wm
+                    JOIN users u ON wm.user_id = u.id
+                    WHERE wm.workspace_id = %s
+                """, (workspace[0],))
+                members = [{"name": r[0], "role": r[1]} for r in c.fetchall()]
+                
+                c.execute("""
+                    SELECT author_name, message, is_ai, created
+                    FROM workspace_messages WHERE workspace_id = %s
+                    ORDER BY created ASC LIMIT 50
+                """, (workspace[0],))
+                messages = [{"author": r[0], "message": r[1], "is_ai": bool(r[2]), "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
+                return {"messages": messages, "members": members}
+    except:
+        return {"messages": []}
+
+# ================================================================
+# MARKET & NEWS (Pro tiers only)
+# ================================================================
+@app.get("/api/markets")
+def markets(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"prices": {}, "news": [], "message": "Pro tier required"}
+    return {"prices": get_market_prices(), "news": get_news()}
+
+@app.get("/api/markets/prices")
+def markets_prices(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"prices": {}, "message": "Pro tier required"}
+    return {"prices": get_market_prices()}
+
+@app.get("/api/markets/news")
+def markets_news(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"news": [], "message": "Pro tier required"}
+    return {"news": get_news()}
+
+@app.get("/api/news/tech")
+def tech_news(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"news": [], "message": "Pro tier required"}
+    return {"news": get_news()}
+
+@app.get("/api/search")
+def web_search_endpoint(q: str, request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("plus", "pro", "pro_max", "founder"):
+        return {"results": [], "message": "Web search on Plus and Pro"}
+    return {"results": search_web(q, 8)}
+
+# ================================================================
+# ADMIN (Founder only)
+# ================================================================
 @app.get("/api/admin")
 def admin_panel(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
         raise HTTPException(403, "Access denied")
-    # ... same as before
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT COUNT(*) FROM users")
+                total_users = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM users WHERE tier != 'free'")
+                paid_users = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM chat_messages")
+                total_messages = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM workspaces")
+                total_workspaces = c.fetchone()[0]
+                
+                c.execute("""
+                    SELECT id, name, tier, created_at
+                    FROM users ORDER BY created_at DESC LIMIT 10
+                """)
+                recent_users = [
+                    {"id": r[0], "name": r[1], "tier": r[2],
+                     "created_at": r[3].isoformat() if r[3] else None}
+                    for r in c.fetchall()
+                ]
+                
+                return {
+                    "total_users": total_users,
+                    "paid_users": paid_users,
+                    "total_messages": total_messages,
+                    "workspaces": total_workspaces,
+                    "recent_users": recent_users
+                }
+    except Exception as e:
+        logger.error(f"Admin error: {e}")
+        raise HTTPException(500, str(e))
 
+# ================================================================
+# HEALTH CHECK
+# ================================================================
 @app.get("/health")
 def health_check():
-    # ... same
+    db_status = "disconnected"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT 1")
+                db_status = "connected"
+    except Exception as e:
+        logger.warning(f"Health check DB error: {e}")
+    
+    ai_status = "connected" if (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY) else "disconnected"
+    providers = []
+    if settings.GROQ_API_KEY: providers.append("groq")
+    if settings.OPENROUTER_API_KEY: providers.append("openrouter")
+    
+    return {
+        "status": "ok",
+        "version": "28.1",
+        "database": db_status,
+        "ai": ai_status,
+        "providers": providers,
+        "auth": "email_password",
+        "reasoning_engine": True,
+        "intelligence_level": "full",
+        "tiers": ["free", "plus", "pro", "pro_max", "founder"]
+    }
 
+# ================================================================
+# WEB SEARCH (placeholder)
+# ================================================================
+def search_web(query: str, num_results: int = 5) -> List[dict]:
+    results = []
+    if settings.SERPAPI_KEY:
+        try:
+            r = requests.get(
+                "https://serpapi.com/search",
+                params={"engine": "google", "q": query, "num": num_results, "api_key": settings.SERPAPI_KEY},
+                timeout=10
+            )
+            if r.status_code == 200:
+                for item in r.json().get("organic_results", [])[:num_results]:
+                    results.append({
+                        "title": item.get("title", ""),
+                        "snippet": item.get("snippet", "")[:350],
+                        "url": item.get("link", ""),
+                        "source": "Google"
+                    })
+        except: pass
+    return results
+
+def get_market_prices():
+    results = {}
+    if settings.COINGECKO_KEY:
+        try:
+            ids = "bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron"
+            r = requests.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": ids, "vs_currencies": "usd", "include_24hr_change": "true"},
+                headers={"x-cg-demo-api-key": settings.COINGECKO_KEY},
+                timeout=10
+            )
+            if r.status_code == 200:
+                data = r.json()
+                names = {
+                    "bitcoin": "BTC", "ethereum": "ETH", "ripple": "XRP",
+                    "solana": "SOL", "cardano": "ADA", "dogecoin": "DOGE",
+                    "avalanche-2": "AVAX", "chainlink": "LINK", "polkadot": "DOT", "tron": "TRX"
+                }
+                for k, v in data.items():
+                    results[names.get(k, k.upper())] = {
+                        "price": v["usd"],
+                        "change": round(v.get("usd_24h_change", 0), 2)
+                    }
+        except: pass
+    return results
+
+def get_news():
+    news = []
+    if settings.NEWS_API_KEY:
+        try:
+            r = requests.get(
+                "https://newsapi.org/v2/top-headlines",
+                params={"category": "business", "language": "en", "pageSize": 10, "apiKey": settings.NEWS_API_KEY},
+                timeout=10
+            )
+            if r.status_code == 200:
+                for article in r.json().get("articles", []):
+                    news.append({
+                        "source": article.get("source", {}).get("name", "News"),
+                        "headline": article.get("title", ""),
+                        "url": article.get("url", ""),
+                        "summary": (article.get("description") or "")[:200]
+                    })
+        except: pass
+    return news[:10]
+
+UPGRADE_BENEFITS = {
+    "plus": ["50 messages/day", "Groq Llama 3.3 70B", "Work Area (10 seats)", "File uploads", "Web search", "2-step reasoning"],
+    "pro": ["150 messages/day", "Claude 3.5 Sonnet", "Work Area (25 seats)", "Live markets", "Projects", "3-step reasoning"],
+    "pro_max": ["Unlimited messages", "GPT-4o + Claude Ensemble", "Work Area (50 seats)", "Advanced reasoning", "Priority support"]
+}
+
+# ================================================================
+# MAIN
+# ================================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    print(f"\n🚀 CAPITAN AI v28.1 - Production Hardened")
-    print(f"👑 Founder code required from env (FOUNDER_KEY)")
+    print(f"\n{'='*70}")
+    print(f"🚀 CAPITAN AI v28.1 - Production Hardened")
     print(f"🔐 JWT secret required from env (JWT_SECRET)")
+    print(f"👑 Founder code required from env (FOUNDER_KEY)")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
