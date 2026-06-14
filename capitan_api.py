@@ -529,7 +529,6 @@ async def get_anonymous_session():
 # ================================================================
 @app.post("/api/founder")
 async def founder_login(req: dict, request: Request):
-    # Rate limiting
     identifier = request.client.host
     if not check_rate_limit(identifier, "founder_attempt", limit=5):
         raise HTTPException(429, "Too many attempts")
@@ -612,7 +611,6 @@ FULL INTELLIGENCE DOMAINS (summary):
 - Scientist & Researcher
 """
 
-# Long domain catalog only for Pro+ tiers
 DOMAIN_CATALOG = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🏦 FINANCE ARCHITECT & ECONOMIST
@@ -714,7 +712,6 @@ def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int
     base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
     base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
     
-    # Free/Plus tiers get only core instructions to avoid truncation
     if tier in ("free", "plus"):
         prompt = base
     else:
