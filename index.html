@@ -4,124 +4,874 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
     <title>CAPITAN AI — Enterprise Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
-        /* ========== FULL CSS (OLED Optimized, Glassmorphism, Responsive) ========== */
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        :root {
-            --bg-primary-light: #ffffff; --bg-secondary-light: #f8fafc; --bg-tertiary-light: #f1f5f9;
-            --text-primary-light: #0f172a; --text-secondary-light: #334155; --text-tertiary-light: #64748b;
-            --bg-primary-dark: #000000; --bg-secondary-dark: #0a0a0a; --bg-tertiary-dark: #111111;
-            --text-primary-dark: #f8fafc; --text-secondary-dark: #cbd5e1; --text-tertiary-dark: #94a3b8;
-            --accent: #38bdf8; --accent-light: #7dd3fc; --accent-dark: #0284c7; --accent-glow: rgba(56,189,248,0.2);
-            --border-light: #e2e8f0; --border-dark: #1e293b;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05); --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
-        body.light { --bg-primary: var(--bg-primary-light); --bg-secondary: var(--bg-secondary-light); --bg-tertiary: var(--bg-tertiary-light); --text-primary: var(--text-primary-light); --text-secondary: var(--text-secondary-light); --text-tertiary: var(--text-tertiary-light); --border: var(--border-light); --sidebar-bg: rgba(255,255,255,0.9); --input-bg: #ffffff; --bubble-user: linear-gradient(135deg,#38bdf8,#0ea5e9); --bubble-assistant: #f1f5f9; }
-        body.dark { --bg-primary: var(--bg-primary-dark); --bg-secondary: var(--bg-secondary-dark); --bg-tertiary: var(--bg-tertiary-dark); --text-primary: var(--text-primary-dark); --text-secondary: var(--text-secondary-dark); --text-tertiary: var(--text-tertiary-dark); --border: var(--border-dark); --sidebar-bg: rgba(10,10,10,0.95); --input-bg: #0a0a0a; --bubble-user: linear-gradient(135deg,#38bdf8,#0284c7); --bubble-assistant: #111111; }
-        body.system { @media (prefers-color-scheme: dark) { ... } }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); font-size: 14px; height: 100vh; overflow: hidden; transition: background 0.2s; }
-        .splash { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #0f172a, #0284c7); display: flex; align-items: center; justify-content: center; transition: opacity 0.6s; }
-        .splash.hide { opacity: 0; visibility: hidden; }
-        .splash-logo { width: 100px; height: 100px; animation: pulse 1.2s infinite; }
-        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
-        .app { display: flex; height: 100%; display: none; }
-        .sidebar { width: 280px; background: var(--sidebar-bg); backdrop-filter: blur(24px); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; z-index: 30; }
-        @media (max-width:768px){ .sidebar { position: fixed; transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 25; display: none; } .overlay.open { display: block; } }
-        .top-bar { position: fixed; top: 12px; left: 12px; right: 12px; z-index: 45; display: flex; justify-content: space-between; pointer-events: none; }
-        .toggle-sidebar, .logo-btn { pointer-events: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 40px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; background: var(--bg-secondary); }
-        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .chat-container { max-width: 900px; margin: 0 auto; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0 20px; }
-        .messages-area { flex: 1; overflow-y: auto; padding: 80px 0 24px; scroll-behavior: smooth; }
-        .messages-area::-webkit-scrollbar { width: 5px; }
-        .messages-area::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-        .greeting-container { text-align: center; margin-bottom: 40px; animation: fadeSlideUp 0.6s; }
-        .greeting-text { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, var(--accent), #f59e0b, var(--accent-light)); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gradientShift 6s infinite; }
-        @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-        @keyframes fadeSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        .message { margin-bottom: 20px; animation: fadeSlideUp 0.3s; }
-        .message.user { display: flex; justify-content: flex-end; }
-        .message.user .message-content { background: var(--bubble-user); color: white; border-radius: 24px 24px 8px 24px; padding: 10px 18px; max-width: 80%; }
-        .message.assistant { display: flex; flex-direction: column; align-items: flex-start; }
-        .message.assistant .message-content { background: var(--bubble-assistant); border: 1px solid var(--border); border-radius: 24px 24px 24px 8px; padding: 10px 18px; max-width: 90%; }
-        .message-actions { display: flex; gap: 12px; margin-top: 6px; margin-left: 12px; opacity: 0; transition: opacity 0.2s; }
-        .message:hover .message-actions { opacity: 1; }
-        .action-icon { cursor: pointer; color: var(--text-tertiary); transition: 0.2s; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
-        .action-icon:hover { color: var(--accent); transform: scale(1.05); }
-        .typing-indicator { display: flex; align-items: center; gap: 12px; padding: 10px 18px; background: var(--bubble-assistant); border: 1px solid var(--border); border-radius: 24px; width: fit-content; }
-        .typing-dots { display: flex; gap: 6px; }
-        .typing-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: dotBounce 1.4s infinite; }
+
+        :root {
+            --bg-primary-light: #ffffff;
+            --bg-secondary-light: #f8fafc;
+            --bg-tertiary-light: #f1f5f9;
+            --surface-light: #ffffff;
+            --border-light: #e2e8f0;
+            --text-primary-light: #0f172a;
+            --text-secondary-light: #334155;
+            --text-tertiary-light: #64748b;
+            
+            --bg-primary-dark: #000000;
+            --bg-secondary-dark: #0a0a0a;
+            --bg-tertiary-dark: #111111;
+            --surface-dark: #0a0a0a;
+            --border-dark: #1e293b;
+            --text-primary-dark: #f8fafc;
+            --text-secondary-dark: #cbd5e1;
+            --text-tertiary-dark: #94a3b8;
+            
+            --accent: #38bdf8;
+            --accent-light: #7dd3fc;
+            --accent-dark: #0284c7;
+            --accent-glow: rgba(56, 189, 248, 0.2);
+            
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-glow: 0 0 0 2px rgba(56, 189, 248, 0.3), 0 0 0 4px rgba(56, 189, 248, 0.1);
+        }
+
+        body.light {
+            --bg-primary: var(--bg-primary-light);
+            --bg-secondary: var(--bg-secondary-light);
+            --bg-tertiary: var(--bg-tertiary-light);
+            --surface: var(--surface-light);
+            --border: var(--border-light);
+            --text-primary: var(--text-primary-light);
+            --text-secondary: var(--text-secondary-light);
+            --text-tertiary: var(--text-tertiary-light);
+            --sidebar-bg: rgba(255, 255, 255, 0.9);
+            --input-bg: #ffffff;
+            --bubble-user: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            --bubble-assistant: #f1f5f9;
+        }
+
+        body.dark {
+            --bg-primary: var(--bg-primary-dark);
+            --bg-secondary: var(--bg-secondary-dark);
+            --bg-tertiary: var(--bg-tertiary-dark);
+            --surface: var(--surface-dark);
+            --border: var(--border-dark);
+            --text-primary: var(--text-primary-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --text-tertiary: var(--text-tertiary-dark);
+            --sidebar-bg: rgba(10, 10, 10, 0.95);
+            --input-bg: #0a0a0a;
+            --bubble-user: linear-gradient(135deg, #38bdf8, #0284c7);
+            --bubble-assistant: #111111;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body.system {
+                --bg-primary: var(--bg-primary-dark);
+                --bg-secondary: var(--bg-secondary-dark);
+                --bg-tertiary: var(--bg-tertiary-dark);
+                --surface: var(--surface-dark);
+                --border: var(--border-dark);
+                --text-primary: var(--text-primary-dark);
+                --text-secondary: var(--text-secondary-dark);
+                --text-tertiary: var(--text-tertiary-dark);
+                --sidebar-bg: rgba(10, 10, 10, 0.95);
+                --input-bg: #0a0a0a;
+                --bubble-user: linear-gradient(135deg, #38bdf8, #0284c7);
+                --bubble-assistant: #111111;
+            }
+        }
+        @media (prefers-color-scheme: light) {
+            body.system {
+                --bg-primary: var(--bg-primary-light);
+                --bg-secondary: var(--bg-secondary-light);
+                --bg-tertiary: var(--bg-tertiary-light);
+                --surface: var(--surface-light);
+                --border: var(--border-light);
+                --text-primary: var(--text-primary-light);
+                --text-secondary: var(--text-secondary-light);
+                --text-tertiary: var(--text-tertiary-light);
+                --sidebar-bg: rgba(255, 255, 255, 0.9);
+                --input-bg: #ffffff;
+                --bubble-user: linear-gradient(135deg, #38bdf8, #0ea5e9);
+                --bubble-assistant: #f1f5f9;
+            }
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .glass {
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+        }
+
+        .splash {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: linear-gradient(135deg, #0f172a, #0284c7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
+        }
+        .splash.hide {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .splash-logo {
+            width: 80px;
+            height: 80px;
+            animation: splashPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes splashPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+        }
+
+        .app {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            position: relative;
+            display: none;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            flex-shrink: 0;
+            z-index: 30;
+            overflow-y: auto;
+        }
+        @media (min-width: 769px) {
+            .sidebar.collapsed {
+                transform: translateX(calc(-1 * 280px));
+                position: fixed;
+                height: 100%;
+            }
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 40;
+                box-shadow: 20px 0 40px rgba(0, 0, 0, 0.3);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(4px);
+                z-index: 35;
+                display: none;
+                animation: fadeIn 0.3s ease;
+            }
+            .overlay.open {
+                display: block;
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .sidebar-brand {
+            padding: 20px 16px 12px;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+        .sidebar-brand svg { width: 24px; height: 24px; }
+
+        .top-bar {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 45;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+        .toggle-sidebar, .logo-btn {
+            pointer-events: auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-sm);
+        }
+        .toggle-sidebar:hover, .logo-btn:hover {
+            transform: scale(1.02);
+            background: var(--bg-tertiary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        .chat-container {
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 0 20px;
+        }
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 80px 0 24px;
+            scroll-behavior: smooth;
+        }
+
+        .messages-area::-webkit-scrollbar, .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .messages-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .messages-area::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        .greeting-container {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeSlideUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .greeting-text {
+            font-size: 30px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #f59e0b, var(--accent-light));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: gradientShift 6s ease infinite;
+        }
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .message {
+            margin-bottom: 16px;
+            animation: messageSlideIn 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        @keyframes messageSlideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message.user {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .message.user .message-content {
+            background: var(--bubble-user);
+            color: white;
+            border-radius: 24px 24px 8px 24px;
+            padding: 10px 16px;
+            max-width: 80%;
+            box-shadow: var(--shadow-sm);
+            font-size: 13px;
+        }
+        .message.assistant {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .message.assistant .message-content {
+            background: var(--bubble-assistant);
+            border: 1px solid var(--border);
+            border-radius: 24px 24px 24px 8px;
+            padding: 10px 16px;
+            max-width: 90%;
+            box-shadow: var(--shadow-sm);
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .message.assistant .message-content:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateX(2px);
+        }
+        .message-content {
+            line-height: 1.6;
+            word-break: break-word;
+        }
+        .message-content pre {
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin: 8px 0;
+        }
+        .message-content code {
+            font-family: monospace;
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .action-icons {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+            padding-left: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .message.assistant:hover .action-icons {
+            opacity: 1;
+        }
+        @media (max-width: 768px) {
+            .action-icons {
+                opacity: 1;
+            }
+        }
+        .action-icons button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-tertiary);
+            padding: 4px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .action-icons button:hover {
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: var(--bubble-assistant);
+            border: 1px solid var(--border);
+            border-radius: 24px 24px 24px 8px;
+            width: fit-content;
+            box-shadow: var(--shadow-sm);
+        }
+        .typing-dots {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .typing-dots span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: dotBounce 1.4s ease-in-out infinite;
+        }
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
-        .stream-cursor { display: inline-block; width: 2px; height: 18px; background: var(--accent); animation: blink 1s infinite; vertical-align: middle; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .token-char { display: inline; animation: charFade 0.05s ease-out; }
-        @keyframes charFade { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:translateY(0); } }
-        .input-area { padding: 0 0 20px; }
-        .input-wrapper { display: flex; align-items: flex-end; gap: 10px; background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 32px; padding: 6px 8px 6px 18px; transition: 0.2s; }
-        .input-wrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); transform: translateY(-1px); }
-        .upload-btn, .send-btn { background: transparent; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .upload-btn:hover, .send-btn:hover { background: var(--bg-tertiary); transform: scale(1.02); }
-        .send-btn { background: var(--accent); color: white; }
-        .input-field { flex: 1; border: none; outline: none; background: transparent; font-family: inherit; font-size: 14px; padding: 12px 0; resize: none; max-height: 120px; color: var(--text-primary); }
-        .new-chat-btn { background: var(--accent); color: white; margin: 16px 12px 6px; padding: 12px 16px; border-radius: 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 500; }
-        .menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 4px 12px; border-radius: 14px; cursor: pointer; transition: 0.2s; color: var(--text-secondary); }
-        .menu-item:hover { background: var(--accent-glow); color: var(--accent); transform: translateX(4px); }
-        .collapsible-header { display: flex; justify-content: space-between; padding: 12px 16px; margin: 4px 12px; cursor: pointer; font-weight: 500; font-size: 13px; color: var(--text-secondary); }
-        .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s; }
-        .collapsible-content.open { max-height: 200px; }
-        .theme-option { display: flex; justify-content: space-between; padding: 10px 16px 10px 44px; cursor: pointer; font-size: 13px; }
-        .theme-option:hover { background: var(--bg-tertiary); }
-        .chat-history, .recent-chats-list { padding: 8px; }
-        .chat-item, .recent-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: 0.2s; font-size: 13px; color: var(--text-secondary); }
-        .chat-item:hover, .recent-item:hover { background: var(--accent-glow); color: var(--accent); transform: translateX(4px); }
-        .profile-section { padding: 14px 16px; border-top: 1px solid var(--border); margin-top: auto; cursor: pointer; display: flex; align-items: center; gap: 12px; }
-        .profile-avatar-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
-        .profile-name { font-weight: 600; font-size: 14px; }
-        .profile-tier { font-size: 11px; color: var(--accent); }
-        .sidebar-footer { padding: 16px; text-align: center; font-size: 10px; border-top: 1px solid var(--border); cursor: pointer; color: var(--text-tertiary); }
-        .sidebar-footer:hover { background: var(--bg-tertiary); color: var(--accent); }
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-overlay.open { display: flex; }
-        .modal { background: var(--surface); border-radius: 28px; max-width: 500px; width: 90%; padding: 24px; max-height: 85vh; overflow-y: auto; background: var(--bg-secondary); border: 1px solid var(--border); }
-        .modal h2 { font-size: 22px; margin-bottom: 16px; }
-        .modal-setting { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
-        .modal-setting:hover { color: var(--accent); transform: translateX(4px); }
-        .crypto-card { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 20px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
-        .crypto-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-        .work-area-snippet { background: var(--accent-glow); border-radius: 16px; padding: 16px; margin: 16px 0; }
-        .wallet-address { font-family: monospace; background: var(--bg-tertiary); padding: 12px; border-radius: 14px; word-break: break-all; cursor: pointer; margin: 12px 0; }
-        .btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 40px; cursor: pointer; margin-top: 12px; font-weight: 600; transition: 0.2s; }
-        .btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
-        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--surface); padding: 8px 20px; border-radius: 40px; z-index: 1100; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
-        .auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #0f172a, #0284c7); }
-        .auth-card { background: var(--surface); padding: 36px; border-radius: 32px; width: 400px; max-width: 90%; }
-        .auth-input { width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 16px; background: var(--bg-secondary); color: var(--text-primary); margin-bottom: 16px; }
-        .auth-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-        .auth-btn { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 40px; font-weight: 600; cursor: pointer; }
-        .auth-switch { text-align: center; margin-top: 20px; font-size: 13px; }
-        .auth-switch a { color: var(--accent); cursor: pointer; }
-        .error-msg { color: #ef4444; font-size: 12px; margin: -8px 0 12px; display: none; }
-        .success-msg { color: #10b981; font-size: 12px; margin: -8px 0 12px; display: none; }
-        input, textarea { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 14px; background: var(--bg-secondary); color: var(--text-primary); margin-bottom: 12px; }
-        .avatar-upload { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+        @keyframes dotBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+        .typing-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .streaming-text { display: inline; }
+        .stream-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 16px;
+            background: var(--accent);
+            margin-left: 2px;
+            animation: cursorBlink 1s step-end infinite;
+            vertical-align: middle;
+            border-radius: 2px;
+        }
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .input-area {
+            padding: 0 0 20px;
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            background: var(--input-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 32px;
+            padding: 6px 8px 6px 16px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
+        }
+        .input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-1px);
+        }
+        .upload-btn, .send-btn {
+            background: transparent;
+            border: none;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            color: var(--text-secondary);
+        }
+        .upload-btn:hover, .send-btn:hover {
+            background: var(--bg-tertiary);
+            transform: scale(1.02);
+        }
+        .send-btn {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px var(--accent-glow);
+        }
+        .send-btn:hover {
+            background: var(--accent-dark);
+        }
+        .input-field {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 13px;
+            padding: 12px 0;
+            color: var(--text-primary);
+            resize: none;
+            max-height: 120px;
+        }
+        .input-field::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .new-chat-btn, .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            margin: 4px 12px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .new-chat-btn {
+            background: var(--accent);
+            color: white;
+            margin-top: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+        .new-chat-btn:hover, .menu-item:hover {
+            transform: translateX(4px);
+            background: var(--accent);
+            color: white;
+        }
+        .menu-item:hover {
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            margin: 4px 12px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .collapsible-header:hover {
+            background: var(--bg-tertiary);
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .collapsible-content.open {
+            max-height: 200px;
+        }
+        .theme-option {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px 8px 44px;
+            cursor: pointer;
+            border-radius: 12px;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .theme-option:hover {
+            background: var(--bg-tertiary);
+        }
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .chat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            margin: 2px 0;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .chat-item:hover, .chat-item.active {
+            background: var(--accent-glow);
+            color: var(--accent);
+            transform: translateX(4px);
+        }
+        .recent-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            padding: 8px 16px 4px;
+            letter-spacing: 0.5px;
+        }
+        .profile-section {
+            padding: 14px 16px;
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .profile-section:hover {
+            background: var(--bg-tertiary);
+        }
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .profile-avatar-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--accent-glow);
+            border: 2px solid var(--accent);
+        }
+        .profile-name {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .profile-tier {
+            font-size: 10px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .sidebar-footer {
+            padding: 14px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-tertiary);
+            border-top: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sidebar-footer:hover {
+            background: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        @media (min-width: 769px) {
+            .modal-overlay {
+                align-items: center;
+            }
+        }
+        .modal-overlay.open {
+            display: flex;
+            animation: modalOverlayIn 0.3s ease;
+        }
+        @keyframes modalOverlayIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal {
+            background: var(--surface);
+            border-radius: 28px 28px 0 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+            box-shadow: var(--shadow-lg);
+            animation: modalSlideUp 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        @media (min-width: 769px) {
+            .modal {
+                border-radius: 28px;
+                margin: 20px;
+                animation: modalScaleIn 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            }
+            @keyframes modalScaleIn {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        }
+        @keyframes modalSlideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        .modal-setting {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .modal-setting:hover {
+            color: var(--accent);
+            transform: translateX(4px);
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+        .btn:hover {
+            background: var(--accent-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text-primary);
+        }
+        .btn-outline:hover {
+            background: var(--bg-tertiary);
+        }
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 12px;
+            z-index: 1100;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            animation: toastIn 0.3s ease;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #0f172a, #0284c7);
+        }
+        .auth-card {
+            background: var(--surface);
+            padding: 32px;
+            border-radius: 32px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: var(--shadow-lg);
+            animation: fadeSlideUp 0.5s ease;
+        }
+        .auth-card h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .auth-btn:hover {
+            background: var(--accent-dark);
+            transform: translateY(-1px);
+        }
+        .auth-switch {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .auth-switch a {
+            color: var(--accent);
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .error-msg { color: #ef4444; font-size: 11px; margin: -8px 0 10px; display: none; }
+        .success-msg { color: #10b981; font-size: 11px; margin: -8px 0 10px; display: none; }
+
+        .scroll-to-bottom {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.2s;
+        }
+        .scroll-to-bottom:hover {
+            transform: scale(1.05);
+            background: var(--bg-tertiary);
+        }
     </style>
 </head>
 <body>
 
 <div class="splash" id="splashScreen">
-    <svg class="splash-logo" viewBox="0 0 640 360"><rect width="640" height="360" fill="#38bdf8" rx="40"/><circle cx="320" cy="180" r="70" fill="none" stroke="white" stroke-width="6"/><text x="320" y="208" text-anchor="middle" font-family="Arial" font-size="70" fill="white" font-weight="bold">C</text></svg>
+    <svg class="splash-logo" viewBox="0 0 640 360">
+        <rect width="640" height="360" fill="#38bdf8" rx="40"/>
+        <circle cx="320" cy="180" r="70" fill="none" stroke="white" stroke-width="6"/>
+        <text x="320" y="208" text-anchor="middle" font-family="Arial,sans-serif" font-size="70" fill="white" font-weight="bold">C</text>
+    </svg>
 </div>
 
 <div id="authContainer" class="auth-container">
     <div class="auth-card">
         <h1>CAPITAN AI</h1>
-        <p style="margin-bottom:24px;">Enterprise Intelligence</p>
+        <p style="margin-bottom:24px;font-size:14px;">Enterprise Intelligence</p>
         <div id="loginForm">
             <input type="email" id="loginEmail" class="auth-input" placeholder="Email">
             <input type="password" id="loginPassword" class="auth-input" placeholder="Password">
@@ -151,54 +901,79 @@
 
 <div id="app" class="app">
     <aside class="sidebar" id="sidebar">
-        <div id="capitanHeader" style="display: none; padding: 20px 16px 8px; font-weight: 700; font-size: 18px; color: var(--accent);">CAPITAN AI</div>
-        <div class="new-chat-btn" onclick="newChat()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New chat</div>
-        <div class="menu-item" id="libraryMenuItem" onclick="openLibrary()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> My Library</div>
+        <div class="sidebar-brand">
+            <svg viewBox="0 0 640 360"><rect width="640" height="360" fill="#38bdf8" rx="20"/><circle cx="320" cy="180" r="65" fill="none" stroke="white" stroke-width="5"/><text x="320" y="205" text-anchor="middle" font-family="Arial" font-size="65" fill="white" font-weight="bold">C</text></svg>
+            CAPITAN AI
+        </div>
+        <div class="new-chat-btn" onclick="newChat()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>New chat</span>
+        </div>
+        <div class="menu-item" onclick="openLibrary()" id="libraryMenuItem">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>My Library</span>
+        </div>
         <div>
-            <div class="collapsible-header" onclick="toggleAppearance()"><span>Appearance</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="appearanceArrow"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="collapsible-header" onclick="toggleAppearance()">
+                <span>Appearance</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="appearanceArrow"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
             <div class="collapsible-content" id="appearanceContent">
                 <div class="theme-option" onclick="setTheme('light')"><span>Light</span><span id="themeLightCheck">✓</span></div>
                 <div class="theme-option" onclick="setTheme('dark')"><span>Dark (OLED)</span><span id="themeDarkCheck" style="display:none;">✓</span></div>
                 <div class="theme-option" onclick="setTheme('system')"><span>System</span><span id="themeSystemCheck" style="display:none;">✓</span></div>
             </div>
         </div>
-
-        <!-- Recent Chats Section (only for registered users) -->
-        <div id="recentChatsSection" style="display: none;">
-            <div class="collapsible-header" onclick="toggleRecentChats()"><span>Recent chats</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="recentArrow"><polyline points="6 9 12 15 18 9"/></svg></div>
-            <div class="collapsible-content" id="recentChatsList"><div style="padding:12px;color:var(--text-tertiary);">No recent chats</div></div>
+        <div class="recent-label" id="recentLabel" style="display:none;">Recent chats</div>
+        <div class="chat-history" id="chatHistoryList">
+            <div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">No conversations yet</div>
         </div>
-
-        <div class="chat-history" id="chatHistoryList"><div style="padding:20px;text-align:center;color:var(--text-tertiary);">No conversations yet</div></div>
-
-        <div class="profile-section" id="profileSection" onclick="openProfileModal()">
-            <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%2338bdf8'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%2338bdf8'/%3E%3C/svg%3E">
-            <div><div class="profile-name" id="profileName">Guest</div><div class="profile-tier" id="profileTier">Free</div></div>
+        <div class="profile-section" onclick="openProfileModal()">
+            <div class="profile-info">
+                <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%2338bdf8'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%2338bdf8'/%3E%3C/svg%3E">
+                <div class="profile-details">
+                    <div class="profile-name" id="profileName">Guest</div>
+                    <div class="profile-tier" id="profileTier">Free</div>
+                </div>
+            </div>
         </div>
         <div class="sidebar-footer" id="secretFounderTrigger">CLOSEAI Technologies © 2026</div>
     </aside>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
     <div class="top-bar">
-        <button class="toggle-sidebar" id="toggleSidebarBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
-        <button class="logo-btn" id="logoBtn" onclick="openAboutModal()"><svg width="22" height="22" viewBox="0 0 640 360"><rect width="640" height="360" fill="currentColor" rx="20"/><circle cx="320" cy="180" r="65" fill="none" stroke="white" stroke-width="5"/><text x="320" y="205" text-anchor="middle" font-family="Arial" font-size="65" fill="white" font-weight="bold">C</text></svg></button>
+        <button class="toggle-sidebar" id="toggleSidebarBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+        <button class="logo-btn" id="logoBtn" onclick="openAboutModal()">
+            <svg width="22" height="22" viewBox="0 0 640 360"><rect width="640" height="360" fill="currentColor" rx="20"/><circle cx="320" cy="180" r="65" fill="none" stroke="white" stroke-width="5"/><text x="320" y="205" text-anchor="middle" font-family="Arial" font-size="65" fill="white" font-weight="bold">C</text></svg>
+        </button>
     </div>
     <main class="main">
         <div class="chat-container">
             <div class="messages-area" id="messagesArea">
-                <div style="text-align:center;padding:60px 20px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div><p style="color:var(--text-secondary);">Ask me anything — finance, code, research.</p></div>
+                <div style="text-align:center;padding:60px 20px;">
+                    <div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div>
+                    <p style="color:var(--text-secondary);margin-top:8px;font-size:13px;">Ask me anything — finance, code, research.</p>
+                </div>
             </div>
             <div class="input-area">
                 <div class="input-wrapper">
-                    <button class="upload-btn" onclick="triggerFileUpload()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                    <button class="upload-btn" onclick="triggerFileUpload()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
                     <textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-                    <button class="send-btn" onclick="sendMessage()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                    <button class="send-btn" onclick="sendMessage()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
                 </div>
             </div>
         </div>
     </main>
+    <button class="scroll-to-bottom" id="scrollToBottomBtn" onclick="document.getElementById('messagesArea').scrollTo({top: document.getElementById('messagesArea').scrollHeight, behavior:'smooth'})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
 </div>
 
-<!-- Modals -->
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal" id="upgradeModalContent"></div></div>
 <div id="libraryModal" class="modal-overlay"><div class="modal" id="libraryModalContent"></div></div>
@@ -224,153 +999,526 @@
         theme: localStorage.getItem('theme') || 'light',
         profilePhoto: localStorage.getItem('profilePhoto') || null,
         founderClickCount: 0,
-        recentChats: JSON.parse(localStorage.getItem('recentChats') || '[]'),
         selectedTier: null,
         selectedCoin: 'BTC',
         currentStreamer: null
     };
 
-    // Helper functions
-    function escapeHtml(s) { return s?.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]) || ''; }
+    function escapeHtml(s) { return s?.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m) || ''; }
     function toast(msg) { let t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
     function scrollBottom() { let area = document.getElementById('messagesArea'); if(area) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }); }
-    function getDynamicGreeting() { const hour = new Date().getHours(); if (hour>=5 && hour<12) return "Good morning"; if (hour>=12 && hour<17) return "Good afternoon"; if (hour>=17 && hour<21) return "Good evening"; return "Welcome"; }
-    function updateGreeting() { let el = document.getElementById('greetingText'); if(el) el.textContent = getDynamicGreeting(); }
-    setInterval(updateGreeting, 60000); updateGreeting();
+    
+    function getDynamicGreeting() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return "Good morning";
+        if (hour >= 12 && hour < 17) return "Good afternoon";
+        if (hour >= 17 && hour < 21) return "Good evening";
+        return "Welcome";
+    }
+    function updateGreeting() { const el = document.getElementById('greetingText'); if (el) el.textContent = getDynamicGreeting(); }
+    setInterval(updateGreeting, 60000);
+    updateGreeting();
 
-    // Smooth Streamer
+    // Smooth Streamer using requestAnimationFrame
     class SmoothStreamer {
         constructor(content, container, onComplete) {
-            this.content = content; this.container = container; this.onComplete = onComplete;
-            this.index = 0; this.running = true; this.speed = 8; this.timeout = null;
+            this.content = content;
+            this.container = container;
+            this.onComplete = onComplete;
+            this.index = 0;
+            this.running = true;
+            this.lastTime = 0;
+            this.accumulator = 0;
+            this.speed = 8; // ms per character
             this.container.innerHTML = '';
-            this.streamDiv = document.createElement('div'); this.streamDiv.className = 'streaming-text';
+            this.streamDiv = document.createElement('div');
+            this.streamDiv.className = 'streaming-text';
             this.container.appendChild(this.streamDiv);
-            this.cursor = document.createElement('span'); this.cursor.className = 'stream-cursor';
+            this.cursor = document.createElement('span');
+            this.cursor.className = 'stream-cursor';
             this.container.appendChild(this.cursor);
+            this.animate = this.animate.bind(this);
+            if (state.currentStreamer && state.currentStreamer !== this) state.currentStreamer.stop();
+            state.currentStreamer = this;
+            requestAnimationFrame(this.animate);
         }
-        start() { if (state.currentStreamer) state.currentStreamer.stop(); state.currentStreamer = this; this.renderNext(); }
-        renderNext() {
-            if (!this.running || this.index >= this.content.length) { this.finish(); return; }
-            const char = this.content[this.index];
-            const span = document.createElement('span'); span.className = 'token-char'; span.textContent = char;
-            this.streamDiv.appendChild(span); this.index++; scrollBottom();
-            let delay = this.speed;
-            if (char === '.' || char === '!' || char === '?' || char === '\n') delay = 80;
-            else if (char === ',' || char === ';') delay = 40;
-            else if (char === ' ') delay = 20;
-            this.timeout = setTimeout(() => this.renderNext(), delay);
+        animate(timestamp) {
+            if (!this.running || this.index >= this.content.length) {
+                this.finish();
+                return;
+            }
+            if (this.lastTime === 0) this.lastTime = timestamp;
+            const delta = timestamp - this.lastTime;
+            this.lastTime = timestamp;
+            this.accumulator += delta;
+            let charsToAdd = 0;
+            while (this.accumulator >= this.speed && this.index < this.content.length) {
+                const char = this.content[this.index];
+                const span = document.createElement('span');
+                span.className = 'token-char';
+                span.textContent = char;
+                this.streamDiv.appendChild(span);
+                this.index++;
+                this.accumulator -= this.speed;
+                charsToAdd++;
+                // Adjust speed for punctuation
+                if (char === '.' || char === '!' || char === '?' || char === '\n') this.accumulator = 0; // skip extra delay
+            }
+            if (charsToAdd > 0) {
+                scrollBottom();
+            }
+            requestAnimationFrame(this.animate);
         }
-        stop() { if (this.timeout) clearTimeout(this.timeout); this.running = false; if (this.index < this.content.length) this.streamDiv.textContent = this.content.slice(this.index); this.finish(); }
-        finish() { if (this.cursor) this.cursor.remove(); this.container.innerHTML = formatMarkdown(this.content); if (state.currentStreamer === this) state.currentStreamer = null; if (this.onComplete) this.onComplete(); scrollBottom(); }
+        stop() {
+            this.running = false;
+            if (this.index < this.content.length) {
+                this.streamDiv.textContent += this.content.slice(this.index);
+            }
+            this.finish();
+        }
+        finish() {
+            if (this.cursor) this.cursor.remove();
+            this.container.innerHTML = formatMarkdown(this.content);
+            if (state.currentStreamer === this) state.currentStreamer = null;
+            if (this.onComplete) this.onComplete();
+            scrollBottom();
+        }
     }
 
     function formatMarkdown(t) {
         if (!t) return '';
-        return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre><code>$2</code></pre>').replace(/\n/g,'<br>');
+        return t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/\n/g, '<br>');
     }
 
     // Theme
-    function setTheme(theme) { state.theme = theme; document.body.className = theme; localStorage.setItem('theme', theme); document.getElementById('themeLightCheck').style.display = theme === 'light' ? 'inline' : 'none'; document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none'; document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none'; toast(`Theme: ${theme === 'dark' ? 'OLED Black' : theme}`); }
+    function setTheme(theme) {
+        state.theme = theme;
+        document.body.className = theme;
+        localStorage.setItem('theme', theme);
+        document.getElementById('themeLightCheck').style.display = theme === 'light' ? 'inline' : 'none';
+        document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none';
+        document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none';
+        toast(`Theme: ${theme === 'dark' ? 'OLED Black' : theme}`);
+    }
     let appearanceOpen = false;
-    function toggleAppearance() { appearanceOpen = !appearanceOpen; document.getElementById('appearanceContent').classList.toggle('open', appearanceOpen); document.getElementById('appearanceArrow').style.transform = appearanceOpen ? 'rotate(180deg)' : 'rotate(0deg)'; }
-    function toggleSidebar() { let sidebar = document.getElementById('sidebar'), overlay = document.getElementById('overlay'); if(window.innerWidth <= 768) { sidebar.classList.toggle('open'); overlay.classList.toggle('open'); if(window.navigator?.vibrate) window.navigator.vibrate(10); } else { sidebar.classList.toggle('collapsed'); } }
-    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+    function toggleAppearance() {
+        appearanceOpen = !appearanceOpen;
+        document.getElementById('appearanceContent').classList.toggle('open', appearanceOpen);
+        document.getElementById('appearanceArrow').style.transform = appearanceOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+    function toggleSidebar() {
+        let sidebar = document.getElementById('sidebar'), overlay = document.getElementById('overlay');
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        } else {
+            sidebar.classList.toggle('collapsed');
+        }
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('open');
+    }
 
-    // Recent chats (only for registered users)
-    function addToRecentChats(chatId, title) { if (!state.token) return; let recents = state.recentChats.filter(c => c.id !== chatId); recents.unshift({ id: chatId, title: title || 'Chat', timestamp: Date.now() }); if (recents.length > 5) recents.pop(); state.recentChats = recents; localStorage.setItem('recentChats', JSON.stringify(recents)); renderRecentChats(); }
-    function renderRecentChats() { let container = document.getElementById('recentChatsList'); if (!container) return; if (!state.recentChats.length) { container.innerHTML = '<div style="padding:12px;color:var(--text-tertiary);">No recent chats</div>'; return; } container.innerHTML = state.recentChats.map(chat => `<div class="recent-item" onclick="loadChat('${chat.id}')"><span>💬 ${escapeHtml(chat.title)}</span><button onclick="event.stopPropagation(); removeRecentChat('${chat.id}')" style="background:none;border:none;cursor:pointer;">✕</button></div>`).join(''); }
-    function removeRecentChat(chatId) { state.recentChats = state.recentChats.filter(c => c.id !== chatId); localStorage.setItem('recentChats', JSON.stringify(state.recentChats)); renderRecentChats(); }
-    let recentOpen = false;
-    function toggleRecentChats() { recentOpen = !recentOpen; let content = document.getElementById('recentChatsList')?.parentElement; if(content) content.classList.toggle('open', recentOpen); let arrow = document.getElementById('recentArrow'); if(arrow) arrow.style.transform = recentOpen ? 'rotate(180deg)' : 'rotate(0deg)'; }
+    // Founder secret (13 clicks)
+    function handleFooterClick() {
+        state.founderClickCount++;
+        if (state.founderClickCount >= 13) {
+            state.founderClickCount = 0;
+            openFounderDashboard();
+        }
+        setTimeout(() => { state.founderClickCount = 0; }, 5000);
+    }
+    async function openFounderDashboard() {
+        const modal = document.getElementById('founderModalContent');
+        modal.innerHTML = `<div style="text-align:center;"><div style="background:var(--accent-glow);width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg></div><h2 style="margin-top:16px;">Founder Dashboard</h2><p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">Full administrative privileges</p><div id="founderStats" style="background:var(--bg-secondary);border-radius:16px;padding:16px;margin-bottom:16px;">Loading stats...</div><button class="btn" onclick="activateFounder()">Activate Founder Status</button><button class="btn btn-outline" onclick="closeModal('founderModal')">Close</button></div>`;
+        document.getElementById('founderModal').classList.add('open');
+        try {
+            const res = await fetch(`${CFG.API}/api/admin`, { headers: state.token ? { 'Authorization': `Bearer ${state.token}` } : {} });
+            if (res.ok) {
+                const stats = await res.json();
+                document.getElementById('founderStats').innerHTML = `<div style="font-weight:600;margin-bottom:10px;">Platform Statistics</div><div style="font-size:12px;">👥 Total Users: ${stats.total_users || 'N/A'}</div><div style="font-size:12px;">💎 Paid Users: ${stats.paid_users || 'N/A'}</div><div style="font-size:12px;">💬 Total Messages: ${stats.total_messages || 'N/A'}</div>`;
+            }
+        } catch(e) {}
+    }
+    async function activateFounder() {
+        try {
+            const res = await fetch(`${CFG.API}/api/founder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: 'Osinachi@35' }) });
+            const data = await res.json();
+            if (data.token) {
+                state.token = data.token; state.user = data.user; state.tier = 'founder';
+                localStorage.setItem('ct', data.token);
+                updateProfileUI(); closeModal('founderModal'); toast('✨ Founder status activated!');
+                await loadChats();
+            } else { toast('Activation failed'); }
+        } catch(e) { toast('Error'); }
+    }
 
-    // Message actions
-    function copyMessage(text) { navigator.clipboard.writeText(text); toast('Copied to clipboard'); }
-    function likeMessage(msgId) { let liked = JSON.parse(localStorage.getItem('likedMessages') || '{}'); liked[msgId] = true; localStorage.setItem('likedMessages', JSON.stringify(liked)); toast('Thanks for your feedback!'); }
-    function dislikeMessage(msgId) { let disliked = JSON.parse(localStorage.getItem('dislikedMessages') || '{}'); disliked[msgId] = true; localStorage.setItem('dislikedMessages', JSON.stringify(disliked)); toast('Feedback recorded'); }
-    function shareMessage(text) { if(navigator.share) { navigator.share({ title: 'CAPITAN AI', text: text }); } else { navigator.clipboard.writeText(text); toast('Message copied (share not supported)'); } }
-    function saveMessage(text) { let saved = JSON.parse(localStorage.getItem('savedMessages') || '[]'); saved.push({ text, timestamp: Date.now() }); localStorage.setItem('savedMessages', JSON.stringify(saved)); toast('Saved to library (local)'); }
+    // API
+    async function apiCall(endpoint, opts = {}) {
+        let headers = { 'Content-Type': 'application/json' };
+        if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+        let res = await fetch(`${CFG.API}${endpoint}`, { ...opts, headers });
+        if (res.status === 401) { logout(); throw new Error('Session expired'); }
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+    }
+    async function initSession() {
+        try {
+            if (state.token) {
+                let sess = await apiCall('/api/session');
+                state.tier = sess.tier; state.user = sess.user_data;
+            } else {
+                let sess = await apiCall('/api/session');
+                state.token = sess.token; state.tier = sess.tier;
+                localStorage.setItem('ct', state.token);
+            }
+            updateProfileUI();
+            updateUIBasedOnTier();
+        } catch(e) { console.warn(e); }
+    }
+    function updateProfileUI() {
+        let name = state.user?.name || state.user?.email?.split('@')[0] || 'Guest';
+        document.getElementById('profileName').innerText = name;
+        document.getElementById('profileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase();
+        if (state.profilePhoto) document.getElementById('profileAvatar').src = state.profilePhoto;
+    }
+    function updateUIBasedOnTier() {
+        const isLoggedIn = !!state.user;
+        document.getElementById('libraryMenuItem').style.display = isLoggedIn ? 'flex' : 'none';
+        document.getElementById('recentLabel').style.display = isLoggedIn ? 'block' : 'none';
+        if (!isLoggedIn) {
+            document.getElementById('chatHistoryList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">Sign in to see recent chats</div>';
+        }
+    }
+    async function uploadProfilePhoto() {
+        if (!state.user) { toast('Sign in to change photo'); return; }
+        let input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+        input.onchange = (e) => {
+            let file = e.target.files[0]; if (!file) return;
+            let reader = new FileReader();
+            reader.onload = (ev) => { state.profilePhoto = ev.target.result; localStorage.setItem('profilePhoto', state.profilePhoto); document.getElementById('profileAvatar').src = state.profilePhoto; toast('Profile photo updated!'); };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
 
-    // Render messages with action icons
+    // Chat
+    async function loadChats() {
+        if (!state.user) return;
+        try { let data = await apiCall('/api/chats'); state.chats = data.chats || []; renderChatHistory(); } catch(e) {}
+    }
+    async function loadChat(chatId) {
+        try { let data = await apiCall(`/api/chats/${chatId}`); state.messages = data.messages || []; state.activeChatId = chatId; renderMessages(); renderChatHistory(); setTimeout(() => scrollBottom(), 100); } catch(e) { toast('Failed to load chat'); }
+    }
+    async function newChat() {
+        if (state.currentStreamer) state.currentStreamer.stop();
+        state.activeChatId = null; state.messages = []; renderMessages(); renderChatHistory(); document.getElementById('messageInput').focus();
+    }
+    async function deleteChat(chatId) {
+        if (!confirm('Delete this conversation?')) return;
+        await apiCall(`/api/chats/${chatId}`, { method: 'DELETE' });
+        if (state.activeChatId === chatId) await newChat();
+        await loadChats();
+        toast('Chat deleted');
+    }
+    async function sendMessage() {
+        let input = document.getElementById('messageInput'); let text = input.value.trim();
+        if (!text || state.loading) return;
+        input.value = '';
+        state.messages.push({ role: 'user', content: text });
+        renderMessages();
+        state.loading = true;
+        let aiIdx = state.messages.length;
+        state.messages.push({ role: 'assistant', content: '', isTyping: true });
+        renderMessages();
+        try {
+            let res = await apiCall('/api/chat', { method: 'POST', body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.activeChatId }) });
+            const finalContent = res.content || 'No response';
+            state.messages[aiIdx] = { role: 'assistant', content: finalContent };
+            renderMessages();
+            const streamTarget = document.getElementById(`msg-${aiIdx}`);
+            if (streamTarget) {
+                const streamer = new SmoothStreamer(finalContent, streamTarget, () => { state.loading = false; });
+                streamer.start();
+            } else { state.loading = false; }
+            state.activeChatId = res.chat_id;
+            await loadChats();
+        } catch(err) {
+            state.messages[aiIdx] = { role: 'assistant', content: `Error: ${err.message}` };
+            renderMessages();
+            toast(err.message);
+            state.loading = false;
+        }
+    }
     function renderMessages() {
         let c = document.getElementById('messagesArea'); if (!c) return;
-        if (!state.messages.length) { c.innerHTML = `<div style="text-align:center;padding:60px 20px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><p style="color:var(--text-secondary);">Ask me anything — finance, code, research.</p></div>`; updateGreeting(); return; }
+        if (!state.messages.length) {
+            c.innerHTML = `<div style="text-align:center;padding:60px 20px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><p style="color:var(--text-secondary);margin-top:8px;font-size:13px;">Ask me anything — finance, code, research, or upload documents for analysis.</p></div>`;
+            updateGreeting(); return;
+        }
         c.innerHTML = state.messages.map((m, i) => {
             if (m.isTyping) return `<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>`;
-            const contentHtml = m.role === 'user' ? escapeHtml(m.content) : formatMarkdown(m.content);
-            const actions = (m.role === 'assistant' && !m.isTyping) ? `<div class="message-actions"><span class="action-icon" onclick="copyMessage(\`${escapeHtml(m.content).replace(/`/g, '\\`')}\`)">📋 Copy</span><span class="action-icon" onclick="likeMessage('msg-${i}')">👍 Like</span><span class="action-icon" onclick="dislikeMessage('msg-${i}')">👎 Dislike</span><span class="action-icon" onclick="shareMessage(\`${escapeHtml(m.content).replace(/`/g, '\\`')}\`)">🔗 Share</span><span class="action-icon" onclick="saveMessage(\`${escapeHtml(m.content).replace(/`/g, '\\`')}\`)">💾 Save</span></div>` : '';
-            return `<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${contentHtml}</div>${actions}</div>`;
+            let contentHtml = m.role === 'user' ? escapeHtml(m.content) : formatMarkdown(m.content);
+            let actionIcons = '';
+            if (m.role === 'assistant' && !m.isTyping) {
+                actionIcons = `
+                <div class="action-icons">
+                    <button onclick="copyMessage(${i})" title="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                    <button onclick="likeMessage(${i})" title="Like"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+                    <button onclick="dislikeMessage(${i})" title="Dislike"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
+                    <button onclick="shareMessage(${i})" title="Share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+                    <button onclick="saveMessage(${i})" title="Save to Library"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+                </div>`;
+            }
+            return `<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${contentHtml}</div>${actionIcons}</div>`;
         }).join('');
+        if (document.getElementById('greetingText')) updateGreeting();
         scrollBottom();
     }
-
-    // API and chat functions
-    async function apiCall(endpoint, opts = {}) { let headers = { 'Content-Type': 'application/json' }; if(state.token) headers['Authorization'] = `Bearer ${state.token}`; let res = await fetch(`${CFG.API}${endpoint}`, { ...opts, headers }); if(res.status === 401) { logout(); throw new Error('Session expired'); } if(!res.ok) throw new Error(await res.text()); return res.json(); }
-    async function initSession() { try { if(state.token) { let sess = await apiCall('/api/session'); state.tier = sess.tier; state.user = sess.user_data; } else { let sess = await apiCall('/api/session'); state.token = sess.token; state.tier = sess.tier; localStorage.setItem('ct', state.token); } updateProfileUI(); updateAccessBasedOnUser(); } catch(e) { console.warn(e); } }
-    function updateProfileUI() { let name = state.user?.name || state.user?.email?.split('@')[0] || 'Guest'; document.getElementById('profileName').innerText = name; document.getElementById('profileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); if(state.profilePhoto) document.getElementById('profileAvatar').src = state.profilePhoto; }
-    async function uploadProfilePhoto() { let input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = (e) => { let file = e.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = (ev) => { state.profilePhoto = ev.target.result; localStorage.setItem('profilePhoto', state.profilePhoto); document.getElementById('profileAvatar').src = state.profilePhoto; toast('Profile photo updated!'); }; reader.readAsDataURL(file); }; input.click(); }
-    async function loadChats() { try { let data = await apiCall('/api/chats'); state.chats = data.chats || []; renderChatHistory(); } catch(e) {} }
-    async function loadChat(chatId) { try { let data = await apiCall(`/api/chats/${chatId}`); state.messages = data.messages || []; state.activeChatId = chatId; renderMessages(); renderChatHistory(); addToRecentChats(chatId, data.title || 'Chat'); setTimeout(() => scrollBottom(), 100); } catch(e) { toast('Failed to load chat'); } }
-    async function newChat() { if(state.currentStreamer) state.currentStreamer.stop(); state.activeChatId = null; state.messages = []; renderMessages(); renderChatHistory(); document.getElementById('messageInput').focus(); }
-    async function deleteChat(chatId) { if(!confirm('Delete this conversation?')) return; await apiCall(`/api/chats/${chatId}`, { method: 'DELETE' }); if(state.activeChatId === chatId) await newChat(); await loadChats(); toast('Chat deleted'); }
-    async function sendMessage() { let input = document.getElementById('messageInput'); let text = input.value.trim(); if(!text || state.loading) return; input.value = ''; state.messages.push({ role: 'user', content: text }); renderMessages(); state.loading = true; let aiIdx = state.messages.length; state.messages.push({ role: 'assistant', content: '', isTyping: true }); renderMessages(); try { let res = await apiCall('/api/chat', { method: 'POST', body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.activeChatId }) }); const finalContent = res.content || 'No response'; state.messages[aiIdx] = { role: 'assistant', content: finalContent }; renderMessages(); const streamTarget = document.getElementById(`msg-${aiIdx}`); if(streamTarget) { const streamer = new SmoothStreamer(finalContent, streamTarget, () => { state.loading = false; }); streamer.start(); } else { state.loading = false; } state.activeChatId = res.chat_id; if (state.activeChatId) addToRecentChats(state.activeChatId, 'Chat'); await loadChats(); } catch(err) { state.messages[aiIdx] = { role: 'assistant', content: `Error: ${err.message}` }; renderMessages(); toast(err.message); state.loading = false; } }
-    function renderChatHistory() { let c = document.getElementById('chatHistoryList'); if(!c) return; if(!state.chats.length) { c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);">No conversations yet</div>'; return; } c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:14px;">✕</button></div>`).join(''); }
-
-    // Access control
-    function updateAccessBasedOnUser() {
-        const isRegistered = !!state.token;
-        document.getElementById('libraryMenuItem').style.display = isRegistered ? 'flex' : 'none';
-        document.getElementById('recentChatsSection').style.display = isRegistered ? 'block' : 'none';
-        if (isRegistered) renderRecentChats();
+    function renderChatHistory() {
+        let c = document.getElementById('chatHistoryList'); if (!c) return;
+        if (!state.user) {
+            c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">Sign in to see recent chats</div>';
+            return;
+        }
+        if (!state.chats.length) {
+            c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">No conversations yet</div>';
+            return;
+        }
+        c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:14px;">✕</button></div>`).join('');
     }
 
-    // Profile Modal (guest vs registered)
+    // Message actions
+    function copyMessage(idx) {
+        const msg = state.messages[idx];
+        if (!msg) return;
+        navigator.clipboard.writeText(msg.content).then(() => toast('Copied!'));
+    }
+    function likeMessage(idx) {
+        toast('👍 Thanks for your feedback!');
+        // Could send to /api/feedback later
+    }
+    function dislikeMessage(idx) {
+        toast('👎 Feedback noted. We\'ll improve.');
+    }
+    function shareMessage(idx) {
+        const chatId = state.activeChatId || 'chat';
+        navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!'));
+    }
+    async function saveMessage(idx) {
+        if (!state.user) { toast('Sign in to save to Library'); return; }
+        const msg = state.messages[idx];
+        if (!msg) return;
+        try {
+            await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat ${state.activeChatId || 'new'}`, type: 'note', content: msg.content }) });
+            toast('Saved to Library');
+        } catch(e) { toast('Could not save'); }
+    }
+
+    // Scroll to bottom button
+    function setupScrollButton() {
+        const area = document.getElementById('messagesArea');
+        const btn = document.getElementById('scrollToBottomBtn');
+        if (!area || !btn) return;
+        area.addEventListener('scroll', () => {
+            const atBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 100;
+            btn.style.display = atBottom ? 'none' : 'flex';
+        });
+    }
+
+    // Profile Modal
     function openProfileModal() {
-        const isGuest = !state.token;
-        const modalContent = document.getElementById('profileModalContent');
-        modalContent.innerHTML = `
-            <h2>Profile</h2>
-            <div class="avatar-upload"><img width="60" height="60" style="border-radius:50%;" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${!isGuest ? `<button class="btn" style="margin:0;width:auto;padding:8px 16px;" onclick="uploadProfilePhoto()">Change Photo</button>` : ''}</div>
-            <div><strong>${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</strong></div>
-            <div style="color:var(--accent);">${state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase()}</div>
-            ${!isGuest && state.tier !== 'founder' ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>→</span></div>` : ''}
-            ${!isGuest ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>My Library</span><span>→</span></div>` : ''}
-            <div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data & Legal</span><span>→</span></div>
-            ${!isGuest ? `<div class="modal-setting" onclick="logout();"><span>Sign Out</span><span>→</span></div>` : '<div class="modal-setting" onclick="showLoginFromModal()"><span>Sign In</span><span>→</span></div>'}
-            <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>
-        `;
+        const modal = document.getElementById('profileModalContent');
+        const isFounder = state.tier === 'founder';
+        const isLoggedIn = !!state.user;
+        const photoAction = isLoggedIn ? `<button class="btn" style="margin:0;width:auto;padding:8px 16px;font-size:12px;" onclick="uploadProfilePhoto()">Change Photo</button>` : `<span style="font-size:11px;color:var(--text-tertiary);">Sign in to change</span>`;
+        modal.innerHTML = `<h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="60" height="60" style="border-radius:50%;object-fit:cover;background:var(--accent-glow);" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${photoAction}</div><div style="font-weight:600;margin-top:12px;font-size:15px;">${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</div><div style="color:var(--accent);font-size:12px;margin-bottom:20px;">${isFounder ? 'Founder' : state.tier.toUpperCase()}</div>${!isFounder ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>→</span></div>` : ''}${isLoggedIn ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>My Library</span><span>→</span></div>` : ''}<div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data & Legal</span><span>→</span></div>${isLoggedIn ? `<div class="modal-setting" onclick="logout(); closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span><span>→</span></div>` : ''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
         document.getElementById('profileModal').classList.add('open');
     }
-    function showLoginFromModal() { closeModal('profileModal'); document.getElementById('authContainer').style.display = 'flex'; document.getElementById('app').style.display = 'none'; }
 
-    // Upgrade, Library, Data, Privacy, Terms, About modals (simplified for brevity, but fully functional)
-    function openUpgradeModal() { /* full content similar to before */ let modal = document.getElementById('upgradeModalContent'); modal.innerHTML = `<h2>Upgrade</h2>...`; document.getElementById('upgradeModal').classList.add('open'); }
-    function openLibrary() { /* fetch and show library */ }
-    function openDataModal() { /* show data modal with links to privacy/terms */ }
-    function openPrivacyModal() { /* show full privacy policy */ }
-    function openTermsModal() { /* show full terms */ }
-    function openAboutModal() { /* show about */ }
-    async function exportUserData() { /* export */ }
-    async function deleteAccount() { /* delete */ }
-    async function triggerFileUpload() { /* file upload */ }
+    // Upgrade Modal
+    function openUpgradeModal() {
+        const modal = document.getElementById('upgradeModalContent');
+        modal.innerHTML = `<h2>Upgrade CAPITAN AI</h2><div class="crypto-card" onclick="selectTier('plus')"><div style="font-weight:600;margin-bottom:4px;">Plus — $8/month</div><div style="font-size:12px;color:var(--text-secondary);">50 messages · Groq 3.3 · Work Area (10 seats) · 20MB files</div></div><div class="crypto-card" onclick="selectTier('pro')"><div style="font-weight:600;margin-bottom:4px;">Pro — $17/month</div><div style="font-size:12px;color:var(--text-secondary);">150 messages · Claude 3.5 · Work Area (25 seats) · 50MB files + Live Markets</div></div><div class="crypto-card" onclick="selectTier('pro_max')"><div style="font-weight:600;margin-bottom:4px;">Pro Max — $30/month</div><div style="font-size:12px;color:var(--text-secondary);">Unlimited · GPT-4o+Claude · Work Area (50 seats) · 100MB files</div></div><div class="work-area-snippet"><strong>✨ Work Area — Collaborate from Anywhere</strong><br>Real-time workspaces. Share files, chat, and work with AI alongside your team.</div><div class="payment-steps" style="background:var(--bg-secondary);border-radius:16px;padding:16px;margin:12px 0;font-size:12px;"><strong>How to Pay:</strong><br>1. Copy BTC or ETH address<br>2. Send exact amount<br>3. Paste TXID → Verify</div><div id="paymentSection" style="display:none;margin-top:16px;"><div style="display:flex;gap:12px;margin-bottom:12px;"><button class="btn" style="flex:1;padding:10px;margin:0;" onclick="setCoin('BTC')">BTC</button><button class="btn" style="flex:1;padding:10px;margin:0;" onclick="setCoin('ETH')">ETH</button></div><div class="wallet-address" id="walletAddress" onclick="copyWallet()">Loading...</div><input type="text" id="txidInput" placeholder="Transaction ID" style="font-size:12px;"><button class="btn" style="padding:12px;" onclick="verifyPayment()">Verify Payment</button></div><button class="btn btn-outline" onclick="closeModal('upgradeModal')">Close</button>`;
+        document.getElementById('upgradeModal').classList.add('open');
+    }
+    function selectTier(tier) { state.selectedTier = tier; document.getElementById('paymentSection').style.display = 'block'; updateWalletDisplay(); }
+    function setCoin(c) { state.selectedCoin = c; updateWalletDisplay(); }
+    function updateWalletDisplay() { document.getElementById('walletAddress').innerText = WALLETS[state.selectedCoin]; }
+    function copyWallet() { navigator.clipboard.writeText(document.getElementById('walletAddress').innerText); toast('Address copied!'); }
+    async function verifyPayment() {
+        let txid = document.getElementById('txidInput').value.trim();
+        if (!state.selectedTier || !txid) { toast('Select tier and enter TXID'); return; }
+        try {
+            let res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) });
+            state.tier = res.tier; state.token = res.token; localStorage.setItem('ct', res.token);
+            updateProfileUI(); closeModal('upgradeModal'); toast(`✨ Upgraded to ${state.selectedTier.toUpperCase()}!`);
+        } catch(e) { toast('Verification failed'); }
+    }
 
-    // Founder 13 clicks
-    function handleFooterClick() { if (state.tier === 'founder') return; state.founderClickCount++; if (state.founderClickCount >= 13) { state.founderClickCount = 0; activateFounder(); toast('🔓 Founder access granted'); } setTimeout(() => { state.founderClickCount = 0; }, 5000); }
-    async function activateFounder() { try { let res = await fetch(`${CFG.API}/api/founder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: 'Osinachi@35' }) }); let data = await res.json(); if (data.token) { state.token = data.token; state.user = data.user; state.tier = 'founder'; localStorage.setItem('ct', data.token); updateProfileUI(); document.getElementById('capitanHeader').style.display = 'block'; toast('✨ Founder status activated!'); await loadChats(); } else { toast('Activation failed'); } } catch(e) { toast('Error'); } }
+    // Library
+    async function openLibrary() {
+        if (!state.user) { toast('Sign in to access Library'); return; }
+        try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) { state.library = []; }
+        const modal = document.getElementById('libraryModalContent');
+        modal.innerHTML = `<h2>My Library</h2><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" rows="3" placeholder="Content"></textarea><button class="btn" onclick="saveLibraryItem()">Save to Library</button><div id="libraryList" style="margin-top:16px;">${state.library.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);"><span style="cursor:pointer;flex:1;font-size:12px;" onclick="viewLibraryItem('${i.id}')">${escapeHtml(i.name)}</span><button onclick="deleteLibraryItem('${i.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">✕</button></div>`).join('')}</div><button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button>`;
+        document.getElementById('libraryModal').classList.add('open');
+    }
+    async function saveLibraryItem() { let name = document.getElementById('libName').value.trim(), content = document.getElementById('libContent').value.trim(); if (!name || !content) { toast('Name and content required'); return; } await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) }); toast('Saved to library'); openLibrary(); }
+    async function deleteLibraryItem(id) { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); openLibrary(); }
+    function viewLibraryItem(id) { let item = state.library.find(i => i.id === id); if (item) { document.getElementById('libName').value = item.name; document.getElementById('libContent').value = item.content; } }
+
+    // File Upload
+    async function triggerFileUpload() {
+        if (!state.user) { toast('Sign in to upload files'); return; }
+        if (state.tier === 'free') { toast('Upgrade to Plus or Pro for file uploads'); openUpgradeModal(); return; }
+        let inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
+        inp.onchange = async (e) => {
+            let file = e.target.files[0]; if (!file) return;
+            let maxSize = state.tier === 'pro_max' ? 100 : (state.tier === 'pro' ? 50 : (state.tier === 'plus' ? 20 : 5));
+            if (file.size / (1024 * 1024) > maxSize) { toast(`Max ${maxSize}MB for ${state.tier} tier`); return; }
+            let fd = new FormData(); fd.append('file', file);
+            try {
+                await fetch(`${CFG.API}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: fd });
+                toast(`Uploaded: ${file.name}`);
+                state.messages.push({ role: 'user', content: `[Uploaded document: ${file.name}]\n\nPlease analyze this document.` });
+                renderMessages();
+                sendMessage();
+            } catch(e) { toast('Upload failed'); }
+        };
+        inp.click();
+    }
+
+    // Data & Legal
+    function openPrivacyModal() {
+        const modal = document.getElementById('privacyModalContent');
+        modal.innerHTML = `<h2>Privacy Policy</h2><div style="font-size:13px;line-height:1.6;margin-bottom:16px;"><p><strong>Effective Date:</strong> June 14, 2026</p><p>CAPITAN AI ("we", "our", "us") respects your privacy. This policy describes how we collect, use, and protect your data.</p><br><p><strong>1. Data Collection</strong><br>We collect chat messages, account information (email, name), and usage patterns to improve our AI services.</p><p><strong>2. Data Usage</strong><br>Your conversations are used to generate responses and train models. We do not sell your personal data.</p><p><strong>3. Data Storage</strong><br>Messages are encrypted at rest. You may request deletion at any time.</p><p><strong>4. Third Parties</strong><br>We use cloud providers (Render, OpenAI API) but they are contractually bound to data protection.</p><p><strong>5. Your Rights</strong><br>Access, correct, or delete your data via the Data & Legal section.</p></div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
+        document.getElementById('privacyModal').classList.add('open');
+    }
+    function openTermsModal() {
+        const modal = document.getElementById('termsModalContent');
+        modal.innerHTML = `<h2>Terms & Conditions</h2><div style="font-size:13px;line-height:1.6;margin-bottom:16px;"><p><strong>1. Acceptance</strong><br>By using CAPITAN AI, you agree to these terms.</p><p><strong>2. AI Disclaimer</strong><br>Responses are generated by AI and may contain errors. Not financial or medical advice.</p><p><strong>3. Payments</strong><br>All cryptocurrency payments are non-refundable. Upgrade tiers are billed monthly.</p><p><strong>4. Prohibited Use</strong><br>You may not use CAPITAN AI for illegal activities, harassment, or to generate harmful content.</p><p><strong>5. Termination</strong><br>We reserve the right to suspend accounts violating these terms.</p><p><strong>6. Liability</strong><br>We are not liable for any damages arising from AI-generated outputs.</p></div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
+        document.getElementById('termsModal').classList.add('open');
+    }
+    function openDataModal() {
+        const modal = document.getElementById('dataModalContent');
+        modal.innerHTML = `<h2>Data & Legal</h2><div class="modal-setting" onclick="openPrivacyModal(); closeModal('dataModal')"><span>Privacy Policy</span><span>→</span></div><div class="modal-setting" onclick="openTermsModal(); closeModal('dataModal')"><span>Terms & Conditions</span><span>→</span></div><div class="modal-setting" onclick="exportUserData()"><span>Export My Data</span><span>→</span></div><div class="modal-setting" onclick="deleteAccount()" style="color:var(--danger);"><span>Delete Account</span><span>→</span></div><button class="btn btn-outline" onclick="closeModal('dataModal')">Close</button>`;
+        document.getElementById('dataModal').classList.add('open');
+    }
+    async function exportUserData() {
+        if (!state.user) { toast('Sign in to export data'); return; }
+        try {
+            let chats = await apiCall('/api/chats');
+            let dataStr = JSON.stringify({ user: state.user, chats, exportDate: new Date().toISOString() }, null, 2);
+            let blob = new Blob([dataStr], { type: 'application/json' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a'); a.href = url; a.download = `capitan-data-${Date.now()}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            toast('Data exported!');
+        } catch(e) { toast('Export failed'); }
+    }
+    async function deleteAccount() {
+        if (!state.user) { toast('Sign in to delete account'); return; }
+        if (confirm('Permanently delete your account? This action is irreversible.')) {
+            try { await apiCall('/api/auth/delete-account', { method: 'DELETE' }); logout(); } catch(e) { toast('Failed'); }
+        }
+    }
+
+    // About Modal
+    function openAboutModal() {
+        const modal = document.getElementById('aboutModalContent');
+        modal.innerHTML = `<h2>About CAPITAN AI</h2><div class="work-area-snippet"><strong>🚀 Work Area — Global Collaboration</strong><br>Real-time collaborative spaces where teams can chat, share files, and work with AI together.<br><br>✓ Real-time messaging & AI assistance<br>✓ File sharing & document analysis<br>✓ Used across 50+ countries</div><div class="work-area-snippet" style="margin-top:12px;"><strong>⚡ CAPITAN Capabilities</strong><br>• Financial modeling & market analysis<br>• Code generation & debugging<br>• Document analysis (PDF, DOCX, PPTX, XLSX)<br>• Research & reasoning (chain-of-thought)</div><button class="btn btn-outline" onclick="closeModal('aboutModal')">Close</button>`;
+        document.getElementById('aboutModal').classList.add('open');
+    }
 
     // Auth
     function showLogin() { document.getElementById('loginForm').style.display = 'block'; document.getElementById('signupForm').style.display = 'none'; document.getElementById('forgotForm').style.display = 'none'; }
     function showSignup() { document.getElementById('loginForm').style.display = 'none'; document.getElementById('signupForm').style.display = 'block'; document.getElementById('forgotForm').style.display = 'none'; }
     function showForgotPassword() { document.getElementById('loginForm').style.display = 'none'; document.getElementById('signupForm').style.display = 'none'; document.getElementById('forgotForm').style.display = 'block'; }
-    async function handleLogin() { let email = document.getElementById('loginEmail').value.trim(), password = document.getElementById('loginPassword').value; let errorDiv = document.getElementById('loginError'); if (!email || !password) { errorDiv.innerText = 'Email and password required'; errorDiv.style.display = 'block'; return; } errorDiv.style.display = 'none'; try { let res = await fetch(`${CFG.API}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); let data = await res.json(); if (data.token) { localStorage.setItem('ct', data.token); state.token = data.token; state.user = data.user; state.tier = data.user.tier; document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; await initSession(); await loadChats(); renderMessages(); toast(`Welcome back, ${state.user?.name || email.split('@')[0]}!`); } else { errorDiv.innerText = data.detail || 'Login failed'; errorDiv.style.display = 'block'; } } catch(e) { errorDiv.innerText = 'Login failed'; errorDiv.style.display = 'block'; } }
-    async function handleSignup() { let name = document.getElementById('signupName').value.trim(), email = document.getElementById('signupEmail').value.trim(), password = document.getElementById('signupPassword').value; let errorDiv = document.getElementById('signupError'), successDiv = document.getElementById('signupSuccess'); if (!email || !password) { errorDiv.innerText = 'Email and password required'; errorDiv.style.display = 'block'; return; } if (password.length < 6) { errorDiv.innerText = 'Password must be at least 6 characters'; errorDiv.style.display = 'block'; return; } errorDiv.style.display = 'none'; try { let res = await fetch(`${CFG.API}/api/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) }); let data = await res.json(); if (data.token) { successDiv.innerText = 'Account created! Redirecting...'; successDiv.style.display = 'block'; localStorage.setItem('ct', data.token); state.token = data.token; state.user = data.user; state.tier = data.user.tier; setTimeout(() => { document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; initSession(); loadChats(); renderMessages(); toast(`Welcome to CAPITAN AI!`); }, 1500); } else { errorDiv.innerText = data.detail || 'Signup failed'; errorDiv.style.display = 'block'; } } catch(e) { errorDiv.innerText = 'Signup failed'; errorDiv.style.display = 'block'; } }
-    async function handleForgotPassword() { let email = document.getElementById('forgotEmail').value.trim(); let errorDiv = document.getElementById('forgotError'), successDiv = document.getElementById('forgotSuccess'); if (!email) { errorDiv.innerText = 'Email required'; errorDiv.style.display = 'block'; return; } errorDiv.style.display = 'none'; try { await fetch(`${CFG.API}/api/auth/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); successDiv.innerText = 'If an account exists, a reset link has been sent.'; successDiv.style.display = 'block'; } catch(e) { errorDiv.innerText = 'Request failed'; errorDiv.style.display = 'block'; } }
+    async function handleLogin() {
+        let email = document.getElementById('loginEmail').value.trim(), password = document.getElementById('loginPassword').value;
+        let errorDiv = document.getElementById('loginError');
+        if (!email || !password) { errorDiv.innerText = 'Email and password required'; errorDiv.style.display = 'block'; return; }
+        errorDiv.style.display = 'none';
+        try {
+            let res = await fetch(`${CFG.API}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            let data = await res.json();
+            if (data.token) {
+                localStorage.setItem('ct', data.token); state.token = data.token; state.user = data.user; state.tier = data.user.tier;
+                document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex';
+                await initSession(); await loadChats(); renderMessages();
+                updateUIBasedOnTier();
+                toast(`Welcome back, ${state.user?.name || email.split('@')[0]}!`);
+            } else { errorDiv.innerText = data.detail || 'Login failed'; errorDiv.style.display = 'block'; }
+        } catch(e) { errorDiv.innerText = 'Login failed'; errorDiv.style.display = 'block'; }
+    }
+    async function handleSignup() {
+        let name = document.getElementById('signupName').value.trim(), email = document.getElementById('signupEmail').value.trim(), password = document.getElementById('signupPassword').value;
+        let errorDiv = document.getElementById('signupError'), successDiv = document.getElementById('signupSuccess');
+        if (!email || !password) { errorDiv.innerText = 'Email and password required'; errorDiv.style.display = 'block'; return; }
+        if (password.length < 6) { errorDiv.innerText = 'Password must be at least 6 characters'; errorDiv.style.display = 'block'; return; }
+        errorDiv.style.display = 'none';
+        try {
+            let res = await fetch(`${CFG.API}/api/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) });
+            let data = await res.json();
+            if (data.token) {
+                successDiv.innerText = 'Account created! Redirecting...'; successDiv.style.display = 'block';
+                localStorage.setItem('ct', data.token); state.token = data.token; state.user = data.user; state.tier = data.user.tier;
+                setTimeout(() => { document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; initSession(); loadChats(); renderMessages(); updateUIBasedOnTier(); toast(`Welcome to CAPITAN AI!`); }, 1500);
+            } else { errorDiv.innerText = data.detail || 'Signup failed'; errorDiv.style.display = 'block'; }
+        } catch(e) { errorDiv.innerText = 'Signup failed'; errorDiv.style.display = 'block'; }
+    }
+    async function handleForgotPassword() {
+        let email = document.getElementById('forgotEmail').value.trim();
+        let errorDiv = document.getElementById('forgotError'), successDiv = document.getElementById('forgotSuccess');
+        if (!email) { errorDiv.innerText = 'Email required'; errorDiv.style.display = 'block'; return; }
+        errorDiv.style.display = 'none';
+        try {
+            await fetch(`${CFG.API}/api/auth/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+            successDiv.innerText = 'If an account exists, a reset link has been sent.'; successDiv.style.display = 'block';
+        } catch(e) { errorDiv.innerText = 'Request failed'; errorDiv.style.display = 'block'; }
+    }
     function logout() { localStorage.removeItem('ct'); state.token = null; state.user = null; state.tier = 'free'; state.activeChatId = null; state.messages = []; state.chats = []; location.reload(); }
-    function checkPasswordReset() { const urlParams = new URLSearchParams(window.location.search); const token = urlParams.get('token'); if (token) { const newPassword = prompt('Enter your new password (min 6 characters):'); if (newPassword && newPassword.length >= 6) { fetch(`${CFG.API}/api/auth/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, new_password: newPassword }) }).then(res => res.json()).then(data => { alert(data.message || 'Password reset successful! Please login.'); window.history.replaceState({}, document.title, window.location.pathname); showLogin(); }).catch(() => alert('Reset failed. Token may be expired.')); } } }
+    function checkPasswordReset() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        if (token) {
+            const newPassword = prompt('Enter your new password (min 6 characters):');
+            if (newPassword && newPassword.length >= 6) {
+                fetch(`${CFG.API}/api/auth/reset-password`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, new_password: newPassword })
+                }).then(res => res.json()).then(data => { alert(data.message || 'Password reset successful! Please login.'); window.history.replaceState({}, document.title, window.location.pathname); showLogin(); }).catch(() => alert('Reset failed. Token may be expired.'));
+            }
+        }
+    }
 
-    // Initialize
-    async function init() { setTheme(state.theme); checkPasswordReset(); if (state.token) { document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; await initSession(); await loadChats(); renderMessages(); updateAccessBasedOnUser(); if (state.tier === 'founder') document.getElementById('capitanHeader').style.display = 'block'; } else { updateAccessBasedOnUser(); } document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar); document.getElementById('secretFounderTrigger').addEventListener('click', handleFooterClick); document.addEventListener('click', (e) => { if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') && !document.getElementById('sidebar').contains(e.target) && !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar(); }); let textarea = document.getElementById('messageInput'); textarea.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px'; }); setTimeout(() => { let splash = document.getElementById('splashScreen'); if(splash) splash.classList.add('hide'); }, 1600); }
+    // Init
+    async function init() {
+        setTheme(state.theme);
+        checkPasswordReset();
+        if (state.token) {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            await initSession();
+            await loadChats();
+            renderMessages();
+            updateUIBasedOnTier();
+        }
+        document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
+        document.getElementById('secretFounderTrigger').addEventListener('click', handleFooterClick);
+        document.addEventListener('click', (e) => { if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') && !document.getElementById('sidebar').contains(e.target) && !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar(); });
+        const textarea = document.getElementById('messageInput');
+        textarea.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px'; });
+        setupScrollButton();
+        setTimeout(() => { let splash = document.getElementById('splashScreen'); if (splash) splash.classList.add('hide'); }, 1600);
+    }
     init();
 </script>
 </body>
