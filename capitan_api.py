@@ -350,7 +350,7 @@ async def register(req: RegisterRequest):
                 if c.fetchone():
                     raise HTTPException(400, "Email already registered")
                 
-                password_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
+                password_hash = bcrypt.hash(req.password)
                 user_id = str(uuid.uuid4())
                 name = req.name or req.email.split('@')[0]
                 c.execute("""
@@ -396,7 +396,7 @@ async def login(req: LoginRequest):
                 c.execute("SELECT id, email, password_hash, name, tier, reasoning_depth, preferred_domain FROM users WHERE email = %s", (req.email,))
                 user = c.fetchone()
                 
-                if not user or not bcrypt.checkpw(req.password.encode(), user[2].encode()):
+                if not user or not bcrypt.verify(req.password, user[2]):
                     raise HTTPException(401, "Invalid email or password")
                 
                 user_id, email, _, name, tier, reasoning_depth, preferred_domain = user
