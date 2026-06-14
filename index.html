@@ -656,6 +656,12 @@
             color: var(--accent);
         }
 
+        /* Founder click pulse */
+        .clicked-pulse {
+            background: var(--accent-glow) !important;
+            transition: background 0.15s;
+        }
+
         .modal-overlay {
             display: none;
             position: fixed;
@@ -1125,14 +1131,16 @@
         document.getElementById('overlay').classList.remove('open');
     }
 
-    // Founder secret (13 clicks)
+    // Founder secret (13 clicks, no timer, visual pulse)
     function handleFooterClick() {
         state.founderClickCount++;
+        const footer = document.getElementById('secretFounderTrigger');
+        footer.classList.add('clicked-pulse');
+        setTimeout(() => footer.classList.remove('clicked-pulse'), 200);
         if (state.founderClickCount >= 13) {
             state.founderClickCount = 0;
             openFounderDashboard();
         }
-        setTimeout(() => { state.founderClickCount = 0; }, 5000);
     }
     async function openFounderDashboard() {
         const modal = document.getElementById('founderModalContent');
@@ -1244,9 +1252,11 @@
             renderMessages();
             const streamTarget = document.getElementById(`msg-${aiIdx}`);
             if (streamTarget) {
-                const streamer = new SmoothStreamer(finalContent, streamTarget, () => { state.loading = false; });
-                streamer.start();
-            } else { state.loading = false; }
+                // The streamer starts automatically – no need to call .start()
+                new SmoothStreamer(finalContent, streamTarget, () => { state.loading = false; });
+            } else {
+                state.loading = false;
+            }
             state.activeChatId = res.chat_id;
             await loadChats();
         } catch(err) {
@@ -1302,7 +1312,6 @@
     }
     function likeMessage(idx) {
         toast('👍 Thanks for your feedback!');
-        // Could send to /api/feedback later
     }
     function dislikeMessage(idx) {
         toast('👎 Feedback noted. We\'ll improve.');
