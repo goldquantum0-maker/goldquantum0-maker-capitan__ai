@@ -32,6 +32,21 @@ import psycopg2.extras
 import uvicorn
 
 # ================================================================
+# FASTAPI APP - CREATED EARLY (FIXED POSITION)
+# ================================================================
+app = FastAPI(title="CAPITAN AI API", version="28.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
+
+# ================================================================
 # LOGGING SETUP
 # ================================================================
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -441,12 +456,6 @@ def call_ai_with_tier(messages, tier="free"):
                 if content: return content, model
         except: pass
     return "I'm having trouble connecting. Please try again.", "fallback"
-
-# ================================================================
-# FASTAPI APP
-# ================================================================
-app = FastAPI(title="CAPITAN AI API", version="28.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"], expose_headers=["*"])
 
 # ================================================================
 # CHAT ENDPOINT
