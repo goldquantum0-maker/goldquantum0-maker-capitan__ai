@@ -48,9 +48,9 @@ class Settings(BaseSettings):
     SUPABASE_DB_USER: str = "postgres"
     SUPABASE_DB_PASSWORD: str = ""
     JWT_SECRET: str = secrets.token_hex(32)
-    FOUNDER_KEY: str = "Osinachi@3500"
-    TELEGRAM_BOT_TOKEN: str = ""
-    TELEGRAM_BOT_USERNAME: str = "capitan_ai_bot"
+    FOUNDER_KEY: str = "Osinachi@35"
+    TELEGRAM_BOT_TOKEN: str = "8742624883:AAHpXfQCysOf9eZFC27O4G4vPHQRezjeA10"
+    TELEGRAM_BOT_USERNAME: str = "Capitan_ai_Bot"
     FRONTEND_URL: str = "https://capitan.pages.dev"
     GROQ_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
