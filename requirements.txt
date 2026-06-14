@@ -6,4 +6,3 @@ pydantic-settings
 python-multipart
 requests
 python-dotenv
-passlib[bcrypt]
