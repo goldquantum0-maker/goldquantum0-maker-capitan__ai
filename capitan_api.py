@@ -16,7 +16,7 @@ import base64
 import secrets
 import requests
 import logging
-import bcrypt
+from passlib.hash import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 from contextlib import contextmanager
