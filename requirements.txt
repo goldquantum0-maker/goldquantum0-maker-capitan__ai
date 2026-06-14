@@ -7,4 +7,3 @@ python-multipart
 requests
 python-dotenv
 bcrypt
-httpx 
