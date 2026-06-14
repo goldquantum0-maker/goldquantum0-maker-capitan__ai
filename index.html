@@ -2,37 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CAPITAN AI">
-    <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="CAPITAN AI — Enterprise Intelligence by CLOSEAI Technologies">
-    <link rel="manifest" href="data:application/manifest+json,{
-      \"name\":\"CAPITAN AI\",
-      \"short_name\":\"CAPITAN\",
-      \"start_url\":\".\",
-      \"display\":\"standalone\",
-      \"background_color\":\"#4f46e5\",
-      \"theme_color\":\"#4f46e5\",
-      \"icons\":[{
-        \"src\":\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iMzYwIiB2aWV3Qm94PSIwIDAgNjQwIDM2MCI+PHJlY3Qgd2lkdGg9IjY0MCIgaGVpZ2h0PSIzNjAiIGZpbGw9IiM0ZjQ2ZTUiLz48Y2lyY2xlIGN4PSIzMjAiIGN5PSIxODAiIHI9IjgwIiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjgiLz48dGV4dCB4PSIzMjAiIHk9IjIxMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOTAiIGZpbGw9IndoaXRlIiBmb250LXdlaWdodD0iYm9sZCI+QzwvdGV4dD48L3N2Zz4=\",
-        \"sizes\":\"640x360\",
-        \"type\":\"image/svg+xml\"
-      }]
-    }">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>CAPITAN AI — Enterprise Intelligence</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        /* LIGHT THEME - Aled Blue / Soft Indigo */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         :root, body.light {
             --bg-primary: #eef2ff;
             --bg-secondary: #e0e7ff;
             --bg-tertiary: #c7d2fe;
             --sidebar-bg: #e0e7ff;
-            --surface: #ffffff;
             --border: #c7d2fe;
             --border-light: #d9e4f5;
             --text-primary: #1e1e2f;
@@ -43,21 +23,15 @@
             --accent-soft: #c7d2fe;
             --danger: #ef4444;
             --success: #10b981;
-            --warning: #f59e0b;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-md: 0 4px 12px rgba(79,70,229,0.12);
-            --shadow-lg: 0 12px 28px rgba(79,70,229,0.2);
             --sidebar-width: 280px;
             --transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
 
-        /* DARK THEME - Deep dark with pure white text */
         body.dark {
             --bg-primary: #0f0f13;
             --bg-secondary: #1a1a24;
             --bg-tertiary: #25253a;
             --sidebar-bg: #13131a;
-            --surface: #1a1a24;
             --border: #2a2a3a;
             --border-light: #20202c;
             --text-primary: #f0f0f4;
@@ -66,89 +40,45 @@
             --accent: #818cf8;
             --accent-dark: #6366f1;
             --accent-soft: #2e2e4a;
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        @media (prefers-color-scheme: dark) { body.system { --bg-primary: #0f0f13; --bg-secondary: #1a1a24; --bg-tertiary: #25253a; --sidebar-bg: #13131a; --border: #2a2a3a; --text-primary: #f0f0f4; --text-secondary: #c0c0d0; --accent: #818cf8; } }
-        @media (prefers-color-scheme: light) { body.system { --bg-primary: #eef2ff; --bg-secondary: #e0e7ff; --bg-tertiary: #c7d2fe; --sidebar-bg: #e0e7ff; --border: #c7d2fe; --text-primary: #1e1e2f; --text-secondary: #4a4a6a; --accent: #4f46e5; } }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); height: 100vh; overflow: hidden; transition: background 0.2s; }
 
-        body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg-primary); color: var(--text-primary); font-size: 15px; line-height: 1.5; height: 100vh; overflow: hidden; transition: background 0.2s, color 0.2s; }
+        /* Auth Screens */
+        .auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #4f46e5, #6366f1); }
+        .auth-card { background: white; padding: 40px; border-radius: 32px; width: 400px; max-width: 90%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .dark .auth-card { background: #1a1a24; }
+        .auth-card h1 { font-size: 28px; margin-bottom: 8px; color: var(--text-primary); }
+        .auth-card p { color: var(--text-secondary); margin-bottom: 24px; }
+        .auth-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg-secondary); color: var(--text-primary); margin-bottom: 16px; font-size: 15px; }
+        .auth-btn { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .auth-btn:hover { background: var(--accent-dark); transform: translateY(-1px); }
+        .auth-switch { text-align: center; margin-top: 20px; color: var(--text-secondary); }
+        .auth-switch a { color: var(--accent); text-decoration: none; cursor: pointer; }
+        .error-msg { color: var(--danger); font-size: 13px; margin-top: -8px; margin-bottom: 12px; display: none; }
+        .success-msg { color: var(--success); font-size: 13px; margin-top: -8px; margin-bottom: 12px; display: none; }
 
-        /* Splash Screen */
-        .splash { position: fixed; inset: 0; z-index: 9999; background: var(--accent); display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s; }
-        .splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-        .splash-logo { width: 120px; height: 120px; animation: pulseLogo 0.9s ease-in-out infinite; }
-        @keyframes pulseLogo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.08); opacity: 0.85; } }
-
-        /* Layout */
-        .app { display: flex; height: 100%; width: 100%; position: relative; }
-        .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1); flex-shrink: 0; z-index: 20; overflow-y: auto; }
-        @media (min-width: 769px) { .sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-width))); position: fixed; height: 100%; } }
-        @media (max-width: 768px) { .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); z-index: 30; } .sidebar.open { transform: translateX(0); } .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 25; display: none; animation: fadeIn 0.2s; } .overlay.open { display: block; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Top Bar */
+        /* App Layout (same as before) */
+        .app { display: flex; height: 100%; width: 100%; position: relative; display: none; }
+        .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s; flex-shrink: 0; z-index: 20; overflow-y: auto; }
+        @media (max-width: 768px) { .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); z-index: 30; } .sidebar.open { transform: translateX(0); } .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 25; display: none; } .overlay.open { display: block; } }
         .top-bar { position: fixed; top: 12px; left: 12px; right: 12px; z-index: 35; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
         .toggle-sidebar, .logo-btn { pointer-events: auto; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); color: var(--text-secondary); backdrop-filter: blur(8px); }
-        .toggle-sidebar:hover, .logo-btn:hover { background: var(--bg-tertiary); transform: scale(1.02); }
-        .logo-btn svg { width: 24px; height: 24px; }
-
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary); }
         .chat-container { max-width: 800px; margin: 0 auto; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0 16px; }
-        .messages-area { flex: 1; overflow-y: auto; padding: 70px 0 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-
-        /* Dynamic Greeting */
-        .greeting-container { text-align: center; margin-bottom: 24px; animation: pulseGreeting 3s ease-in-out infinite; }
-        .greeting-text { font-size: 28px; font-weight: 600; background: linear-gradient(135deg, var(--accent), #f59e0b, var(--accent-dark)); background-size: 200% 200%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gradientShift 4s ease infinite; }
-        @keyframes pulseGreeting { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.92; transform: scale(1.01); } }
-        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
-        /* Typing Animation - Pulsing Blue C */
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background: var(--bg-secondary);
-            border-radius: 22px;
-            width: fit-content;
-            margin: 10px 0;
-        }
-        .typing-c {
-            width: 28px;
-            height: 28px;
-            animation: pulseC 0.8s ease-in-out infinite;
-        }
-        .typing-text {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-        @keyframes pulseC {
-            0%, 100% { opacity: 0.4; transform: scale(0.9); }
-            50% { opacity: 1; transform: scale(1.1); }
-        }
-
-        /* Messages */
+        .messages-area { flex: 1; overflow-y: auto; padding: 70px 0 20px; scroll-behavior: smooth; }
         .message { margin-bottom: 20px; animation: slideUp 0.2s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message.user { display: flex; justify-content: flex-end; }
         .message.user .message-content { background: var(--accent); color: white; border-radius: 22px 22px 6px 22px; padding: 10px 16px; max-width: 85%; }
         .message.assistant .message-content { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 22px 22px 22px 6px; padding: 10px 16px; max-width: 95%; }
         .message-content { font-size: 15px; line-height: 1.5; word-break: break-word; }
-        .message-content pre { background: var(--bg-tertiary); padding: 12px; border-radius: 12px; overflow-x: auto; font-size: 13px; margin: 8px 0; }
-        .message-content code { font-family: monospace; background: var(--bg-tertiary); padding: 2px 6px; border-radius: 6px; }
-
-        /* Input Area */
         .input-area { padding: 0 0 20px; }
-        .input-wrapper { display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 32px; padding: 6px 8px 6px 14px; transition: all 0.2s; }
+        .input-wrapper { display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 32px; padding: 6px 8px 6px 14px; }
         .input-wrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .upload-btn, .send-btn { background: transparent; border: none; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: var(--transition); flex-shrink: 0; color: var(--text-secondary); }
-        .upload-btn:hover, .send-btn:hover { background: var(--bg-tertiary); transform: scale(1.02); }
+        .upload-btn, .send-btn { background: transparent; border: none; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: var(--transition); color: var(--text-secondary); }
         .send-btn { background: var(--accent); color: white; }
         .input-field { flex: 1; border: none; outline: none; background: transparent; font-family: inherit; font-size: 15px; padding: 10px 0; color: var(--text-primary); }
-
-        /* Sidebar items */
         .new-chat-btn, .menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 6px 12px; border-radius: 14px; cursor: pointer; transition: var(--transition); font-weight: 500; color: var(--text-secondary); }
         .new-chat-btn { background: var(--bg-tertiary); margin-top: 12px; color: var(--text-primary); }
         .new-chat-btn:hover, .menu-item:hover { background: var(--accent-soft); transform: translateX(3px); color: var(--accent); }
@@ -156,392 +86,172 @@
         .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
         .collapsible-content.open { max-height: 200px; }
         .theme-option { display: flex; justify-content: space-between; padding: 10px 16px 10px 44px; cursor: pointer; border-radius: 12px; }
-        .theme-option:hover { background: var(--bg-tertiary); }
         .chat-history { flex: 1; overflow-y: auto; padding: 8px; }
         .chat-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; margin: 2px 0; border-radius: 14px; cursor: pointer; transition: var(--transition); color: var(--text-secondary); }
         .chat-item:hover, .chat-item.active { background: var(--accent-soft); color: var(--accent); transform: translateX(3px); }
-
-        /* Profile section */
         .profile-section { padding: 14px 16px; border-top: 1px solid var(--border); margin-top: auto; cursor: pointer; transition: var(--transition); }
-        .profile-section:hover { background: var(--bg-tertiary); }
         .profile-info { display: flex; align-items: center; gap: 14px; }
         .profile-avatar-img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--accent-soft); }
         .profile-name { font-weight: 600; }
         .profile-tier { font-size: 12px; color: var(--accent); }
-        .telegram-badge { font-size: 10px; background: var(--accent-soft); padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
-
-        /* Footer - 19 clicks for founder */
-        .sidebar-footer { padding: 16px; text-align: center; font-size: 11px; color: var(--text-tertiary); border-top: 1px solid var(--border); cursor: pointer; transition: var(--transition); }
-        .sidebar-footer:hover { background: var(--bg-tertiary); color: var(--accent); }
-
-        /* Modals */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: flex-end; justify-content: center; }
-        @media (min-width: 769px) { .modal-overlay { align-items: center; } }
-        .modal-overlay.open { display: flex; }
-        .modal { background: var(--bg-primary); border-radius: 28px 28px 0 0; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; padding: 24px; border-top: 1px solid var(--border); animation: slideUpModal 0.3s ease; }
-        @media (min-width: 769px) { .modal { border-radius: 28px; margin: 20px; border: 1px solid var(--border); animation: fadeInScale 0.2s ease; } }
-        @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-        .modal h2 { font-size: 22px; margin-bottom: 16px; }
-        .modal-setting { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border-light); cursor: pointer; }
-        .crypto-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: var(--transition); }
-        .crypto-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-        .work-area-snippet { background: var(--accent-soft); border-radius: 16px; padding: 16px; margin: 16px 0; font-size: 14px; }
-        .payment-steps { background: var(--bg-tertiary); border-radius: 14px; padding: 14px; margin: 12px 0; font-size: 13px; }
-        .wallet-address { font-size: 12px; font-family: monospace; background: var(--bg-tertiary); padding: 12px; border-radius: 14px; word-break: break-all; cursor: pointer; margin: 8px 0; }
-        .btn { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 16px; font-weight: 600; cursor: pointer; margin-top: 12px; transition: var(--transition); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
+        .sidebar-footer { padding: 16px; text-align: center; font-size: 11px; color: var(--text-tertiary); border-top: 1px solid var(--border); cursor: pointer; }
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--text-primary); color: var(--bg-primary); padding: 10px 20px; border-radius: 40px; font-size: 13px; z-index: 1100; animation: toastUp 0.2s ease; }
         @keyframes toastUp { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        input, textarea, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; margin-bottom: 10px; }
-        .avatar-upload { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-        ::-webkit-scrollbar { width: 4px; }
+        .typing-indicator { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--bg-secondary); border-radius: 22px; width: fit-content; margin: 10px 0; }
+        .typing-c { width: 28px; height: 28px; animation: pulseC 0.8s ease-in-out infinite; }
+        @keyframes pulseC { 0%, 100% { opacity: 0.4; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: var(--bg-primary); border-radius: 28px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; padding: 24px; border: 1px solid var(--border); }
+        .modal h2 { font-size: 22px; margin-bottom: 16px; }
+        .modal-setting { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border-light); cursor: pointer; }
+        .btn { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 16px; font-weight: 600; cursor: pointer; margin-top: 12px; transition: var(--transition); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div class="splash" id="splashScreen">
-    <svg class="splash-logo" viewBox="0 0 640 360"><rect width="640" height="360" fill="#4f46e5" rx="40"/><circle cx="320" cy="180" r="70" fill="none" stroke="white" stroke-width="6"/><text x="320" y="208" text-anchor="middle" font-family="Arial" font-size="70" fill="white" font-weight="bold">C</text></svg>
+<!-- Auth Screen -->
+<div id="authContainer" class="auth-container">
+    <div class="auth-card">
+        <h1>CAPITAN AI</h1>
+        <p>Sign in to continue</p>
+        <div id="loginForm">
+            <input type="email" id="loginEmail" class="auth-input" placeholder="Email">
+            <input type="password" id="loginPassword" class="auth-input" placeholder="Password">
+            <div id="loginError" class="error-msg"></div>
+            <button class="auth-btn" onclick="handleLogin()">Sign In</button>
+            <div class="auth-switch">Don't have an account? <a onclick="showSignup()">Create Account</a></div>
+            <div class="auth-switch"><a onclick="showForgotPassword()">Forgot Password?</a></div>
+        </div>
+        <div id="signupForm" style="display:none;">
+            <input type="text" id="signupName" class="auth-input" placeholder="Full Name (optional)">
+            <input type="email" id="signupEmail" class="auth-input" placeholder="Email">
+            <input type="password" id="signupPassword" class="auth-input" placeholder="Password (min 6 characters)">
+            <div id="signupError" class="error-msg"></div>
+            <div id="signupSuccess" class="success-msg"></div>
+            <button class="auth-btn" onclick="handleSignup()">Create Account</button>
+            <div class="auth-switch">Already have an account? <a onclick="showLogin()">Sign In</a></div>
+        </div>
+        <div id="forgotForm" style="display:none;">
+            <input type="email" id="forgotEmail" class="auth-input" placeholder="Email">
+            <div id="forgotError" class="error-msg"></div>
+            <div id="forgotSuccess" class="success-msg"></div>
+            <button class="auth-btn" onclick="handleForgotPassword()">Send Reset Link</button>
+            <div class="auth-switch"><a onclick="showLogin()">Back to Sign In</a></div>
+        </div>
+    </div>
 </div>
 
-<div class="app">
+<!-- Main App (hidden until logged in) -->
+<div id="app" class="app">
     <aside class="sidebar" id="sidebar">
-        <div class="new-chat-btn" onclick="newChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>New chat</span></div>
-        <div class="menu-item" onclick="openLibrary()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>My Library</span></div>
-        <div><div class="collapsible-header" onclick="toggleAppearance()"><span>Appearance</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="appearanceArrow" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg></div>
-        <div class="collapsible-content" id="appearanceContent"><div class="theme-option" onclick="setTheme('light')"><span>Light (Aled Blue)</span><span id="themeLightCheck">✓</span></div><div class="theme-option" onclick="setTheme('dark')"><span>Dark (Pure White)</span><span id="themeDarkCheck" style="display:none;">✓</span></div><div class="theme-option" onclick="setTheme('system')"><span>System</span><span id="themeSystemCheck" style="display:none;">✓</span></div></div></div>
-        <div class="chat-history" id="chatHistoryList"><div style="padding:20px;text-align:center;color:var(--text-tertiary);">No conversations yet</div></div>
-        <div class="profile-section" onclick="openProfileModal()"><div class="profile-info"><img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Ccircle cx='12' cy='8' r='4' fill='white'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='white'/%3E%3C/svg%3E" alt="avatar"><div class="profile-details"><div class="profile-name" id="profileName">Guest</div><div class="profile-tier" id="profileTier">Free</div><div id="telegramBadge" class="telegram-badge" style="display:none;">🔗 Telegram</div></div></div></div>
-        <!-- SECRET FOUNDER: 19 clicks on footer (no password) -->
+        <div class="new-chat-btn" onclick="newChat()">➕ New chat</div>
+        <div class="menu-item" onclick="openLibrary()">📚 My Library</div>
+        <div><div class="collapsible-header" onclick="toggleAppearance()">Appearance <span id="appearanceArrow">▼</span></div>
+        <div class="collapsible-content" id="appearanceContent"><div class="theme-option" onclick="setTheme('light')">Light <span id="themeLightCheck">✓</span></div><div class="theme-option" onclick="setTheme('dark')">Dark <span id="themeDarkCheck" style="display:none;">✓</span></div><div class="theme-option" onclick="setTheme('system')">System <span id="themeSystemCheck" style="display:none;">✓</span></div></div></div>
+        <div class="chat-history" id="chatHistoryList"><div style="padding:20px;text-align:center;">No conversations yet</div></div>
+        <div class="profile-section" onclick="openProfileModal()"><div class="profile-info"><img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%234f46e5'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%234f46e5'/%3E%3C/svg%3E"><div class="profile-details"><div class="profile-name" id="profileName">Guest</div><div class="profile-tier" id="profileTier">Free</div></div></div></div>
         <div class="sidebar-footer" id="secretFounderTrigger">CLOSEAI Technologies © 2026</div>
     </aside>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-    
-    <div class="top-bar">
-        <button class="toggle-sidebar" id="toggleSidebarBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
-        <button class="logo-btn" id="logoBtn"><svg width="24" height="24" viewBox="0 0 640 360"><rect width="640" height="360" fill="currentColor" rx="20"/><circle cx="320" cy="180" r="70" fill="none" stroke="white" stroke-width="6"/><text x="320" y="208" text-anchor="middle" font-family="Arial" font-size="70" fill="white" font-weight="bold">C</text></svg></button>
-    </div>
-
-    <main class="main">
-        <div class="chat-container">
-            <div class="messages-area" id="messagesArea"></div>
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <button class="upload-btn" onclick="triggerFileUpload()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-                    <textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-                    <button class="send-btn" onclick="sendMessage()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-                </div>
-            </div>
-        </div>
-    </main>
+    <div class="top-bar"><button class="toggle-sidebar" id="toggleSidebarBtn">☰</button><button class="logo-btn" id="logoBtn">C</button></div>
+    <main class="main"><div class="chat-container"><div class="messages-area" id="messagesArea"><div style="text-align:center;padding:60px 20px;"><h2>CAPITAN AI</h2><p>Ask me anything — finance, code, research.</p></div></div><div class="input-area"><div class="input-wrapper"><button class="upload-btn" onclick="triggerFileUpload()">📎</button><textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea><button class="send-btn" onclick="sendMessage()">➤</button></div></div></div></main>
 </div>
-
-<!-- Modals -->
-<div id="profileModal" class="modal-overlay"><div class="modal"><h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="70" height="70" style="border-radius:50%;object-fit:cover;background:var(--accent-soft);"><button class="btn" style="margin:0;width:auto;padding:8px 16px;" onclick="uploadProfilePhoto()">Change Photo</button></div><div id="modalProfileName" style="font-weight:600;margin-top:8px;">Guest</div><div id="modalProfileTier" style="color:var(--accent);margin-bottom:16px;">Free</div><div id="telegramStatus" style="margin-bottom:16px;"></div><div class="modal-setting" onclick="openUpgradeModal()"><span>Upgrade Plan</span><span>→</span></div><div class="modal-setting" onclick="initTelegramLogin()"><span>Connect Telegram</span><span>→</span></div><div class="modal-setting" onclick="openDataControl()"><span>Data & Legal (Privacy/T&C)</span><span>→</span></div><div class="modal-setting" onclick="logout()" style="color:var(--danger);"><span>Sign Out</span></div><button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button></div></div>
-
-<div id="upgradeModal" class="modal-overlay"><div class="modal"><h2>🚀 Upgrade CAPITAN AI</h2><div class="crypto-card" onclick="selectTier('plus')"><div style="font-weight:700;">Plus — $8/month</div><div style="font-size:13px;">50 msgs · Groq 3.3 · Work Area (10 seats) · 20MB files</div></div><div class="crypto-card" onclick="selectTier('pro')"><div style="font-weight:700;">Pro — $17/month</div><div style="font-size:13px;">150 msgs · Claude 3.5 · Work Area (25 seats) · 50MB files + Live Markets</div></div><div class="crypto-card" onclick="selectTier('pro_max')"><div style="font-weight:700;">Pro Max — $30/month</div><div style="font-size:13px;">Unlimited · GPT-4o+Claude · Work Area (50 seats) · 100MB files</div></div><div class="work-area-snippet"><strong>🌍 Work Area — Collaborate from Anywhere</strong><br>Real-time workspaces. Share files, chat, and work with AI alongside your team.</div><div class="payment-steps"><strong>💳 How to Pay:</strong><br>1️⃣ Copy BTC or ETH address<br>2️⃣ Send exact amount<br>3️⃣ Paste TXID → Verify</div><div id="paymentSection" style="display:none;margin-top:16px;"><div style="display:flex;gap:10px;"><button class="btn" style="flex:1;" onclick="setCoin('BTC')">BTC</button><button class="btn" style="flex:1;" onclick="setCoin('ETH')">ETH</button></div><div class="wallet-address" id="walletAddress" onclick="copyWallet()">Loading...</div><input type="text" id="txidInput" placeholder="Transaction ID"><button class="btn" onclick="verifyPayment()">Verify Payment</button></div><button class="btn btn-outline" onclick="closeModal('upgradeModal')">Close</button></div></div>
-
-<div id="libraryModal" class="modal-overlay"><div class="modal"><h2>📚 My Library</h2><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" rows="3" placeholder="Content"></textarea><button class="btn" onclick="saveLibraryItem()">Save</button><div id="libraryList" style="margin-top:16px;"></div><button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button></div></div>
-
-<div id="aboutModal" class="modal-overlay"><div class="modal"><h2>About CAPITAN AI</h2><div class="work-area-snippet"><strong>🌍 Work Area — Global Collaboration</strong><br>Real-time collaborative spaces where teams can chat, share files, and work with AI together.<br><br>✅ Real-time messaging & AI assistance<br>✅ File sharing & document analysis<br>✅ Used across 50+ countries</div><div class="work-area-snippet" style="margin-top:12px;"><strong>⚡ CAPITAN Capabilities</strong><br>• Financial modeling & market analysis<br>• Code generation & debugging<br>• Document analysis (PDF, DOCX, PPTX, XLSX)<br>• Research & reasoning</div><button class="btn btn-outline" onclick="closeModal('aboutModal')">Close</button></div></div>
-
-<div id="dataControlModal" class="modal-overlay"><div class="modal"><h2>Data & Legal</h2><div class="modal-setting" onclick="showPrivacyPolicy()"><span>Privacy Policy</span><span>→</span></div><div class="modal-setting" onclick="showTerms()"><span>Terms & Conditions</span><span>→</span></div><div class="modal-setting" onclick="exportUserData()"><span>Export My Data</span><span>→</span></div><div class="modal-setting" onclick="deleteAccount()" style="color:var(--danger);"><span>Delete Account</span><span>→</span></div><button class="btn btn-outline" onclick="closeModal('dataControlModal')">Close</button></div></div>
-
-<!-- Founder Modal - Now opens directly with 19 clicks (no password) -->
-<div id="founderModal" class="modal-overlay"><div class="modal"><h2>👑 Founder Dashboard</h2><div id="founderContent">Loading...</div><button class="btn btn-outline" onclick="closeModal('founderModal')">Close</button></div></div>
 
 <script>
     const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
-    const WALLETS = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
-    
-    let state = {
-        token: localStorage.getItem('ct') || null,
-        tier: 'free',
-        user: null,
-        activeChatId: null,
-        chats: [],
-        messages: [],
-        loading: false,
-        library: [],
-        theme: localStorage.getItem('theme') || 'light',
-        selectedTier: null,
-        selectedCoin: 'BTC',
-        founderClickCount: 0,
-        profilePhoto: localStorage.getItem('profilePhoto') || null
-    };
+    let state = { token: localStorage.getItem('ct') || null, user: null, tier: 'free', activeChatId: null, chats: [], messages: [], loading: false, library: [], theme: localStorage.getItem('theme') || 'light', founderClickCount: 0, profilePhoto: null };
 
-    function escapeHtml(s) { return s?.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m) || ''; }
-    function toast(msg) { let t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-    function scrollBottom() { let area = document.getElementById('messagesArea'); if(area) area.scrollTop = area.scrollHeight; }
+    function showToast(msg) { let t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
+    function showLogin() { document.getElementById('loginForm').style.display = 'block'; document.getElementById('signupForm').style.display = 'none'; document.getElementById('forgotForm').style.display = 'none'; }
+    function showSignup() { document.getElementById('loginForm').style.display = 'none'; document.getElementById('signupForm').style.display = 'block'; document.getElementById('forgotForm').style.display = 'none'; }
+    function showForgotPassword() { document.getElementById('loginForm').style.display = 'none'; document.getElementById('signupForm').style.display = 'none'; document.getElementById('forgotForm').style.display = 'block'; }
 
-    function getDynamicGreeting() {
-        const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) return { text: "Good morning ☀️" };
-        if (hour >= 12 && hour < 17) return { text: "Good afternoon 🌤️" };
-        if (hour >= 17 && hour < 21) return { text: "Good evening 🌙" };
-        if (hour >= 21 && hour < 24) return { text: "Good night, night owl 🌟" };
-        return { text: "Early bird or still working? 🚀" };
-    }
-
-    function setTheme(theme) { state.theme = theme; document.body.className = theme; localStorage.setItem('theme', theme); document.getElementById('themeLightCheck').style.display = theme === 'light' ? 'inline' : 'none'; document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none'; document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none'; toast(`Theme: ${theme}`); }
-    let appearanceOpen = false;
-    function toggleAppearance() { appearanceOpen = !appearanceOpen; document.getElementById('appearanceContent').classList.toggle('open', appearanceOpen); document.getElementById('appearanceArrow').style.transform = appearanceOpen ? 'rotate(180deg)' : 'rotate(0deg)'; }
-    function toggleSidebar() { let sidebar = document.getElementById('sidebar'), overlay = document.getElementById('overlay'); if(window.innerWidth <= 768) { sidebar.classList.toggle('open'); overlay.classList.toggle('open'); } else { sidebar.classList.toggle('collapsed'); } }
-    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
-
-    // FOUNDER ACCESS: 19 clicks on footer - NO PASSWORD - DIRECT ACCESS
-    function handleFooterClick() { 
-        state.founderClickCount++; 
-        console.log(`Founder clicks: ${state.founderClickCount}/19`);
-        if(state.founderClickCount >= 19) { 
-            state.founderClickCount = 0; 
-            openFounderDashboard(); 
-        } 
-        setTimeout(() => { state.founderClickCount = 0; }, 5000); 
-    }
-    
-    async function openFounderDashboard() {
-        const modal = document.getElementById('founderModal');
-        const content = document.getElementById('founderContent');
-        content.innerHTML = '<div style="text-align:center;padding:20px;">Loading founder dashboard...</div>';
-        modal.classList.add('open');
-        
+    async function handleLogin() {
+        let email = document.getElementById('loginEmail').value.trim();
+        let password = document.getElementById('loginPassword').value;
+        let errorDiv = document.getElementById('loginError');
+        if (!email || !password) { errorDiv.innerText = 'Email and password required'; errorDiv.style.display = 'block'; return; }
+        errorDiv.style.display = 'none';
         try {
-            // Try to get founder stats from backend
-            let stats = null;
-            try {
-                const res = await fetch(`${CFG.API}/api/admin`, {
-                    headers: state.token ? { 'Authorization': `Bearer ${state.token}` } : {}
-                });
-                if (res.ok) stats = await res.json();
-            } catch(e) { console.log('Admin fetch failed'); }
-            
-            content.innerHTML = `
-                <div style="text-align:center;margin-bottom:20px;">
-                    <div style="background:var(--accent-soft);width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>
-                    </div>
-                    <h3 style="margin-top:12px;">Founder Access</h3>
-                    <p style="color:var(--text-secondary);font-size:13px;">You have full administrative privileges</p>
-                </div>
-                <div style="display:grid;gap:12px;">
-                    <div style="background:var(--bg-secondary);border-radius:16px;padding:16px;">
-                        <div style="font-weight:700;">Platform Stats</div>
-                        <div style="font-size:13px;margin-top:8px;">👥 Total Users: ${stats?.total_users || 'N/A'}</div>
-                        <div style="font-size:13px;">💎 Paid Users: ${stats?.paid_users || 'N/A'}</div>
-                        <div style="font-size:13px;">💬 Total Messages: ${stats?.total_messages || 'N/A'}</div>
-                    </div>
-                    <div style="background:var(--bg-secondary);border-radius:16px;padding:16px;">
-                        <div style="font-weight:700;">Your Info</div>
-                        <div style="font-size:13px;margin-top:8px;">👤 Tier: ${state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase()}</div>
-                        <div style="font-size:13px;">🔐 Telegram: ${state.user?.telegram_username ? 'Connected' : 'Not connected'}</div>
-                    </div>
-                </div>
-                <div class="modal-setting" onclick="makeFounder()" style="margin-top:16px;justify-content:center;color:var(--accent);">
-                    <span>⭐ Activate Founder Status</span>
-                </div>
-            `;
-        } catch(e) {
-            content.innerHTML = `
-                <div style="text-align:center;padding:20px;">
-                    <p>Unable to load stats. You can still activate founder status.</p>
-                    <button class="btn" onclick="makeFounder()">Activate Founder Status</button>
-                </div>
-            `;
-        }
-    }
-    
-    async function makeFounder() {
-        try {
-            const res = await fetch(`${CFG.API}/api/founder`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: 'Osinachi@35' })
-            });
-            const data = await res.json();
+            let res = await fetch(`${CFG.API}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            let data = await res.json();
             if (data.token) {
-                state.token = data.token;
-                state.tier = 'founder';
-                state.user = data.user;
                 localStorage.setItem('ct', data.token);
-                updateProfileUI();
-                toast('Founder status activated!');
-                closeModal('founderModal');
-                location.reload();
-            } else {
-                toast('Failed to activate founder status');
-            }
-        } catch(e) {
-            toast('Error activating founder status');
-        }
+                state.token = data.token;
+                state.user = data.user;
+                state.tier = data.user.tier;
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                await initApp();
+            } else { errorDiv.innerText = data.detail || 'Login failed'; errorDiv.style.display = 'block'; }
+        } catch(e) { errorDiv.innerText = 'Login failed'; errorDiv.style.display = 'block'; }
+    }
+
+    async function handleSignup() {
+        let name = document.getElementById('signupName').value.trim();
+        let email = document.getElementById('signupEmail').value.trim();
+        let password = document.getElementById('signupPassword').value;
+        let errorDiv = document.getElementById('signupError');
+        let successDiv = document.getElementById('signupSuccess');
+        if (!email || !password) { errorDiv.innerText = 'Email and password required'; errorDiv.style.display = 'block'; return; }
+        if (password.length < 6) { errorDiv.innerText = 'Password must be at least 6 characters'; errorDiv.style.display = 'block'; return; }
+        errorDiv.style.display = 'none';
+        try {
+            let res = await fetch(`${CFG.API}/api/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) });
+            let data = await res.json();
+            if (data.token) {
+                successDiv.innerText = 'Account created! Redirecting...';
+                successDiv.style.display = 'block';
+                localStorage.setItem('ct', data.token);
+                state.token = data.token;
+                state.user = data.user;
+                state.tier = data.user.tier;
+                setTimeout(() => { document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; initApp(); }, 1500);
+            } else { errorDiv.innerText = data.detail || 'Signup failed'; errorDiv.style.display = 'block'; }
+        } catch(e) { errorDiv.innerText = 'Signup failed'; errorDiv.style.display = 'block'; }
+    }
+
+    async function handleForgotPassword() {
+        let email = document.getElementById('forgotEmail').value.trim();
+        let errorDiv = document.getElementById('forgotError');
+        let successDiv = document.getElementById('forgotSuccess');
+        if (!email) { errorDiv.innerText = 'Email required'; errorDiv.style.display = 'block'; return; }
+        errorDiv.style.display = 'none';
+        try {
+            await fetch(`${CFG.API}/api/auth/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+            successDiv.innerText = 'If an account exists, a reset link has been sent to your email.'; successDiv.style.display = 'block';
+        } catch(e) { errorDiv.innerText = 'Request failed'; errorDiv.style.display = 'block'; }
     }
 
     async function apiCall(endpoint, opts = {}) { let headers = { 'Content-Type': 'application/json' }; if(state.token) headers['Authorization'] = `Bearer ${state.token}`; let res = await fetch(`${CFG.API}${endpoint}`, { ...opts, headers }); if(res.status === 401) { logout(); throw new Error('Session expired'); } if(!res.ok) throw new Error(await res.text()); return res.json(); }
     
     async function initSession() { try { if(state.token) { let sess = await apiCall('/api/session'); state.tier = sess.tier; state.user = sess.user_data; } else { let sess = await apiCall('/api/session'); state.token = sess.token; state.tier = sess.tier; localStorage.setItem('ct', state.token); } updateProfileUI(); } catch(e) { console.warn(e); } }
-    
-    function updateProfileUI() { let name = state.user?.name || state.user?.telegram_username || 'Guest'; document.getElementById('profileName').innerText = name; document.getElementById('profileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); document.getElementById('modalProfileName').innerText = name; document.getElementById('modalProfileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); let telegramConnected = state.user?.telegram_username; document.getElementById('telegramBadge').style.display = telegramConnected ? 'inline-block' : 'none'; document.getElementById('telegramStatus').innerHTML = telegramConnected ? `<span style="background:var(--accent-soft);padding:6px 12px;border-radius:20px;">✅ Connected as @${state.user.telegram_username}</span>` : `<button class="btn" style="margin:0;padding:8px;" onclick="initTelegramLogin()">Connect Telegram</button>`; if(state.profilePhoto) { document.getElementById('profileAvatar').src = state.profilePhoto; document.getElementById('modalAvatar').src = state.profilePhoto; } }
-    
-    async function uploadProfilePhoto() { let input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.onchange = async (e) => { let file = e.target.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = (ev) => { let photoUrl = ev.target.result; state.profilePhoto = photoUrl; localStorage.setItem('profilePhoto', photoUrl); document.getElementById('profileAvatar').src = photoUrl; document.getElementById('modalAvatar').src = photoUrl; toast('Profile photo updated!'); }; reader.readAsDataURL(file); }; input.click(); }
-
+    function updateProfileUI() { let name = state.user?.name || state.user?.email?.split('@')[0] || 'User'; document.getElementById('profileName').innerText = name; document.getElementById('profileTier').innerText = state.tier === 'founder' ? 'Founder' : state.tier.toUpperCase(); }
     async function loadChats() { try { let data = await apiCall('/api/chats'); state.chats = data.chats || []; renderChatHistory(); } catch(e) {} }
-    async function loadChat(id) { try { let data = await apiCall(`/api/chats/${id}`); state.messages = data.messages || []; state.activeChatId = id; renderMessages(); renderChatHistory(); } catch(e) { toast('Failed to load'); } }
+    async function loadChat(id) { try { let data = await apiCall(`/api/chats/${id}`); state.messages = data.messages || []; state.activeChatId = id; renderMessages(); renderChatHistory(); } catch(e) { showToast('Failed to load'); } }
     async function newChat() { state.activeChatId = null; state.messages = []; renderMessages(); renderChatHistory(); document.getElementById('messageInput').focus(); }
-    async function deleteChat(id) { if(!confirm('Delete?')) return; await apiCall(`/api/chats/${id}`, { method: 'DELETE' }); if(state.activeChatId === id) await newChat(); await loadChats(); toast('Deleted'); }
-    
-    // Smooth streaming with pulsing blue C logo
-    async function sendMessage() { 
-        let input = document.getElementById('messageInput'); 
-        let text = input.value.trim(); 
-        if(!text || state.loading) return; 
-        input.value = ''; 
-        state.messages.push({ role: 'user', content: text }); 
-        renderMessages(); 
-        state.loading = true; 
-        
-        // Add typing indicator with pulsing C
-        let aiIdx = state.messages.length; 
-        state.messages.push({ role: 'assistant', content: '', isTyping: true }); 
-        renderMessages(); 
-        scrollBottom();
-        
-        try { 
-            let res = await apiCall('/api/chat', { method: 'POST', body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.activeChatId }) }); 
-            // Remove typing indicator and add real content
-            state.messages[aiIdx] = { role: 'assistant', content: res.content || 'No response' }; 
-            renderMessages(); 
-            state.activeChatId = res.chat_id; 
-            await loadChats(); 
-        } catch(err) { 
-            state.messages[aiIdx] = { role: 'assistant', content: `Error: ${err.message}` }; 
-            renderMessages(); 
-            toast(err.message); 
-        } finally { 
-            state.loading = false; 
-        } 
-    }
-    
+    async function deleteChat(id) { if(!confirm('Delete?')) return; await apiCall(`/api/chats/${id}`, { method: 'DELETE' }); if(state.activeChatId === id) await newChat(); await loadChats(); showToast('Deleted'); }
+    async function sendMessage() { let input = document.getElementById('messageInput'); let text = input.value.trim(); if(!text || state.loading) return; input.value = ''; state.messages.push({ role: 'user', content: text }); renderMessages(); state.loading = true; let aiIdx = state.messages.length; state.messages.push({ role: 'assistant', content: '', isTyping: true }); renderMessages(); try { let res = await apiCall('/api/chat', { method: 'POST', body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.activeChatId }) }); state.messages[aiIdx] = { role: 'assistant', content: res.content || 'No response' }; renderMessages(); state.activeChatId = res.chat_id; await loadChats(); } catch(err) { state.messages[aiIdx] = { role: 'assistant', content: `Error: ${err.message}` }; renderMessages(); showToast(err.message); } finally { state.loading = false; } }
     function formatMarkdown(t) { if(!t) return ''; return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre><code>$2</code></pre>').replace(/\n/g,'<br>'); }
-    
-    function renderMessages() { 
-        let c = document.getElementById('messagesArea'); 
-        if(!c) return; 
-        let greeting = getDynamicGreeting(); 
-        if(!state.messages.length) { 
-            c.innerHTML = `<div style="text-align:center;padding:40px 20px;"><div class="greeting-container"><div class="greeting-text">${greeting.text}</div></div><p style="color:var(--text-secondary);margin-top:12px;">Ask me anything — finance, code, research, or upload documents for analysis.</p></div>`; 
-            return; 
-        } 
-        c.innerHTML = state.messages.map((m,i) => {
-            if(m.isTyping) {
-                return `<div class="message assistant"><div class="typing-indicator"><svg class="typing-c" viewBox="0 0 640 360"><rect width="640" height="360" fill="var(--accent)" rx="40"/><circle cx="320" cy="180" r="70" fill="none" stroke="white" stroke-width="6"/><text x="320" y="208" text-anchor="middle" font-family="Arial" font-size="70" fill="white" font-weight="bold">C</text></svg><span class="typing-text">CAPITAN is thinking...</span></div></div>`;
-            }
-            return `<div class="message ${m.role}"><div class="message-content">${m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content)}</div></div>`;
-        }).join(''); 
-        scrollBottom(); 
-    }
-    
-    function renderChatHistory() { let c = document.getElementById('chatHistoryList'); if(!c) return; if(!state.chats.length) { c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);">No conversations yet</div>'; return; } c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);">✕</button></div>`).join(''); }
-
-    async function openLibrary() { try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) {} document.getElementById('libraryList').innerHTML = state.library.map(i=>`<div class="chat-item" style="justify-content:space-between"><span onclick="viewLib('${i.id}')">${escapeHtml(i.name)}</span><button onclick="deleteLib('${i.id}')">✕</button></div>`).join(''); document.getElementById('libraryModal').classList.add('open'); }
-    async function saveLibraryItem() { let name = document.getElementById('libName').value.trim(), content = document.getElementById('libContent').value.trim(); if(!name||!content) { toast('Required'); return; } await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) }); toast('Saved'); openLibrary(); }
-    async function deleteLib(id) { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); openLibrary(); }
-    function viewLib(id) { let item = state.library.find(i=>i.id===id); if(item) { document.getElementById('libName').value = item.name; document.getElementById('libContent').value = item.content; } }
-
-    async function triggerFileUpload() { let inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg'; inp.onchange = async (e) => { let file = e.target.files[0]; if(!file) return; let maxSize = state.tier === 'pro_max' ? 100 : (state.tier === 'pro' ? 50 : (state.tier === 'plus' ? 20 : 5)); if(file.size/(1024*1024) > maxSize) { toast(`Max ${maxSize}MB for ${state.tier} tier`); return; } let fd = new FormData(); fd.append('file', file); try { await fetch(`${CFG.API}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: fd }); toast(`📄 Uploaded: ${file.name}`); state.messages.push({ role: 'user', content: `[Uploaded document: ${file.name}]\n\nPlease analyze this document.` }); renderMessages(); sendMessage(); } catch(e) { toast('Upload failed'); } }; inp.click(); }
-
-    function openUpgradeModal() { document.getElementById('upgradeModal').classList.add('open'); }
-    function selectTier(tier) { state.selectedTier = tier; document.getElementById('paymentSection').style.display = 'block'; updateWalletDisplay(); }
-    function setCoin(c) { state.selectedCoin = c; updateWalletDisplay(); }
-    function updateWalletDisplay() { document.getElementById('walletAddress').innerText = WALLETS[state.selectedCoin]; }
-    function copyWallet() { navigator.clipboard.writeText(document.getElementById('walletAddress').innerText); toast('Address copied!'); }
-    async function verifyPayment() { let txid = document.getElementById('txidInput').value.trim(); if(!state.selectedTier||!txid) { toast('Select tier and enter TXID'); return; } try { let res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) }); state.tier = res.tier; state.token = res.token; localStorage.setItem('ct', res.token); updateProfileUI(); closeModal('upgradeModal'); toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`); } catch(e) { toast('Verification failed'); } }
-
-    function openDataControl() { document.getElementById('dataControlModal').classList.add('open'); }
-    function showPrivacyPolicy() { alert("CAPITAN AI Privacy Policy\n\nWe collect:\n- Chat messages to provide AI responses\n- Telegram ID if you connect\n\nWe do NOT sell your data."); }
-    function showTerms() { alert("CAPITAN AI Terms & Conditions\n\n1. AI responses are for informational purposes only\n2. Not financial or medical advice\n3. Crypto payments are non-refundable"); }
-    async function exportUserData() { try { let chats = await apiCall('/api/chats'); let dataStr = JSON.stringify({ user: state.user, chats, exportDate: new Date().toISOString() }, null, 2); let blob = new Blob([dataStr], {type: 'application/json'}); let url = URL.createObjectURL(blob); let a = document.createElement('a'); a.href = url; a.download = `capitan-data-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url); toast('Data exported!'); } catch(e) { toast('Export failed'); } }
-    async function deleteAccount() { if(confirm('Permanently delete your account?')) { try { await apiCall('/api/auth/delete-account', { method: 'DELETE' }); logout(); } catch(e) { toast('Failed'); } } }
-
-    // Telegram Login - Fixed with proper debug
-    window.onTelegramAuth = async function(user) {
-        console.log('Telegram auth callback received:', user);
-        try { 
-            let res = await fetch(`${CFG.API}/api/auth/telegram/verify`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ data: user }) 
-            }); 
-            let data = await res.json(); 
-            console.log('Telegram verification response:', data);
-            if(data.token) { 
-                state.token = data.token; 
-                state.user = data.user; 
-                state.tier = data.user.tier; 
-                localStorage.setItem('ct', data.token); 
-                updateProfileUI(); 
-                await loadChats(); 
-                toast(`Welcome ${data.user.name || user.first_name}!`); 
-                closeModal('profileModal'); 
-            } else { 
-                toast('Login failed: ' + (data.detail || 'Unknown error')); 
-            } 
-        } catch(e) { 
-            console.error('Telegram error:', e);
-            toast('Telegram error: ' + e.message); 
-        } 
-    };
-    
-    function initTelegramLogin() { 
-        console.log('Initializing Telegram login...');
-        // Remove any existing widget
-        const existing = document.querySelector('.telegram-login-widget');
-        if(existing) existing.remove();
-        
-        // Create widget container
-        const container = document.createElement('div');
-        container.className = 'telegram-login-widget';
-        container.style.position = 'fixed';
-        container.style.bottom = '-100px';
-        container.style.left = '-100px';
-        container.style.opacity = '0';
-        container.style.pointerEvents = 'none';
-        document.body.appendChild(container);
-        
-        // Load Telegram widget
-        const script = document.createElement('script'); 
-        script.src = 'https://telegram.org/js/telegram-widget.js?22'; 
-        script.setAttribute('data-telegram-login', 'Capitan_ai_Bot'); 
-        script.setAttribute('data-size', 'large'); 
-        script.setAttribute('data-radius', '12'); 
-        script.setAttribute('data-request-access', 'write'); 
-        script.setAttribute('data-onauth', 'onTelegramAuth(user)'); 
-        script.async = true; 
-        container.appendChild(script);
-        
-        toast('Opening Telegram...'); 
-        console.log('Telegram widget loaded');
-        setTimeout(() => container.remove(), 10000); 
-    }
-
-    function openProfileModal() { document.getElementById('profileModal').classList.add('open'); updateProfileUI(); }
-    function logout() { localStorage.removeItem('ct'); state.token = null; state.user = null; state.tier = 'free'; state.activeChatId = null; state.messages = []; state.chats = []; updateProfileUI(); renderMessages(); renderChatHistory(); toast('Logged out'); }
-    function openAboutModal() { document.getElementById('aboutModal').classList.add('open'); }
-
-    if('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(e=>console.log('SW failed:',e)); }); }
-
-    async function init() { 
-        setTheme(state.theme); 
-        await initSession(); 
-        await loadChats(); 
-        renderMessages(); 
-        document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar); 
-        document.getElementById('logoBtn').addEventListener('click', openAboutModal); 
-        document.getElementById('secretFounderTrigger').addEventListener('click', handleFooterClick); 
-        document.addEventListener('click', (e) => { if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') && !document.getElementById('sidebar').contains(e.target) && !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar(); }); 
-        setTimeout(() => { let splash = document.getElementById('splashScreen'); if(splash) splash.classList.add('hide'); }, 1600); 
-    }
-    init();
+    function renderMessages() { let c = document.getElementById('messagesArea'); if(!c) return; if(!state.messages.length) { c.innerHTML = '<div style="text-align:center;padding:60px 20px;"><h2>CAPITAN AI</h2><p>Ask me anything — finance, code, research.</p></div>'; return; } c.innerHTML = state.messages.map(m => m.isTyping ? `<div class="message assistant"><div class="typing-indicator"><div class="typing-c">C</div><span>CAPITAN is thinking...</span></div></div>` : `<div class="message ${m.role}"><div class="message-content">${m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content)}</div></div>`).join(''); scrollBottom(); }
+    function renderChatHistory() { let c = document.getElementById('chatHistoryList'); if(!c) return; if(!state.chats.length) { c.innerHTML = '<div style="padding:20px;text-align:center;">No conversations yet</div>'; return; } c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span>${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')">✕</button></div>`).join(''); }
+    function escapeHtml(s) { return s?.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m) || ''; }
+    function scrollBottom() { let area = document.getElementById('messagesArea'); if(area) area.scrollTop = area.scrollHeight; }
+    function setTheme(theme) { state.theme = theme; document.body.className = theme; localStorage.setItem('theme', theme); document.getElementById('themeLightCheck').style.display = theme === 'light' ? 'inline' : 'none'; document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none'; document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none'; }
+    let appearanceOpen = false; function toggleAppearance() { appearanceOpen = !appearanceOpen; document.getElementById('appearanceContent').classList.toggle('open', appearanceOpen); document.getElementById('appearanceArrow').innerHTML = appearanceOpen ? '▲' : '▼'; }
+    function toggleSidebar() { let sidebar = document.getElementById('sidebar'), overlay = document.getElementById('overlay'); if(window.innerWidth <= 768) { sidebar.classList.toggle('open'); overlay.classList.toggle('open'); } else { sidebar.classList.toggle('collapsed'); } }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+    function handleFooterClick() { state.founderClickCount++; if(state.founderClickCount >= 19) { state.founderClickCount = 0; openFounderDashboard(); } setTimeout(() => { state.founderClickCount = 0; }, 5000); }
+    async function openFounderDashboard() { alert('Founder mode - 19 clicks detected! Contact support to activate.'); }
+    async function openLibrary() { try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) {} let itemsHtml = state.library.map(i => `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);"><span>${escapeHtml(i.name)}</span><button onclick="deleteLib('${i.id}')">🗑️</button></div>`).join(''); let modal = document.createElement('div'); modal.className = 'modal-overlay'; modal.innerHTML = `<div class="modal"><h2>My Library</h2><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" rows="3" placeholder="Content"></textarea><button class="btn" onclick="saveLib()">Save</button><div id="libList">${itemsHtml}</div><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`; document.body.appendChild(modal); modal.classList.add('open'); window.saveLib = async () => { let name = document.getElementById('libName').value.trim(), content = document.getElementById('libContent').value.trim(); if(!name||!content) { showToast('Required'); return; } await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) }); showToast('Saved'); modal.remove(); openLibrary(); }; window.deleteLib = async (id) => { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); modal.remove(); openLibrary(); }; }
+    async function triggerFileUpload() { let inp = document.createElement('input'); inp.type = 'file'; inp.onchange = async (e) => { let file = e.target.files[0]; if(!file) return; let fd = new FormData(); fd.append('file', file); try { await fetch(`${CFG.API}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: fd }); showToast(`Uploaded: ${file.name}`); state.messages.push({ role: 'user', content: `[Uploaded: ${file.name}]` }); renderMessages(); sendMessage(); } catch(e) { showToast('Upload failed'); } }; inp.click(); }
+    function openProfileModal() { alert(`Profile\nName: ${state.user?.name || 'User'}\nTier: ${state.tier}\nEmail: ${state.user?.email || 'Not set'}\n\nUpgrade, Data & Legal, and Sign Out options available in full version.`); }
+    function logout() { localStorage.removeItem('ct'); location.reload(); }
+    async function initApp() { setTheme(state.theme); await initSession(); await loadChats(); renderMessages(); document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar); document.getElementById('logoBtn').addEventListener('click', () => alert('CAPITAN AI - Enterprise Intelligence')); document.getElementById('secretFounderTrigger').addEventListener('click', handleFooterClick); }
+    if (state.token) { document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; initApp(); }
 </script>
 </body>
 </html>
