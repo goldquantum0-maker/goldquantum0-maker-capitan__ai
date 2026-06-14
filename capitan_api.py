@@ -380,7 +380,9 @@ async def register(req: RegisterRequest):
         raise
     except Exception as e:
         logger.error(f"Registration error: {e}")
-        raise HTTPException(500, "Registration failed")
+        raise HTTPException(500, f"Registration failed: {str(e)}")
+    
+    
 
 class LoginRequest(BaseModel):
     email: str
