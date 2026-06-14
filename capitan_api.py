@@ -16,7 +16,6 @@ import base64
 import secrets
 import requests
 import logging
-from passlib.hash import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 from contextlib import contextmanager
@@ -70,6 +69,23 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 settings = Settings()
+
+# ================================================================
+# PASSWORD HASHING (SHA-256 + Salt — No bcrypt)
+# ================================================================
+def hash_password(password: str) -> str:
+    """Hash a password with SHA-256 and a random 32-byte salt."""
+    salt = os.urandom(32).hex()
+    hash_obj = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}${hash_obj}"
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against its stored hash."""
+    try:
+        salt, stored_hash = hashed.split("$")
+        return hashlib.sha256((password + salt).encode()).hexdigest() == stored_hash
+    except:
+        return False
 
 # ================================================================
 # DATABASE
@@ -350,7 +366,8 @@ async def register(req: RegisterRequest):
                 if c.fetchone():
                     raise HTTPException(400, "Email already registered")
                 
-                password_hash = bcrypt.hash(req.password)
+                # Use hashlib-based password hashing
+                password_hash = hash_password(req.password)
                 user_id = str(uuid.uuid4())
                 name = req.name or req.email.split('@')[0]
                 c.execute("""
@@ -381,8 +398,6 @@ async def register(req: RegisterRequest):
     except Exception as e:
         logger.error(f"Registration error: {e}")
         raise HTTPException(500, f"Registration failed: {str(e)}")
-    
-    
 
 class LoginRequest(BaseModel):
     email: str
@@ -396,7 +411,8 @@ async def login(req: LoginRequest):
                 c.execute("SELECT id, email, password_hash, name, tier, reasoning_depth, preferred_domain FROM users WHERE email = %s", (req.email,))
                 user = c.fetchone()
                 
-                if not user or not bcrypt.verify(req.password, user[2]):
+                # Use hashlib-based password verification
+                if not user or not verify_password(req.password, user[2]):
                     raise HTTPException(401, "Invalid email or password")
                 
                 user_id, email, _, name, tier, reasoning_depth, preferred_domain = user
@@ -422,7 +438,7 @@ async def login(req: LoginRequest):
         raise
     except Exception as e:
         logger.error(f"Login error: {e}")
-        raise HTTPException(500, "Login failed")
+        raise HTTPException(500, f"Login failed: {str(e)}")
 
 @app.post("/api/auth/logout")
 async def logout(request: Request):
@@ -493,7 +509,7 @@ async def get_anonymous_session():
     return {"id": session_id, "tier": "free", "token": token}
 
 # ================================================================
-# FOUNDER LOGIN (Secret - 19 clicks on footer)
+# FOUNDER LOGIN (Secret - 13 clicks on CAPITAN AI brand)
 # ================================================================
 @app.post("/api/founder")
 async def founder_login(req: dict):
@@ -1522,9 +1538,9 @@ def web_search_endpoint(q: str, request: Request):
     return {"results": search_web(q, 8)}
 
 # ================================================================
-# ADMIN (Founder only)
+# ADMIN (Founder only) — FIXED: now GET, not POST
 # ================================================================
-@app.post("/api/admin")
+@app.get("/api/admin")
 def admin_panel(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
         raise HTTPException(403, "Access denied")
@@ -1651,7 +1667,7 @@ if __name__ == "__main__":
     print(f"🔍 Web Search: SerpAPI={bool(settings.SERPAPI_KEY)}")
     print(f"📰 News: NewsAPI={bool(settings.NEWS_API_KEY)}")
     print(f"🔐 Auth: Email + Password (simple, no email sending)")
-    print(f"👑 Founder: 19 clicks on footer (code: {settings.FOUNDER_KEY[:10]}...)")
+    print(f"👑 Founder: 13 clicks on CAPITAN AI brand (code: {settings.FOUNDER_KEY[:10]}...)")
     print(f"💎 Tiers: Free(20) | Plus(50/$8) | Pro(150/$17) | Pro Max(∞/$30)")
     print(f"📨 AI Models: Free(Groq 3.1) | Plus(Groq 3.3) | Pro(Claude) | Pro Max(Ensemble)")
     print(f"🧠 Reasoning: Chain-of-Thought Enabled (Depth: 1-5)")
