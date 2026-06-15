@@ -1829,4 +1829,4 @@ if __name__ == "__main__":
     print(f"🚀 CAPITAN AI v29.0 - All rough edges polished")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port) 
