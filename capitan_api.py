@@ -108,6 +108,11 @@ def init_db():
                         updated_at TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+                # Ensure all columns exist on existing tables
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS reasoning_depth INTEGER DEFAULT 1")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_domain TEXT DEFAULT 'general'")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS msg_reset_date DATE")
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS user_sessions (
                         id UUID PRIMARY KEY,
