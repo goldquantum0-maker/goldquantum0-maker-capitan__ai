@@ -127,9 +127,6 @@
             border: 1px solid var(--border);
         }
 
-        /* Custom logo */
-        .logo-svg { width: 30px; height: 30px; display: block; }
-
         .splash {
             position: fixed;
             inset: 0;
@@ -225,20 +222,18 @@
             cursor: pointer;
             user-select: none;
         }
-        .sidebar-brand .logo-svg { width: 26px; height: 26px; }
 
         .top-bar {
             position: fixed;
             top: 12px;
-            left: 12px;
             right: 12px;
             z-index: 45;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             pointer-events: none;
         }
-        .toggle-sidebar, .logo-btn {
+        .toggle-sidebar {
             pointer-events: auto;
             background: var(--surface);
             border: 1px solid var(--border);
@@ -253,21 +248,10 @@
             color: var(--text-secondary);
             box-shadow: var(--shadow-sm);
         }
-        .toggle-sidebar:hover, .logo-btn:hover {
+        .toggle-sidebar:hover {
             transform: scale(1.02);
             background: var(--bg-tertiary);
             box-shadow: var(--shadow-md);
-        }
-
-        /* Move toggle to right, logo stays left */
-        .top-bar {
-            flex-direction: row;
-        }
-        .top-bar .toggle-sidebar {
-            order: 2;
-        }
-        .top-bar .logo-btn {
-            order: 1;
         }
 
         .main {
@@ -583,9 +567,9 @@
             transition: max-height 0.3s ease;
         }
         .collapsible-content.open {
-            max-height: 200px;
+            max-height: 500px; /* enough for about text */
         }
-        .theme-option {
+        .theme-option, .about-option {
             display: flex;
             justify-content: space-between;
             padding: 8px 16px 8px 44px;
@@ -594,8 +578,14 @@
             font-size: 12px;
             transition: all 0.2s;
         }
-        .theme-option:hover {
+        .theme-option:hover, .about-option:hover {
             background: var(--bg-tertiary);
+        }
+        .about-content {
+            padding: 8px 16px 16px 44px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
         }
         .chat-history {
             flex: 1;
@@ -887,18 +877,12 @@
 </head>
 <body>
 
-<!-- Splash screen with new logo -->
+<!-- Splash screen with simple C logo -->
 <div class="splash" id="splashScreen">
     <svg class="splash-logo" viewBox="0 0 100 100">
-        <defs>
-            <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#38bdf8"/>
-                <stop offset="100%" stop-color="#0284c7"/>
-            </linearGradient>
-        </defs>
-        <rect width="100" height="100" rx="20" fill="url(#logoGrad)"/>
-        <path d="M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z" fill="none" stroke="white" stroke-width="4"/>
-        <text x="50" y="68" text-anchor="middle" font-size="38" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+        <rect width="100" height="100" fill="#38bdf8" rx="20"/>
+        <circle cx="50" cy="50" r="30" fill="none" stroke="white" stroke-width="6"/>
+        <text x="50" y="65" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
     </svg>
 </div>
 
@@ -925,7 +909,7 @@
         </div>
         <div style="text-align:center; margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
             <button class="auth-btn ghost" onclick="startGuestSession()">
-                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Try CAPITAN for Free
             </button>
             <p style="font-size:11px; color:var(--text-tertiary); margin-top:6px;">No sign-up required</p>
@@ -937,17 +921,7 @@
 <div id="app" class="app">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand" id="founderClickTarget">
-            <svg class="logo-svg" viewBox="0 0 100 100">
-                <defs>
-                    <linearGradient id="sideGrad" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#38bdf8"/>
-                        <stop offset="100%" stop-color="#0284c7"/>
-                    </linearGradient>
-                </defs>
-                <rect width="100" height="100" rx="20" fill="url(#sideGrad)"/>
-                <path d="M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z" fill="none" stroke="white" stroke-width="4"/>
-                <text x="50" y="68" text-anchor="middle" font-size="38" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
-            </svg>
+            <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#38bdf8"/><text x="12" y="17" text-anchor="middle" font-size="12" fill="white" font-family="Arial" font-weight="bold">C</text></svg>
             CAPITAN AI
         </div>
         <div class="new-chat-btn" onclick="newChat()">
@@ -959,7 +933,7 @@
             <span>My Library</span>
         </div>
         <div>
-            <div class="collapsible-header" onclick="toggleAppearance()">
+            <div class="collapsible-header" onclick="toggleCollapsible('appearance')">
                 <span>Appearance</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="appearanceArrow"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
@@ -967,6 +941,25 @@
                 <div class="theme-option" onclick="setTheme('light')"><span>Light</span><span id="themeLightCheck">&#10003;</span></div>
                 <div class="theme-option" onclick="setTheme('dark')"><span>Dark (OLED)</span><span id="themeDarkCheck" style="display:none;">&#10003;</span></div>
                 <div class="theme-option" onclick="setTheme('system')"><span>System</span><span id="themeSystemCheck" style="display:none;">&#10003;</span></div>
+            </div>
+        </div>
+        <div>
+            <div class="collapsible-header" onclick="toggleCollapsible('about')">
+                <span>About</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="aboutArrow"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="collapsible-content" id="aboutContent">
+                <div class="about-content">
+                    <strong>CAPITAN AI — Enterprise Intelligence</strong><br><br>
+                    <strong>Core Capabilities</strong><br>
+                    • Finance & Trading: Real‑time market analysis, DCF/LBO modeling, portfolio optimisation, derivatives pricing, risk management, algorithmic trading strategies.<br>
+                    • Software Engineering: Full‑stack development (Python, JavaScript, Go, Rust), cloud architecture (AWS, GCP, Azure), DevOps (Docker, Kubernetes), code review.<br>
+                    • Hardware & Systems: CPU/GPU architecture, embedded systems, IoT protocols, networking, storage.<br>
+                    • Mathematics & Science: Advanced calculus, linear algebra, Bayesian statistics, quantum physics, bioinformatics, climate modeling.<br>
+                    • Research & Reasoning: First‑principles analysis, lateral thinking, chain‑of‑thought reasoning, document analysis (PDF, DOCX, XLSX, PPTX).<br><br>
+                    <strong>Work Area</strong><br>Real‑time collaborative spaces where teams can chat, share files, and work with AI together. Used across 50+ countries by financial institutions, technology firms, and research organisations.<br><br>
+                    <strong>Our Mission</strong><br>To democratise elite intelligence and empower every individual and organisation to make better decisions, faster.
+                </div>
             </div>
         </div>
         <div class="recent-label" id="recentLabel" style="display:none;">Recent chats</div>
@@ -986,21 +979,8 @@
     </aside>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
     
-    <!-- Top bar: logo left, toggle right -->
+    <!-- Top bar: only hamburger menu on the right -->
     <div class="top-bar">
-        <button class="logo-btn" id="logoBtn" onclick="openAboutModal()">
-            <svg class="logo-svg" viewBox="0 0 100 100">
-                <defs>
-                    <linearGradient id="topGrad" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#38bdf8"/>
-                        <stop offset="100%" stop-color="#0284c7"/>
-                    </linearGradient>
-                </defs>
-                <rect width="100" height="100" rx="20" fill="url(#topGrad)"/>
-                <path d="M50 15 L75 27 L75 52 C75 65 63 76 50 82 C37 76 25 65 25 52 L25 27 Z" fill="none" stroke="white" stroke-width="4"/>
-                <text x="50" y="68" text-anchor="middle" font-size="38" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
-            </svg>
-        </button>
         <button class="toggle-sidebar" id="toggleSidebarBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
         </button>
@@ -1032,11 +1012,10 @@
     </button>
 </div>
 
-<!-- Modals -->
+<!-- Modals (Profile, Upgrade, Library, Founder, Data, Privacy, Terms) -->
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal" id="upgradeModalContent"></div></div>
 <div id="libraryModal" class="modal-overlay"><div class="modal" id="libraryModalContent"></div></div>
-<div id="aboutModal" class="modal-overlay"><div class="modal" id="aboutModalContent"></div></div>
 <div id="founderModal" class="modal-overlay"><div class="modal" id="founderModalContent"></div></div>
 <div id="dataModal" class="modal-overlay"><div class="modal" id="dataModalContent"></div></div>
 <div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
@@ -1070,6 +1049,16 @@
             setTimeout(openFounderDashboard, 500);
         }
     })();
+
+    // ---------- Collapsible helper ----------
+    let collapsibleState = { appearance: false, about: false };
+    function toggleCollapsible(key) {
+        collapsibleState[key] = !collapsibleState[key];
+        const content = document.getElementById(key + 'Content');
+        const arrow = document.getElementById(key + 'Arrow');
+        if (content) content.classList.toggle('open', collapsibleState[key]);
+        if (arrow) arrow.style.transform = collapsibleState[key] ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
 
     function escapeHtml(s) { return s?.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m) || ''; }
     function toast(msg, iconSvg='') { let t = document.createElement('div'); t.className = 'toast'; t.innerHTML = iconSvg + msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2500); }
@@ -1160,12 +1149,6 @@
         document.getElementById('themeDarkCheck').style.display = theme === 'dark' ? 'inline' : 'none';
         document.getElementById('themeSystemCheck').style.display = theme === 'system' ? 'inline' : 'none';
     }
-    let appearanceOpen = false;
-    function toggleAppearance() {
-        appearanceOpen = !appearanceOpen;
-        document.getElementById('appearanceContent').classList.toggle('open', appearanceOpen);
-        document.getElementById('appearanceArrow').style.transform = appearanceOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
     function toggleSidebar() {
         let sidebar = document.getElementById('sidebar'), overlay = document.getElementById('overlay');
         if (window.innerWidth <= 768) {
@@ -1211,7 +1194,7 @@
             if (data.token) {
                 state.token = data.token; state.user = data.user; state.tier = 'founder';
                 localStorage.setItem('ct', data.token);
-                updateProfileUI(); closeModal('founderModal'); toast('Founder status activated!', '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
+                updateProfileUI(); closeModal('founderModal'); toast('Founder status activated!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
                 await loadChats();
             } else { toast('Activation failed'); }
         } catch(e) { toast('Error'); }
@@ -1364,16 +1347,16 @@
     }
 
     // Message actions
-    function copyMessage(idx) { const msg = state.messages[idx]; if (!msg) return; navigator.clipboard.writeText(msg.content).then(() => toast('Copied!', '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')); }
-    function likeMessage(idx) { toast('Thanks for your feedback!', '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'); }
-    function dislikeMessage(idx) { toast('Feedback noted. We\'ll improve.', '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>'); }
-    function shareMessage(idx) { const chatId = state.activeChatId || 'chat'; navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!', '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>')); }
+    function copyMessage(idx) { const msg = state.messages[idx]; if (!msg) return; navigator.clipboard.writeText(msg.content).then(() => toast('Copied!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')); }
+    function likeMessage(idx) { toast('Thanks for your feedback!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'); }
+    function dislikeMessage(idx) { toast('Feedback noted. We\'ll improve.', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>'); }
+    function shareMessage(idx) { const chatId = state.activeChatId || 'chat'; navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>')); }
     async function saveMessage(idx) {
         if (!state.user) { toast('Sign in to save to Library'); return; }
         const msg = state.messages[idx]; if (!msg) return;
         try {
             await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat ${state.activeChatId || 'new'}`, type: 'note', content: msg.content }) });
-            toast('Saved to Library', '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
+            toast('Saved to Library', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
         } catch(e) { toast('Could not save'); }
     }
 
@@ -1388,7 +1371,7 @@
         });
     }
 
-    // Profile Modal
+    // Profile Modal (unchanged)
     function openProfileModal() {
         const modal = document.getElementById('profileModalContent');
         const isFounder = state.tier === 'founder';
@@ -1398,7 +1381,7 @@
         document.getElementById('profileModal').classList.add('open');
     }
 
-    // Upgrade Modal
+    // Upgrade Modal (unchanged)
     function openUpgradeModal() {
         const modal = document.getElementById('upgradeModalContent');
         modal.innerHTML = `<h2>Upgrade CAPITAN AI</h2>
@@ -1421,20 +1404,44 @@
         try {
             let res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) });
             state.tier = res.tier; state.token = res.token; localStorage.setItem('ct', res.token);
-            updateProfileUI(); closeModal('upgradeModal'); toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
+            updateProfileUI(); closeModal('upgradeModal'); toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
         } catch(e) { toast('Verification failed'); }
     }
 
     // Library (unchanged)
-    async function openLibrary() { /* ... same as before ... */ }
-    async function saveLibraryItem() { /* ... */ }
-    async function deleteLibraryItem(id) { /* ... */ }
-    function viewLibraryItem(id) { /* ... */ }
+    async function openLibrary() {
+        if (!state.user) { toast('Sign in to access Library'); return; }
+        try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) { state.library = []; }
+        const modal = document.getElementById('libraryModalContent');
+        modal.innerHTML = `<h2>My Library</h2><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" rows="3" placeholder="Content"></textarea><button class="btn" onclick="saveLibraryItem()">Save to Library</button><div id="libraryList" style="margin-top:16px;">${state.library.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);"><span style="cursor:pointer;flex:1;font-size:12px;" onclick="viewLibraryItem('${i.id}')">${escapeHtml(i.name)}</span><button onclick="deleteLibraryItem('${i.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button></div>`).join('')}</div><button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button>`;
+        document.getElementById('libraryModal').classList.add('open');
+    }
+    async function saveLibraryItem() { let name = document.getElementById('libName').value.trim(), content = document.getElementById('libContent').value.trim(); if (!name || !content) { toast('Name and content required'); return; } await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) }); toast('Saved to library'); openLibrary(); }
+    async function deleteLibraryItem(id) { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); openLibrary(); }
+    function viewLibraryItem(id) { let item = state.library.find(i => i.id === id); if (item) { document.getElementById('libName').value = item.name; document.getElementById('libContent').value = item.content; } }
 
     // File Upload (unchanged)
-    async function triggerFileUpload() { /* ... */ }
+    async function triggerFileUpload() {
+        if (!state.user) { toast('Sign in to upload files'); return; }
+        if (state.tier === 'free' || state.tier === 'guest') { toast('Upgrade to Plus or Pro for file uploads'); openUpgradeModal(); return; }
+        let inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
+        inp.onchange = async (e) => {
+            let file = e.target.files[0]; if (!file) return;
+            let maxSize = state.tier === 'pro_max' ? 100 : (state.tier === 'pro' ? 50 : 20);
+            if (file.size / (1024 * 1024) > maxSize) { toast(`Max ${maxSize}MB for ${state.tier} tier`); return; }
+            let fd = new FormData(); fd.append('file', file);
+            try {
+                await fetch(`${CFG.API}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: fd });
+                toast(`Uploaded: ${file.name}`);
+                state.messages.push({ role: 'user', content: `[Uploaded document: ${file.name}]\n\nPlease analyze this document.` });
+                renderMessages();
+                sendMessage();
+            } catch(e) { toast('Upload failed'); }
+        };
+        inp.click();
+    }
 
-    // Data & Legal – updated with full content
+    // Data & Legal – updated privacy email
     function openPrivacyModal() {
         const modal = document.getElementById('privacyModalContent');
         modal.innerHTML = `<h2>Privacy Policy</h2>
@@ -1445,7 +1452,7 @@
             <p><strong>2. How We Use Your Information</strong><br>We use your data to provide, maintain, and improve the service, to communicate with you, and to personalise your experience. We do not sell your personal information to third parties.</p>
             <p><strong>3. Data Retention and Security</strong><br>We retain your data as long as your account is active or as needed to provide the service. Messages are encrypted at rest. You may request deletion of your data at any time via the Data & Legal section.</p>
             <p><strong>4. Third-Party Services</strong><br>We may use third-party AI providers and cloud services to process your requests. These providers are contractually bound to confidentiality and data protection obligations.</p>
-            <p><strong>5. Your Rights</strong><br>You have the right to access, correct, export, or delete your personal data. Contact us at privacy@capitan.ai or use the in-app tools.</p>
+            <p><strong>5. Your Rights</strong><br>You have the right to access, correct, export, or delete your personal data. Contact us at <strong>closeaitechnologies@protonmail.com</strong> or use the in-app tools.</p>
         </div>
         <button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
         document.getElementById('privacyModal').classList.add('open');
@@ -1472,28 +1479,23 @@
         modal.innerHTML = `<h2>Data & Legal</h2><div class="modal-setting" onclick="openPrivacyModal(); closeModal('dataModal')"><span>Privacy Policy</span><span>&rarr;</span></div><div class="modal-setting" onclick="openTermsModal(); closeModal('dataModal')"><span>Terms & Conditions</span><span>&rarr;</span></div><div class="modal-setting" onclick="exportUserData()"><span>Export My Data</span><span>&rarr;</span></div><div class="modal-setting" onclick="deleteAccount()" style="color:var(--danger);"><span>Delete Account</span><span>&rarr;</span></div><button class="btn btn-outline" onclick="closeModal('dataModal')">Close</button>`;
         document.getElementById('dataModal').classList.add('open');
     }
-    async function exportUserData() { /* unchanged */ }
-    async function deleteAccount() { /* unchanged */ }
-
-    // About Modal – expanded
-    function openAboutModal() {
-        const modal = document.getElementById('aboutModalContent');
-        modal.innerHTML = `<h2>About CAPITAN AI</h2>
-        <div style="font-size:13px;line-height:1.6;">
-            <p>CAPITAN AI is the world's most advanced enterprise intelligence platform, developed by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.</p>
-            <p><strong>Core Capabilities</strong></p>
-            <ul>
-                <li><strong>Finance & Trading:</strong> Real-time market analysis, DCF/LBO modeling, portfolio optimisation, derivatives pricing, risk management (VaR, CVaR), and algorithmic trading strategies.</li>
-                <li><strong>Software Engineering:</strong> Full-stack development (Python, JavaScript, Go, Rust), cloud architecture (AWS, GCP, Azure), DevOps (Docker, Kubernetes), and code review/debugging.</li>
-                <li><strong>Hardware & Systems:</strong> CPU/GPU architecture, embedded systems, IoT protocols, networking, and storage systems.</li>
-                <li><strong>Mathematics & Science:</strong> Advanced calculus, linear algebra, Bayesian statistics, quantum physics, bioinformatics, and climate modeling.</li>
-                <li><strong>Research & Reasoning:</strong> First-principles analysis, lateral thinking, chain-of-thought reasoning, and document analysis (PDF, DOCX, XLSX, PPTX).</li>
-            </ul>
-            <p><strong>Work Area</strong><br>Real-time collaborative spaces where teams can chat, share files, and work with AI together. Used across 50+ countries by financial institutions, technology firms, and research organisations.</p>
-            <p><strong>Our Mission</strong><br>To democratise elite intelligence and empower every individual and organisation to make better decisions, faster.</p>
-        </div>
-        <button class="btn btn-outline" onclick="closeModal('aboutModal')">Close</button>`;
-        document.getElementById('aboutModal').classList.add('open');
+    async function exportUserData() {
+        if (!state.user) { toast('Sign in to export data'); return; }
+        try {
+            let chats = await apiCall('/api/chats');
+            let dataStr = JSON.stringify({ user: state.user, chats, exportDate: new Date().toISOString() }, null, 2);
+            let blob = new Blob([dataStr], { type: 'application/json' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a'); a.href = url; a.download = `capitan-data-${Date.now()}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            toast('Data exported!');
+        } catch(e) { toast('Export failed'); }
+    }
+    async function deleteAccount() {
+        if (!state.user) { toast('Sign in to delete account'); return; }
+        if (confirm('Permanently delete your account?')) {
+            try { await apiCall('/api/auth/delete-account', { method: 'DELETE' }); logout(); } catch(e) { toast('Failed'); }
+        }
     }
 
     // Auth
@@ -1513,7 +1515,7 @@
                 await initSession();
                 renderMessages();
                 updateUIBasedOnTier();
-                toast('Welcome! Sign up anytime for full features.', '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>');
+                toast('Welcome! Sign up anytime for full features.', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>');
             }
         } catch(e) {
             toast('Could not start session');
