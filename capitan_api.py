@@ -2,7 +2,7 @@
 CAPITAN AI — Enterprise Backend v29.0
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
-All fixes applied (greeting, workspace_members column, intelligence overhaul)
+All fixes applied (greeting, workspace_members PK migration, intelligence overhaul)
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -207,7 +207,7 @@ def init_db():
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS room_code TEXT")
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 10")
 
-                # Workspace members – guarantee columns + fix session_id
+                # Workspace members – fix legacy session_id column (PK issue)
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_members (
                         workspace_id TEXT,
@@ -217,11 +217,27 @@ def init_db():
                         PRIMARY KEY (workspace_id, user_id)
                     )
                 ''')
+                # Ensure necessary columns
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS user_id UUID")
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS workspace_id TEXT")
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member'")
-                # Fix: make session_id nullable if it exists (old schema)
-                c.execute("ALTER TABLE workspace_members ALTER COLUMN session_id DROP NOT NULL")
+                # Migration to remove old session_id column if it exists (and is part of PK)
+                c.execute("""
+                    DO $$
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM information_schema.columns
+                                   WHERE table_name='workspace_members' AND column_name='session_id')
+                        THEN
+                            -- Drop the primary key constraint that includes session_id
+                            ALTER TABLE workspace_members DROP CONSTRAINT IF EXISTS workspace_members_pkey;
+                            -- Remove the old column
+                            ALTER TABLE workspace_members DROP COLUMN session_id;
+                            -- Recreate the correct primary key
+                            ALTER TABLE workspace_members ADD PRIMARY KEY (workspace_id, user_id);
+                        END IF;
+                    END;
+                    $$;
+                """)
 
                 # Workspace messages
                 c.execute('''
