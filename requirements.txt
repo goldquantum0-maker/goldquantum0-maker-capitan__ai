@@ -10,5 +10,5 @@ bcrypt
 PyPDF2
 docx
 openpyxl
-pandas as pd
+pandas
 io
