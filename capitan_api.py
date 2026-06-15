@@ -126,10 +126,10 @@ def init_db():
                         msg_reset_date DATE,
                         created TIMESTAMP DEFAULT NOW(),
                         updated TIMESTAMP DEFAULT NOW()
-    )
-''')
-c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
-c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS msg_reset_date DATE")
+                    )
+                ''')
+                c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
+                c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS msg_reset_date DATE")
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS chats (
                         id TEXT PRIMARY KEY,
