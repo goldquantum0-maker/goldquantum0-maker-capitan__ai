@@ -59,6 +59,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+)
 
 # ================================================================
 # LOGGING
@@ -365,7 +366,7 @@ class RegisterRequest(BaseModel):
 async def register(req: RegisterRequest):
     if not re.match(r'^[^@]+@[^@]+\.[^@]+$', req.email):
         raise HTTPException(400, "Invalid email format")
-    if len(req.password) < 8:
+    if len(req.password) < 6:
         raise HTTPException(400, "Password must be at least 8 characters")
     
     try:
