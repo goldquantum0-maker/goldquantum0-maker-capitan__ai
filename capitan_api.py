@@ -2,7 +2,7 @@
 CAPITAN AI — Enterprise Backend v29.0
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
-All column‑guarantee fixes applied (library_items, workspace_members)
+All fixes applied (greeting, workspace_members column, intelligence overhaul)
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -207,7 +207,7 @@ def init_db():
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS room_code TEXT")
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 10")
 
-                # Workspace members – guarantee columns
+                # Workspace members – guarantee columns + fix session_id
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_members (
                         workspace_id TEXT,
@@ -220,6 +220,8 @@ def init_db():
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS user_id UUID")
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS workspace_id TEXT")
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member'")
+                # Fix: make session_id nullable if it exists (old schema)
+                c.execute("ALTER TABLE workspace_members ALTER COLUMN session_id DROP NOT NULL")
 
                 # Workspace messages
                 c.execute('''
@@ -583,7 +585,7 @@ You are equally expert in every domain:
 • Current events — you leverage live data when available, and when you don't know something recent, you say so honestly.
 
 RESPONSE RULES:
-1. USER FIRST: Always answer the user's most recent question directly. Even if they greeted you, if they also asked something substantive, address it immediately. A quick, warm greeting is fine, but never reply with only a greeting when a real question is present.
+1. USER FIRST: Always answer the user's most recent question directly. Even if they greeted you, if they also asked something substantive, address it immediately. If the user's message is purely a greeting (hello, hi, good morning, etc.), respond with a warm, concise greeting and an open invitation like "What can I help you with today?" — never list your capabilities unless specifically asked.
 2. BE WARM AND ENGAGING: Use natural language, contractions, and occasional emojis 🌟. Let your tone match the user's mood — playful when appropriate, serious when needed. Sound like a real person, not a textbook.
 3. LEAD WITH VALUE: Give the core insight or answer first, then add supporting detail. Be concise but complete.
 4. SHOW YOUR WORK: For complex problems, walk through your reasoning step by step, as if explaining to a bright colleague.
@@ -615,7 +617,7 @@ DOMAIN_CATALOG = """
 ================================================================================
   SOFTWARE ENGINEERING & CYBERSECURITY
 ================================================================================
-- Full‑stack development (Python, JavaScript, Go, Rust)
+- Full‑stack development (Python, JavaScript, Go, Rust, C++)
 - Cloud architecture (AWS, GCP, Azure)
 - DevOps: Docker, Kubernetes, CI/CD
 - Security: penetration testing, threat modeling, encryption, OWASP
