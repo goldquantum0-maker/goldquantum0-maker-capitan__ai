@@ -1433,7 +1433,11 @@
             if (data.token) {
                 state.token = data.token; state.user = data.user; state.tier = 'founder';
                 localStorage.setItem('ct', data.token);
-                updateProfileUI(); closeModal('founderModal'); toast('Founder status activated!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
+                updateProfileUI();
+                updateUIBasedOnTier();      // ← added fix
+                loadWorkspaces();           // ← added fix
+                closeModal('founderModal');
+                toast('Founder status activated!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
                 await loadChats();
             } else { toast('Activation failed: ' + (data.detail || 'Unknown error')); }
         } catch(e) {
@@ -1792,7 +1796,11 @@
         try {
             let res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) });
             state.tier = res.tier; state.token = res.token; localStorage.setItem('ct', res.token);
-            updateProfileUI(); closeModal('upgradeModal'); toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
+            updateProfileUI();
+            updateUIBasedOnTier();      // ← added fix
+            loadWorkspaces();           // ← added fix
+            closeModal('upgradeModal');
+            toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
         } catch(e) { toast('Verification failed'); }
     }
 
