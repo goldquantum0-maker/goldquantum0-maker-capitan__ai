@@ -186,6 +186,8 @@
                 left: 0;
                 top: 0;
                 height: 100%;
+                width: 100%;
+                max-width: 320px;
                 transform: translateX(-100%);
                 z-index: 40;
                 box-shadow: 20px 0 40px rgba(0, 0, 0, 0.3);
@@ -569,7 +571,7 @@
             transition: max-height 0.3s ease;
         }
         .collapsible-content.open {
-            max-height: 600px;
+            max-height: none;   /* never clip */
         }
         .theme-option, .about-option {
             display: flex;
@@ -864,6 +866,52 @@
             background: rgba(239,68,68,0.1);
         }
 
+        /* Upgrade modal – cleaner, no Work Area mentions */
+        .upgrade-tier-card {
+            background: var(--bg-secondary);
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upgrade-tier-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-md);
+        }
+        .upgrade-tier-name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .upgrade-tier-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .upgrade-tier-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 10px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .upgrade-tier-features li {
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .payment-note {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 11px;
+            margin: 12px 0;
+        }
+
         .modal-overlay {
             display: none;
             position: fixed;
@@ -891,10 +939,10 @@
             background: var(--surface);
             border-radius: 24px 24px 0 0;
             width: 100%;
-            max-width: 480px;
+            max-width: 520px;
             max-height: 85vh;
             overflow-y: auto;
-            padding: 20px;
+            padding: 24px;
             box-shadow: var(--shadow-lg);
             animation: modalSlideUp 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
@@ -914,14 +962,14 @@
             to { transform: translateY(0); }
         }
         .modal h2 {
-            font-size: 18px;
-            margin-bottom: 12px;
+            font-size: 20px;
+            margin-bottom: 16px;
             font-weight: 600;
         }
         .modal p {
             font-size: 12px;
             line-height: 1.5;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         .modal-setting {
             display: flex;
@@ -1282,6 +1330,39 @@
         currentStreamer: null
     };
 
+    // ----- Cookie helpers -----
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            let date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+    }
+    function getCookie(name) {
+        let nameEQ = name + "=";
+        let ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i].trim();
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length);
+        }
+        return null;
+    }
+
+    // Restore token from cookie if localStorage lost it
+    if (!state.token) {
+        let cookieToken = getCookie('ct');
+        if (cookieToken) {
+            state.token = cookieToken;
+            localStorage.setItem('ct', cookieToken);
+        }
+    }
+    let storedUser = localStorage.getItem('cu');
+    if (storedUser) {
+        try { state.user = JSON.parse(storedUser); } catch(e) {}
+    }
+
     (function checkFounderParam() {
         const params = new URLSearchParams(window.location.search);
         if (params.get('founder') === 'true') {
@@ -1433,9 +1514,10 @@
             if (data.token) {
                 state.token = data.token; state.user = data.user; state.tier = 'founder';
                 localStorage.setItem('ct', data.token);
+                setCookie('ct', data.token, 30);
+                localStorage.setItem('cu', JSON.stringify(data.user));
                 updateProfileUI();
-                updateUIBasedOnTier();      // ← added fix
-                loadWorkspaces();           // ← added fix
+                updateUIBasedOnTier();
                 closeModal('founderModal');
                 toast('Founder status activated!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
                 await loadChats();
@@ -1610,16 +1692,25 @@
         try {
             if (state.token) {
                 let sess = await apiCall('/api/session');
-                state.tier = sess.tier; state.user = sess.user_data;
+                state.tier = sess.tier;
+                state.user = sess.user_data || state.user;
             } else {
                 let sess = await apiCall('/api/session');
                 state.token = sess.token; state.tier = sess.tier;
                 localStorage.setItem('ct', state.token);
+                setCookie('ct', state.token, 365);
             }
             updateProfileUI();
             updateUIBasedOnTier();
             loadWorkspaces();
-        } catch(e) { console.warn(e); }
+        } catch(e) {
+            console.warn('Session init failed, using stored user');
+            if (state.token && state.user) {
+                updateProfileUI();
+                updateUIBasedOnTier();
+                loadWorkspaces();
+            }
+        }
     }
     function updateProfileUI() {
         let name = state.user?.name || state.user?.email?.split('@')[0] || 'Guest';
@@ -1777,12 +1868,60 @@
     function openUpgradeModal() {
         const modal = document.getElementById('upgradeModalContent');
         modal.innerHTML = `<h2>Upgrade CAPITAN AI</h2>
-            <div class="crypto-card" onclick="selectTier('plus')"><div style="font-weight:600;margin-bottom:3px;">Plus — $8/month</div><div style="font-size:11px;color:var(--text-secondary);">Limited messaging · Groq 3.3 · Work Area (10 seats) · 20MB files</div></div>
-            <div class="crypto-card" onclick="selectTier('pro')"><div style="font-weight:600;margin-bottom:3px;">Pro — $17/month</div><div style="font-size:11px;color:var(--text-secondary);">Limited messaging · Claude 3.5 · Work Area (25 seats) · 50MB files + Live Markets</div></div>
-            <div class="crypto-card" onclick="selectTier('pro_max')"><div style="font-weight:600;margin-bottom:3px;">Pro Max — $30/month</div><div style="font-size:11px;color:var(--text-secondary);">Unlimited messaging · GPT-4o+Claude · Work Area (50 seats) · 100MB files</div></div>
-            <div class="work-area-snippet" style="font-size:11px;"><strong>Work Area — Collaborate from Anywhere</strong><br>Real-time workspaces. Share files, chat, and work with AI alongside your team.</div>
-            <div class="payment-steps" style="background:var(--bg-secondary);border-radius:14px;padding:14px;margin:10px 0;font-size:11px;"><strong>How to Pay:</strong><br>1. Copy BTC or ETH address<br>2. Send exact amount<br>3. Paste TXID → Verify</div>
-            <div id="paymentSection" style="display:none;margin-top:14px;"><div style="display:flex;gap:10px;margin-bottom:10px;"><button class="btn" style="flex:1;padding:8px;margin:0;" onclick="setCoin('BTC')">BTC</button><button class="btn" style="flex:1;padding:8px;margin:0;" onclick="setCoin('ETH')">ETH</button></div><div class="wallet-address" id="walletAddress" onclick="copyWallet()" style="font-size:11px;">Loading...</div><input type="text" id="txidInput" placeholder="Transaction ID" style="font-size:11px;"><button class="btn" style="padding:10px;" onclick="verifyPayment()">Verify Payment</button></div>
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">Choose a plan that fits your needs. All plans include our core AI assistant. Payment is via crypto – simple and private.</p>
+
+            <div class="upgrade-tier-card" onclick="selectTier('plus')">
+                <div class="upgrade-tier-name">Plus</div>
+                <div class="upgrade-tier-price">$8 <span style="font-size:12px; font-weight:400;">/ month</span></div>
+                <ul class="upgrade-tier-features">
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 50 messages per day</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Groq Llama 3.3 70B</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> File uploads (20 MB)</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Web search</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 2‑step reasoning</li>
+                </ul>
+            </div>
+
+            <div class="upgrade-tier-card" onclick="selectTier('pro')">
+                <div class="upgrade-tier-name">Pro</div>
+                <div class="upgrade-tier-price">$17 <span style="font-size:12px; font-weight:400;">/ month</span></div>
+                <ul class="upgrade-tier-features">
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 100 messages per day</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Claude 3.5 Sonnet</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> File uploads (50 MB)</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Live market data</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 3‑step reasoning</li>
+                </ul>
+            </div>
+
+            <div class="upgrade-tier-card" onclick="selectTier('pro_max')">
+                <div class="upgrade-tier-name">Pro Max</div>
+                <div class="upgrade-tier-price">$30 <span style="font-size:12px; font-weight:400;">/ month</span></div>
+                <ul class="upgrade-tier-features">
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Unlimited messages</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> GPT‑4o + Claude Ensemble</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> File uploads (100 MB)</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Priority support</li>
+                    <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Advanced reasoning</li>
+                </ul>
+            </div>
+
+            <div class="payment-note">
+                <strong>Payment via Bitcoin or Ethereum</strong><br>
+                1. Send the exact amount to the wallet address below.<br>
+                2. Paste the transaction ID (TXID) and click Verify.<br>
+                3. Your account upgrades immediately after confirmation.
+            </div>
+
+            <div id="paymentSection" style="display:none; margin-top:16px;">
+                <div style="display:flex; gap:10px; margin-bottom:12px;">
+                    <button class="btn" style="flex:1; padding:10px; margin:0;" onclick="setCoin('BTC')">BTC</button>
+                    <button class="btn" style="flex:1; padding:10px; margin:0;" onclick="setCoin('ETH')">ETH</button>
+                </div>
+                <div class="wallet-address" id="walletAddress" onclick="copyWallet()" style="font-size:11px; background:var(--bg-tertiary); border-radius:12px; padding:12px; word-break:break-all; margin-bottom:12px;">Loading...</div>
+                <input type="text" id="txidInput" placeholder="Transaction ID" style="font-size:12px;">
+                <button class="btn" style="padding:12px;" onclick="verifyPayment()">Verify Payment</button>
+            </div>
             <button class="btn btn-outline" onclick="closeModal('upgradeModal')">Close</button>`;
         document.getElementById('upgradeModal').classList.add('open');
     }
@@ -1796,9 +1935,9 @@
         try {
             let res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) });
             state.tier = res.tier; state.token = res.token; localStorage.setItem('ct', res.token);
+            setCookie('ct', res.token, 30);
             updateProfileUI();
-            updateUIBasedOnTier();      // ← added fix
-            loadWorkspaces();           // ← added fix
+            updateUIBasedOnTier();
             closeModal('upgradeModal');
             toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
         } catch(e) { toast('Verification failed'); }
@@ -2013,6 +2152,8 @@
                 state.user = data.user;
                 state.tier = data.user.tier;
                 localStorage.setItem('ct', data.token);
+                setCookie('ct', data.token, 30);
+                localStorage.setItem('cu', JSON.stringify(data.user));
                 updateProfileUI();
                 updateUIBasedOnTier();
                 closeModal('guestSignupModal');
@@ -2052,6 +2193,8 @@
                 state.user = data.user;
                 state.tier = data.user.tier;
                 localStorage.setItem('ct', data.token);
+                setCookie('ct', data.token, 30);
+                localStorage.setItem('cu', JSON.stringify(data.user));
                 updateProfileUI();
                 updateUIBasedOnTier();
                 closeModal('guestLoginModal');
@@ -2117,6 +2260,8 @@
             let data = await res.json();
             if (data.token) {
                 localStorage.setItem('ct', data.token); state.token = data.token; state.user = data.user; state.tier = data.user.tier;
+                setCookie('ct', data.token, 30);
+                localStorage.setItem('cu', JSON.stringify(data.user));
                 document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex';
                 await initSession(); await loadChats(); renderMessages();
                 updateUIBasedOnTier();
@@ -2139,6 +2284,8 @@
             if (data.token) {
                 successDiv.innerText = 'Account created! Redirecting...'; successDiv.style.display = 'block';
                 localStorage.setItem('ct', data.token); state.token = data.token; state.user = data.user; state.tier = data.user.tier;
+                setCookie('ct', data.token, 30);
+                localStorage.setItem('cu', JSON.stringify(data.user));
                 setTimeout(() => { document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; initSession(); loadChats(); renderMessages(); updateUIBasedOnTier(); toast(`Welcome to CAPITAN AI!`); }, 1500);
             } else {
                 errorDiv.innerText = data.detail || 'Signup failed';
@@ -2155,6 +2302,8 @@
     function logout() {
         localStorage.setItem('session_expired', '1');
         localStorage.removeItem('ct');
+        localStorage.removeItem('cu');
+        document.cookie = 'ct=; Max-Age=0; path=/;';
         state.token = null; state.user = null; state.tier = 'free'; state.activeChatId = null; state.messages = []; state.chats = [];
         location.reload();
     }
