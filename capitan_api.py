@@ -2,17 +2,19 @@
 CAPITAN AI — Enterprise Backend v29.0
 CLOSEAI Technologies
 Warm, Expert Trading Personality | Elite Reasoning | File Analysis | Workspaces
+All Planned Fixes Applied (Work Areas, Saved, Paid Features, PWA, New Logo)
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
-import PyPDF2, docx, openpyxl, io
+import PyPDF2, docx, openpyxl, io, csv
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Tuple
 from contextlib import contextmanager
+from io import StringIO
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 import psycopg2
@@ -35,6 +37,7 @@ class Settings(BaseSettings):
     NEWS_API_KEY: str = ""
     FINNHUB_API_KEY: str = ""
     ETHERSCAN_API_KEY: str = ""
+    FOUNDER_EXTRA_PROMPT: str = ""
 
     class Config:
         env_file = ".env"
@@ -56,7 +59,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # ================================================================
-# DATABASE – fixed context manager
+# DATABASE
 # ================================================================
 @contextmanager
 def get_db():
@@ -243,7 +246,7 @@ def sid(): return str(uuid.uuid4())[:8].upper()
 def mid(): return 'mem_' + sid()
 
 # ================================================================
-# PASSWORD HASHING – bcrypt
+# PASSWORD HASHING
 # ================================================================
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -255,13 +258,12 @@ def verify_password(password: str, hashed: str) -> bool:
         return False
 
 # ================================================================
-# JWT AUTHENTICATION
+# JWT AUTH
 # ================================================================
 def create_token(user_id: str) -> str:
     header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
-        "user_id": user_id,
-        "type": "user",
+        "user_id": user_id, "type": "user",
         "exp": int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp())
     }).encode()).decode().rstrip("=")
     signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
@@ -270,9 +272,7 @@ def create_token(user_id: str) -> str:
 def create_session_token(session_id: str, tier: str) -> str:
     header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
-        "session_id": session_id,
-        "tier": tier,
-        "type": "session",
+        "session_id": session_id, "tier": tier, "type": "session",
         "exp": int((datetime.now(timezone.utc) + timedelta(days=365)).timestamp())
     }).encode()).decode().rstrip("=")
     signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
@@ -302,18 +302,13 @@ def get_current_user(request: Request):
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
-                if not c.fetchone():
-                    return None
+                if not c.fetchone(): return None
                 c.execute("SELECT id, email, name, tier, reasoning_depth, preferred_domain FROM users WHERE id = %s", (user_id,))
                 row = c.fetchone()
                 if row:
                     return {
-                        "id": row[0],
-                        "email": row[1],
-                        "name": row[2] or row[1].split('@')[0],
-                        "tier": row[3],
-                        "reasoning_depth": row[4] or 1,
-                        "preferred_domain": row[5] or "general"
+                        "id": row[0], "email": row[1], "name": row[2] or row[1].split('@')[0],
+                        "tier": row[3], "reasoning_depth": row[4] or 1, "preferred_domain": row[5] or "general"
                     }
     except: pass
     return None
@@ -349,7 +344,7 @@ def get_current_session(request: Request):
     raise HTTPException(401, "Session not found")
 
 # ================================================================
-# AUTH ENDPOINTS (unchanged)
+# AUTH ENDPOINTS
 # ================================================================
 class RegisterRequest(BaseModel):
     email: str
@@ -388,12 +383,8 @@ async def register(req: RegisterRequest):
                 return {
                     "token": token,
                     "user": {
-                        "id": user_id,
-                        "email": req.email,
-                        "name": name,
-                        "tier": "free",
-                        "reasoning_depth": 1,
-                        "preferred_domain": "general"
+                        "id": user_id, "email": req.email, "name": name,
+                        "tier": "free", "reasoning_depth": 1, "preferred_domain": "general"
                     }
                 }
     except HTTPException:
@@ -428,8 +419,7 @@ async def login(req: LoginRequest):
                 return {
                     "token": token,
                     "user": {
-                        "id": user_id,
-                        "email": email,
+                        "id": user_id, "email": email,
                         "name": name or email.split('@')[0],
                         "tier": tier,
                         "reasoning_depth": reasoning_depth or 1,
@@ -559,12 +549,9 @@ async def founder_login(req: dict, request: Request):
                     "verified": True,
                     "token": token,
                     "user": {
-                        "id": user_id,
-                        "name": "CAPITAN Founder",
-                        "email": "founder@capitan.ai",
-                        "tier": "founder",
-                        "reasoning_depth": 5,
-                        "preferred_domain": "general"
+                        "id": user_id, "name": "CAPITAN Founder",
+                        "email": "founder@capitan.ai", "tier": "founder",
+                        "reasoning_depth": 5, "preferred_domain": "general"
                     }
                 }
     except Exception as e:
@@ -572,7 +559,7 @@ async def founder_login(req: dict, request: Request):
         raise HTTPException(500, "Founder login failed")
 
 # ================================================================
-# REWRITTEN SYSTEM PROMPT – Warm, Trading-Focused
+# SYSTEM PROMPT
 # ================================================================
 CORE_INSTRUCTIONS = """You are CAPITAN AI – a warm, street‑smart, elite trading and intelligence assistant created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
@@ -677,6 +664,9 @@ def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int
     if user_query:
         base += f"\n\nUSER REQUEST: {user_query}"
     
+    if tier == "founder" and settings.FOUNDER_EXTRA_PROMPT:
+        base += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
+    
     if tier in ("pro", "pro_max", "founder"):
         base += "\n\n" + DOMAIN_CATALOG
     
@@ -686,7 +676,7 @@ def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int
     return base
 
 # ================================================================
-# RATE LIMITING (with cleanup)
+# RATE LIMITING
 # ================================================================
 rate_store = {}
 _cleanup_counter = 0
@@ -940,7 +930,7 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         return ''
 
 # ================================================================
-# FILE UPLOAD (with text extraction)
+# FILE UPLOAD
 # ================================================================
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -987,7 +977,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
     }
 
 # ================================================================
-# CHAT ENDPOINT (with file analysis & memories)
+# CHAT ENDPOINT
 # ================================================================
 class ChatRequest(BaseModel):
     messages: list
@@ -1037,7 +1027,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     domain = classify_query(user_msg)
     web_search_needed = needs_web_search(user_msg)
     
-    # If user message mentions uploaded file, fetch extracted text
     file_text = ""
     if "[Uploaded document:" in user_msg:
         fname_match = re.search(r'\[Uploaded document:\s*(.*?)\]', user_msg)
@@ -1052,7 +1041,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                             file_text = row[0]
                             user_msg += "\n\n[DOCUMENT CONTENT]\n" + file_text[:30000]
     
-    # Save user message
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1080,7 +1068,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     except Exception as e:
         logger.error(f"Save error: {e}")
     
-    # Fetch recent 20 messages
     history = []
     try:
         with get_db() as conn:
@@ -1094,7 +1081,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                 history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
     except: pass
     
-    # Web search
     web_results = None
     if tier_info.get("web_search", False) and web_search_needed:
         try:
@@ -1102,7 +1088,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         except Exception as e:
             logger.error(f"Web search error: {e}")
     
-    # Retrieve relevant memories
     memory_text = ""
     if is_authenticated:
         try:
@@ -1114,14 +1099,12 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                         memory_text = "\n\n[RELEVANT MEMORIES]\n" + "\n".join([r[0][:200] for r in rows])
         except: pass
     
-    # Build prompt
     prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth, preferred_domain, web_results, user_query=user_msg)
     if memory_text:
         prompt += "\n" + memory_text
     
     result, model_used, reasoning_chain = call_ai_model([{"role": "system", "content": prompt}] + history, tier, reasoning_depth, domain)
     
-    # Save AI response
     if result:
         try:
             with get_db() as conn:
@@ -1247,7 +1230,7 @@ def delete_chat(chat_id: str, request: Request):
         return {"deleted": False}
 
 # ================================================================
-# LIBRARY (with improved error feedback)
+# LIBRARY
 # ================================================================
 @app.get("/api/library")
 def get_library(user: dict = Depends(get_current_user)):
@@ -1309,7 +1292,7 @@ def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(500, "Could not delete item")
 
 # ================================================================
-# PAYMENT & UPGRADE – with real verification
+# PAYMENT & UPGRADE
 # ================================================================
 @app.get("/api/payment-config")
 def payment_config():
@@ -1524,6 +1507,29 @@ def workspace_get_messages(room_code: str, user: dict = Depends(get_current_user
         return {"messages": []}
 
 # ================================================================
+# NEW: MY WORKSPACES
+# ================================================================
+@app.get("/api/workspace/my")
+def workspace_my(request: Request, user: dict = Depends(get_current_user)):
+    if not user:
+        return {"workspaces": []}
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT w.id, w.name, w.room_code, w.max_members, w.created_at
+                FROM workspaces w
+                JOIN workspace_members m ON w.id = m.workspace_id
+                WHERE m.user_id = %s
+                ORDER BY w.created_at DESC
+            """, (user["id"],))
+            rows = c.fetchall()
+            return {"workspaces": [
+                {"id": r[0], "name": r[1], "room_code": r[2], "max_members": r[3],
+                 "created_at": r[4].isoformat() if r[4] else None}
+                for r in rows
+            ]}
+
+# ================================================================
 # MARKET & NEWS (with Finnhub)
 # ================================================================
 @app.get("/api/markets")
@@ -1567,7 +1573,7 @@ def web_search_endpoint(q: str, request: Request):
     return {"results": search_web(q, 8)}
 
 # ================================================================
-# ADMIN (Founder only) – now with user management
+# ADMIN (Founder only)
 # ================================================================
 @app.get("/api/admin")
 def admin_panel(user: dict = Depends(get_current_user)):
@@ -1642,6 +1648,63 @@ def admin_delete_user(user_id: str, user: dict = Depends(get_current_user)):
             c.execute("DELETE FROM users WHERE id = %s", (user_id,))
             conn.commit()
     return {"deleted": True}
+
+# ================================================================
+# NEW: ADMIN ANALYTICS
+# ================================================================
+@app.get("/api/admin/analytics")
+def admin_analytics(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT tier, COUNT(*) FROM users GROUP BY tier")
+            tier_counts = {r[0]: r[1] for r in c.fetchall()}
+            c.execute("""
+                SELECT EXTRACT(HOUR FROM created) as hour, COUNT(*) as count
+                FROM chat_messages WHERE created > NOW() - INTERVAL '24 hours'
+                GROUP BY hour ORDER BY hour
+            """)
+            hourly = [{"hour": int(r[0]), "count": r[1]} for r in c.fetchall()]
+            c.execute("""
+                SELECT domain, COUNT(*) FROM memories WHERE created > NOW() - INTERVAL '7 days'
+                GROUP BY domain ORDER BY COUNT(*) DESC LIMIT 10
+            """)
+            topics = [{"domain": r[0], "count": r[1]} for r in c.fetchall()]
+            return {
+                "users_by_tier": tier_counts,
+                "hourly_messages": hourly,
+                "popular_topics": topics
+            }
+
+# ================================================================
+# NEW: CHAT EXPORT (JSON/CSV)
+# ================================================================
+@app.get("/api/export/chats/{chat_id}")
+def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    tier = user["tier"]
+    if tier not in ("plus", "pro", "pro_max", "founder"):
+        raise HTTPException(403, "Export available on paid plans")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+            if not c.fetchone():
+                raise HTTPException(404, "Chat not found")
+            c.execute("SELECT role, content, model, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
+            rows = c.fetchall()
+            messages = [{"role": r[0], "content": r[1], "model": r[2] or "AI", "created": r[3].isoformat() if r[3] else None} for r in rows]
+            if format == "csv":
+                output = StringIO()
+                writer = csv.writer(output)
+                writer.writerow(["role", "content", "model", "created"])
+                for m in messages:
+                    writer.writerow([m["role"], m["content"], m["model"], m["created"]])
+                output.seek(0)
+                return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=chat-{chat_id}.csv"})
+            else:
+                return JSONResponse(content={"chat_id": chat_id, "messages": messages})
 
 # ================================================================
 # HEALTH CHECK
@@ -1762,12 +1825,61 @@ UPGRADE_BENEFITS = {
 }
 
 # ================================================================
+# PWA MANIFEST & ICONS (new logo)
+# ================================================================
+@app.get("/manifest.json")
+async def manifest():
+    return JSONResponse(content={
+        "name": "CAPITAN AI",
+        "short_name": "CAPITAN",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0e6e8e",
+        "theme_color": "#0e6e8e",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}
+        ]
+    })
+
+@app.get("/icon-192.png")
+async def icon_192():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
+        <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
+        <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
+
+@app.get("/icon-512.png")
+async def icon_512():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
+        <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
+        <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
+
+@app.get("/")
+async def root():
+    return {
+        "name": "CAPITAN AI",
+        "version": "29.0",
+        "status": "operational",
+        "auth": "email_password",
+        "pwa_supported": True,
+        "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"],
+        "intelligence": "full_restored",
+        "reasoning": "chain_of_thought_enabled"
+    }
+
+# ================================================================
 # MAIN
 # ================================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v29.0 - Warm Trading Expert, Full Features")
+    print(f"🚀 CAPITAN AI v29.0 - Complete with all fixes, new logo")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
