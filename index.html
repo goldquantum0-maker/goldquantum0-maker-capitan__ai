@@ -113,7 +113,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            font-size: 13px;
+            font-size: 12px;  /* reduced from 13px */
             line-height: 1.5;
             height: 100vh;
             overflow: hidden;
@@ -142,8 +142,8 @@
             visibility: hidden;
         }
         .splash-logo {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             animation: splashPulse 1.2s ease-in-out infinite;
         }
         @keyframes splashPulse {
@@ -160,7 +160,7 @@
         }
 
         .sidebar {
-            width: 280px;
+            width: 270px;
             background: var(--sidebar-bg);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
@@ -174,7 +174,7 @@
         }
         @media (min-width: 769px) {
             .sidebar.collapsed {
-                transform: translateX(calc(-1 * 280px));
+                transform: translateX(calc(-1 * 270px));
                 position: fixed;
                 height: 100%;
             }
@@ -211,9 +211,9 @@
         }
 
         .sidebar-brand {
-            padding: 20px 16px 12px;
+            padding: 18px 16px 10px;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -238,8 +238,8 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 40px;
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -290,7 +290,7 @@
 
         .greeting-container {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 36px;
             animation: fadeSlideUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
         @keyframes fadeSlideUp {
@@ -298,7 +298,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .greeting-text {
-            font-size: 30px;
+            font-size: 28px;
             font-weight: 700;
             background: linear-gradient(135deg, var(--accent), #f59e0b, var(--accent-light));
             background-size: 200% 200%;
@@ -313,11 +313,11 @@
         }
 
         .message {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             animation: messageSlideIn 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
         @keyframes messageSlideIn {
-            from { opacity: 0; transform: translateY(12px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .message.user {
@@ -327,11 +327,11 @@
         .message.user .message-content {
             background: var(--bubble-user);
             color: white;
-            border-radius: 24px 24px 8px 24px;
-            padding: 10px 16px;
+            border-radius: 22px 22px 6px 22px;
+            padding: 8px 14px;
             max-width: 80%;
             box-shadow: var(--shadow-sm);
-            font-size: 13px;
+            font-size: 12px;
         }
         .message.assistant {
             display: flex;
@@ -341,11 +341,11 @@
         .message.assistant .message-content {
             background: var(--bubble-assistant);
             border: 1px solid var(--border);
-            border-radius: 24px 24px 24px 8px;
-            padding: 10px 16px;
+            border-radius: 22px 22px 22px 6px;
+            padding: 8px 14px;
             max-width: 90%;
             box-shadow: var(--shadow-sm);
-            font-size: 13px;
+            font-size: 12px;
             transition: all 0.2s ease;
         }
         .message.assistant .message-content:hover {
@@ -353,29 +353,29 @@
             transform: translateX(2px);
         }
         .message-content {
-            line-height: 1.6;
+            line-height: 1.5;
             word-break: break-word;
         }
         .message-content pre {
             background: var(--bg-tertiary);
-            padding: 10px;
-            border-radius: 12px;
+            padding: 8px;
+            border-radius: 10px;
             overflow-x: auto;
-            font-size: 12px;
-            margin: 8px 0;
+            font-size: 11px;
+            margin: 6px 0;
         }
         .message-content code {
             font-family: monospace;
             background: var(--bg-tertiary);
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-size: 11px;
         }
 
         .action-icons {
             display: flex;
-            gap: 8px;
-            margin-top: 6px;
+            gap: 6px;
+            margin-top: 4px;
             padding-left: 4px;
             opacity: 0;
             transition: opacity 0.2s;
@@ -393,8 +393,8 @@
             border: none;
             cursor: pointer;
             color: var(--text-tertiary);
-            padding: 4px;
-            border-radius: 8px;
+            padding: 3px;
+            border-radius: 6px;
             transition: all 0.2s;
             display: flex;
             align-items: center;
@@ -407,22 +407,22 @@
         .typing-indicator {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
+            gap: 8px;
+            padding: 8px 14px;
             background: var(--bubble-assistant);
             border: 1px solid var(--border);
-            border-radius: 24px 24px 24px 8px;
+            border-radius: 22px 22px 22px 6px;
             width: fit-content;
             box-shadow: var(--shadow-sm);
         }
         .typing-dots {
             display: flex;
-            gap: 5px;
+            gap: 4px;
             align-items: center;
         }
         .typing-dots span {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--accent);
             animation: dotBounce 1.4s ease-in-out infinite;
@@ -435,7 +435,7 @@
             30% { transform: translateY(-8px); opacity: 1; }
         }
         .typing-text {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
             font-weight: 500;
         }
@@ -444,7 +444,7 @@
         .stream-cursor {
             display: inline-block;
             width: 2px;
-            height: 16px;
+            height: 14px;
             background: var(--accent);
             margin-left: 2px;
             animation: cursorBlink 1s step-end infinite;
@@ -457,16 +457,16 @@
         }
 
         .input-area {
-            padding: 0 0 20px;
+            padding: 0 0 18px;
         }
         .input-wrapper {
             display: flex;
             align-items: flex-end;
-            gap: 10px;
+            gap: 8px;
             background: var(--input-bg);
             border: 1.5px solid var(--border);
-            border-radius: 32px;
-            padding: 6px 8px 6px 16px;
+            border-radius: 28px;
+            padding: 4px 6px 4px 14px;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: var(--shadow-sm);
         }
@@ -478,8 +478,8 @@
         .upload-btn, .send-btn {
             background: transparent;
             border: none;
-            width: 38px;
-            height: 38px;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -496,7 +496,7 @@
         .send-btn {
             background: var(--accent);
             color: white;
-            box-shadow: 0 2px 8px var(--accent-glow);
+            box-shadow: 0 2px 6px var(--accent-glow);
         }
         .send-btn:hover {
             background: var(--accent-dark);
@@ -507,11 +507,11 @@
             outline: none;
             background: transparent;
             font-family: inherit;
-            font-size: 13px;
-            padding: 12px 0;
+            font-size: 12px;
+            padding: 10px 0;
             color: var(--text-primary);
             resize: none;
-            max-height: 120px;
+            max-height: 100px;
         }
         .input-field::placeholder {
             color: var(--text-tertiary);
@@ -520,20 +520,20 @@
         .new-chat-btn, .menu-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 16px;
-            margin: 4px 12px;
-            border-radius: 14px;
+            gap: 10px;
+            padding: 8px 14px;
+            margin: 3px 10px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 500;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-secondary);
         }
         .new-chat-btn {
             background: var(--accent);
             color: white;
-            margin-top: 8px;
+            margin-top: 6px;
             box-shadow: var(--shadow-sm);
         }
         .new-chat-btn:hover, .menu-item:hover {
@@ -549,12 +549,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 16px;
-            margin: 4px 12px;
-            border-radius: 14px;
+            padding: 8px 14px;
+            margin: 3px 10px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: 500;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
             transition: all 0.2s;
         }
@@ -572,29 +572,29 @@
         .theme-option, .about-option {
             display: flex;
             justify-content: space-between;
-            padding: 8px 16px 8px 44px;
+            padding: 6px 14px 6px 40px;
             cursor: pointer;
-            border-radius: 12px;
-            font-size: 12px;
+            border-radius: 10px;
+            font-size: 11px;
             transition: all 0.2s;
         }
         .theme-option:hover, .about-option:hover {
             background: var(--bg-tertiary);
         }
         .about-content {
-            padding: 8px 16px 16px 44px;
-            font-size: 12px;
+            padding: 6px 14px 14px 40px;
+            font-size: 11px;
             color: var(--text-secondary);
-            line-height: 1.6;
+            line-height: 1.5;
         }
         .workspace-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 16px 8px 44px;
-            font-size: 12px;
+            padding: 6px 14px 6px 40px;
+            font-size: 11px;
             cursor: pointer;
-            border-radius: 12px;
+            border-radius: 10px;
             transition: all 0.2s;
         }
         .workspace-item:hover {
@@ -603,34 +603,34 @@
         .chat-history {
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 6px;
         }
         .chat-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 14px;
+            padding: 8px 12px;
             margin: 2px 0;
-            border-radius: 14px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
         }
         .chat-item:hover, .chat-item.active {
             background: var(--accent-glow);
             color: var(--accent);
-            transform: translateX(4px);
+            transform: translateX(3px);
         }
         .recent-label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             color: var(--text-tertiary);
-            padding: 8px 16px 4px;
+            padding: 6px 14px 3px;
             letter-spacing: 0.5px;
         }
         .profile-section {
-            padding: 14px 16px;
+            padding: 12px 14px;
             border-top: 1px solid var(--border);
             margin-top: auto;
             cursor: pointer;
@@ -642,11 +642,11 @@
         .profile-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
         .profile-avatar-img {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             object-fit: cover;
             background: var(--accent-glow);
@@ -654,17 +654,17 @@
         }
         .profile-name {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
         }
         .profile-tier {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--accent);
             font-weight: 500;
         }
         .sidebar-footer {
-            padding: 14px;
+            padding: 12px;
             text-align: center;
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-tertiary);
             border-top: 1px solid var(--border);
         }
@@ -676,13 +676,13 @@
         /* Guest buttons */
         .guest-action-btn {
             display: block;
-            margin: 4px 16px;
-            padding: 8px 12px;
+            margin: 3px 14px;
+            padding: 6px 10px;
             background: transparent;
             border: 1.5px solid var(--accent);
-            border-radius: 20px;
+            border-radius: 18px;
             color: var(--accent);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -696,10 +696,10 @@
         .session-expired-msg {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 16px;
-            font-size: 12px;
+            border-radius: 10px;
+            padding: 8px 12px;
+            margin-bottom: 14px;
+            font-size: 11px;
             color: #ef4444;
             text-align: center;
             display: none;
@@ -707,17 +707,17 @@
 
         /* Saved (Library) Modal */
         .saved-modal {
-            max-width: 700px;
+            max-width: 650px;
         }
         .saved-search {
             width: 100%;
-            padding: 10px 16px;
+            padding: 8px 14px;
             border: 1.5px solid var(--border);
-            border-radius: 28px;
+            border-radius: 24px;
             background: var(--bg-secondary);
             color: var(--text-primary);
-            font-size: 13px;
-            margin-bottom: 16px;
+            font-size: 12px;
+            margin-bottom: 14px;
             outline: none;
             transition: border 0.2s;
         }
@@ -728,16 +728,16 @@
         .saved-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-bottom: 16px;
-            max-height: 300px;
+            gap: 8px;
+            margin-bottom: 14px;
+            max-height: 280px;
             overflow-y: auto;
         }
         .saved-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 12px 14px;
+            border-radius: 14px;
+            padding: 10px 12px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -748,28 +748,28 @@
         }
         .saved-card-title {
             font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 4px;
+            font-size: 12px;
+            margin-bottom: 3px;
             color: var(--text-primary);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .saved-card-preview {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-tertiary);
-            line-height: 1.4;
+            line-height: 1.3;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
         .saved-card-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-tertiary);
         }
         .saved-card-delete {
@@ -777,10 +777,10 @@
             border: none;
             color: var(--text-tertiary);
             cursor: pointer;
-            padding: 2px 6px;
-            border-radius: 12px;
+            padding: 1px 5px;
+            border-radius: 10px;
             transition: all 0.2s;
-            font-size: 12px;
+            font-size: 11px;
         }
         .saved-card-delete:hover {
             color: #ef4444;
@@ -788,31 +788,31 @@
         }
         .saved-empty {
             text-align: center;
-            padding: 30px 20px;
+            padding: 24px 16px;
             color: var(--text-tertiary);
-            font-size: 13px;
+            font-size: 12px;
         }
         .saved-empty svg {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 12px;
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
             opacity: 0.5;
         }
         .saved-create-area {
             border-top: 1px solid var(--border);
-            padding-top: 16px;
+            padding-top: 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 7px;
         }
         .saved-create-area input, .saved-create-area textarea {
             width: 100%;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border: 1.5px solid var(--border);
-            border-radius: 16px;
+            border-radius: 14px;
             background: var(--bg-secondary);
             color: var(--text-primary);
-            font-size: 13px;
+            font-size: 12px;
             outline: none;
             resize: vertical;
             font-family: inherit;
@@ -822,18 +822,18 @@
             box-shadow: var(--shadow-glow);
         }
         .saved-create-area .btn {
-            margin-top: 4px;
+            margin-top: 3px;
         }
 
         /* Admin modal styles */
         .admin-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 16px;
+            font-size: 11px;
+            margin-bottom: 14px;
         }
         .admin-table th, .admin-table td {
-            padding: 8px 6px;
+            padding: 6px 5px;
             text-align: left;
             border-bottom: 1px solid var(--border);
         }
@@ -842,21 +842,21 @@
             color: var(--text-secondary);
         }
         .admin-tier-select {
-            padding: 4px 8px;
-            border-radius: 12px;
+            padding: 3px 7px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             background: var(--bg-secondary);
             color: var(--text-primary);
-            font-size: 11px;
+            font-size: 10px;
         }
         .admin-delete-btn {
             background: none;
             border: none;
             color: #ef4444;
             cursor: pointer;
-            font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 8px;
+            font-size: 11px;
+            padding: 1px 5px;
+            border-radius: 7px;
         }
         .admin-delete-btn:hover {
             background: rgba(239,68,68,0.1);
@@ -887,19 +887,19 @@
         }
         .modal {
             background: var(--surface);
-            border-radius: 28px 28px 0 0;
+            border-radius: 24px 24px 0 0;
             width: 100%;
-            max-width: 500px;
+            max-width: 480px;
             max-height: 85vh;
             overflow-y: auto;
-            padding: 24px;
+            padding: 20px;
             box-shadow: var(--shadow-lg);
             animation: modalSlideUp 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
         @media (min-width: 769px) {
             .modal {
-                border-radius: 28px;
-                margin: 20px;
+                border-radius: 24px;
+                margin: 16px;
                 animation: modalScaleIn 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             }
             @keyframes modalScaleIn {
@@ -912,40 +912,40 @@
             to { transform: translateY(0); }
         }
         .modal h2 {
-            font-size: 20px;
-            margin-bottom: 16px;
+            font-size: 18px;
+            margin-bottom: 12px;
             font-weight: 600;
         }
         .modal p {
-            font-size: 13px;
-            line-height: 1.6;
-            margin-bottom: 12px;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 10px;
         }
         .modal-setting {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             transition: all 0.2s;
         }
         .modal-setting:hover {
             color: var(--accent);
-            transform: translateX(4px);
+            transform: translateX(3px);
         }
         .btn {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             background: var(--accent);
             color: white;
             border: none;
-            border-radius: 40px;
+            border-radius: 36px;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 12px;
+            margin-top: 10px;
             transition: all 0.2s;
-            font-size: 13px;
+            font-size: 12px;
         }
         .btn:hover {
             background: var(--accent-dark);
@@ -962,21 +962,21 @@
         }
         .toast {
             position: fixed;
-            bottom: 100px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             background: var(--surface);
             color: var(--text-primary);
-            padding: 10px 20px;
-            border-radius: 40px;
-            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 36px;
+            font-size: 11px;
             z-index: 1100;
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--border);
             animation: toastIn 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
         @keyframes toastIn {
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
@@ -991,26 +991,26 @@
         }
         .auth-card {
             background: var(--surface);
-            padding: 32px;
-            border-radius: 32px;
-            width: 400px;
+            padding: 28px;
+            border-radius: 28px;
+            width: 380px;
             max-width: 90%;
             box-shadow: var(--shadow-lg);
             animation: fadeSlideUp 0.5s ease;
         }
         .auth-card h1 {
-            font-size: 24px;
-            margin-bottom: 8px;
+            font-size: 22px;
+            margin-bottom: 6px;
         }
         .auth-input {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1.5px solid var(--border);
-            border-radius: 16px;
+            border-radius: 14px;
             background: var(--bg-secondary);
             color: var(--text-primary);
-            margin-bottom: 12px;
-            font-size: 13px;
+            margin-bottom: 10px;
+            font-size: 12px;
             transition: all 0.2s;
         }
         .auth-input:focus {
@@ -1020,12 +1020,12 @@
         }
         .auth-btn {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             background: var(--accent);
             color: white;
             border: none;
-            border-radius: 40px;
-            font-size: 14px;
+            border-radius: 36px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -1041,8 +1041,8 @@
         }
         .auth-switch {
             text-align: center;
-            margin-top: 16px;
-            font-size: 12px;
+            margin-top: 14px;
+            font-size: 11px;
             color: var(--text-secondary);
         }
         .auth-switch a {
@@ -1051,15 +1051,15 @@
             cursor: pointer;
             font-weight: 500;
         }
-        .error-msg { color: #ef4444; font-size: 11px; margin: -8px 0 10px; display: none; }
-        .success-msg { color: #10b981; font-size: 11px; margin: -8px 0 10px; display: none; }
+        .error-msg { color: #ef4444; font-size: 10px; margin: -6px 0 8px; display: none; }
+        .success-msg { color: #10b981; font-size: 10px; margin: -6px 0 8px; display: none; }
 
         .scroll-to-bottom {
             position: fixed;
-            bottom: 100px;
-            right: 30px;
-            width: 40px;
-            height: 40px;
+            bottom: 80px;
+            right: 26px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: var(--accent-glow);
             border: 1.5px solid var(--accent);
@@ -1094,7 +1094,7 @@
 <div id="authContainer" class="auth-container">
     <div class="auth-card">
         <h1>CAPITAN AI</h1>
-        <p style="margin-bottom:24px;font-size:14px;">Enterprise Intelligence</p>
+        <p style="margin-bottom:20px;font-size:13px;">Enterprise Intelligence</p>
         <div id="sessionExpiredMsg" class="session-expired-msg">Your session has expired. Please sign in again.</div>
         <div id="loginForm">
             <input type="email" id="loginEmail" class="auth-input" placeholder="Email">
@@ -1120,12 +1120,12 @@
             <button class="auth-btn" onclick="handleForgotPassword()">Send Reset Link</button>
             <div class="auth-switch"><a onclick="showLogin()">Back to Sign In</a></div>
         </div>
-        <div style="text-align:center; margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
+        <div style="text-align:center; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
             <button class="auth-btn ghost" onclick="startGuestSession()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Try CAPITAN for Free
             </button>
-            <p style="font-size:11px; color:var(--text-tertiary); margin-top:6px;">No sign-up required</p>
+            <p style="font-size:10px; color:var(--text-tertiary); margin-top:5px;">No sign-up required</p>
         </div>
     </div>
 </div>
@@ -1134,35 +1134,35 @@
 <div id="app" class="app">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand" id="founderClickTarget">
-            <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#38bdf8"/><text x="12" y="17" text-anchor="middle" font-size="12" fill="white" font-family="Arial" font-weight="bold">C</text></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#38bdf8"/><text x="12" y="17" text-anchor="middle" font-size="12" fill="white" font-family="Arial" font-weight="bold">C</text></svg>
             CAPITAN AI
         </div>
         <div class="new-chat-btn" onclick="newChat()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>New chat</span>
         </div>
         <div class="menu-item" onclick="openLibrary()" id="libraryMenuItem">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-            <span>Saved <span id="savedCount" style="font-size:10px; opacity:0.7;"></span></span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>Saved <span id="savedCount" style="font-size:9px; opacity:0.7;"></span></span>
         </div>
         <!-- Workspaces (visible for Plus+) -->
         <div id="workspaceSection" style="display:none;">
             <div class="collapsible-header" onclick="toggleCollapsible('workspace')">
                 <span>Work Areas</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="workspaceArrow"><polyline points="6 9 12 15 18 9"/></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="workspaceArrow"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="collapsible-content" id="workspaceContent">
-                <div style="padding:8px 16px 8px 44px; display:flex; gap:8px;">
+                <div style="padding:6px 14px 6px 40px; display:flex; gap:7px;">
                     <button class="guest-action-btn" style="flex:1; margin:0;" onclick="openWorkspaceCreateModal()">+ Create</button>
                     <button class="guest-action-btn" style="flex:1; margin:0;" onclick="openWorkspaceJoinModal()">Join</button>
                 </div>
-                <div id="workspaceList" style="padding:4px 0;"></div>
+                <div id="workspaceList" style="padding:3px 0;"></div>
             </div>
         </div>
         <div>
             <div class="collapsible-header" onclick="toggleCollapsible('appearance')">
                 <span>Appearance</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="appearanceArrow"><polyline points="6 9 12 15 18 9"/></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="appearanceArrow"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="collapsible-content" id="appearanceContent">
                 <div class="theme-option" onclick="setTheme('light')"><span>Light</span><span id="themeLightCheck">&#10003;</span></div>
@@ -1173,7 +1173,7 @@
         <div>
             <div class="collapsible-header" onclick="toggleCollapsible('about')">
                 <span>About</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="aboutArrow"><polyline points="6 9 12 15 18 9"/></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="aboutArrow"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="collapsible-content" id="aboutContent">
                 <div class="about-content">
@@ -1191,7 +1191,7 @@
         </div>
         <div class="recent-label" id="recentLabel" style="display:none;">Recent chats</div>
         <div class="chat-history" id="chatHistoryList">
-            <div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">No conversations yet</div>
+            <div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">No conversations yet</div>
         </div>
         <!-- Guest buttons -->
         <div id="guestButtons" style="display:none;">
@@ -1214,33 +1214,33 @@
     <!-- Top bar -->
     <div class="top-bar">
         <button class="toggle-sidebar" id="toggleSidebarBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
         </button>
     </div>
 
     <main class="main">
         <div class="chat-container">
             <div class="messages-area" id="messagesArea">
-                <div style="text-align:center;padding:60px 20px;">
+                <div style="text-align:center;padding:50px 16px;">
                     <div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div>
-                    <p style="color:var(--text-secondary);margin-top:8px;font-size:13px;">Ask me anything — finance, code, research.</p>
+                    <p style="color:var(--text-secondary);margin-top:6px;font-size:12px;">Ask me anything — finance, code, research.</p>
                 </div>
             </div>
             <div class="input-area">
                 <div class="input-wrapper">
                     <button class="upload-btn" onclick="triggerFileUpload()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </button>
                     <textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
                     <button class="send-btn" onclick="sendMessage()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
                 </div>
             </div>
         </div>
     </main>
     <button class="scroll-to-bottom" id="scrollToBottomBtn" onclick="document.getElementById('messagesArea').scrollTo({top: document.getElementById('messagesArea').scrollHeight, behavior:'smooth'})">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
 </div>
 
@@ -1256,7 +1256,7 @@
 <div id="guestLoginModal" class="modal-overlay"><div class="modal" id="guestLoginModalContent"></div></div>
 <div id="workspaceCreateModal" class="modal-overlay"><div class="modal" id="workspaceCreateModalContent"></div></div>
 <div id="workspaceJoinModal" class="modal-overlay"><div class="modal" id="workspaceJoinModalContent"></div></div>
-<div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:700px;"></div></div>
+<div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div></div>
 
 <script>
     const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
@@ -1321,7 +1321,7 @@
             this.running = true;
             this.lastTime = 0;
             this.accumulator = 0;
-            this.speed = 8;
+            this.speed = 7;
             this.container.innerHTML = '';
             this.streamDiv = document.createElement('div');
             this.streamDiv.className = 'streaming-text';
@@ -1410,17 +1410,17 @@
 
     async function openFounderDashboard() {
         const modal = document.getElementById('founderModalContent');
-        modal.innerHTML = `<div style="text-align:center;"><div style="background:var(--accent-glow);width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg></div><h2 style="margin-top:16px;">Founder Dashboard</h2><p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">Full administrative privileges</p>
-        <div id="founderStats" style="background:var(--bg-secondary);border-radius:16px;padding:16px;margin-bottom:16px;">Loading stats...</div>
+        modal.innerHTML = `<div style="text-align:center;"><div style="background:var(--accent-glow);width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg></div><h2 style="margin-top:14px;">Founder Dashboard</h2><p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Full administrative privileges</p>
+        <div id="founderStats" style="background:var(--bg-secondary);border-radius:14px;padding:14px;margin-bottom:14px;font-size:11px;">Loading stats...</div>
         <button class="btn" onclick="activateFounder()">Activate Founder Status</button>
-        <button class="btn" style="margin-top:8px;" onclick="openAdminUsers()">Manage Users</button>
+        <button class="btn" style="margin-top:7px;" onclick="openAdminUsers()">Manage Users</button>
         <button class="btn btn-outline" onclick="closeModal('founderModal')">Close</button></div>`;
         document.getElementById('founderModal').classList.add('open');
         try {
             const res = await fetch(`${CFG.API}/api/admin`, { headers: state.token ? { 'Authorization': `Bearer ${state.token}` } : {} });
             if (res.ok) {
                 const stats = await res.json();
-                document.getElementById('founderStats').innerHTML = `<div style="font-weight:600;margin-bottom:10px;">Platform Statistics</div><div style="font-size:12px;">Total Users: ${stats.total_users || 'N/A'}</div><div style="font-size:12px;">Paid Users: ${stats.paid_users || 'N/A'}</div><div style="font-size:12px;">Total Messages: ${stats.total_messages || 'N/A'}</div>`;
+                document.getElementById('founderStats').innerHTML = `<div style="font-weight:600;margin-bottom:8px;">Platform Statistics</div><div style="font-size:11px;">Total Users: ${stats.total_users || 'N/A'}</div><div style="font-size:11px;">Paid Users: ${stats.paid_users || 'N/A'}</div><div style="font-size:11px;">Total Messages: ${stats.total_messages || 'N/A'}</div>`;
             }
         } catch(e) {}
     }
@@ -1431,7 +1431,7 @@
             if (data.token) {
                 state.token = data.token; state.user = data.user; state.tier = 'founder';
                 localStorage.setItem('ct', data.token);
-                updateProfileUI(); closeModal('founderModal'); toast('Founder status activated!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
+                updateProfileUI(); closeModal('founderModal'); toast('Founder status activated!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
                 await loadChats();
             } else { toast('Activation failed: ' + (data.detail || 'Unknown error')); }
         } catch(e) {
@@ -1541,10 +1541,10 @@
     function openWorkspaceMessages(roomCode) {
         const modal = document.getElementById('workspaceMessagesModalContent');
         modal.innerHTML = `<h2>Work Area: ${roomCode}</h2>
-            <div id="workspaceMessageList" style="max-height:300px; overflow-y:auto; margin-bottom:12px;">Loading...</div>
-            <div style="display:flex; gap:8px;">
+            <div id="workspaceMessageList" style="max-height:250px; overflow-y:auto; margin-bottom:10px; font-size:11px;">Loading...</div>
+            <div style="display:flex; gap:7px;">
                 <input type="text" id="workspaceMessageInput" class="auth-input" placeholder="Type a message... (use @CAPITAN for AI)" style="flex:1; margin:0;">
-                <button class="btn" style="width:auto; margin:0; padding:12px 20px;" onclick="sendWorkspaceMessage('${roomCode}')">Send</button>
+                <button class="btn" style="width:auto; margin:0; padding:10px 18px;" onclick="sendWorkspaceMessage('${roomCode}')">Send</button>
             </div>
             <button class="btn btn-outline" onclick="closeModal('workspaceMessagesModal')">Close</button>`;
         document.getElementById('workspaceMessagesModal').classList.add('open');
@@ -1554,7 +1554,7 @@
         try {
             const res = await apiCall(`/api/workspace/messages?room_code=${roomCode}`);
             const list = document.getElementById('workspaceMessageList');
-            list.innerHTML = res.messages.map(m => `<div style="margin-bottom:8px;"><strong>${escapeHtml(m.author)}</strong>${m.is_ai?' (AI)':''}: ${escapeHtml(m.message)}</div>`).join('');
+            list.innerHTML = res.messages.map(m => `<div style="margin-bottom:6px;"><strong>${escapeHtml(m.author)}</strong>${m.is_ai?' (AI)':''}: ${escapeHtml(m.message)}</div>`).join('');
         } catch(e) { document.getElementById('workspaceMessageList').innerHTML = 'Could not load messages.'; }
     }
     async function sendWorkspaceMessage(roomCode) {
@@ -1612,7 +1612,7 @@
         document.getElementById('recentLabel').style.display = isLoggedIn ? 'block' : 'none';
         document.getElementById('guestButtons').style.display = isLoggedIn ? 'none' : 'block';
         if (!isLoggedIn) {
-            document.getElementById('chatHistoryList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">Sign in to see recent chats</div>';
+            document.getElementById('chatHistoryList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">Sign in to see recent chats</div>';
         }
     }
     async function uploadProfilePhoto() {
@@ -1678,7 +1678,7 @@
     function renderMessages() {
         let c = document.getElementById('messagesArea'); if (!c) return;
         if (!state.messages.length) {
-            c.innerHTML = `<div style="text-align:center;padding:60px 20px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><p style="color:var(--text-secondary);margin-top:8px;font-size:13px;">Ask me anything — finance, code, research, or upload documents for analysis.</p></div>`;
+            c.innerHTML = `<div style="text-align:center;padding:50px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><p style="color:var(--text-secondary);margin-top:6px;font-size:12px;">Ask me anything — finance, code, research, or upload documents for analysis.</p></div>`;
             updateGreeting(); return;
         }
         c.innerHTML = state.messages.map((m, i) => {
@@ -1688,11 +1688,11 @@
             if (m.role === 'assistant' && !m.isTyping) {
                 actionIcons = `
                 <div class="action-icons">
-                    <button onclick="copyMessage(${i})" title="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                    <button onclick="likeMessage(${i})" title="Like"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
-                    <button onclick="dislikeMessage(${i})" title="Dislike"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
-                    <button onclick="shareMessage(${i})" title="Share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-                    <button onclick="saveMessage(${i})" title="Save to Library"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+                    <button onclick="copyMessage(${i})" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                    <button onclick="likeMessage(${i})" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+                    <button onclick="dislikeMessage(${i})" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
+                    <button onclick="shareMessage(${i})" title="Share"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+                    <button onclick="saveMessage(${i})" title="Save to Library"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
                 </div>`;
             }
             return `<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${contentHtml}</div>${actionIcons}</div>`;
@@ -1703,28 +1703,32 @@
     function renderChatHistory() {
         let c = document.getElementById('chatHistoryList'); if (!c) return;
         if (!state.user) {
-            c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">Sign in to see recent chats</div>';
+            c.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">Sign in to see recent chats</div>';
             return;
         }
         if (!state.chats.length) {
-            c.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">No conversations yet</div>';
+            c.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">No conversations yet</div>';
             return;
         }
-        c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:14px;">&times;</button></div>`).join('');
+        c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:12px;">&times;</button></div>`).join('');
     }
 
-    function copyMessage(idx) { const msg = state.messages[idx]; if (!msg) return; navigator.clipboard.writeText(msg.content).then(() => toast('Copied!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')); }
-    function likeMessage(idx) { toast('Thanks for your feedback!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'); }
-    function dislikeMessage(idx) { toast('Feedback noted. We\'ll improve.', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>'); }
-    function shareMessage(idx) { const chatId = state.activeChatId || 'chat'; navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>')); }
+    function copyMessage(idx) { const msg = state.messages[idx]; if (!msg) return; navigator.clipboard.writeText(msg.content).then(() => toast('Copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')); }
+    function likeMessage(idx) { toast('Thanks for your feedback!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'); }
+    function dislikeMessage(idx) { toast('Feedback noted. We\'ll improve.', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>'); }
+    function shareMessage(idx) { const chatId = state.activeChatId || 'chat'; navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>')); }
     async function saveMessage(idx) {
         if (!state.user) { toast('Sign in to save to Library'); return; }
         const msg = state.messages[idx]; if (!msg) return;
         try {
-            await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat ${state.activeChatId || 'new'}`, type: 'note', content: msg.content }) });
-            toast('Saved to Library', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
-            try { let lib = await apiCall('/api/library'); state.library = lib.items || []; updateSavedCount(); } catch(e) {}
-        } catch(e) { toast('Could not save'); }
+            let res = await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat ${state.activeChatId || 'new'}`, type: 'note', content: msg.content }) });
+            if (res.created) {
+                toast('Saved to Library', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
+                try { let lib = await apiCall('/api/library'); state.library = lib.items || []; updateSavedCount(); } catch(e) {}
+            } else {
+                toast('Save did not return success – please check.');
+            }
+        } catch(e) { toast('Could not save: ' + e.message); }
     }
 
     function setupScrollButton() {
@@ -1741,20 +1745,20 @@
         const modal = document.getElementById('profileModalContent');
         const isFounder = state.tier === 'founder';
         const isLoggedIn = !!state.user;
-        const photoAction = isLoggedIn ? `<button class="btn" style="margin:0;width:auto;padding:8px 16px;font-size:12px;" onclick="uploadProfilePhoto()">Change Photo</button>` : `<span style="font-size:11px;color:var(--text-tertiary);">Sign in to change</span>`;
-        modal.innerHTML = `<h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="60" height="60" style="border-radius:50%;object-fit:cover;background:var(--accent-glow);" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${photoAction}</div><div style="font-weight:600;margin-top:12px;font-size:15px;">${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</div><div style="color:var(--accent);font-size:12px;margin-bottom:20px;">${isFounder ? 'Founder' : state.tier.toUpperCase()}${state.tier === 'pro_max' || state.tier === 'founder' ? ' - Unlimited' : ' - Limited messaging'}</div>${!isFounder ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>&rarr;</span></div>` : ''}${isLoggedIn ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>Saved</span><span>&rarr;</span></div>` : ''}<div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data &amp; Legal</span><span>&rarr;</span></div>${isLoggedIn ? `<div class="modal-setting" onclick="logout(); closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span><span>&rarr;</span></div>` : ''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
+        const photoAction = isLoggedIn ? `<button class="btn" style="margin:0;width:auto;padding:7px 14px;font-size:11px;" onclick="uploadProfilePhoto()">Change Photo</button>` : `<span style="font-size:10px;color:var(--text-tertiary);">Sign in to change</span>`;
+        modal.innerHTML = `<h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;object-fit:cover;background:var(--accent-glow);" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${photoAction}</div><div style="font-weight:600;margin-top:10px;font-size:14px;">${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</div><div style="color:var(--accent);font-size:11px;margin-bottom:16px;">${isFounder ? 'Founder' : state.tier.toUpperCase()}${state.tier === 'pro_max' || state.tier === 'founder' ? ' - Unlimited' : ' - Limited messaging'}</div>${!isFounder ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>&rarr;</span></div>` : ''}${isLoggedIn ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>Saved</span><span>&rarr;</span></div>` : ''}<div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data &amp; Legal</span><span>&rarr;</span></div>${isLoggedIn ? `<div class="modal-setting" onclick="logout(); closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span><span>&rarr;</span></div>` : ''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
         document.getElementById('profileModal').classList.add('open');
     }
 
     function openUpgradeModal() {
         const modal = document.getElementById('upgradeModalContent');
         modal.innerHTML = `<h2>Upgrade CAPITAN AI</h2>
-            <div class="crypto-card" onclick="selectTier('plus')"><div style="font-weight:600;margin-bottom:4px;">Plus — $8/month</div><div style="font-size:12px;color:var(--text-secondary);">Limited messaging · Groq 3.3 · Work Area (10 seats) · 20MB files</div></div>
-            <div class="crypto-card" onclick="selectTier('pro')"><div style="font-weight:600;margin-bottom:4px;">Pro — $17/month</div><div style="font-size:12px;color:var(--text-secondary);">Limited messaging · Claude 3.5 · Work Area (25 seats) · 50MB files + Live Markets</div></div>
-            <div class="crypto-card" onclick="selectTier('pro_max')"><div style="font-weight:600;margin-bottom:4px;">Pro Max — $30/month</div><div style="font-size:12px;color:var(--text-secondary);">Unlimited messaging · GPT-4o+Claude · Work Area (50 seats) · 100MB files</div></div>
-            <div class="work-area-snippet"><strong>Work Area — Collaborate from Anywhere</strong><br>Real-time workspaces. Share files, chat, and work with AI alongside your team.</div>
-            <div class="payment-steps" style="background:var(--bg-secondary);border-radius:16px;padding:16px;margin:12px 0;font-size:12px;"><strong>How to Pay:</strong><br>1. Copy BTC or ETH address<br>2. Send exact amount<br>3. Paste TXID → Verify</div>
-            <div id="paymentSection" style="display:none;margin-top:16px;"><div style="display:flex;gap:12px;margin-bottom:12px;"><button class="btn" style="flex:1;padding:10px;margin:0;" onclick="setCoin('BTC')">BTC</button><button class="btn" style="flex:1;padding:10px;margin:0;" onclick="setCoin('ETH')">ETH</button></div><div class="wallet-address" id="walletAddress" onclick="copyWallet()">Loading...</div><input type="text" id="txidInput" placeholder="Transaction ID" style="font-size:12px;"><button class="btn" style="padding:12px;" onclick="verifyPayment()">Verify Payment</button></div>
+            <div class="crypto-card" onclick="selectTier('plus')"><div style="font-weight:600;margin-bottom:3px;">Plus — $8/month</div><div style="font-size:11px;color:var(--text-secondary);">Limited messaging · Groq 3.3 · Work Area (10 seats) · 20MB files</div></div>
+            <div class="crypto-card" onclick="selectTier('pro')"><div style="font-weight:600;margin-bottom:3px;">Pro — $17/month</div><div style="font-size:11px;color:var(--text-secondary);">Limited messaging · Claude 3.5 · Work Area (25 seats) · 50MB files + Live Markets</div></div>
+            <div class="crypto-card" onclick="selectTier('pro_max')"><div style="font-weight:600;margin-bottom:3px;">Pro Max — $30/month</div><div style="font-size:11px;color:var(--text-secondary);">Unlimited messaging · GPT-4o+Claude · Work Area (50 seats) · 100MB files</div></div>
+            <div class="work-area-snippet" style="font-size:11px;"><strong>Work Area — Collaborate from Anywhere</strong><br>Real-time workspaces. Share files, chat, and work with AI alongside your team.</div>
+            <div class="payment-steps" style="background:var(--bg-secondary);border-radius:14px;padding:14px;margin:10px 0;font-size:11px;"><strong>How to Pay:</strong><br>1. Copy BTC or ETH address<br>2. Send exact amount<br>3. Paste TXID → Verify</div>
+            <div id="paymentSection" style="display:none;margin-top:14px;"><div style="display:flex;gap:10px;margin-bottom:10px;"><button class="btn" style="flex:1;padding:8px;margin:0;" onclick="setCoin('BTC')">BTC</button><button class="btn" style="flex:1;padding:8px;margin:0;" onclick="setCoin('ETH')">ETH</button></div><div class="wallet-address" id="walletAddress" onclick="copyWallet()" style="font-size:11px;">Loading...</div><input type="text" id="txidInput" placeholder="Transaction ID" style="font-size:11px;"><button class="btn" style="padding:10px;" onclick="verifyPayment()">Verify Payment</button></div>
             <button class="btn btn-outline" onclick="closeModal('upgradeModal')">Close</button>`;
         document.getElementById('upgradeModal').classList.add('open');
     }
@@ -1768,7 +1772,7 @@
         try {
             let res = await apiCall('/api/upgrade', { method: 'POST', body: JSON.stringify({ tier: state.selectedTier, txid, currency: state.selectedCoin }) });
             state.tier = res.tier; state.token = res.token; localStorage.setItem('ct', res.token);
-            updateProfileUI(); closeModal('upgradeModal'); toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
+            updateProfileUI(); closeModal('upgradeModal'); toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
         } catch(e) { toast('Verification failed'); }
     }
 
@@ -1835,21 +1839,35 @@
         let name = document.getElementById('libName').value.trim();
         let content = document.getElementById('libContent').value.trim();
         if (!name || !content) { toast('Title and content required'); return; }
-        await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) });
-        toast('Saved');
-        try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) {}
-        updateSavedCount();
-        const list = document.getElementById('savedList');
-        if (list) list.innerHTML = renderSavedList(state.library);
-        document.getElementById('libName').value = '';
-        document.getElementById('libContent').value = '';
+        try {
+            let res = await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) });
+            if (res.created) {
+                toast('Saved successfully');
+            } else {
+                toast('Server did not confirm save – please try again.');
+            }
+            let lib = await apiCall('/api/library');
+            state.library = lib.items || [];
+            updateSavedCount();
+            const list = document.getElementById('savedList');
+            if (list) list.innerHTML = renderSavedList(state.library);
+            document.getElementById('libName').value = '';
+            document.getElementById('libContent').value = '';
+        } catch(e) {
+            toast('Save failed: ' + e.message);
+        }
     }
     async function deleteLibraryItem(id) {
-        await apiCall(`/api/library/${id}`, { method: 'DELETE' });
-        try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) {}
-        updateSavedCount();
-        const list = document.getElementById('savedList');
-        if (list) list.innerHTML = renderSavedList(state.library);
+        try {
+            await apiCall(`/api/library/${id}`, { method: 'DELETE' });
+            let lib = await apiCall('/api/library');
+            state.library = lib.items || [];
+            updateSavedCount();
+            const list = document.getElementById('savedList');
+            if (list) list.innerHTML = renderSavedList(state.library);
+        } catch(e) {
+            toast('Delete failed');
+        }
     }
     function viewLibraryItem(id) {
         let item = state.library.find(i => i.id === id);
@@ -1884,7 +1902,7 @@
     function openPrivacyModal() {
         const modal = document.getElementById('privacyModalContent');
         modal.innerHTML = `<h2>Privacy Policy</h2>
-        <div style="font-size:13px;line-height:1.6;">
+        <div style="font-size:12px;line-height:1.5;">
             <p><strong>Effective Date:</strong> June 15, 2026</p>
             <p>CAPITAN AI ("we", "our", "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.</p>
             <p><strong>1. Information We Collect</strong><br>We collect information you provide directly, such as your email address, name, and chat messages. We also collect usage data (e.g., features used, interactions) to improve our AI models.</p>
@@ -1899,7 +1917,7 @@
     function openTermsModal() {
         const modal = document.getElementById('termsModalContent');
         modal.innerHTML = `<h2>Terms & Conditions</h2>
-        <div style="font-size:13px;line-height:1.6;">
+        <div style="font-size:12px;line-height:1.5;">
             <p><strong>Effective Date:</strong> June 15, 2026</p>
             <p>By accessing or using CAPITAN AI, you agree to be bound by these Terms and Conditions.</p>
             <p><strong>1. Service Description</strong><br>CAPITAN AI provides an enterprise intelligence platform offering AI-powered chat, file analysis, and collaborative workspaces. Services may vary by subscription tier.</p>
@@ -2054,7 +2072,7 @@
                 await initSession();
                 renderMessages();
                 updateUIBasedOnTier();
-                toast('Welcome! Sign up anytime for full features.', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>');
+                toast('Welcome! Sign up anytime for full features.', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>');
             }
         } catch(e) {
             toast('Could not start session');
@@ -2131,7 +2149,7 @@
         document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
         document.addEventListener('click', (e) => { if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') && !document.getElementById('sidebar').contains(e.target) && !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar(); });
         const textarea = document.getElementById('messageInput');
-        textarea.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px'; });
+        textarea.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 100) + 'px'; });
         setupScrollButton();
         setTimeout(() => { let splash = document.getElementById('splashScreen'); if (splash) splash.classList.add('hide'); }, 1600);
     }
