@@ -567,7 +567,7 @@
             transition: max-height 0.3s ease;
         }
         .collapsible-content.open {
-            max-height: 500px; /* enough for about text */
+            max-height: 500px;
         }
         .theme-option, .about-option {
             display: flex;
@@ -658,6 +658,25 @@
         .sidebar-footer:hover {
             background: var(--bg-tertiary);
             color: var(--accent);
+        }
+
+        /* Guest sign-up button in sidebar */
+        .guest-signup-btn {
+            display: block;
+            margin: 8px 16px;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1.5px solid var(--accent);
+            border-radius: 20px;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .guest-signup-btn:hover {
+            background: var(--accent-glow);
         }
 
         .modal-overlay {
@@ -859,9 +878,10 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-md);
+            background: var(--accent-glow);
+            border: 1.5px solid var(--accent);
+            color: var(--accent);
+            box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
             display: none;
             align-items: center;
             justify-content: center;
@@ -871,13 +891,14 @@
         }
         .scroll-to-bottom:hover {
             transform: scale(1.05);
-            background: var(--bg-tertiary);
+            background: var(--accent);
+            color: white;
         }
     </style>
 </head>
 <body>
 
-<!-- Splash screen with simple C logo -->
+<!-- Splash screen -->
 <div class="splash" id="splashScreen">
     <svg class="splash-logo" viewBox="0 0 100 100">
         <rect width="100" height="100" fill="#38bdf8" rx="20"/>
@@ -966,6 +987,8 @@
         <div class="chat-history" id="chatHistoryList">
             <div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">No conversations yet</div>
         </div>
+        <!-- Guest sign-up button (only visible to guests) -->
+        <button class="guest-signup-btn" id="guestSignupBtn" style="display:none;" onclick="openGuestSignupModal()">Create account</button>
         <div class="profile-section" onclick="openProfileModal()">
             <div class="profile-info">
                 <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%2338bdf8'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%2338bdf8'/%3E%3C/svg%3E">
@@ -1012,7 +1035,7 @@
     </button>
 </div>
 
-<!-- Modals (Profile, Upgrade, Library, Founder, Data, Privacy, Terms) -->
+<!-- Modals -->
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal" id="upgradeModalContent"></div></div>
 <div id="libraryModal" class="modal-overlay"><div class="modal" id="libraryModalContent"></div></div>
@@ -1020,6 +1043,8 @@
 <div id="dataModal" class="modal-overlay"><div class="modal" id="dataModalContent"></div></div>
 <div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
 <div id="termsModal" class="modal-overlay"><div class="modal" id="termsModalContent"></div></div>
+<!-- Guest signup modal -->
+<div id="guestSignupModal" class="modal-overlay"><div class="modal" id="guestSignupModalContent"></div></div>
 
 <script>
     const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
@@ -1243,6 +1268,7 @@
         const isLoggedIn = !!state.user;
         document.getElementById('libraryMenuItem').style.display = isLoggedIn ? 'flex' : 'none';
         document.getElementById('recentLabel').style.display = isLoggedIn ? 'block' : 'none';
+        document.getElementById('guestSignupBtn').style.display = isLoggedIn ? 'none' : 'block';
         if (!isLoggedIn) {
             document.getElementById('chatHistoryList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:11px;">Sign in to see recent chats</div>';
         }
@@ -1498,7 +1524,54 @@
         }
     }
 
-    // Auth
+    // Guest Sign-Up Modal
+    function openGuestSignupModal() {
+        const modal = document.getElementById('guestSignupModalContent');
+        modal.innerHTML = `<h2>Create Free Account</h2>
+            <input type="text" id="guestSignupName" class="auth-input" placeholder="Full Name (optional)">
+            <input type="email" id="guestSignupEmail" class="auth-input" placeholder="Email">
+            <input type="password" id="guestSignupPassword" class="auth-input" placeholder="Password (min 6 characters)">
+            <div id="guestSignupError" class="error-msg"></div>
+            <div id="guestSignupSuccess" class="success-msg"></div>
+            <button class="btn" onclick="handleGuestSignup()">Create Account</button>
+            <button class="btn btn-outline" onclick="closeModal('guestSignupModal')">Cancel</button>`;
+        document.getElementById('guestSignupModal').classList.add('open');
+    }
+    async function handleGuestSignup() {
+        let name = document.getElementById('guestSignupName').value.trim();
+        let email = document.getElementById('guestSignupEmail').value.trim();
+        let password = document.getElementById('guestSignupPassword').value;
+        let errorDiv = document.getElementById('guestSignupError');
+        let successDiv = document.getElementById('guestSignupSuccess');
+        if (!email || !password) { errorDiv.innerText = 'Email and password required'; errorDiv.style.display = 'block'; return; }
+        if (password.length < 6) { errorDiv.innerText = 'Password must be at least 6 characters'; errorDiv.style.display = 'block'; return; }
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+        try {
+            let res = await fetch(`${CFG.API}/api/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) });
+            let data = await res.json();
+            if (data.token) {
+                // Upgrade guest to registered user
+                state.token = data.token;
+                state.user = data.user;
+                state.tier = data.user.tier;
+                localStorage.setItem('ct', data.token);
+                updateProfileUI();
+                updateUIBasedOnTier();
+                closeModal('guestSignupModal');
+                toast('Account created! Welcome to CAPITAN AI.');
+                await loadChats();  // fetch real chats now
+            } else {
+                errorDiv.innerText = data.detail || 'Signup failed';
+                errorDiv.style.display = 'block';
+            }
+        } catch(e) {
+            errorDiv.innerText = 'Signup failed: ' + e.message;
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    // Auth (existing, with improved error message)
     function showLogin() { document.getElementById('loginForm').style.display = 'block'; document.getElementById('signupForm').style.display = 'none'; }
     function showSignup() { document.getElementById('loginForm').style.display = 'none'; document.getElementById('signupForm').style.display = 'block'; }
 
@@ -1537,7 +1610,10 @@
                 updateUIBasedOnTier();
                 toast(`Welcome back, ${state.user?.name || email.split('@')[0]}!`);
             } else { errorDiv.innerText = data.detail || 'Login failed'; errorDiv.style.display = 'block'; }
-        } catch(e) { errorDiv.innerText = 'Login failed'; errorDiv.style.display = 'block'; }
+        } catch(e) {
+            errorDiv.innerText = 'Login failed: ' + e.message;
+            errorDiv.style.display = 'block';
+        }
     }
     async function handleSignup() {
         let name = document.getElementById('signupName').value.trim(), email = document.getElementById('signupEmail').value.trim(), password = document.getElementById('signupPassword').value;
@@ -1552,8 +1628,17 @@
                 successDiv.innerText = 'Account created! Redirecting...'; successDiv.style.display = 'block';
                 localStorage.setItem('ct', data.token); state.token = data.token; state.user = data.user; state.tier = data.user.tier;
                 setTimeout(() => { document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex'; initSession(); loadChats(); renderMessages(); updateUIBasedOnTier(); toast(`Welcome to CAPITAN AI!`); }, 1500);
-            } else { errorDiv.innerText = data.detail || 'Signup failed'; errorDiv.style.display = 'block'; }
-        } catch(e) { errorDiv.innerText = 'Signup failed'; errorDiv.style.display = 'block'; }
+            } else {
+                errorDiv.innerText = data.detail || 'Signup failed';
+                errorDiv.style.display = 'block';
+            }
+        } catch(e) {
+            // Show actual error message
+            let msg = 'Signup failed';
+            try { msg = JSON.parse(e.message).detail || msg; } catch(_) {}
+            errorDiv.innerText = msg;
+            errorDiv.style.display = 'block';
+        }
     }
 
     function logout() { localStorage.removeItem('ct'); state.token = null; state.user = null; state.tier = 'free'; state.activeChatId = null; state.messages = []; state.chats = []; location.reload(); }
