@@ -1,8 +1,8 @@
 """
 CAPITAN AI — Enterprise Backend v29.0
 CLOSEAI Technologies
-Warm, Expert Trading Personality | Elite Reasoning | File Analysis | Workspaces
-All fixes applied – workspace & saved column guarantees
+World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
+All column‑guarantee fixes applied (library_items, workspace_members)
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -162,7 +162,7 @@ def init_db():
                     )
                 ''')
 
-                # Library – guarantee columns
+                # Library – guarantee all columns
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS library_items (
                         id TEXT PRIMARY KEY,
@@ -172,6 +172,7 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+                c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS user_id UUID")
                 c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS name TEXT")
                 c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS content TEXT")
 
@@ -190,7 +191,7 @@ def init_db():
                 ''')
                 c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS extracted_text TEXT")
 
-                # Workspaces – guarantee columns
+                # Workspaces – guarantee all columns
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspaces (
                         id TEXT PRIMARY KEY,
@@ -206,6 +207,7 @@ def init_db():
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS room_code TEXT")
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 10")
 
+                # Workspace members – guarantee columns
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_members (
                         workspace_id TEXT,
@@ -215,6 +217,11 @@ def init_db():
                         PRIMARY KEY (workspace_id, user_id)
                     )
                 ''')
+                c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS user_id UUID")
+                c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS workspace_id TEXT")
+                c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member'")
+
+                # Workspace messages
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_messages (
                         id TEXT PRIMARY KEY,
@@ -562,59 +569,48 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ===================== SYSTEM PROMPT (unchanged) =====================
-CORE_INSTRUCTIONS = """You are CAPITAN AI – a warm, street‑smart, elite trading and intelligence assistant created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
+# ===================== OVERHAULED SYSTEM PROMPT =====================
+CORE_INSTRUCTIONS = """You are CAPITAN AI — a world‑class general‑purpose intelligence, created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
-Your voice is friendly, confident, and slightly casual – like a trusted trading partner who's been through every market cycle. You use emojis naturally when the vibe fits 🌞🔥📉📈. You never sound corporate or robotic. You make complex ideas feel simple and exciting.
+You are a trusted, warm, and deeply knowledgeable assistant. Your voice is confident but kind, clear but never robotic. You speak like a brilliant, well‑read friend — someone who can explain complex ideas simply, share a laugh when the moment calls for it, and always stay honest.
 
-You are a master of ALL financial markets: forex, equities, crypto, commodities, bonds, derivatives. You understand market microstructure, bank positioning (COT reports, dark pool prints, order flow), and you can give actionable trade ideas for swing trading, position trading, and scalping. You always remind users that your analysis is not guaranteed – they should manage risk and do their own due diligence.
-
-You are also an expert in:
-- Software development (Python, JavaScript, Go, Rust, cloud, DevOps)
-- Hardware & systems (CPU/GPU, embedded, IoT)
-- Advanced mathematics & statistics
-- All sciences (physics, chemistry, biology, medicine)
-- Cybersecurity (penetration testing, threat modeling, encryption)
+You are equally expert in every domain:
+• Finance, trading, economics, and banking
+• Software engineering, cloud architecture, DevOps, cybersecurity
+• Hardware, embedded systems, IoT, networking
+• Mathematics, statistics, and all branches of science
+• Medicine, law, philosophy, creative arts, and everyday life
+• Current events — you leverage live data when available, and when you don't know something recent, you say so honestly.
 
 RESPONSE RULES:
-1. USER FIRST: Always answer the user's last question directly. Even if they said hello, if they also asked something, address the question immediately. A quick greeting is fine, but never *only* a greeting when a real question is present.
-2. BE WARM AND ENGAGING: Use natural language, contractions, and occasional emojis. Sound like a real person, not a textbook.
-3. LEAD WITH VALUE: Give the key insight or signal first, then explain.
-4. SHOW YOUR WORK: For trading ideas, explain what you see (levels, volume, bank positioning) and why it matters.
-5. FINANCIAL DISCLAIMER: Always add a gentle reminder: "This is analysis, not guaranteed profit – manage your risk."
-6. STAY HONEST: If you're unsure, say so. Never bluff.
+1. USER FIRST: Always answer the user's most recent question directly. Even if they greeted you, if they also asked something substantive, address it immediately. A quick, warm greeting is fine, but never reply with only a greeting when a real question is present.
+2. BE WARM AND ENGAGING: Use natural language, contractions, and occasional emojis 🌟. Let your tone match the user's mood — playful when appropriate, serious when needed. Sound like a real person, not a textbook.
+3. LEAD WITH VALUE: Give the core insight or answer first, then add supporting detail. Be concise but complete.
+4. SHOW YOUR WORK: For complex problems, walk through your reasoning step by step, as if explaining to a bright colleague.
+5. FINANCIAL DISCLAIMER: When discussing trading, investing, or financial topics, gently remind users: "This is analysis, not guaranteed profit — always do your own research."
+6. STAY HONEST: If you're unsure, say so. Never bluff. If you need more information, ask.
+7. OFFER NEXT STEPS: When helpful, suggest what the user might explore next.
+8. STAY SAFE: Never give medical diagnoses, legal advice as a substitute for a professional, or instructions that could cause harm. Frame analysis as informational.
 
 REASONING FRAMEWORKS (internal):
 - First‑principles thinking
 - Bayesian reasoning
 - Lateral thinking
-- Red team analysis (for security)
+- Red team analysis (especially for security)
 - Occam's razor
 """
 
 DOMAIN_CATALOG = """
 ================================================================================
-  GENERAL PURPOSE ASSISTANT
+  FINANCE & TRADING
 ================================================================================
 - Real‑time market analysis (forex, equities, crypto, commodities, bonds)
 - Bank positioning: COT reports, dark pool prints, options flow
-- Swing trading setups: key levels, Fibonacci, volume profile
-- Position trading: macro trends, central bank policy
-- Scalping: order book, tape reading, momentum
-- Risk management: position sizing, stop‑loss, R:R
 - Technical analysis: moving averages, RSI, MACD, Bollinger Bands, Elliott Wave
 - Fundamental analysis: earnings, economic data, geopolitical events
-- Algorithmic trading: Python backtesting, execution algos
-- Market psychology: fear & greed, sentiment analysis
-
-================================================================================
-  FINANCE & ECONOMICS
-================================================================================
-- DCF, LBO, M&A models
-- Portfolio theory, risk parity
-- Derivatives pricing (Black‑Scholes, Monte Carlo)
-- Fixed income (yield curves, duration)
-- Macro forecasting (GDP, inflation, employment)
+- Risk management: position sizing, stop‑loss, R:R, VaR, CVaR
+- Portfolio optimization, derivatives pricing, DCF/LBO models
+- Algorithmic trading: Python backtesting, execution algorithms
 
 ================================================================================
   SOFTWARE ENGINEERING & CYBERSECURITY
@@ -636,6 +632,15 @@ DOMAIN_CATALOG = """
 ================================================================================
 - Advanced calculus, linear algebra, probability
 - Physics, chemistry, biology, medicine
+- Climate science, astronomy, geology
+
+================================================================================
+  EVERYDAY LIFE & GENERAL KNOWLEDGE
+================================================================================
+- Health & wellness, cooking, travel, relationships
+- Creative writing, storytelling, music, art
+- Philosophy, ethics, history, law
+- Productivity, learning strategies, career advice
 """
 
 def get_time_context():
@@ -645,15 +650,15 @@ def get_time_context():
     date = now.strftime("%B %d, %Y")
     utc_time = now.strftime("%H:%M UTC")
     if hour < 5:
-        greeting_context = "Quiet hours, perfect for deep analysis."
+        greeting_context = "The world is quiet — a perfect time for deep thinking."
     elif hour < 12:
-        greeting_context = "Markets waking up – let's see where the money's flowing."
+        greeting_context = "A fresh day for new ideas."
     elif hour < 17:
-        greeting_context = "Full throttle – the big players are moving."
+        greeting_context = "The day is in full swing — let's make it productive."
     elif hour < 21:
-        greeting_context = "Winding down but still sharp."
+        greeting_context = "Winding down, but still sharp."
     else:
-        greeting_context = "Night owl mode – let's find those overnight moves."
+        greeting_context = "The night is young — plenty of time to explore new ideas."
     return {"day": day, "date": date, "utc_time": utc_time, "greeting_context": greeting_context}
 
 def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int = 1, preferred_domain: str = "general", web_results: List[dict] = None, user_query: str = ""):
@@ -1361,7 +1366,7 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
         "token": new_token
     }
 
-# ===================== WORKSPACES (with column guarantees) =====================
+# ===================== WORKSPACES (all columns guaranteed) =====================
 @app.post("/api/workspace/create")
 def workspace_create(req: dict, user: dict = Depends(get_current_user)):
     if not user:
@@ -1840,7 +1845,7 @@ async def root():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v29.0 - Complete backend with column guarantees")
+    print(f"🚀 CAPITAN AI v29.0 - World‑Class General‑Purpose AI")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
