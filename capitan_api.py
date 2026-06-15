@@ -2,7 +2,7 @@
 CAPITAN AI — Enterprise Backend v29.0
 CLOSEAI Technologies
 Warm, Expert Trading Personality | Elite Reasoning | File Analysis | Workspaces
-All Planned Fixes Applied (Workspace errors, upgrade token, Finnhub, CSV, order)
+All fixes applied – workspace & saved column guarantees
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -20,9 +20,6 @@ from pydantic_settings import BaseSettings
 import psycopg2
 import uvicorn
 
-# ================================================================
-# FASTAPI APP
-# ================================================================
 app = FastAPI(title="CAPITAN AI API", version="29.0")
 
 class Settings(BaseSettings):
@@ -52,15 +49,9 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# ================================================================
-# LOGGING
-# ================================================================
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# ================================================================
-# DATABASE
-# ================================================================
 @contextmanager
 def get_db():
     conn = None
@@ -85,6 +76,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
+                # Users
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -105,6 +97,8 @@ def init_db():
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_domain TEXT DEFAULT 'general'")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS msg_reset_date DATE")
+
+                # Sessions
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS user_sessions (
                         id UUID PRIMARY KEY,
@@ -127,6 +121,8 @@ def init_db():
                 ''')
                 c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
                 c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS msg_reset_date DATE")
+
+                # Chats & messages
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS chats (
                         id TEXT PRIMARY KEY,
@@ -151,6 +147,8 @@ def init_db():
                     )
                 ''')
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
+
+                # Memories
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS memories (
                         id TEXT PRIMARY KEY,
@@ -163,6 +161,8 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+
+                # Library – guarantee columns
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS library_items (
                         id TEXT PRIMARY KEY,
@@ -172,6 +172,10 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+                c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS name TEXT")
+                c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS content TEXT")
+
+                # Uploaded files
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS uploaded_files (
                         id TEXT PRIMARY KEY,
@@ -185,6 +189,8 @@ def init_db():
                     )
                 ''')
                 c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS extracted_text TEXT")
+
+                # Workspaces – guarantee columns
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspaces (
                         id TEXT PRIMARY KEY,
@@ -195,6 +201,11 @@ def init_db():
                         created_at TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS name TEXT")
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS owner_id UUID")
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS room_code TEXT")
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 10")
+
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_members (
                         workspace_id TEXT,
@@ -215,6 +226,8 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+
+                # Payments
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS payments (
                         id UUID PRIMARY KEY,
@@ -227,6 +240,8 @@ def init_db():
                         created_at TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+
+                # Cache
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS reasoning_cache (
                         id TEXT PRIMARY KEY,
@@ -236,6 +251,7 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
+
                 conn.commit()
         logger.info("✅ Database ready")
     except Exception as e:
@@ -245,9 +261,7 @@ init_db()
 def sid(): return str(uuid.uuid4())[:8].upper()
 def mid(): return 'mem_' + sid()
 
-# ================================================================
-# PASSWORD HASHING
-# ================================================================
+# ===================== PASSWORD HASHING =====================
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
@@ -257,9 +271,7 @@ def verify_password(password: str, hashed: str) -> bool:
     except:
         return False
 
-# ================================================================
-# JWT AUTH
-# ================================================================
+# ===================== JWT AUTH =====================
 def create_token(user_id: str) -> str:
     header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
@@ -343,9 +355,7 @@ def get_current_session(request: Request):
     except: pass
     raise HTTPException(401, "Session not found")
 
-# ================================================================
-# AUTH ENDPOINTS (unchanged)
-# ================================================================
+# ===================== AUTH ENDPOINTS =====================
 class RegisterRequest(BaseModel):
     email: str
     password: str
@@ -493,9 +503,6 @@ async def update_profile(req: dict, user: dict = Depends(get_current_user)):
     except: pass
     return {"message": "Profile updated"}
 
-# ================================================================
-# ANONYMOUS SESSION
-# ================================================================
 @app.get("/api/session")
 async def get_anonymous_session():
     session_id = f"s_{sid()}"
@@ -508,9 +515,6 @@ async def get_anonymous_session():
     token = create_session_token(session_id, "guest")
     return {"id": session_id, "tier": "guest", "token": token}
 
-# ================================================================
-# FOUNDER LOGIN
-# ================================================================
 @app.post("/api/founder")
 async def founder_login(req: dict, request: Request):
     identifier = request.client.host
@@ -558,9 +562,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ================================================================
-# SYSTEM PROMPT (unchanged)
-# ================================================================
+# ===================== SYSTEM PROMPT (unchanged) =====================
 CORE_INSTRUCTIONS = """You are CAPITAN AI – a warm, street‑smart, elite trading and intelligence assistant created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
 Your voice is friendly, confident, and slightly casual – like a trusted trading partner who's been through every market cycle. You use emojis naturally when the vibe fits 🌞🔥📉📈. You never sound corporate or robotic. You make complex ideas feel simple and exciting.
@@ -592,7 +594,7 @@ REASONING FRAMEWORKS (internal):
 
 DOMAIN_CATALOG = """
 ================================================================================
-  TRADING & MARKET ANALYSIS (YOUR CORE)
+  GENERAL PURPOSE ASSISTANT
 ================================================================================
 - Real‑time market analysis (forex, equities, crypto, commodities, bonds)
 - Bank positioning: COT reports, dark pool prints, options flow
@@ -675,9 +677,7 @@ def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int
     
     return base
 
-# ================================================================
-# RATE LIMITING
-# ================================================================
+# ===================== RATE LIMITING =====================
 rate_store = {}
 _cleanup_counter = 0
 def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
@@ -698,9 +698,7 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     rate_store[store_key].append(now)
     return True
 
-# ================================================================
-# DAILY MESSAGE LIMIT ENFORCEMENT
-# ================================================================
+# ===================== DAILY LIMIT =====================
 def enforce_daily_limit(user: dict = None, session: dict = None):
     today = datetime.now(timezone.utc).date()
     if user:
@@ -740,9 +738,7 @@ def enforce_daily_limit(user: dict = None, session: dict = None):
                           (count + 1, today, session["id"]))
                 conn.commit()
 
-# ================================================================
-# QUERY CLASSIFICATION
-# ================================================================
+# ===================== QUERY CLASSIFICATION =====================
 def classify_query(q: str) -> str:
     q = q.lower()
     if re.search(r'who are you|what are you|identity|introduce yourself', q):
@@ -764,9 +760,7 @@ def classify_query(q: str) -> str:
 def needs_web_search(q: str) -> bool:
     return bool(re.search(r'latest|current|today|news|right now|recent|202[3-9]', q.lower()))
 
-# ================================================================
-# REASONING ENGINE
-# ================================================================
+# ===================== REASONING ENGINE =====================
 class ReasoningEngine:
     @staticmethod
     def generate_reasoning_chain(query: str, depth: int = 3) -> List[str]:
@@ -786,9 +780,7 @@ class ReasoningEngine:
     def format_reasoning_chain(chain: List[str]) -> str:
         return "\n".join(chain) if chain else ""
 
-# ================================================================
-# AI MODEL CALL
-# ================================================================
+# ===================== AI MODEL CALL =====================
 def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int = 1, domain: str = "general") -> Tuple[str, str, Optional[List[str]]]:
     reasoning_chain = None
     if reasoning_depth > 1 and domain in ["finance", "quant", "coding", "math", "science"]:
@@ -878,9 +870,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
     
     return "I'm having trouble connecting to AI services. Please try again.", "fallback", reasoning_chain
 
-# ================================================================
-# TIER CONFIGURATION
-# ================================================================
+# ===================== TIER CONFIGURATION =====================
 TIER_CONFIG = {
     "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
     "free": {"name": "Free", "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
@@ -895,9 +885,7 @@ WALLETS = {
     "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
 }
 
-# ================================================================
-# FILE EXTRACTION
-# ================================================================
+# ===================== FILE EXTRACTION =====================
 def extract_text_from_file(file_path: str, original_name: str) -> str:
     ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
     try:
@@ -929,9 +917,7 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         logger.error(f"File extraction error: {e}")
         return ''
 
-# ================================================================
-# FILE UPLOAD
-# ================================================================
+# ===================== FILE UPLOAD =====================
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -976,9 +962,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "extracted": bool(extracted)
     }
 
-# ================================================================
-# CHAT ENDPOINT
-# ================================================================
+# ===================== CHAT ENDPOINT =====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1136,9 +1120,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         "reasoning_chain": reasoning_chain
     }
 
-# ================================================================
-# CHAT HISTORY
-# ================================================================
+# ===================== CHAT HISTORY =====================
 @app.get("/api/chats")
 def get_chats(request: Request):
     user = get_current_user(request)
@@ -1229,9 +1211,7 @@ def delete_chat(chat_id: str, request: Request):
         logger.error(f"Delete error: {e}")
         return {"deleted": False}
 
-# ================================================================
-# LIBRARY
-# ================================================================
+# ===================== LIBRARY =====================
 @app.get("/api/library")
 def get_library(user: dict = Depends(get_current_user)):
     if not user:
@@ -1275,7 +1255,7 @@ def create_library_item(req: LibraryItemRequest, user: dict = Depends(get_curren
                 return {"id": item_id, "created": True}
     except Exception as e:
         logger.error(f"Library create error: {e}")
-        raise HTTPException(500, "Could not save item")
+        raise HTTPException(500, f"Could not save item: {str(e)}")
 
 @app.delete("/api/library/{item_id}")
 def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
@@ -1291,18 +1271,13 @@ def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
         logger.error(f"Library delete error: {e}")
         raise HTTPException(500, "Could not delete item")
 
-# ================================================================
-# UPGRADE_BENEFITS (moved before payment_config)
-# ================================================================
+# ===================== PAYMENT & UPGRADE (with fresh token) =====================
 UPGRADE_BENEFITS = {
     "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "File uploads (20MB)", "Web search", "2-step reasoning"],
     "pro": ["Limited messaging (100/day)", "Claude 3.5 Sonnet", "File uploads (50MB)", "Live markets", "Web search", "3-step reasoning"],
     "pro_max": ["Unlimited messaging", "GPT-4o + Claude Ensemble", "File uploads (100MB)", "Live markets", "Advanced reasoning", "Priority support"]
 }
 
-# ================================================================
-# PAYMENT & UPGRADE – now returns a fresh token
-# ================================================================
 @app.get("/api/payment-config")
 def payment_config():
     return {
@@ -1379,7 +1354,6 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
         logger.error(f"Upgrade error: {e}")
         raise HTTPException(500, "Could not process upgrade")
     
-    # Generate a fresh token so the frontend can update the session
     new_token = create_token(user["id"])
     return {
         "verified": verified,
@@ -1387,9 +1361,7 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
         "token": new_token
     }
 
-# ================================================================
-# WORKSPACES (with proper error logging and message order fix)
-# ================================================================
+# ===================== WORKSPACES (with column guarantees) =====================
 @app.post("/api/workspace/create")
 def workspace_create(req: dict, user: dict = Depends(get_current_user)):
     if not user:
@@ -1523,9 +1495,6 @@ def workspace_get_messages(room_code: str, user: dict = Depends(get_current_user
         logger.error(f"Workspace messages error: {e}")
         raise HTTPException(500, f"Could not load messages: {str(e)}")
 
-# ================================================================
-# MY WORKSPACES
-# ================================================================
 @app.get("/api/workspace/my")
 def workspace_my(request: Request, user: dict = Depends(get_current_user)):
     if not user:
@@ -1546,9 +1515,7 @@ def workspace_my(request: Request, user: dict = Depends(get_current_user)):
                 for r in rows
             ]}
 
-# ================================================================
-# MARKET & NEWS (with corrected Finnhub symbols)
-# ================================================================
+# ===================== MARKET & NEWS (correct Finnhub) =====================
 @app.get("/api/markets")
 def markets(request: Request):
     user = get_current_user(request)
@@ -1589,9 +1556,7 @@ def web_search_endpoint(q: str, request: Request):
         return {"results": [], "message": "Web search on Plus and Pro"}
     return {"results": search_web(q, 8)}
 
-# ================================================================
-# ADMIN (Founder only)
-# ================================================================
+# ===================== ADMIN =====================
 @app.get("/api/admin")
 def admin_panel(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
@@ -1666,9 +1631,6 @@ def admin_delete_user(user_id: str, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"deleted": True}
 
-# ================================================================
-# ADMIN ANALYTICS
-# ================================================================
 @app.get("/api/admin/analytics")
 def admin_analytics(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
@@ -1694,9 +1656,7 @@ def admin_analytics(user: dict = Depends(get_current_user)):
                 "popular_topics": topics
             }
 
-# ================================================================
-# CHAT EXPORT (JSON/CSV) – with QUOTE_ALL for CSV
-# ================================================================
+# ===================== CHAT EXPORT (CSV quoting) =====================
 @app.get("/api/export/chats/{chat_id}")
 def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_current_user)):
     if not user:
@@ -1723,9 +1683,7 @@ def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_cur
             else:
                 return JSONResponse(content={"chat_id": chat_id, "messages": messages})
 
-# ================================================================
-# HEALTH CHECK
-# ================================================================
+# ===================== HEALTH =====================
 @app.get("/health")
 def health_check():
     db_status = "disconnected"
@@ -1754,9 +1712,7 @@ def health_check():
         "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"]
     }
 
-# ================================================================
-# WEB SEARCH
-# ================================================================
+# ===================== WEB SEARCH =====================
 def search_web(query: str, num_results: int = 5) -> List[dict]:
     results = []
     if settings.SERPAPI_KEY:
@@ -1803,7 +1759,6 @@ def get_market_prices():
         except: pass
     
     if settings.FINNHUB_API_KEY:
-        # Corrected Finnhub symbols: no carets
         symbols = ["SPX", "NDX", "DJI", "AAPL", "MSFT", "NVDA", "TSLA", "GOOGL", "META", "AMZN"]
         for sym in symbols:
             try:
@@ -1811,8 +1766,7 @@ def get_market_prices():
                 if r.status_code == 200:
                     data = r.json()
                     if data.get("c"):
-                        name = sym  # keep the symbol as-is
-                        results[name] = {"price": data["c"], "change": round(data.get("dp", 0), 2)}
+                        results[sym] = {"price": data["c"], "change": round(data.get("dp", 0), 2)}
             except: pass
     return results
 
@@ -1836,9 +1790,7 @@ def get_news():
         except: pass
     return news[:10]
 
-# ================================================================
-# PWA MANIFEST & ICONS (new logo)
-# ================================================================
+# ===================== PWA =====================
 @app.get("/manifest.json")
 async def manifest():
     return JSONResponse(content={
@@ -1885,13 +1837,10 @@ async def root():
         "reasoning": "chain_of_thought_enabled"
     }
 
-# ================================================================
-# MAIN
-# ================================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v29.0 - All backend fixes applied")
+    print(f"🚀 CAPITAN AI v29.0 - Complete backend with column guarantees")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
