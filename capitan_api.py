@@ -1,9 +1,9 @@
 """
-CAPITAN AI — Enterprise Backend v28.1
+CAPITAN AI — Enterprise Backend v28.2
 CLOSEAI Technologies
 FULL INTELLIGENCE RESTORED | Elite Reasoning | Human-Like Communication
 Email/Password Authentication (No Email Sending)
-All Critical Fixes Applied (audit 2026-06-14)
+Production-Ready with Guest Tier & Limited Messaging
 """
 
 import os
@@ -33,9 +33,8 @@ import uvicorn
 # ================================================================
 # FASTAPI APP
 # ================================================================
-app = FastAPI(title="CAPITAN AI API", version="28.1")
+app = FastAPI(title="CAPITAN AI API", version="28.2")
 
-# Settings with mandatory secrets
 class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
@@ -67,7 +66,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # ================================================================
-# DATABASE – fixed context manager (no swallowing, proper close)
+# DATABASE – fixed context manager
 # ================================================================
 @contextmanager
 def get_db():
@@ -93,7 +92,6 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users table with daily limits
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -153,7 +151,6 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
-                # Ensure reasoning_chain column exists
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS memories (
@@ -260,12 +257,13 @@ def verify_password(password: str, hashed: str) -> bool:
         return False
 
 # ================================================================
-# JWT AUTHENTICATION
+# JWT AUTHENTICATION – fixed: added "type":"user" to user tokens
 # ================================================================
 def create_token(user_id: str) -> str:
     header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
         "user_id": user_id,
+        "type": "user",
         "exp": int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp())
     }).encode()).decode().rstrip("=")
     signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
@@ -305,7 +303,6 @@ def get_current_user(request: Request):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Check session validity (logout invalidation)
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
                 if not c.fetchone():
                     return None
@@ -338,7 +335,7 @@ def get_current_session(request: Request):
             return {"id": user["id"], "tier": user["tier"], "is_user": True, "user_data": user}
     
     session_id = payload.get("session_id")
-    tier = payload.get("tier", "free")
+    tier = payload.get("tier", "guest")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -366,7 +363,7 @@ async def register(req: RegisterRequest):
     if not re.match(r'^[^@]+@[^@]+\.[^@]+$', req.email):
         raise HTTPException(400, "Invalid email format")
     if len(req.password) < 6:
-        raise HTTPException(400, "Password must be at least 8 characters")
+        raise HTTPException(400, "Password must be at least 6 characters")
     
     try:
         with get_db() as conn:
@@ -509,7 +506,7 @@ async def update_profile(req: dict, user: dict = Depends(get_current_user)):
     return {"message": "Profile updated"}
 
 # ================================================================
-# ANONYMOUS SESSION
+# ANONYMOUS SESSION – now 'guest' tier
 # ================================================================
 @app.get("/api/session")
 async def get_anonymous_session():
@@ -517,14 +514,14 @@ async def get_anonymous_session():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("INSERT INTO sessions (id, tier, daily_msg_count, msg_reset_date) VALUES (%s, %s, 0, CURRENT_DATE)", (session_id, "free"))
+                c.execute("INSERT INTO sessions (id, tier, daily_msg_count, msg_reset_date) VALUES (%s, %s, 0, CURRENT_DATE)", (session_id, "guest"))
                 conn.commit()
     except: pass
-    token = create_session_token(session_id, "free")
-    return {"id": session_id, "tier": "free", "token": token}
+    token = create_session_token(session_id, "guest")
+    return {"id": session_id, "tier": "guest", "token": token}
 
 # ================================================================
-# FOUNDER LOGIN – secured, no default key
+# FOUNDER LOGIN – fixed empty password hash
 # ================================================================
 @app.post("/api/founder")
 async def founder_login(req: dict, request: Request):
@@ -547,10 +544,11 @@ async def founder_login(req: dict, request: Request):
                     c.execute("UPDATE users SET tier = 'founder', reasoning_depth = 5 WHERE id = %s", (user_id,))
                 else:
                     user_id = str(uuid.uuid4())
+                    dummy_hash = hash_password("founder_sentinel")
                     c.execute("""
                         INSERT INTO users (id, email, password_hash, name, tier, reasoning_depth, preferred_domain, daily_msg_count, msg_reset_date)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, 0, CURRENT_DATE)
-                    """, (user_id, "founder@capitan.ai", "", "CAPITAN Founder", "founder", 5, "general"))
+                    """, (user_id, "founder@capitan.ai", dummy_hash, "CAPITAN Founder", "founder", 5, "general"))
                 
                 token = create_token(user_id)
                 c.execute("""
@@ -576,7 +574,7 @@ async def founder_login(req: dict, request: Request):
         raise HTTPException(500, "Founder login failed")
 
 # ================================================================
-# ELITE SYSTEM PROMPT – Restructured
+# SYSTEM PROMPT – emojis removed, structured for quality
 # ================================================================
 CORE_INSTRUCTIONS = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu.
 
@@ -588,11 +586,10 @@ RESPONSE ARCHITECTURE:
 1. LEAD WITH VALUE: Start with the answer, then supporting details.
 2. MATCH ENERGY: Mirror the user's style and tone.
 3. BE CONCISE: Short sentences, clean paragraphs.
-4. USE WISDOM: 1-2 emojis for warmth when appropriate.
-5. SHOW WORK: For complex problems, show reasoning.
-6. BE HONEST: Admit uncertainty.
-7. OFFER HELP: Proactively suggest next steps.
-8. STAY SAFE: Never give financial advice, medical diagnoses, or harmful info. Frame analysis as informational, not personalized investment instruction.
+4. SHOW WORK: For complex problems, show reasoning.
+5. BE HONEST: Admit uncertainty.
+6. OFFER HELP: Proactively suggest next steps.
+7. STAY SAFE: Never give financial advice, medical diagnoses, or harmful info. Frame analysis as informational, not personalized investment instruction.
 
 REASONING FRAMEWORKS:
 - First-principles thinking
@@ -611,9 +608,9 @@ FULL INTELLIGENCE DOMAINS (summary):
 """
 
 DOMAIN_CATALOG = """
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🏦 FINANCE ARCHITECT & ECONOMIST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
+  FINANCE ARCHITECT & ECONOMIST
+================================================================================
 - Advanced financial modeling (DCF, LBO, M&A, three-statement models)
 - Portfolio optimization (Markowitz, Black-Litterman, risk parity)
 - Derivatives pricing (Black-Scholes, binomial trees, Monte Carlo)
@@ -626,9 +623,9 @@ DOMAIN_CATALOG = """
 - Cryptocurrency & DeFi (blockchain analysis, yield farming, L2 solutions)
 - ESG investing (carbon credits, sustainable finance, impact measurement)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📈 INSTITUTIONAL TRADER & QUANT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
+  INSTITUTIONAL TRADER & QUANT
+================================================================================
 - Market microstructure (order books, liquidity, market impact)
 - Volatility surface modeling (SVI, SSVI, local/stochastic volatility)
 - Options strategies (spreads, straddles, strangles, butterflies)
@@ -638,9 +635,9 @@ DOMAIN_CATALOG = """
 - Execution algorithms (VWAP, TWAP, implementation shortfall)
 - Risk-adjusted returns (Sharpe, Sortino, Calmar, Omega ratios)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💻 LEGENDARY DEVELOPER & SOFTWARE ARCHITECT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
+  LEGENDARY DEVELOPER & SOFTWARE ARCHITECT
+================================================================================
 - Backend: Python (FastAPI, Django), Node.js, Go, Rust, Java (Spring)
 - Frontend: React (Next.js), Vue (Nuxt), Angular, Svelte
 - Mobile: React Native, Flutter, Swift (iOS), Kotlin (Android)
@@ -652,9 +649,9 @@ DOMAIN_CATALOG = """
 - Security (OAuth2, JWT, SAML, encryption)
 - LLM/ML: LangChain, LlamaIndex, Transformers, PyTorch
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔧 HARDWARE ENGINEERING & COMPUTER SYSTEMS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
+  HARDWARE ENGINEERING & COMPUTER SYSTEMS
+================================================================================
 - CPU architecture (x86, ARM, RISC-V) - pipelining, caching
 - GPU architecture (NVIDIA CUDA, AMD ROCm, Apple Metal)
 - Memory hierarchy (registers, cache, RAM, SSD, NVMe)
@@ -665,9 +662,9 @@ DOMAIN_CATALOG = """
 - Operating systems (Linux kernel, Windows NT, macOS XNU)
 - Virtualization (KVM, Xen, VMware) and containers
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📐 MATHEMATICIAN & STATISTICIAN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
+  MATHEMATICIAN & STATISTICIAN
+================================================================================
 - Pure mathematics: abstract algebra, topology, number theory
 - Applied mathematics: differential equations, dynamical systems
 - Linear algebra: eigenvalues, SVD, matrix decompositions
@@ -675,9 +672,9 @@ DOMAIN_CATALOG = """
 - Statistics: Bayesian inference, hypothesis testing, regression
 - Numerical methods: finite element, Monte Carlo, optimization
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔬 SCIENTIST & RESEARCHER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+================================================================================
+  SCIENTIST & RESEARCHER
+================================================================================
 - Physics: quantum mechanics, relativity, thermodynamics
 - Chemistry: organic, inorganic, computational, quantum chemistry
 - Biology: molecular biology, genetics, neuroscience, synthetic biology
@@ -711,13 +708,13 @@ def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int
     base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
     base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
     
-    if tier in ("free", "plus"):
+    if tier in ("guest", "free", "plus"):
         prompt = base
     else:
         prompt = base + "\n\n" + DOMAIN_CATALOG
     
     if web_results:
-        prompt += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"• {r['title']}: {r['snippet'][:200]}" for r in web_results[:4]])
+        prompt += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in web_results[:4]])
     
     return prompt
 
@@ -737,12 +734,13 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     return True
 
 # ================================================================
-# DAILY MESSAGE LIMIT ENFORCEMENT
+# DAILY MESSAGE LIMIT ENFORCEMENT – guest:10, free:20, plus:50, pro:100
 # ================================================================
 def enforce_daily_limit(user: dict = None, session: dict = None):
     today = datetime.now(timezone.utc).date()
     if user:
-        tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+        tier = user["tier"]
+        tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
         daily_limit = tier_info["msg_limit"]
         if daily_limit == float("inf"):
             return
@@ -759,7 +757,8 @@ def enforce_daily_limit(user: dict = None, session: dict = None):
                           (count + 1, today, user["id"]))
                 conn.commit()
     elif session:
-        tier_info = TIER_CONFIG.get(session["tier"], TIER_CONFIG["free"])
+        tier = session["tier"]
+        tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["guest"])
         daily_limit = tier_info["msg_limit"]
         if daily_limit == float("inf"):
             return
@@ -900,7 +899,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Groq 70B error: {e}")
     
-    # Free / Fallback: Groq Llama 3.1 8B
+    # Free / Guest / Fallback: Groq Llama 3.1 8B
     if settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -919,12 +918,13 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
     return "I'm having trouble connecting to AI services. Please try again.", "fallback", reasoning_chain
 
 # ================================================================
-# TIER CONFIGURATION
+# TIER CONFIGURATION – guest:10, free:20, plus:50, pro:100, pro_max:inf
 # ================================================================
 TIER_CONFIG = {
+    "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
     "free": {"name": "Free", "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
     "plus": {"name": "Plus", "msg_limit": 50, "workspace_seats": 10, "file_upload": True, "live_markets": False, "web_search": True, "ai_model": "Groq Llama 3.3 70B", "price": 8, "reasoning_depth": 2},
-    "pro": {"name": "Pro", "msg_limit": 150, "workspace_seats": 25, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "Claude 3.5 Sonnet", "price": 17, "reasoning_depth": 3},
+    "pro": {"name": "Pro", "msg_limit": 100, "workspace_seats": 25, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "Claude 3.5 Sonnet", "price": 17, "reasoning_depth": 3},
     "pro_max": {"name": "Pro Max", "msg_limit": float("inf"), "workspace_seats": 50, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "GPT-4o + Claude Ensemble", "price": 30, "reasoning_depth": 4},
     "founder": {"name": "Founder", "msg_limit": float("inf"), "workspace_seats": 100, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "All Models + Custom", "price": 0, "reasoning_depth": 5}
 }
@@ -965,7 +965,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         preferred_domain = "general"
         is_authenticated = False
     
-    tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
+    tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["guest"])
     
     # Enforce daily limit
     enforce_daily_limit(user, session)
@@ -1266,7 +1266,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
     }
 
 # ================================================================
-# PAYMENT & UPGRADE – with verification placeholder
+# PAYMENT & UPGRADE – placeholder verification
 # ================================================================
 @app.get("/api/payment-config")
 def payment_config():
@@ -1287,7 +1287,7 @@ class UpgradeRequest(BaseModel):
     currency: str = "BTC"
 
 def verify_transaction(txid: str, currency: str, expected_tier: str) -> bool:
-    # TODO: real blockchain verification via BlockCypher/Etherscan
+    # TODO: real blockchain verification
     return False
 
 @app.post("/api/upgrade")
@@ -1564,18 +1564,18 @@ def health_check():
     
     return {
         "status": "ok",
-        "version": "28.1",
+        "version": "28.2",
         "database": db_status,
         "ai": ai_status,
         "providers": providers,
         "auth": "email_password",
         "reasoning_engine": True,
         "intelligence_level": "full",
-        "tiers": ["free", "plus", "pro", "pro_max", "founder"]
+        "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"]
     }
 
 # ================================================================
-# WEB SEARCH (placeholder)
+# WEB SEARCH
 # ================================================================
 def search_web(query: str, num_results: int = 5) -> List[dict]:
     results = []
@@ -1644,9 +1644,9 @@ def get_news():
     return news[:10]
 
 UPGRADE_BENEFITS = {
-    "plus": ["50 messages/day", "Groq Llama 3.3 70B", "Work Area (10 seats)", "File uploads", "Web search", "2-step reasoning"],
-    "pro": ["150 messages/day", "Claude 3.5 Sonnet", "Work Area (25 seats)", "Live markets", "Projects", "3-step reasoning"],
-    "pro_max": ["Unlimited messages", "GPT-4o + Claude Ensemble", "Work Area (50 seats)", "Advanced reasoning", "Priority support"]
+    "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "Work Area (10 seats)", "File uploads", "Web search", "2-step reasoning"],
+    "pro": ["Limited messaging (100/day)", "Claude 3.5 Sonnet", "Work Area (25 seats)", "Live markets", "Web search", "3-step reasoning"],
+    "pro_max": ["Unlimited messaging", "GPT-4o + Claude Ensemble", "Work Area (50 seats)", "Live markets", "Advanced reasoning", "Priority support"]
 }
 
 # ================================================================
@@ -1655,8 +1655,7 @@ UPGRADE_BENEFITS = {
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v28.1 - Production Hardened")
-    print(f"🔐 JWT secret required from env (JWT_SECRET)")
-    print(f"👑 Founder code required from env (FOUNDER_KEY)")
+    print(f"🚀 CAPITAN AI v28.2 - Guest tier added, messaging strategy applied")
+    print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
