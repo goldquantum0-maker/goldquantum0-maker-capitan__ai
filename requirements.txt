@@ -7,8 +7,8 @@ python-multipart
 requests
 python-dotenv
 bcrypt
-import PyPDF2
-import docx
-import openpyxl
-import pandas as pd
-import io
+PyPDF2
+docx
+openpyxl
+pandas as pd
+io
