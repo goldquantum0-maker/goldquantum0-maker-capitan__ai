@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#0e6e8e">
     <title>CAPITAN AI — Enterprise Intelligence</title>
+    <link rel="manifest" href="https://capitan-ai-jxu8.onrender.com/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -113,7 +114,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            font-size: 12px;  /* reduced from 13px */
+            font-size: 12px;
             line-height: 1.5;
             height: 100vh;
             overflow: hidden;
@@ -142,8 +143,8 @@
             visibility: hidden;
         }
         .splash-logo {
-            width: 70px;
-            height: 70px;
+            width: 80px;
+            height: 80px;
             animation: splashPulse 1.2s ease-in-out infinite;
         }
         @keyframes splashPulse {
@@ -222,6 +223,7 @@
             cursor: pointer;
             user-select: none;
         }
+        .sidebar-brand svg { width: 26px; height: 15px; }
 
         .top-bar {
             position: fixed;
@@ -1081,12 +1083,12 @@
 </head>
 <body>
 
-<!-- Splash screen -->
+<!-- Splash screen with new logo -->
 <div class="splash" id="splashScreen">
-    <svg class="splash-logo" viewBox="0 0 100 100">
-        <rect width="100" height="100" fill="#38bdf8" rx="20"/>
-        <circle cx="50" cy="50" r="30" fill="none" stroke="white" stroke-width="6"/>
-        <text x="50" y="65" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+    <svg class="splash-logo" viewBox="0 0 640 360">
+        <rect width="640" height="360" fill="#0e6e8e"/>
+        <circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/>
+        <text x="320" y="205" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text>
     </svg>
 </div>
 
@@ -1134,7 +1136,7 @@
 <div id="app" class="app">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand" id="founderClickTarget">
-            <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#38bdf8"/><text x="12" y="17" text-anchor="middle" font-size="12" fill="white" font-family="Arial" font-weight="bold">C</text></svg>
+            <svg viewBox="0 0 640 360"><rect width="640" height="360" fill="#0e6e8e"/><circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/><text x="320" y="205" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text></svg>
             CAPITAN AI
         </div>
         <div class="new-chat-btn" onclick="newChat()">
@@ -1493,6 +1495,21 @@
     async function loadWorkspaces() {
         if (!state.user || ['guest','free'].includes(state.tier)) return;
         document.getElementById('workspaceSection').style.display = 'block';
+        try {
+            const res = await apiCall('/api/workspace/my');
+            state.workspaces = res.workspaces || [];
+            renderWorkspaceList();
+        } catch(e) {}
+    }
+    function renderWorkspaceList() {
+        const list = document.getElementById('workspaceList');
+        if (!list) return;
+        list.innerHTML = state.workspaces.map(w => `
+            <div class="workspace-item" onclick="openWorkspaceMessages('${w.room_code}')">
+                <span>${escapeHtml(w.name)}</span>
+                <span style="font-size:9px; color:var(--text-tertiary);">${w.room_code}</span>
+            </div>
+        `).join('') || '<div style="padding:6px 14px 6px 40px; font-size:10px; color:var(--text-tertiary);">No workspaces yet</div>';
     }
     function openWorkspaceCreateModal() {
         const modal = document.getElementById('workspaceCreateModalContent');
@@ -1512,6 +1529,7 @@
             if (res.created) {
                 toast('Workspace created! Room code: ' + res.room_code);
                 closeModal('workspaceCreateModal');
+                loadWorkspaces();
             } else {
                 toast('Could not create workspace');
             }
@@ -1533,6 +1551,7 @@
             if (res.joined) {
                 toast('Joined workspace!');
                 closeModal('workspaceJoinModal');
+                loadWorkspaces();
             } else {
                 toast('Could not join');
             }
@@ -1614,6 +1633,7 @@
         if (!isLoggedIn) {
             document.getElementById('chatHistoryList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">Sign in to see recent chats</div>';
         }
+        loadWorkspaces();
     }
     async function uploadProfilePhoto() {
         if (!state.user) { toast('Sign in to change photo'); return; }
