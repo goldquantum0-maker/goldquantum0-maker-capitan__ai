@@ -2,7 +2,7 @@
 CAPITAN AI — Enterprise Backend v29.0
 CLOSEAI Technologies
 Warm, Expert Trading Personality | Elite Reasoning | File Analysis | Workspaces
-All Planned Fixes Applied (Work Areas, Saved, Paid Features, PWA, New Logo)
+All Planned Fixes Applied (Workspace errors, upgrade token, Finnhub, CSV, order)
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -344,7 +344,7 @@ def get_current_session(request: Request):
     raise HTTPException(401, "Session not found")
 
 # ================================================================
-# AUTH ENDPOINTS
+# AUTH ENDPOINTS (unchanged)
 # ================================================================
 class RegisterRequest(BaseModel):
     email: str
@@ -559,7 +559,7 @@ async def founder_login(req: dict, request: Request):
         raise HTTPException(500, "Founder login failed")
 
 # ================================================================
-# SYSTEM PROMPT
+# SYSTEM PROMPT (unchanged)
 # ================================================================
 CORE_INSTRUCTIONS = """You are CAPITAN AI – a warm, street‑smart, elite trading and intelligence assistant created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
@@ -1292,7 +1292,16 @@ def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(500, "Could not delete item")
 
 # ================================================================
-# PAYMENT & UPGRADE
+# UPGRADE_BENEFITS (moved before payment_config)
+# ================================================================
+UPGRADE_BENEFITS = {
+    "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "File uploads (20MB)", "Web search", "2-step reasoning"],
+    "pro": ["Limited messaging (100/day)", "Claude 3.5 Sonnet", "File uploads (50MB)", "Live markets", "Web search", "3-step reasoning"],
+    "pro_max": ["Unlimited messaging", "GPT-4o + Claude Ensemble", "File uploads (100MB)", "Live markets", "Advanced reasoning", "Priority support"]
+}
+
+# ================================================================
+# PAYMENT & UPGRADE – now returns a fresh token
 # ================================================================
 @app.get("/api/payment-config")
 def payment_config():
@@ -1370,13 +1379,16 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
         logger.error(f"Upgrade error: {e}")
         raise HTTPException(500, "Could not process upgrade")
     
-    if verified:
-        return {"verified": True, "tier": req.tier}
-    else:
-        return {"verified": False, "message": "Transaction submitted for review. Upgrade will be activated after confirmation."}
+    # Generate a fresh token so the frontend can update the session
+    new_token = create_token(user["id"])
+    return {
+        "verified": verified,
+        "tier": req.tier if verified else user["tier"],
+        "token": new_token
+    }
 
 # ================================================================
-# WORKSPACES
+# WORKSPACES (with proper error logging and message order fix)
 # ================================================================
 @app.post("/api/workspace/create")
 def workspace_create(req: dict, user: dict = Depends(get_current_user)):
@@ -1404,8 +1416,9 @@ def workspace_create(req: dict, user: dict = Depends(get_current_user)):
                 """, (workspace_id, user["id"], "admin"))
                 conn.commit()
                 return {"room_id": workspace_id, "room_code": room_code.upper(), "created": True}
-    except:
-        return {"created": False}
+    except Exception as e:
+        logger.error(f"Workspace create error: {e}")
+        raise HTTPException(500, f"Could not create workspace: {str(e)}")
 
 @app.post("/api/workspace/join")
 def workspace_join(req: dict, user: dict = Depends(get_current_user)):
@@ -1436,8 +1449,9 @@ def workspace_join(req: dict, user: dict = Depends(get_current_user)):
                 return {"joined": True, "room_id": workspace[0]}
     except HTTPException:
         raise
-    except:
-        return {"joined": False}
+    except Exception as e:
+        logger.error(f"Workspace join error: {e}")
+        raise HTTPException(500, f"Could not join workspace: {str(e)}")
 
 @app.post("/api/workspace/message")
 def workspace_message(req: dict, user: dict = Depends(get_current_user)):
@@ -1459,6 +1473,12 @@ def workspace_message(req: dict, user: dict = Depends(get_current_user)):
                     raise HTTPException(404, "Room not found")
                 
                 is_ai = message.strip().startswith("@CAPITAN")
+                # Insert user message first
+                c.execute("""
+                    INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (sid(), workspace[0], user["id"], user["name"], message))
+                # If AI, insert AI reply second
                 if is_ai:
                     ai_response, _, _ = call_ai_model([{"role": "user", "content": message.replace('@CAPITAN', '').strip()}], user["tier"])
                     if ai_response:
@@ -1466,15 +1486,11 @@ def workspace_message(req: dict, user: dict = Depends(get_current_user)):
                             INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai)
                             VALUES (%s, %s, %s, %s, %s, 1)
                         """, (sid(), workspace[0], user["id"], "CAPITAN AI", ai_response))
-                
-                c.execute("""
-                    INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (sid(), workspace[0], user["id"], user["name"], message))
                 conn.commit()
                 return {"sent": True}
-    except:
-        return {"sent": False}
+    except Exception as e:
+        logger.error(f"Workspace message error: {e}")
+        raise HTTPException(500, f"Could not send message: {str(e)}")
 
 @app.get("/api/workspace/messages")
 def workspace_get_messages(room_code: str, user: dict = Depends(get_current_user)):
@@ -1503,11 +1519,12 @@ def workspace_get_messages(room_code: str, user: dict = Depends(get_current_user
                 """, (workspace[0],))
                 messages = [{"author": r[0], "message": r[1], "is_ai": bool(r[2]), "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
                 return {"messages": messages, "members": members}
-    except:
-        return {"messages": []}
+    except Exception as e:
+        logger.error(f"Workspace messages error: {e}")
+        raise HTTPException(500, f"Could not load messages: {str(e)}")
 
 # ================================================================
-# NEW: MY WORKSPACES
+# MY WORKSPACES
 # ================================================================
 @app.get("/api/workspace/my")
 def workspace_my(request: Request, user: dict = Depends(get_current_user)):
@@ -1530,7 +1547,7 @@ def workspace_my(request: Request, user: dict = Depends(get_current_user)):
             ]}
 
 # ================================================================
-# MARKET & NEWS (with Finnhub)
+# MARKET & NEWS (with corrected Finnhub symbols)
 # ================================================================
 @app.get("/api/markets")
 def markets(request: Request):
@@ -1650,7 +1667,7 @@ def admin_delete_user(user_id: str, user: dict = Depends(get_current_user)):
     return {"deleted": True}
 
 # ================================================================
-# NEW: ADMIN ANALYTICS
+# ADMIN ANALYTICS
 # ================================================================
 @app.get("/api/admin/analytics")
 def admin_analytics(user: dict = Depends(get_current_user)):
@@ -1678,7 +1695,7 @@ def admin_analytics(user: dict = Depends(get_current_user)):
             }
 
 # ================================================================
-# NEW: CHAT EXPORT (JSON/CSV)
+# CHAT EXPORT (JSON/CSV) – with QUOTE_ALL for CSV
 # ================================================================
 @app.get("/api/export/chats/{chat_id}")
 def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_current_user)):
@@ -1697,7 +1714,7 @@ def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_cur
             messages = [{"role": r[0], "content": r[1], "model": r[2] or "AI", "created": r[3].isoformat() if r[3] else None} for r in rows]
             if format == "csv":
                 output = StringIO()
-                writer = csv.writer(output)
+                writer = csv.writer(output, quoting=csv.QUOTE_ALL)
                 writer.writerow(["role", "content", "model", "created"])
                 for m in messages:
                     writer.writerow([m["role"], m["content"], m["model"], m["created"]])
@@ -1786,14 +1803,15 @@ def get_market_prices():
         except: pass
     
     if settings.FINNHUB_API_KEY:
-        symbols = ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL", "META", "AMZN", "^GSPC", "^IXIC", "^DJI"]
+        # Corrected Finnhub symbols: no carets
+        symbols = ["SPX", "NDX", "DJI", "AAPL", "MSFT", "NVDA", "TSLA", "GOOGL", "META", "AMZN"]
         for sym in symbols:
             try:
                 r = requests.get(f"https://finnhub.io/api/v1/quote?symbol={sym}&token={settings.FINNHUB_API_KEY}", timeout=10)
                 if r.status_code == 200:
                     data = r.json()
                     if data.get("c"):
-                        name = sym.lstrip("^")
+                        name = sym  # keep the symbol as-is
                         results[name] = {"price": data["c"], "change": round(data.get("dp", 0), 2)}
             except: pass
     return results
@@ -1817,12 +1835,6 @@ def get_news():
                     })
         except: pass
     return news[:10]
-
-UPGRADE_BENEFITS = {
-    "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "Work Area (10 seats)", "File uploads", "Web search", "2-step reasoning"],
-    "pro": ["Limited messaging (100/day)", "Claude 3.5 Sonnet", "Work Area (25 seats)", "Live markets", "Web search", "3-step reasoning"],
-    "pro_max": ["Unlimited messaging", "GPT-4o + Claude Ensemble", "Work Area (50 seats)", "Live markets", "Advanced reasoning", "Priority support"]
-}
 
 # ================================================================
 # PWA MANIFEST & ICONS (new logo)
@@ -1879,7 +1891,7 @@ async def root():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v29.0 - Complete with all fixes, new logo")
+    print(f"🚀 CAPITAN AI v29.0 - All backend fixes applied")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
