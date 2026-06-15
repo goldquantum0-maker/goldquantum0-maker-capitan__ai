@@ -679,6 +679,126 @@
             background: var(--accent-glow);
         }
 
+        /* Saved (Library) Modal */
+        .saved-modal {
+            max-width: 700px;
+        }
+        .saved-search {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 28px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .saved-search:focus {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+        .saved-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .saved-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .saved-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        .saved-card-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .saved-card-preview {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        .saved-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: var(--text-tertiary);
+        }
+        .saved-card-delete {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 12px;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        .saved-card-delete:hover {
+            color: #ef4444;
+            background: rgba(239,68,68,0.1);
+        }
+        .saved-empty {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-tertiary);
+            font-size: 13px;
+        }
+        .saved-empty svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        .saved-create-area {
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .saved-create-area input, .saved-create-area textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .saved-create-area input:focus, .saved-create-area textarea:focus {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+        .saved-create-area .btn {
+            margin-top: 4px;
+        }
+
         .modal-overlay {
             display: none;
             position: fixed;
@@ -950,8 +1070,8 @@
             <span>New chat</span>
         </div>
         <div class="menu-item" onclick="openLibrary()" id="libraryMenuItem">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            <span>My Library</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            <span>Saved <span id="savedCount" style="font-size:10px; opacity:0.7;"></span></span>
         </div>
         <div>
             <div class="collapsible-header" onclick="toggleCollapsible('appearance')">
@@ -1038,12 +1158,11 @@
 <!-- Modals -->
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal" id="upgradeModalContent"></div></div>
-<div id="libraryModal" class="modal-overlay"><div class="modal" id="libraryModalContent"></div></div>
+<div id="libraryModal" class="modal-overlay"><div class="modal saved-modal" id="libraryModalContent"></div></div>
 <div id="founderModal" class="modal-overlay"><div class="modal" id="founderModalContent"></div></div>
 <div id="dataModal" class="modal-overlay"><div class="modal" id="dataModalContent"></div></div>
 <div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
 <div id="termsModal" class="modal-overlay"><div class="modal" id="termsModalContent"></div></div>
-<!-- Guest signup modal -->
 <div id="guestSignupModal" class="modal-overlay"><div class="modal" id="guestSignupModalContent"></div></div>
 
 <script>
@@ -1383,6 +1502,8 @@
         try {
             await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat ${state.activeChatId || 'new'}`, type: 'note', content: msg.content }) });
             toast('Saved to Library', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
+            // Refresh the library list
+            try { let lib = await apiCall('/api/library'); state.library = lib.items || []; updateSavedCount(); } catch(e) {}
         } catch(e) { toast('Could not save'); }
     }
 
@@ -1397,13 +1518,13 @@
         });
     }
 
-    // Profile Modal (unchanged)
+    // Profile Modal
     function openProfileModal() {
         const modal = document.getElementById('profileModalContent');
         const isFounder = state.tier === 'founder';
         const isLoggedIn = !!state.user;
         const photoAction = isLoggedIn ? `<button class="btn" style="margin:0;width:auto;padding:8px 16px;font-size:12px;" onclick="uploadProfilePhoto()">Change Photo</button>` : `<span style="font-size:11px;color:var(--text-tertiary);">Sign in to change</span>`;
-        modal.innerHTML = `<h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="60" height="60" style="border-radius:50%;object-fit:cover;background:var(--accent-glow);" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${photoAction}</div><div style="font-weight:600;margin-top:12px;font-size:15px;">${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</div><div style="color:var(--accent);font-size:12px;margin-bottom:20px;">${isFounder ? 'Founder' : state.tier.toUpperCase()}${state.tier === 'pro_max' || state.tier === 'founder' ? ' - Unlimited' : ' - Limited messaging'}</div>${!isFounder ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>&rarr;</span></div>` : ''}${isLoggedIn ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>My Library</span><span>&rarr;</span></div>` : ''}<div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data &amp; Legal</span><span>&rarr;</span></div>${isLoggedIn ? `<div class="modal-setting" onclick="logout(); closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span><span>&rarr;</span></div>` : ''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
+        modal.innerHTML = `<h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="60" height="60" style="border-radius:50%;object-fit:cover;background:var(--accent-glow);" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${photoAction}</div><div style="font-weight:600;margin-top:12px;font-size:15px;">${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</div><div style="color:var(--accent);font-size:12px;margin-bottom:20px;">${isFounder ? 'Founder' : state.tier.toUpperCase()}${state.tier === 'pro_max' || state.tier === 'founder' ? ' - Unlimited' : ' - Limited messaging'}</div>${!isFounder ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>&rarr;</span></div>` : ''}${isLoggedIn ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>Saved</span><span>&rarr;</span></div>` : ''}<div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data &amp; Legal</span><span>&rarr;</span></div>${isLoggedIn ? `<div class="modal-setting" onclick="logout(); closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span><span>&rarr;</span></div>` : ''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
         document.getElementById('profileModal').classList.add('open');
     }
 
@@ -1434,19 +1555,97 @@
         } catch(e) { toast('Verification failed'); }
     }
 
-    // Library (unchanged)
+    // Library (now "Saved") – redesigned
+    function updateSavedCount() {
+        const count = state.library.length;
+        const el = document.getElementById('savedCount');
+        if (el) el.textContent = count ? `(${count})` : '';
+    }
     async function openLibrary() {
-        if (!state.user) { toast('Sign in to access Library'); return; }
+        if (!state.user) { toast('Sign in to access Saved'); return; }
         try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) { state.library = []; }
+        updateSavedCount();
         const modal = document.getElementById('libraryModalContent');
-        modal.innerHTML = `<h2>My Library</h2><input type="text" id="libName" placeholder="Item name"><textarea id="libContent" rows="3" placeholder="Content"></textarea><button class="btn" onclick="saveLibraryItem()">Save to Library</button><div id="libraryList" style="margin-top:16px;">${state.library.map(i => `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);"><span style="cursor:pointer;flex:1;font-size:12px;" onclick="viewLibraryItem('${i.id}')">${escapeHtml(i.name)}</span><button onclick="deleteLibraryItem('${i.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;">&times;</button></div>`).join('')}</div><button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button>`;
+        modal.innerHTML = `
+            <h2>Saved</h2>
+            <input type="text" class="saved-search" id="savedSearch" placeholder="Search saved items..." oninput="filterSavedItems()">
+            <div class="saved-list" id="savedList">
+                ${renderSavedList(state.library)}
+            </div>
+            <div class="saved-create-area">
+                <input type="text" id="libName" placeholder="Title">
+                <textarea id="libContent" rows="2" placeholder="Paste or type your note..."></textarea>
+                <button class="btn" onclick="saveLibraryItem()">Save new item</button>
+            </div>
+            <button class="btn btn-outline" onclick="closeModal('libraryModal')">Close</button>
+        `;
         document.getElementById('libraryModal').classList.add('open');
     }
-    async function saveLibraryItem() { let name = document.getElementById('libName').value.trim(), content = document.getElementById('libContent').value.trim(); if (!name || !content) { toast('Name and content required'); return; } await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) }); toast('Saved to library'); openLibrary(); }
-    async function deleteLibraryItem(id) { await apiCall(`/api/library/${id}`, { method: 'DELETE' }); openLibrary(); }
-    function viewLibraryItem(id) { let item = state.library.find(i => i.id === id); if (item) { document.getElementById('libName').value = item.name; document.getElementById('libContent').value = item.content; } }
+    function renderSavedList(items) {
+        if (!items.length) {
+            return `<div class="saved-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <div>No saved items yet.<br>Save AI responses or create your own notes.</div>
+            </div>`;
+        }
+        return items.map(item => {
+            const date = item.created ? new Date(item.created).toLocaleDateString() : '';
+            return `
+                <div class="saved-card" onclick="viewLibraryItem('${item.id}')">
+                    <div class="saved-card-title">
+                        <span>${escapeHtml(item.name || 'Untitled')}</span>
+                        <button class="saved-card-delete" onclick="event.stopPropagation(); deleteLibraryItem('${item.id}')">&times;</button>
+                    </div>
+                    <div class="saved-card-preview">${escapeHtml((item.content || '').substring(0, 120))}</div>
+                    <div class="saved-card-meta">
+                        <span>${date}</span>
+                        <span style="opacity:0.6;">Click to edit</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    function filterSavedItems() {
+        const query = document.getElementById('savedSearch')?.value.toLowerCase() || '';
+        const filtered = state.library.filter(item => 
+            (item.name || '').toLowerCase().includes(query) || 
+            (item.content || '').toLowerCase().includes(query)
+        );
+        const list = document.getElementById('savedList');
+        if (list) list.innerHTML = renderSavedList(filtered);
+    }
+    async function saveLibraryItem() {
+        let name = document.getElementById('libName').value.trim();
+        let content = document.getElementById('libContent').value.trim();
+        if (!name || !content) { toast('Title and content required'); return; }
+        await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name, type: 'note', content }) });
+        toast('Saved');
+        try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) {}
+        updateSavedCount();
+        // Refresh the list in the modal
+        const list = document.getElementById('savedList');
+        if (list) list.innerHTML = renderSavedList(state.library);
+        document.getElementById('libName').value = '';
+        document.getElementById('libContent').value = '';
+    }
+    async function deleteLibraryItem(id) {
+        await apiCall(`/api/library/${id}`, { method: 'DELETE' });
+        try { let lib = await apiCall('/api/library'); state.library = lib.items || []; } catch(e) {}
+        updateSavedCount();
+        const list = document.getElementById('savedList');
+        if (list) list.innerHTML = renderSavedList(state.library);
+    }
+    function viewLibraryItem(id) {
+        let item = state.library.find(i => i.id === id);
+        if (item) {
+            document.getElementById('libName').value = item.name || '';
+            document.getElementById('libContent').value = item.content || '';
+            // Scroll to the edit area
+            document.getElementById('libName').scrollIntoView({ behavior: 'smooth' });
+        }
+    }
 
-    // File Upload (unchanged)
+    // File Upload
     async function triggerFileUpload() {
         if (!state.user) { toast('Sign in to upload files'); return; }
         if (state.tier === 'free' || state.tier === 'guest') { toast('Upgrade to Plus or Pro for file uploads'); openUpgradeModal(); return; }
@@ -1551,7 +1750,6 @@
             let res = await fetch(`${CFG.API}/api/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) });
             let data = await res.json();
             if (data.token) {
-                // Upgrade guest to registered user
                 state.token = data.token;
                 state.user = data.user;
                 state.tier = data.user.tier;
@@ -1560,7 +1758,7 @@
                 updateUIBasedOnTier();
                 closeModal('guestSignupModal');
                 toast('Account created! Welcome to CAPITAN AI.');
-                await loadChats();  // fetch real chats now
+                await loadChats();
             } else {
                 errorDiv.innerText = data.detail || 'Signup failed';
                 errorDiv.style.display = 'block';
@@ -1633,7 +1831,6 @@
                 errorDiv.style.display = 'block';
             }
         } catch(e) {
-            // Show actual error message
             let msg = 'Signup failed';
             try { msg = JSON.parse(e.message).detail || msg; } catch(_) {}
             errorDiv.innerText = msg;
