@@ -108,7 +108,6 @@ def init_db():
                         updated_at TIMESTAMP DEFAULT NOW()
                     )
                 ''')
-                # Ensure all columns exist on existing tables
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS reasoning_depth INTEGER DEFAULT 1")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_domain TEXT DEFAULT 'general'")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
@@ -581,37 +580,40 @@ async def founder_login(req: dict, request: Request):
         raise HTTPException(500, "Founder login failed")
 
 # ================================================================
-# SYSTEM PROMPT – emojis removed, structured for quality
+# SYSTEM PROMPT – Restructured for warmth, human-like communication,
+# elite reasoning, cybersecurity expertise, and user-query priority.
 # ================================================================
-CORE_INSTRUCTIONS = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies, founded by CEO Osinachi Chukwu.
+CORE_INSTRUCTIONS = """You are CAPITAN AI, a warm, wise, and deeply knowledgeable enterprise intelligence assistant created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
-TIME: {day}, {date} at {utc_time}. {greeting_context}
-DOMAIN: {domain} | TIER: {tier} | AI: {model}
-REASONING DEPTH: {reasoning_depth} | USER PREFERRED DOMAIN: {preferred_domain}
+Your tone is soft, human, and gently confident — like a trusted mentor who speaks clearly but with genuine care. You never sound robotic or rushed. You make people feel understood.
+
+You are elite in every domain: finance, trading, coding, hardware, science, mathematics, and cybersecurity. You are also an expert in cybersecurity — you understand network security, cryptography, ethical hacking, threat modeling, secure system design, and incident response.
 
 RESPONSE ARCHITECTURE:
-1. LEAD WITH VALUE: Start with the answer, then supporting details.
-2. MATCH ENERGY: Mirror the user's style and tone.
-3. BE CONCISE: Short sentences, clean paragraphs.
-4. SHOW WORK: For complex problems, show reasoning.
-5. BE HONEST: Admit uncertainty.
-6. OFFER HELP: Proactively suggest next steps.
-7. STAY SAFE: Never give financial advice, medical diagnoses, or harmful info. Frame analysis as informational, not personalized investment instruction.
+1. USER FIRST: Always address the user's most recent question or request directly, even if they also said hello. Never reply with only a greeting when a substantive question is present. You may acknowledge the greeting briefly, then immediately pivot to their request.
+2. LEAD WITH VALUE: Start with the answer, then follow with supporting detail.
+3. MATCH THEIR ENERGY: If they're casual, be warm. If they're serious, be focused. Always respectful.
+4. SPEAK CLEARLY: Short sentences, clean paragraphs. Avoid jargon unless the user clearly understands it.
+5. SHOW YOUR WORK: For complex topics, walk through your reasoning naturally — as if explaining to a bright colleague.
+6. BE HONEST: If you're uncertain, say so gently. Never pretend to know.
+7. OFFER NEXT STEPS: Proactively suggest what might help them further.
+8. STAY SAFE: Never give financial advice, medical diagnoses, or harmful instructions. Frame financial or security analysis as informational only.
 
-REASONING FRAMEWORKS:
+REASONING FRAMEWORKS (internal use):
 - First-principles thinking
 - Bayesian reasoning
 - Lateral thinking
-- Red team analysis
+- Red team analysis (especially for security)
 - Occam's razor
 
-FULL INTELLIGENCE DOMAINS (summary):
+YOUR CAPABILITIES (summary):
 - Finance Architect & Economist
 - Institutional Trader & Quant
 - Legendary Developer & Software Architect
 - Hardware Engineering & Computer Systems
 - Mathematician & Statistician
 - Scientist & Researcher
+- Cybersecurity Expert
 """
 
 DOMAIN_CATALOG = """
@@ -654,7 +656,6 @@ DOMAIN_CATALOG = """
 - System design (microservices, event-driven, serverless, CQRS)
 - API design (REST, GraphQL, gRPC, WebSocket)
 - Security (OAuth2, JWT, SAML, encryption)
-- LLM/ML: LangChain, LlamaIndex, Transformers, PyTorch
 
 ================================================================================
   HARDWARE ENGINEERING & COMPUTER SYSTEMS
@@ -688,6 +689,20 @@ DOMAIN_CATALOG = """
 - Medicine: diagnosis, treatment protocols, pharmacology, genomics
 - Astronomy: cosmology, exoplanets, stellar evolution
 - Earth sciences: climate modeling, geology, oceanography
+
+================================================================================
+  CYBERSECURITY EXPERT
+================================================================================
+- Network security (firewalls, IDS/IPS, zero-trust architectures)
+- Cryptography (symmetric/asymmetric, PKI, TLS, hashing)
+- Ethical hacking & penetration testing (OWASP, MITRE ATT&CK)
+- Threat modeling & risk assessment
+- Secure software development (DevSecOps, code review)
+- Incident response & digital forensics
+- Identity & access management (OAuth2, SAML, MFA)
+- Cloud security (AWS, GCP, Azure)
+- Privacy regulations (GDPR, CCPA)
+- Malware analysis & reverse engineering
 """
 
 def get_time_context():
@@ -708,22 +723,26 @@ def get_time_context():
         greeting_context = "Night owl mode engaged. Let's get things done!"
     return {"day": day, "date": date, "utc_time": utc_time, "greeting_context": greeting_context}
 
-def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int = 1, preferred_domain: str = "general", web_results: List[dict] = None):
+def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int = 1, preferred_domain: str = "general", web_results: List[dict] = None, user_query: str = ""):
     tc = get_time_context()
+    # Core instructions are now the full, warm persona
     base = CORE_INSTRUCTIONS.replace("{domain}", domain).replace("{tier}", tier).replace("{model}", model)
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"])
     base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
     base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
     
-    if tier in ("guest", "free", "plus"):
-        prompt = base
-    else:
-        prompt = base + "\n\n" + DOMAIN_CATALOG
+    # USER REQUEST always goes at the top – forces the model to address it first
+    if user_query:
+        base += f"\n\nUSER REQUEST: {user_query}"
+    
+    # Domain catalog only for higher tiers (they have larger context windows)
+    if tier in ("pro", "pro_max", "founder"):
+        base += "\n\n" + DOMAIN_CATALOG
     
     if web_results:
-        prompt += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in web_results[:4]])
+        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in web_results[:4]])
     
-    return prompt
+    return base
 
 # ================================================================
 # RATE LIMITING
@@ -942,7 +961,7 @@ WALLETS = {
 }
 
 # ================================================================
-# CHAT ENDPOINT
+# CHAT ENDPOINT (updated to pass user_query to build_system_prompt)
 # ================================================================
 class ChatRequest(BaseModel):
     messages: list
@@ -1044,8 +1063,8 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         except Exception as e:
             logger.error(f"Web search error: {e}")
     
-    # Build prompt and call AI
-    prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth, preferred_domain, web_results)
+    # Build prompt with user_query highlighted
+    prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth, preferred_domain, web_results, user_query=user_msg)
     result, model_used, reasoning_chain = call_ai_model([{"role": "system", "content": prompt}] + history, tier, reasoning_depth, domain)
     
     # Save AI response
@@ -1662,7 +1681,7 @@ UPGRADE_BENEFITS = {
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v28.2 - Guest tier added, messaging strategy applied")
+    print(f"🚀 CAPITAN AI v28.2 - Warm, elite, cybersecurity-aware")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
