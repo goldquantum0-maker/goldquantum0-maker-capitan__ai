@@ -11,4 +11,3 @@ PyPDF2
 docx
 openpyxl
 pandas
-io
