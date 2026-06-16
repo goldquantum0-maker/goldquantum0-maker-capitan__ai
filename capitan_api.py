@@ -1,9 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v29.0 (AI/ML API integration)
+CAPITAN AI — Enterprise Backend v29.0 (AI/ML API + Intelligence Overhaul)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
-All fixes applied (greeting, workspace_members PK migration, intelligence overhaul)
-AIML API key added for Pro/ProMax/Founder tiers.
+Conversation continuity, favicon dynamic route, memory augmentation.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -36,7 +35,7 @@ class Settings(BaseSettings):
     FINNHUB_API_KEY: str = ""
     ETHERSCAN_API_KEY: str = ""
     FOUNDER_EXTRA_PROMPT: str = ""
-    # NEW: AI/ML API key (both possible names)
+    # AI/ML API key (both possible names)
     AIMLAPI_API_KEY: str = ""
     ALMLAPI_API_KEY: str = ""
 
@@ -166,7 +165,7 @@ def init_db():
                     )
                 ''')
 
-                # Library – guarantee all columns
+                # Library
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS library_items (
                         id TEXT PRIMARY KEY,
@@ -195,7 +194,7 @@ def init_db():
                 ''')
                 c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS extracted_text TEXT")
 
-                # Workspaces – guarantee all columns
+                # Workspaces
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspaces (
                         id TEXT PRIMARY KEY,
@@ -211,7 +210,7 @@ def init_db():
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS room_code TEXT")
                 c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 10")
 
-                # Workspace members – fix legacy session_id column (PK issue)
+                # Workspace members
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS workspace_members (
                         workspace_id TEXT,
@@ -221,22 +220,17 @@ def init_db():
                         PRIMARY KEY (workspace_id, user_id)
                     )
                 ''')
-                # Ensure necessary columns
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS user_id UUID")
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS workspace_id TEXT")
                 c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member'")
-                # Migration to remove old session_id column if it exists (and is part of PK)
                 c.execute("""
                     DO $$
                     BEGIN
                         IF EXISTS (SELECT 1 FROM information_schema.columns
                                    WHERE table_name='workspace_members' AND column_name='session_id')
                         THEN
-                            -- Drop the primary key constraint that includes session_id
                             ALTER TABLE workspace_members DROP CONSTRAINT IF EXISTS workspace_members_pkey;
-                            -- Remove the old column
                             ALTER TABLE workspace_members DROP COLUMN session_id;
-                            -- Recreate the correct primary key
                             ALTER TABLE workspace_members ADD PRIMARY KEY (workspace_id, user_id);
                         END IF;
                     END;
@@ -384,7 +378,7 @@ def get_current_session(request: Request):
     except: pass
     raise HTTPException(401, "Session not found")
 
-# ===================== AUTH ENDPOINTS =====================
+# ===================== AUTH ENDPOINTS (unchanged) =====================
 class RegisterRequest(BaseModel):
     email: str
     password: str
@@ -591,7 +585,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ===================== OVERHAULED SYSTEM PROMPT =====================
+# ===================== OVERHAULED SYSTEM PROMPT (CONVERSATION-AWARE) =====================
 CORE_INSTRUCTIONS = """You are CAPITAN AI — a world‑class general‑purpose intelligence, created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
 You are a trusted, warm, and deeply knowledgeable assistant. Your voice is confident but kind, clear but never robotic. You speak like a brilliant, well‑read friend — someone who can explain complex ideas simply, share a laugh when the moment calls for it, and always stay honest.
@@ -605,20 +599,21 @@ You are equally expert in every domain:
 • Current events — you leverage live data when available, and when you don't know something recent, you say so honestly.
 
 RESPONSE RULES:
-1. USER FIRST: Always answer the user's most recent question directly. Even if they greeted you, if they also asked something substantive, address it immediately. If the user's message is purely a greeting (hello, hi, good morning, etc.), respond with a warm, concise greeting and an open invitation like "What can I help you with today?" — never list your capabilities unless specifically asked.
-2. BE WARM AND ENGAGING: Use natural language, contractions, and occasional emojis 🌟. Let your tone match the user's mood — playful when appropriate, serious when needed. Sound like a real person, not a textbook.
-3. LEAD WITH VALUE: Give the core insight or answer first, then add supporting detail. Be concise but complete.
-4. SHOW YOUR WORK: For complex problems, walk through your reasoning step by step, as if explaining to a bright colleague.
-5. FINANCIAL DISCLAIMER: When discussing trading, investing, or financial topics, gently remind users: "This is analysis, not guaranteed profit — always do your own research."
-6. STAY HONEST: If you're unsure, say so. Never bluff. If you need more information, ask.
-7. OFFER NEXT STEPS: When helpful, suggest what the user might explore next.
-8. STAY SAFE: Never give medical diagnoses, legal advice as a substitute for a professional, or instructions that could cause harm. Frame analysis as informational.
+1. CARRY THE CONVERSATION: If the user is following up on a previous topic, acknowledge it and continue seamlessly. Do NOT reset the conversation or greet them again as if starting fresh. Use the provided [PREVIOUS EXCHANGE] and [RELEVANT MEMORIES] to stay on track.
+2. USER FIRST: Always answer the user's most recent question directly. If their message contains only a greeting, respond warmly and invite them to share what's on their mind.
+3. BE WARM AND ENGAGING: Use natural language, contractions, and occasional emojis 🌟. Let your tone match the user's mood.
+4. LEAD WITH VALUE: Give the core insight first, then add detail. Be concise but complete.
+5. SHOW YOUR WORK: For complex problems, walk through reasoning step by step.
+6. FINANCIAL DISCLAIMER: When discussing trading/investing, gently add: "This is analysis, not guaranteed profit — always do your own research."
+7. STAY HONEST: If unsure, say so. Never bluff.
+8. OFFER NEXT STEPS: When helpful, suggest what the user might explore next.
+9. STAY SAFE: No medical diagnoses, legal advice as a substitute, or harmful instructions.
 
 REASONING FRAMEWORKS (internal):
 - First‑principles thinking
 - Bayesian reasoning
 - Lateral thinking
-- Red team analysis (especially for security)
+- Red team analysis
 - Occam's razor
 """
 
@@ -683,28 +678,57 @@ def get_time_context():
         greeting_context = "The night is young — plenty of time to explore new ideas."
     return {"day": day, "date": date, "utc_time": utc_time, "greeting_context": greeting_context}
 
-def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int = 1, preferred_domain: str = "general", web_results: List[dict] = None, user_query: str = ""):
+def _extract_previous_exchange(history: List[dict]) -> str:
+    """Extract the last assistant-user pair from the conversation history."""
+    if len(history) < 2:
+        return ""
+    last_user = None
+    prev_assistant = None
+    for m in reversed(history):
+        if m["role"] == "user" and last_user is None:
+            last_user = m["content"]
+        elif m["role"] == "assistant" and last_user is not None:
+            prev_assistant = m["content"]
+            break
+    if prev_assistant and last_user:
+        return f"CAPITAN: {prev_assistant[:300]}\nUSER: {last_user[:300]}"
+    return ""
+
+def build_system_prompt(domain: str, tier: str, model: str,
+                        reasoning_depth: int = 1,
+                        preferred_domain: str = "general",
+                        web_results: List[dict] = None,
+                        user_query: str = "",
+                        history: List[dict] = None) -> str:
     tc = get_time_context()
     base = CORE_INSTRUCTIONS.replace("{domain}", domain).replace("{tier}", tier).replace("{model}", model)
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"])
     base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
     base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
-    
+
+    # Inject previous exchange for continuity
+    if history and len(history) >= 2:
+        prev_exchange = _extract_previous_exchange(history)
+        if prev_exchange:
+            base += "\n\n[PREVIOUS EXCHANGE]\n" + prev_exchange
+
     if user_query:
         base += f"\n\nUSER REQUEST: {user_query}"
-    
+
     if tier == "founder" and settings.FOUNDER_EXTRA_PROMPT:
         base += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
-    
+
     if tier in ("pro", "pro_max", "founder"):
         base += "\n\n" + DOMAIN_CATALOG
-    
+
     if web_results:
-        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in web_results[:4]])
-    
+        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join(
+            [f"- {r['title']}: {r['snippet'][:200]}" for r in web_results[:4]]
+        )
+
     return base
 
-# ===================== RATE LIMITING =====================
+# ===================== RATE LIMITING (unchanged) =====================
 rate_store = {}
 _cleanup_counter = 0
 def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
@@ -725,7 +749,7 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     rate_store[store_key].append(now)
     return True
 
-# ===================== DAILY LIMIT =====================
+# ===================== DAILY LIMIT (unchanged) =====================
 def enforce_daily_limit(user: dict = None, session: dict = None):
     today = datetime.now(timezone.utc).date()
     if user:
@@ -765,9 +789,24 @@ def enforce_daily_limit(user: dict = None, session: dict = None):
                           (count + 1, today, session["id"]))
                 conn.commit()
 
-# ===================== QUERY CLASSIFICATION =====================
-def classify_query(q: str) -> str:
+# ===================== QUERY CLASSIFICATION (NOW HISTORY-AWARE) =====================
+def classify_query(q: str, history: List[dict] = None) -> str:
+    """Classify intent; avoid misclassifying follow-ups as greetings."""
     q = q.lower()
+    # If previous user message was substantial, don't let a short reply be classified as greeting
+    if history and len(history) >= 2:
+        # Find the last substantial user message
+        last_substantial = None
+        for m in reversed(history):
+            if m["role"] == "user" and len(m["content"].split()) > 3:
+                last_substantial = m["content"]
+                break
+        if last_substantial and not re.search(r'hello|hi|hey|good morning|good afternoon|good evening|thanks|thank you', q):
+            # If current message is short and not a greeting, keep previous domain
+            if len(q.split()) <= 3:
+                # Reuse domain of last substantial message
+                return classify_query(last_substantial)  # recursive but safe (no infinite loop because last was substantial)
+
     if re.search(r'who are you|what are you|identity|introduce yourself', q):
         return 'identity'
     if re.search(r'def |class |import |docker|kubernetes|aws|api|sql|python|javascript|rust|golang|cpu|gpu|ram|hardware|react|vue|angular', q):
@@ -787,7 +826,7 @@ def classify_query(q: str) -> str:
 def needs_web_search(q: str) -> bool:
     return bool(re.search(r'latest|current|today|news|right now|recent|202[3-9]', q.lower()))
 
-# ===================== REASONING ENGINE =====================
+# ===================== REASONING ENGINE (unchanged) =====================
 class ReasoningEngine:
     @staticmethod
     def generate_reasoning_chain(query: str, depth: int = 3) -> List[str]:
@@ -822,10 +861,10 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                     m["content"] += reasoning_text
                     break
 
-    # ---------- NEW: AI/ML API for Pro, ProMax, Founder ----------
+    # AI/ML API for Pro, ProMax, Founder
     if tier in ("pro", "pro_max", "founder") and (settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY):
         api_key = settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY
-        model_name = "gpt-4o"  # best available model
+        model_name = "gpt-4o"
         try:
             r = requests.post(
                 "https://api.aimlapi.com/v1/chat/completions",
@@ -848,7 +887,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"AIML API error: {e}")
 
-    # ---------- Existing ProMax ensemble (OpenRouter) ----------
+    # ProMax ensemble (OpenRouter)
     if tier == "pro_max" and settings.OPENROUTER_API_KEY:
         try:
             r1 = requests.post(
@@ -877,7 +916,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Ensemble error: {e}")
     
-    # ---------- Existing Pro (OpenRouter Claude) ----------
+    # Pro (OpenRouter Claude)
     if tier == "pro" and settings.OPENROUTER_API_KEY:
         try:
             r = requests.post(
@@ -893,7 +932,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Claude error: {e}")
     
-    # ---------- Existing Plus (Groq 70B) ----------
+    # Plus (Groq 70B)
     if tier == "plus" and settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -909,7 +948,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Groq 70B error: {e}")
     
-    # ---------- Fallback: Groq 8B ----------
+    # Fallback: Groq 8B
     if settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -927,7 +966,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
     
     return "I'm having trouble connecting to AI services. Please try again.", "fallback", reasoning_chain
 
-# ===================== TIER CONFIGURATION =====================
+# ===================== TIER CONFIGURATION (unchanged) =====================
 TIER_CONFIG = {
     "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
     "free": {"name": "Free", "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
@@ -942,7 +981,7 @@ WALLETS = {
     "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
 }
 
-# ===================== FILE EXTRACTION =====================
+# ===================== FILE EXTRACTION (unchanged) =====================
 def extract_text_from_file(file_path: str, original_name: str) -> str:
     ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
     try:
@@ -974,7 +1013,7 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         logger.error(f"File extraction error: {e}")
         return ''
 
-# ===================== FILE UPLOAD =====================
+# ===================== FILE UPLOAD (unchanged) =====================
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -1019,7 +1058,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "extracted": bool(extracted)
     }
 
-# ===================== CHAT ENDPOINT =====================
+# ===================== CHAT ENDPOINT (UPDATED WITH HISTORY-AWARE PROMPT) =====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1065,7 +1104,22 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         raise HTTPException(400, "No message content")
     
     chat_id = req.chat_id or f"chat_{sid()}"
-    domain = classify_query(user_msg)
+    
+    # Retrieve past messages from this chat for history context
+    history = []
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    SELECT role, content FROM (
+                        SELECT role, content, created FROM chat_messages
+                        WHERE chat_id = %s ORDER BY created DESC LIMIT 20
+                    ) recent ORDER BY created ASC
+                """, (chat_id,))
+                history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
+    except: pass
+    
+    domain = classify_query(user_msg, history)   # now history-aware
     web_search_needed = needs_web_search(user_msg)
     
     file_text = ""
@@ -1109,19 +1163,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     except Exception as e:
         logger.error(f"Save error: {e}")
     
-    history = []
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("""
-                    SELECT role, content FROM (
-                        SELECT role, content, created FROM chat_messages
-                        WHERE chat_id = %s ORDER BY created DESC LIMIT 20
-                    ) recent ORDER BY created ASC
-                """, (chat_id,))
-                history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
-    except: pass
-    
     web_results = None
     if tier_info.get("web_search", False) and web_search_needed:
         try:
@@ -1134,17 +1175,35 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         try:
             with get_db() as conn:
                 with conn.cursor() as c:
-                    c.execute("SELECT content FROM memories WHERE user_id = %s AND domain = %s ORDER BY created DESC LIMIT 3", (user["id"], domain))
+                    # Fetch recent domain-specific memories AND the single most recent memory overall
+                    c.execute("""
+                        SELECT content FROM memories
+                        WHERE user_id = %s AND domain = %s
+                        ORDER BY created DESC LIMIT 3
+                    """, (user["id"], domain))
                     rows = c.fetchall()
                     if rows:
                         memory_text = "\n\n[RELEVANT MEMORIES]\n" + "\n".join([r[0][:200] for r in rows])
+                    # Also add the most recent memory regardless of domain
+                    c.execute("""
+                        SELECT content FROM memories
+                        WHERE user_id = %s
+                        ORDER BY created DESC LIMIT 1
+                    """, (user["id"],))
+                    row = c.fetchone()
+                    if row:
+                        memory_text += "\n\n[MOST RECENT MEMORY]\n" + row[0][:200]
         except: pass
     
-    prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth, preferred_domain, web_results, user_query=user_msg)
+    prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth,
+                                 preferred_domain, web_results, user_query=user_msg,
+                                 history=history)  # passes history for context
     if memory_text:
         prompt += "\n" + memory_text
     
-    result, model_used, reasoning_chain = call_ai_model([{"role": "system", "content": prompt}] + history, tier, reasoning_depth, domain)
+    result, model_used, reasoning_chain = call_ai_model(
+        [{"role": "system", "content": prompt}] + history, tier, reasoning_depth, domain
+    )
     
     if result:
         try:
@@ -1177,7 +1236,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         "reasoning_chain": reasoning_chain
     }
 
-# ===================== CHAT HISTORY =====================
+# ===================== CHAT HISTORY (unchanged) =====================
 @app.get("/api/chats")
 def get_chats(request: Request):
     user = get_current_user(request)
@@ -1268,7 +1327,7 @@ def delete_chat(chat_id: str, request: Request):
         logger.error(f"Delete error: {e}")
         return {"deleted": False}
 
-# ===================== LIBRARY =====================
+# ===================== LIBRARY (unchanged) =====================
 @app.get("/api/library")
 def get_library(user: dict = Depends(get_current_user)):
     if not user:
@@ -1328,7 +1387,7 @@ def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
         logger.error(f"Library delete error: {e}")
         raise HTTPException(500, "Could not delete item")
 
-# ===================== PAYMENT & UPGRADE (with fresh token) =====================
+# ===================== PAYMENT & UPGRADE (unchanged) =====================
 UPGRADE_BENEFITS = {
     "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "File uploads (20MB)", "Web search", "2-step reasoning"],
     "pro": ["Limited messaging (100/day)", "Claude 3.5 Sonnet", "File uploads (50MB)", "Live markets", "Web search", "3-step reasoning"],
@@ -1418,7 +1477,7 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
         "token": new_token
     }
 
-# ===================== WORKSPACES (all columns guaranteed) =====================
+# ===================== WORKSPACES (unchanged) =====================
 @app.post("/api/workspace/create")
 def workspace_create(req: dict, user: dict = Depends(get_current_user)):
     if not user:
@@ -1572,7 +1631,7 @@ def workspace_my(request: Request, user: dict = Depends(get_current_user)):
                 for r in rows
             ]}
 
-# ===================== MARKET & NEWS (correct Finnhub) =====================
+# ===================== MARKET & NEWS (unchanged) =====================
 @app.get("/api/markets")
 def markets(request: Request):
     user = get_current_user(request)
@@ -1613,7 +1672,7 @@ def web_search_endpoint(q: str, request: Request):
         return {"results": [], "message": "Web search on Plus and Pro"}
     return {"results": search_web(q, 8)}
 
-# ===================== ADMIN =====================
+# ===================== ADMIN (unchanged) =====================
 @app.get("/api/admin")
 def admin_panel(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
@@ -1713,7 +1772,7 @@ def admin_analytics(user: dict = Depends(get_current_user)):
                 "popular_topics": topics
             }
 
-# ===================== CHAT EXPORT (CSV quoting) =====================
+# ===================== CHAT EXPORT (unchanged) =====================
 @app.get("/api/export/chats/{chat_id}")
 def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_current_user)):
     if not user:
@@ -1740,7 +1799,7 @@ def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_cur
             else:
                 return JSONResponse(content={"chat_id": chat_id, "messages": messages})
 
-# ===================== HEALTH =====================
+# ===================== HEALTH (unchanged) =====================
 @app.get("/health")
 def health_check():
     db_status = "disconnected"
@@ -1770,7 +1829,7 @@ def health_check():
         "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"]
     }
 
-# ===================== WEB SEARCH =====================
+# ===================== WEB SEARCH (unchanged) =====================
 def search_web(query: str, num_results: int = 5) -> List[dict]:
     results = []
     if settings.SERPAPI_KEY:
@@ -1848,7 +1907,7 @@ def get_news():
         except: pass
     return news[:10]
 
-# ===================== PWA =====================
+# ===================== PWA & DYNAMIC FAVICON =====================
 @app.get("/manifest.json")
 async def manifest():
     return JSONResponse(content={
@@ -1863,6 +1922,16 @@ async def manifest():
             {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}
         ]
     })
+
+# Dynamic favicon.ico route (serves the same SVG logo)
+@app.get("/favicon.ico")
+async def favicon():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
+        <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
+        <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
 
 @app.get("/icon-192.png")
 async def icon_192():
@@ -1879,6 +1948,16 @@ async def icon_512():
         <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
         <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
         <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
+
+# Optional: Apple touch icon route (also serves SVG, same logo)
+@app.get("/icon-180.png")
+async def icon_180():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+        <rect width="180" height="180" fill="#0e6e8e" rx="36"/>
+        <circle cx="90" cy="90" r="63" fill="none" stroke="white" stroke-width="9"/>
+        <text x="90" y="117" text-anchor="middle" font-size="90" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
     </svg>'''
     return Response(content=svg, media_type="image/svg+xml")
 
