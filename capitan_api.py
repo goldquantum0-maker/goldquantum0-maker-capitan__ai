@@ -1,9 +1,9 @@
 """
-CAPITAN AI — Enterprise Backend v31.0 (System Prompt v2.0 + Task Classifier + Notifications)
+CAPITAN AI — Enterprise Backend v31.1 (Full Notifications + Workspace Alerts)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Intent‑Driven | Trustworthy | Warm & Engaging
 Full task/intent routing, content generation mode, conversation continuity.
-Self‑learning pipeline, feedback, fine‑tuning, dynamic icons, and now real‑time notifications.
+Self‑learning pipeline, feedback, fine‑tuning, dynamic icons, and now complete notifications.
 All original features intact.
 """
 
@@ -22,7 +22,7 @@ from pydantic_settings import BaseSettings
 import psycopg2
 import uvicorn
 
-app = FastAPI(title="CAPITAN AI API", version="31.0")
+app = FastAPI(title="CAPITAN AI API", version="31.1")
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     FOUNDER_EXTRA_PROMPT: str = ""
     AIMLAPI_API_KEY: str = ""
     ALMLAPI_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""          # for fine‑tuning & dataset upload
+    OPENAI_API_KEY: str = ""
 
     class Config:
         env_file = ".env"
@@ -303,7 +303,7 @@ def init_db():
                     )
                 ''')
 
-                # ===================== NEW: Notifications table =====================
+                # Notifications
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS notifications (
                         id TEXT PRIMARY KEY,
@@ -829,6 +829,8 @@ Capabilities:
 - Risk Management
 - Portfolio Construction
 - Algorithmic Trading
+- African Finance
+- Global Finance
 
 When discussing markets:
 
@@ -1149,7 +1151,7 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     rate_store[store_key].append(now)
     return True
 
-# ===================== DAILY LIMIT (unchanged) =====================
+# ===================== DAILY LIMIT (NOW WITH WARNING NOTIFICATION) =====================
 def enforce_daily_limit(user: dict = None, session: dict = None):
     today = datetime.now(timezone.utc).date()
     if user:
@@ -1165,6 +1167,9 @@ def enforce_daily_limit(user: dict = None, session: dict = None):
                 count, reset_date = row[0] or 0, row[1]
                 if reset_date != today:
                     count = 0
+                # Warn when about to hit limit
+                if count == daily_limit - 1:
+                    create_notification(user["id"], "warning", "You've nearly reached your daily message limit. Consider upgrading.")
                 if count >= daily_limit:
                     raise HTTPException(429, "Daily message limit reached. Upgrade your plan.")
                 c.execute("UPDATE users SET daily_msg_count = %s, msg_reset_date = %s WHERE id = %s",
@@ -1673,7 +1678,30 @@ async def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current
         logger.error(f"Feedback error: {e}")
         raise HTTPException(500, "Could not save feedback")
 
-# ===================== NOTIFICATION ENDPOINTS =====================
+# ===================== NOTIFICATION HELPERS & ENDPOINTS =====================
+def create_notification(user_id: str, type: str, message: str):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    INSERT INTO notifications (id, user_id, type, message)
+                    VALUES (%s, %s, %s, %s)
+                """, (sid(), user_id, type, message))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Create notification error: {e}")
+
+def broadcast_notification(type: str, message: str):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM users")
+                user_ids = [r[0] for r in c.fetchall()]
+                for uid in user_ids:
+                    create_notification(uid, type, message)
+    except Exception as e:
+        logger.error(f"Broadcast error: {e}")
+
 @app.get("/api/notifications")
 def get_notifications(user: dict = Depends(get_current_user)):
     if not user:
@@ -1693,6 +1721,19 @@ def get_notifications(user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Notifications error: {e}")
         raise HTTPException(500, "Could not fetch notifications")
+
+@app.get("/api/notifications/unread-count")
+def get_unread_count(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT COUNT(*) FROM notifications WHERE user_id=%s AND read=FALSE", (user["id"],))
+                count = c.fetchone()[0]
+                return {"count": count}
+    except Exception as e:
+        raise HTTPException(500, "Could not get unread count")
 
 @app.post("/api/notifications/mark-read")
 def mark_notifications_read(user: dict = Depends(get_current_user)):
@@ -1722,18 +1763,23 @@ def delete_notification(notif_id: str, user: dict = Depends(get_current_user)):
         logger.error(f"Delete notification error: {e}")
         raise HTTPException(500, "Could not delete notification")
 
-# Helper to create a notification for a specific user
-def create_notification(user_id: str, type: str, message: str):
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("""
-                    INSERT INTO notifications (id, user_id, type, message)
-                    VALUES (%s, %s, %s, %s)
-                """, (sid(), user_id, type, message))
-                conn.commit()
-    except Exception as e:
-        logger.error(f"Create notification error: {e}")
+@app.post("/api/notifications/test")
+async def send_test_notification(message: str = "This is a test notification", user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    create_notification(user["id"], "info", message)
+    return {"status": "test notification sent"}
+
+@app.post("/api/notifications/broadcast")
+def broadcast_message(req: dict, user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    message = req.get("message", "")
+    notif_type = req.get("type", "system")
+    if not message:
+        raise HTTPException(400, "Message required")
+    broadcast_notification(notif_type, message)
+    return {"status": "broadcast sent"}
 
 # ===================== CHAT HISTORY (unchanged) =====================
 @app.get("/api/chats")
@@ -1886,7 +1932,7 @@ def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
         logger.error(f"Library delete error: {e}")
         raise HTTPException(500, "Could not delete item")
 
-# ===================== PAYMENT & UPGRADE (unchanged) =====================
+# ===================== PAYMENT & UPGRADE (NOW WITH NOTIFICATION) =====================
 UPGRADE_BENEFITS = {
     "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "File uploads (20MB)", "Web search", "2-step reasoning"],
     "pro": ["Limited messaging (100/day)", "Claude 3.5 Sonnet", "File uploads (50MB)", "Live markets", "Web search", "3-step reasoning"],
@@ -1964,7 +2010,7 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
                         UPDATE users SET tier = %s, tier_expires = %s, reasoning_depth = %s, updated_at = NOW()
                         WHERE id = %s
                     """, (req.tier, datetime.now(timezone.utc) + timedelta(days=30), TIER_CONFIG[req.tier]["reasoning_depth"], user["id"]))
-                    create_notification(user["id"], "success", f"Your tier has been upgraded to {req.tier.upper()}! Enjoy your new benefits.")
+                    create_notification(user["id"], "success", f"Upgraded to {req.tier.upper()}! Enjoy your new benefits. 🚀")
                 conn.commit()
     except Exception as e:
         logger.error(f"Upgrade error: {e}")
@@ -1977,7 +2023,7 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
         "token": new_token
     }
 
-# ===================== WORKSPACES (unchanged) =====================
+# ===================== WORKSPACES (NOW WITH JOIN/MSG NOTIFICATIONS) =====================
 @app.post("/api/workspace/create")
 def workspace_create(req: dict, user: dict = Depends(get_current_user)):
     if not user:
@@ -2033,6 +2079,13 @@ def workspace_join(req: dict, user: dict = Depends(get_current_user)):
                     INSERT INTO workspace_members (workspace_id, user_id, role)
                     VALUES (%s, %s, %s)
                 """, (workspace[0], user["id"], "member"))
+                # Notify the workspace admin about the new member
+                try:
+                    c.execute("SELECT owner_id, name FROM workspaces WHERE id=%s", (workspace[0],))
+                    owner = c.fetchone()
+                    if owner and owner[0] != user["id"]:
+                        create_notification(owner[0], "workspace", f"{user['name']} joined your workspace '{owner[1]}'.")
+                except: pass
                 conn.commit()
                 return {"joined": True, "room_id": workspace[0]}
     except HTTPException:
@@ -2065,6 +2118,13 @@ def workspace_message(req: dict, user: dict = Depends(get_current_user)):
                     INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (sid(), workspace[0], user["id"], user["name"], message))
+                # Notify other workspace members (excluding the sender)
+                try:
+                    c.execute("SELECT user_id FROM workspace_members WHERE workspace_id=%s AND user_id!=%s", (workspace[0], user["id"]))
+                    members = [r[0] for r in c.fetchall()]
+                    for member_id in members:
+                        create_notification(member_id, "workspace", f"{user['name']} sent a message in the workspace.")
+                except: pass
                 if is_ai:
                     ai_response, _, _ = call_ai_model([{"role": "user", "content": message.replace('@CAPITAN', '').strip()}], user["tier"])
                     if ai_response:
@@ -2322,7 +2382,7 @@ def generate_dataset(user: dict = Depends(get_current_user)):
         logger.error(f"Dataset generation error: {e}")
         raise HTTPException(500, str(e))
 
-# ===================== SELF-LEARNING: FINE-TUNING TRIGGER =====================
+# ===================== SELF-LEARNING: FINE-TUNING TRIGGER (WITH NOTIFICATION) =====================
 @app.post("/api/admin/start-finetune")
 def start_finetune(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
@@ -2379,7 +2439,6 @@ def start_finetune(user: dict = Depends(get_current_user)):
                             VALUES (%s, %s, %s, %s, TRUE)
                         """, (sid(), "gpt-4o-mini-2024-07-18", ft_model_id, latest_dataset))
                         conn.commit()
-                # Notify the founder that fine‑tuning is complete
                 create_notification(user["id"], "success", f"Fine‑tuning complete! New model ID: {ft_model_id}")
                 return {
                     "status": "fine-tuned",
@@ -2441,7 +2500,7 @@ def health_check():
     
     return {
         "status": "ok",
-        "version": "31.0",
+        "version": "31.1",
         "database": db_status,
         "ai": ai_status,
         "providers": providers,
@@ -2586,7 +2645,7 @@ async def icon_180():
 async def root():
     return {
         "name": "CAPITAN AI",
-        "version": "31.0",
+        "version": "31.1",
         "status": "operational",
         "auth": "email_password",
         "pwa_supported": True,
@@ -2600,7 +2659,7 @@ async def root():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v31.0 - Intent‑Driven Self‑Learning AI with Notifications")
+    print(f"🚀 CAPITAN AI v31.1 - Full Notification Engine Active")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
