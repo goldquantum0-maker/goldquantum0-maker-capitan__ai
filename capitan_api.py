@@ -1,9 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v29.0 (Intelligence Overhaul v2)
+CAPITAN AI — Enterprise Backend v30.0 (Self‑Learning Pipeline)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
-Follow‑up reset FIXED – carries context across every message.
-Full reasoning, memory, profile, and natural follow‑up.
+Self‑improving via user feedback, fine‑tuning, and model versioning.
 All original features intact.
 """
 
@@ -22,7 +21,7 @@ from pydantic_settings import BaseSettings
 import psycopg2
 import uvicorn
 
-app = FastAPI(title="CAPITAN AI API", version="29.0")
+app = FastAPI(title="CAPITAN AI API", version="30.0")
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -39,6 +38,7 @@ class Settings(BaseSettings):
     FOUNDER_EXTRA_PROMPT: str = ""
     AIMLAPI_API_KEY: str = ""
     ALMLAPI_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""          # for fine‑tuning & dataset upload
 
     class Config:
         env_file = ".env"
@@ -80,7 +80,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users
+                # Users (unchanged)
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -147,10 +147,12 @@ def init_db():
                         content TEXT,
                         model TEXT,
                         reasoning_chain TEXT,
+                        system_prompt TEXT,
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
+                c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS system_prompt TEXT")
 
                 # Memories
                 c.execute('''
@@ -272,6 +274,30 @@ def init_db():
                         query_hash TEXT UNIQUE,
                         reasoning_chain TEXT,
                         result TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                # NEW: Feedback table
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS feedback (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        message_id TEXT,
+                        rating INTEGER DEFAULT 0,
+                        comment TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                # NEW: Model versions
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS model_versions (
+                        id TEXT PRIMARY KEY,
+                        base_model TEXT,
+                        finetuned_model_id TEXT,
+                        dataset_path TEXT,
+                        active BOOLEAN DEFAULT FALSE,
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
@@ -586,7 +612,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ===================== OVERHAULED SYSTEM PROMPT (INTELLIGENT + CONVERSATIONAL) =====================
+# ===================== OVERHAULED SYSTEM PROMPT (CONVERSATION-AWARE) =====================
 CORE_INSTRUCTIONS = """You are CAPITAN AI — a world‑class general‑purpose intelligence, created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
 You think like a senior consultant who's also a great communicator. You understand the real intent behind a question, not just the literal words. You reason step by step, but explain it like a human — not a textbook. You are equally expert in finance, coding, science, hardware, law, medicine, and everyday life.
@@ -689,7 +715,6 @@ def get_time_context():
     return {"day": day, "date": date, "utc_time": utc_time, "greeting_context": greeting_context}
 
 def _extract_previous_exchange(history: List[dict]) -> str:
-    """Extract the last assistant-user pair from the conversation history."""
     if len(history) < 2:
         return ""
     last_user = None
@@ -705,10 +730,8 @@ def _extract_previous_exchange(history: List[dict]) -> str:
     return ""
 
 def _generate_conversation_summary(history: List[dict]) -> str:
-    """Create a very short summary of recent exchanges to maintain context."""
     if not history or len(history) < 3:
         return ""
-    # Simple extraction: last two assistant replies provide a summary
     recent_assistant = [m["content"][:150] for m in history if m["role"] == "assistant"][-2:]
     recent_user = [m["content"][:80] for m in history if m["role"] == "user"][-2:]
     parts = []
@@ -731,20 +754,17 @@ def build_system_prompt(domain: str, tier: str, model: str,
     base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
     base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
 
-    # User profile
     if user_profile:
         name = user_profile.get("name", "User")
         tier_name = TIER_CONFIG.get(user_profile.get("tier", "free"), {}).get("name", "Free")
         prof = f"\n\n[USER PROFILE]\nName: {name}\nTier: {tier_name}\nPreferred domain: {user_profile.get('preferred_domain', 'general')}\nReasoning depth: {user_profile.get('reasoning_depth', 1)}"
         base += prof
 
-    # Conversation summary for long contexts
     if history and len(history) >= 6:
         summary = _generate_conversation_summary(history)
         if summary:
             base += "\n\n[CONVERSATION SUMMARY]\n" + summary
 
-    # Previous exchange
     if history and len(history) >= 2:
         prev_exchange = _extract_previous_exchange(history)
         if prev_exchange:
@@ -829,9 +849,7 @@ def enforce_daily_limit(user: dict = None, session: dict = None):
 
 # ===================== QUERY CLASSIFICATION (NOW HISTORY-AWARE) =====================
 def classify_query(q: str, history: List[dict] = None) -> str:
-    """Classify intent; avoid misclassifying follow-ups as greetings."""
     q = q.lower()
-    # If previous user message was substantial, don't let a short reply be classified as greeting
     if history and len(history) >= 2:
         last_substantial = None
         for m in reversed(history):
@@ -840,7 +858,6 @@ def classify_query(q: str, history: List[dict] = None) -> str:
                 break
         if last_substantial and not re.search(r'hello|hi|hey|good morning|good afternoon|good evening|thanks|thank you', q):
             if len(q.split()) <= 3:
-                # Short follow-up; reuse previous domain
                 return classify_query(last_substantial)
 
     if re.search(r'who are you|what are you|identity|introduce yourself', q):
@@ -882,7 +899,20 @@ class ReasoningEngine:
     def format_reasoning_chain(chain: List[str]) -> str:
         return "\n".join(chain) if chain else ""
 
-# ===================== AI MODEL CALL (UPDATED WITH AI/ML API) =====================
+# ===================== AI MODEL CALL (UPDATED WITH FINE-TUNED MODEL SUPPORT) =====================
+def get_latest_fine_tuned_model(base_model="gpt-4o"):
+    """Return the latest active fine-tuned model ID for the given base, or None."""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT finetuned_model_id FROM model_versions WHERE base_model=%s AND active=TRUE ORDER BY created DESC LIMIT 1", (base_model,))
+                row = c.fetchone()
+                if row:
+                    return row[0]
+    except Exception as e:
+        logger.error(f"Error fetching fine-tuned model: {e}")
+    return None
+
 def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int = 1, domain: str = "general") -> Tuple[str, str, Optional[List[str]]]:
     reasoning_chain = None
     if reasoning_depth > 1 and domain in ["finance", "quant", "coding", "math", "science"]:
@@ -897,10 +927,16 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                     m["content"] += reasoning_text
                     break
 
-    # AI/ML API for Pro, ProMax, Founder
+    # Check for fine-tuned model if Pro+
+    model_name = "gpt-4o"
+    if tier in ("pro", "pro_max", "founder"):
+        ft_model = get_latest_fine_tuned_model("gpt-4o")
+        if ft_model:
+            model_name = ft_model
+
+    # AI/ML API for Pro, ProMax, Founder (with possible fine‑tuned model)
     if tier in ("pro", "pro_max", "founder") and (settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY):
         api_key = settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY
-        model_name = "gpt-4o"
         try:
             r = requests.post(
                 "https://api.aimlapi.com/v1/chat/completions",
@@ -923,7 +959,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"AIML API error: {e}")
 
-    # ProMax ensemble (OpenRouter)
+    # ProMax ensemble (OpenRouter) – still uses base models
     if tier == "pro_max" and settings.OPENROUTER_API_KEY:
         try:
             r1 = requests.post(
@@ -952,7 +988,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Ensemble error: {e}")
     
-    # Pro (OpenRouter Claude)
+    # Pro (OpenRouter Claude) – still uses base model
     if tier == "pro" and settings.OPENROUTER_API_KEY:
         try:
             r = requests.post(
@@ -1094,7 +1130,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "extracted": bool(extracted)
     }
 
-# ===================== CHAT ENDPOINT (FULLY UPGRADED) =====================
+# ===================== CHAT ENDPOINT (NOW STORES SYSTEM PROMPT) =====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1148,7 +1184,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     chat_id = req.chat_id or f"chat_{sid()}"
     
-    # Retrieve message history for continuity
+    # Retrieve message history
     history = []
     try:
         with get_db() as conn:
@@ -1218,7 +1254,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         try:
             with get_db() as conn:
                 with conn.cursor() as c:
-                    # Domain memories
                     c.execute("""
                         SELECT content FROM memories
                         WHERE user_id = %s AND domain = %s
@@ -1227,7 +1262,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                     rows = c.fetchall()
                     if rows:
                         memory_text = "\n\n[RELEVANT MEMORIES]\n" + "\n".join([r[0][:200] for r in rows])
-                    # Most recent memory (global)
                     c.execute("""
                         SELECT content FROM memories
                         WHERE user_id = %s
@@ -1254,18 +1288,18 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                 with conn.cursor() as c:
                     if is_authenticated:
                         c.execute("""
-                            INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, reasoning_chain)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """, (f"msg_{sid()}", chat_id, user["id"], "assistant", result, model_used, json.dumps(reasoning_chain) if reasoning_chain else None))
+                            INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, reasoning_chain, system_prompt)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (f"msg_{sid()}", chat_id, user["id"], "assistant", result, model_used, json.dumps(reasoning_chain) if reasoning_chain else None, prompt))
                         c.execute("""
                             INSERT INTO memories (id, memory_id, user_id, content, query, domain, importance)
                             VALUES (%s, %s, %s, %s, %s, %s, %s)
                         """, (sid(), mid(), user["id"], result[:500], user_msg, domain, 2 if domain in ["finance", "quant", "coding"] else 1))
                     else:
                         c.execute("""
-                            INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, reasoning_chain)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
-                        """, (f"msg_{sid()}", chat_id, session["id"], "assistant", result, model_used, json.dumps(reasoning_chain) if reasoning_chain else None))
+                            INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, reasoning_chain, system_prompt)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (f"msg_{sid()}", chat_id, session["id"], "assistant", result, model_used, json.dumps(reasoning_chain) if reasoning_chain else None, prompt))
                     conn.commit()
         except Exception as e:
             logger.error(f"Save AI error: {e}")
@@ -1278,6 +1312,29 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         "domain": domain,
         "reasoning_chain": reasoning_chain
     }
+
+# ===================== FEEDBACK ENDPOINT =====================
+class FeedbackRequest(BaseModel):
+    message_id: str
+    rating: int  # 1 = like, 0 = dislike
+    comment: Optional[str] = ""
+
+@app.post("/api/feedback")
+async def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    INSERT INTO feedback (id, user_id, message_id, rating, comment)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (sid(), user["id"], req.message_id, req.rating, req.comment or ""))
+                conn.commit()
+                return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Feedback error: {e}")
+        raise HTTPException(500, "Could not save feedback")
 
 # ===================== CHAT HISTORY (unchanged) =====================
 @app.get("/api/chats")
@@ -1604,12 +1661,10 @@ def workspace_message(req: dict, user: dict = Depends(get_current_user)):
                     raise HTTPException(404, "Room not found")
                 
                 is_ai = message.strip().startswith("@CAPITAN")
-                # Insert user message first
                 c.execute("""
                     INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (sid(), workspace[0], user["id"], user["name"], message))
-                # If AI, insert AI reply second
                 if is_ai:
                     ai_response, _, _ = call_ai_model([{"role": "user", "content": message.replace('@CAPITAN', '').strip()}], user["tier"])
                     if ai_response:
@@ -1815,6 +1870,134 @@ def admin_analytics(user: dict = Depends(get_current_user)):
                 "popular_topics": topics
             }
 
+# ===================== SELF-LEARNING: DATASET GENERATION =====================
+DATASET_DIR = "datasets"
+os.makedirs(DATASET_DIR, exist_ok=True)
+
+@app.post("/api/admin/generate-dataset")
+def generate_dataset(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                # Get all assistant messages that have a positive feedback
+                c.execute("""
+                    SELECT cm.chat_id, cm.system_prompt, cm.content AS assistant_content,
+                           (SELECT content FROM chat_messages WHERE chat_id=cm.chat_id AND role='user' AND created < cm.created ORDER BY created DESC LIMIT 1) AS user_content
+                    FROM chat_messages cm
+                    JOIN feedback f ON cm.id = f.message_id
+                    WHERE f.rating = 1 AND cm.role = 'assistant' AND cm.system_prompt IS NOT NULL
+                """)
+                rows = c.fetchall()
+        
+        dataset = []
+        for r in rows:
+            chat_id, system_prompt, assistant_content, user_content = r
+            if not user_content:
+                continue
+            dataset.append({
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                    {"role": "assistant", "content": assistant_content}
+                ]
+            })
+        
+        if not dataset:
+            return {"status": "no data", "examples": 0}
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_path = os.path.join(DATASET_DIR, f"training_{timestamp}.jsonl")
+        with open(file_path, "w") as f:
+            for entry in dataset:
+                f.write(json.dumps(entry) + "\n")
+        
+        return {
+            "status": "generated",
+            "file": file_path,
+            "examples": len(dataset)
+        }
+    except Exception as e:
+        logger.error(f"Dataset generation error: {e}")
+        raise HTTPException(500, str(e))
+
+# ===================== SELF-LEARNING: FINE-TUNING TRIGGER =====================
+@app.post("/api/admin/start-finetune")
+def start_finetune(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(400, "OPENAI_API_KEY is required for fine‑tuning. Add it to .env.")
+    
+    # Find latest dataset
+    datasets = sorted([f for f in os.listdir(DATASET_DIR) if f.startswith("training_") and f.endswith(".jsonl")])
+    if not datasets:
+        raise HTTPException(404, "No dataset found. Generate one first via /api/admin/generate-dataset.")
+    latest_dataset = os.path.join(DATASET_DIR, datasets[-1])
+    
+    try:
+        # Step 1: Upload file to OpenAI
+        with open(latest_dataset, "rb") as f:
+            upload_res = requests.post(
+                "https://api.openai.com/v1/files",
+                headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"},
+                files={"file": f, "purpose": (None, "fine-tune")}
+            )
+        if upload_res.status_code != 200:
+            raise Exception(f"File upload failed: {upload_res.text}")
+        file_id = upload_res.json()["id"]
+        
+        # Step 2: Create fine‑tuning job
+        job_res = requests.post(
+            "https://api.openai.com/v1/fine_tuning/jobs",
+            headers={
+                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "training_file": file_id,
+                "model": "gpt-4o-mini-2024-07-18"
+            }
+        )
+        if job_res.status_code != 200:
+            raise Exception(f"Fine‑tuning job failed: {job_res.text}")
+        job_id = job_res.json()["id"]
+        
+        # Step 3: Poll until job completes (naive – in production use a background task)
+        for _ in range(30):
+            time.sleep(10)
+            status_res = requests.get(
+                f"https://api.openai.com/v1/fine_tuning/jobs/{job_id}",
+                headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"}
+            )
+            status = status_res.json()
+            if status.get("status") == "succeeded":
+                ft_model_id = status["fine_tuned_model"]
+                # Save to DB
+                with get_db() as conn:
+                    with conn.cursor() as c:
+                        # Deactivate all previous models for this base
+                        c.execute("UPDATE model_versions SET active=FALSE WHERE base_model='gpt-4o-mini-2024-07-18'")
+                        c.execute("""
+                            INSERT INTO model_versions (id, base_model, finetuned_model_id, dataset_path, active)
+                            VALUES (%s, %s, %s, %s, TRUE)
+                        """, (sid(), "gpt-4o-mini-2024-07-18", ft_model_id, latest_dataset))
+                        conn.commit()
+                return {
+                    "status": "fine-tuned",
+                    "model_id": ft_model_id,
+                    "dataset": latest_dataset
+                }
+            elif status.get("status") == "failed":
+                raise Exception("Fine‑tuning job failed: " + str(status))
+        raise Exception("Fine‑tuning job timed out")
+    except Exception as e:
+        logger.error(f"Fine‑tuning error: {e}")
+        raise HTTPException(500, str(e))
+
 # ===================== CHAT EXPORT (unchanged) =====================
 @app.get("/api/export/chats/{chat_id}")
 def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_current_user)):
@@ -1862,7 +2045,7 @@ def health_check():
     
     return {
         "status": "ok",
-        "version": "29.0",
+        "version": "30.0",
         "database": db_status,
         "ai": ai_status,
         "providers": providers,
@@ -2006,19 +2189,19 @@ async def icon_180():
 async def root():
     return {
         "name": "CAPITAN AI",
-        "version": "29.0",
+        "version": "30.0",
         "status": "operational",
         "auth": "email_password",
         "pwa_supported": True,
         "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"],
-        "intelligence": "full_restored",
+        "intelligence": "self_learning",
         "reasoning": "chain_of_thought_enabled"
     }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v29.0 - World‑Class General‑Purpose AI")
+    print(f"🚀 CAPITAN AI v30.0 - Self‑Learning World‑Class AI")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
