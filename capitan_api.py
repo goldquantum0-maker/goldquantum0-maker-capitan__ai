@@ -1,8 +1,9 @@
 """
-CAPITAN AI — Enterprise Backend v29.0 (AI/ML API + Intelligence Overhaul)
+CAPITAN AI — Enterprise Backend v29.0 (Intelligence Overhaul + Conversation Continuity)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
-Conversation continuity, favicon dynamic route, memory augmentation.
+Follow‑up reset FIXED – carries context across every message.
+AIML API key, dynamic favicon, all original features intact.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -795,17 +796,15 @@ def classify_query(q: str, history: List[dict] = None) -> str:
     q = q.lower()
     # If previous user message was substantial, don't let a short reply be classified as greeting
     if history and len(history) >= 2:
-        # Find the last substantial user message
         last_substantial = None
         for m in reversed(history):
             if m["role"] == "user" and len(m["content"].split()) > 3:
                 last_substantial = m["content"]
                 break
         if last_substantial and not re.search(r'hello|hi|hey|good morning|good afternoon|good evening|thanks|thank you', q):
-            # If current message is short and not a greeting, keep previous domain
             if len(q.split()) <= 3:
-                # Reuse domain of last substantial message
-                return classify_query(last_substantial)  # recursive but safe (no infinite loop because last was substantial)
+                # Short follow-up; reuse previous domain
+                return classify_query(last_substantial)
 
     if re.search(r'who are you|what are you|identity|introduce yourself', q):
         return 'identity'
@@ -1105,7 +1104,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     chat_id = req.chat_id or f"chat_{sid()}"
     
-    # Retrieve past messages from this chat for history context
+    # Retrieve message history for continuity
     history = []
     try:
         with get_db() as conn:
@@ -1175,7 +1174,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         try:
             with get_db() as conn:
                 with conn.cursor() as c:
-                    # Fetch recent domain-specific memories AND the single most recent memory overall
+                    # Domain memories
                     c.execute("""
                         SELECT content FROM memories
                         WHERE user_id = %s AND domain = %s
@@ -1184,7 +1183,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                     rows = c.fetchall()
                     if rows:
                         memory_text = "\n\n[RELEVANT MEMORIES]\n" + "\n".join([r[0][:200] for r in rows])
-                    # Also add the most recent memory regardless of domain
+                    # Most recent memory (global)
                     c.execute("""
                         SELECT content FROM memories
                         WHERE user_id = %s
@@ -1197,7 +1196,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth,
                                  preferred_domain, web_results, user_query=user_msg,
-                                 history=history)  # passes history for context
+                                 history=history)  # history passed for context
     if memory_text:
         prompt += "\n" + memory_text
     
@@ -1923,7 +1922,6 @@ async def manifest():
         ]
     })
 
-# Dynamic favicon.ico route (serves the same SVG logo)
 @app.get("/favicon.ico")
 async def favicon():
     svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -1951,7 +1949,6 @@ async def icon_512():
     </svg>'''
     return Response(content=svg, media_type="image/svg+xml")
 
-# Optional: Apple touch icon route (also serves SVG, same logo)
 @app.get("/icon-180.png")
 async def icon_180():
     svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
