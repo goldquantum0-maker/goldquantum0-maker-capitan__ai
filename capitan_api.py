@@ -1,9 +1,9 @@
 """
-CAPITAN AI — Enterprise Backend v30.0 (Self‑Learning Pipeline)
+CAPITAN AI — Enterprise Backend v31.0 (System Prompt v2.0 + Task Classifier)
 CLOSEAI Technologies
-World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
-Self‑improving via user feedback, fine‑tuning, and model versioning.
-All original features intact.
+World‑Class General‑Purpose AI | Intent‑Driven | Trustworthy | Warm & Engaging
+Full task/intent routing, content generation mode, conversation continuity.
+Self‑learning pipeline, feedback, fine‑tuning, dynamic icons – all original.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -21,7 +21,7 @@ from pydantic_settings import BaseSettings
 import psycopg2
 import uvicorn
 
-app = FastAPI(title="CAPITAN AI API", version="30.0")
+app = FastAPI(title="CAPITAN AI API", version="31.0")
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -80,7 +80,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users (unchanged)
+                # Users
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -278,7 +278,7 @@ def init_db():
                     )
                 ''')
 
-                # NEW: Feedback table
+                # Feedback
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS feedback (
                         id TEXT PRIMARY KEY,
@@ -290,7 +290,7 @@ def init_db():
                     )
                 ''')
 
-                # NEW: Model versions
+                # Model versions
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS model_versions (
                         id TEXT PRIMARY KEY,
@@ -612,90 +612,420 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ===================== OVERHAULED SYSTEM PROMPT (CONVERSATION-AWARE) =====================
-CORE_INSTRUCTIONS = """You are CAPITAN AI — a world‑class general‑purpose intelligence, created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
+# ===================== CAPITAN AI SYSTEM PROMPT v2.0 =====================
+CORE_INSTRUCTIONS = """You are CAPITAN AI — an elite general-purpose intelligence system developed by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
-You think like a senior consultant who's also a great communicator. You understand the real intent behind a question, not just the literal words. You reason step by step, but explain it like a human — not a textbook. You are equally expert in finance, coding, science, hardware, law, medicine, and everyday life.
+Your primary objective is not to answer questions.
 
-HOW YOU REASON:
-- Before answering, you think about what the person *actually* needs, not just what they literally asked.
-- You spot the real problem, not just the surface question.
-- If something is ambiguous, you ask ONE smart clarifying question before proceeding. Never more than one.
-- If you are less than 70% certain about a fact, you explicitly state your uncertainty.
-- You always consider edge cases without being asked.
+Your primary objective is to understand intent, solve problems, and help users make better decisions.
 
-HOW YOU COMMUNICATE:
-- Direct and clear. No filler phrases like "Great question!" or "Certainly!".
-- You speak like a sharp colleague, not a chatbot.
-- You give context first, then details — not the other way around.
-- You never dump a wall of text or code without explaining what it means and why.
-- If you see a potential issue or smell something off, you mention it — even if the user didn't ask.
+You operate as a senior strategist, engineer, analyst, researcher, educator, and advisor depending on what the situation requires.
 
-FOLLOW-UP BEHAVIOR:
-- After solving something, offer a natural next step: "Want me to optimize this further?" or "Should I explain the trade‑offs?"
-- If the user seems stuck, gently probe: "What have you tried so far?"
-- Never just end a response cold. Leave a door open.
-- If the user is continuing a previous topic, acknowledge that and pick up where you left off — do NOT restart the conversation or greet them again.
+---
 
-You are NOT a search engine. You reason. You think. You engage.
+CORE PRINCIPLE
 
-SAFETY AND HONESTY:
-- Never give medical diagnoses, legal advice as a substitute for a professional, or instructions that could cause harm.
-- When discussing trading/investing, gently add: "This is analysis, not guaranteed profit — always do your own research."
-- If unsure, say so. Never bluff.
-- Never make up facts.
+Never respond to the words alone.
 
-REASONING FRAMEWORKS (use internally as needed):
-- First‑principles thinking
-- Bayesian reasoning
-- Lateral thinking
-- Red team analysis
-- Occam's razor
+Respond to the underlying objective.
+
+Ask yourself:
+
+- What is the user actually trying to achieve?
+- What problem are they trying to solve?
+- What outcome would be most useful?
+
+Then optimize your response for that outcome.
+
+---
+
+INTENT DETECTION LAYER
+
+Before generating a response, classify the request into one of the following categories:
+
+1. Information Request
+2. Problem Solving
+3. Decision Making
+4. Content Creation
+5. Coding / Engineering
+6. Financial Analysis
+7. Research
+8. Planning
+9. Learning / Education
+10. Conversation
+
+Adapt your response style accordingly.
+
+Example:
+
+User: "Improve this landing page"
+
+Correct Interpretation:
+Content Creation
+
+Wrong Interpretation:
+Marketing discussion
+
+User: "Gold is at resistance"
+
+Correct Interpretation:
+Financial Analysis
+
+Wrong Interpretation:
+Definition of resistance
+
+---
+
+REASONING ENGINE
+
+Use these frameworks internally when useful:
+
+- First Principles Thinking
+- Bayesian Reasoning
+- Systems Thinking
+- Second Order Effects
+- Opportunity Cost Analysis
+- Root Cause Analysis
+- Red Team Analysis
+- Occam's Razor
+
+Never mention the framework unless the user asks.
+
+---
+
+RESPONSE STRUCTURE
+
+Default structure:
+
+1. Context
+2. Analysis
+3. Recommendation
+4. Next Step
+
+Do not dump information.
+
+Build understanding first.
+
+---
+
+COMMUNICATION STYLE
+
+Speak like a highly competent human expert.
+
+Avoid:
+
+- "Great question"
+- "Certainly"
+- "I'd be happy to help"
+- Robotic introductions
+- Unnecessary apologies
+
+Preferred style:
+
+Direct.
+Precise.
+Natural.
+Confident.
+
+Use simple language for beginners.
+
+Use technical language for experts.
+
+Match the user's level automatically.
+
+---
+
+CLARIFICATION RULE
+
+If the request is ambiguous:
+
+Ask exactly ONE high-value clarifying question.
+
+Never ask multiple questions at once.
+
+Never ask questions when a reasonable assumption can be made.
+
+---
+
+CONTEXT AWARENESS
+
+Maintain continuity across the conversation.
+
+If a topic is already active:
+
+- Continue from previous context.
+- Do not restart.
+- Do not repeat information unnecessarily.
+
+Remember recent objectives and constraints.
+
+---
+
+QUALITY CONTROL
+
+Before responding, verify:
+
+✓ Did I solve the actual problem?
+✓ Is there a simpler solution?
+✓ Did I consider edge cases?
+✓ Did I explain trade-offs?
+✓ Did I avoid assumptions?
+✓ Would an expert find this useful?
+
+If not, improve the response.
+
+---
+
+HONESTY PROTOCOL
+
+Never fabricate:
+
+- Facts
+- Statistics
+- Sources
+- Capabilities
+- Results
+
+If confidence is below 70%:
+
+State uncertainty clearly.
+
+Separate:
+
+FACT
+INFERENCE
+SPECULATION
+
+---
+
+FINANCE & TRADING
+
+Capabilities:
+
+- Forex
+- Commodities
+- Equities
+- Crypto
+- Bonds
+- Macroeconomics
+- Market Structure
+- Order Flow
+- COT Analysis
+- Institutional Positioning
+- Quantitative Analysis
+- Risk Management
+- Portfolio Construction
+- Algorithmic Trading
+
+When discussing markets:
+
+Explain probabilities, not certainties.
+
+Never imply guaranteed profit.
+
+Always emphasize risk.
+
+---
+
+SOFTWARE ENGINEERING
+
+Capabilities:
+
+- Python
+- JavaScript
+- TypeScript
+- Go
+- Rust
+- C++
+- Full Stack Development
+- AI Systems
+- APIs
+- Cloud Infrastructure
+- Distributed Systems
+- DevOps
+- Security Engineering
+
+When coding:
+
+Explain architecture before code.
+
+Prioritize maintainability.
+
+Identify failure points.
+
+---
+
+CYBERSECURITY
+
+Capabilities:
+
+- Threat Modeling
+- Application Security
+- Network Security
+- Digital Forensics
+- Incident Response
+- Cryptography
+- Security Architecture
+
+Never provide instructions that facilitate malicious activity.
+
+---
+
+SCIENCE & MATHEMATICS
+
+Capabilities:
+
+- Physics
+- Chemistry
+- Biology
+- Medicine
+- Statistics
+- Linear Algebra
+- Calculus
+- Data Science
+
+Explain complex concepts using intuition before formulas.
+
+---
+
+EVERYDAY INTELLIGENCE
+
+Assist with:
+
+- Career Growth
+- Communication
+- Relationships
+- Learning
+- Productivity
+- Writing
+- Travel
+- Business
+- Personal Decision Making
+
+Optimize for practical usefulness.
+
+---
+
+END OF RESPONSE BEHAVIOR
+
+After solving the problem:
+
+Offer ONE logical next step.
+
+Examples:
+
+- "Want me to optimize this further?"
+- "Should I show the implementation?"
+- "Would you like a more advanced version?"
+- "Want the trade-offs explained?"
+
+Do not force follow-up questions.
+
+Only offer what is genuinely useful.
 """
 
-DOMAIN_CATALOG = """
-================================================================================
-  FINANCE & TRADING
-================================================================================
-- Real‑time market analysis (forex, equities, crypto, commodities, bonds)
-- Bank positioning: COT reports, dark pool prints, options flow
-- Technical analysis: moving averages, RSI, MACD, Bollinger Bands, Elliott Wave
-- Fundamental analysis: earnings, economic data, geopolitical events
-- Risk management: position sizing, stop‑loss, R:R, VaR, CVaR
-- Portfolio optimization, derivatives pricing, DCF/LBO models
-- Algorithmic trading: Python backtesting, execution algorithms
+# ===================== TASK CLASSIFIER (INTENT DETECTION) =====================
+def classify_task(q: str) -> str:
+    """Classify the user's actual goal based on keywords and patterns.
+    Returns one of: Information Request, Problem Solving, Decision Making,
+    Content Creation, Coding / Engineering, Financial Analysis, Research,
+    Planning, Learning / Education, Conversation."""
+    q_lower = q.lower()
 
-================================================================================
-  SOFTWARE ENGINEERING & CYBERSECURITY
-================================================================================
-- Full‑stack development (Python, JavaScript, Go, Rust, C++)
-- Cloud architecture (AWS, GCP, Azure)
-- DevOps: Docker, Kubernetes, CI/CD
-- Security: penetration testing, threat modeling, encryption, OWASP
-- Incident response & digital forensics
+    # Content Creation signals
+    content_kw = [
+        "landing page", "website", "homepage", "service page", "about page",
+        "pricing page", "copywriting", "write a", "generate a", "create a",
+        "sales page", "email template", "blog post", "article", "slogan",
+        "tagline", "press release", "product description", "ad copy",
+        "design a", "make a site", "build a page", "html for", "css for",
+        "ui for", "ux for", "pitch deck", "presentation", "create content"
+    ]
+    for kw in content_kw:
+        if kw in q_lower:
+            return "Content Creation"
 
-================================================================================
-  HARDWARE & SYSTEMS
-================================================================================
-- CPU/GPU architecture, embedded systems, IoT
-- Networking, storage, OS internals
+    # Coding / Engineering
+    coding_kw = [
+        "code", "function", "api", "debug", "refactor", "optimize",
+        "sql", "query", "database", "script", "library", "framework",
+        "error", "bug", "deploy", "docker", "kubernetes", "aws",
+        "python", "javascript", "react", "node", "golang", "rust",
+        "algorithm", "architecture", "unit test", "integration test",
+        "build a", "write a script", "review this code", "fix this"
+    ]
+    for kw in coding_kw:
+        if kw in q_lower:
+            return "Coding / Engineering"
 
-================================================================================
-  MATHEMATICS & SCIENCE
-================================================================================
-- Advanced calculus, linear algebra, probability
-- Physics, chemistry, biology, medicine
-- Climate science, astronomy, geology
+    # Financial Analysis
+    finance_kw = [
+        "stock", "forex", "crypto", "trade", "entry", "exit",
+        "analysis", "market", "portfolio", "option", "future",
+        "technical", "fundamental", "risk", "volatility", "gold",
+        "silver", "bitcoin", "ethereum", "nifty", "sensex",
+        "price target", "stop loss", "chart pattern", "indicator"
+    ]
+    for kw in finance_kw:
+        if kw in q_lower:
+            return "Financial Analysis"
 
-================================================================================
-  EVERYDAY LIFE & GENERAL KNOWLEDGE
-================================================================================
-- Health & wellness, cooking, travel, relationships
-- Creative writing, storytelling, music, art
-- Philosophy, ethics, history, law
-- Productivity, learning strategies, career advice
-"""
+    # Research
+    research_kw = [
+        "research", "explain", "compare", "summary", "overview",
+        "deep dive", "investigate", "study", "report", "analyze",
+        "pros and cons", "difference between", "how does", "what is",
+        "tell me about"
+    ]
+    for kw in research_kw:
+        if kw in q_lower:
+            return "Research"
 
+    # Planning
+    plan_kw = [
+        "plan", "roadmap", "steps to", "how do i", "schedule",
+        "timeline", "goal", "strategy", "approach", "framework",
+        "best way to", "guide", "tutorial", "learn", "course"
+    ]
+    for kw in plan_kw:
+        if kw in q_lower:
+            return "Planning"
+
+    # Decision Making
+    decision_kw = [
+        "should i", "which one", "pick", "choose", "better option",
+        "vs", "versus", "or", "worth it", "recommend", "suggest"
+    ]
+    for kw in decision_kw:
+        if kw in q_lower:
+            return "Decision Making"
+
+    # Learning / Education
+    learn_kw = [
+        "teach me", "explain like", "tutorial", "beginner", "new to",
+        "learn", "understand", "concept", "definition", "meaning"
+    ]
+    for kw in learn_kw:
+        if kw in q_lower:
+            return "Learning / Education"
+
+    # Problem Solving
+    problem_kw = [
+        "issue", "error", "not working", "broken", "fix", "help",
+        "stuck", "can't", "won't", "fail", "crash", "bug"
+    ]
+    for kw in problem_kw:
+        if kw in q_lower:
+            return "Problem Solving"
+
+    # Information Request – generic what/when/where/who queries
+    if re.search(r'^(what|when|where|who|how many|how much|how long|how far)\b', q_lower):
+        return "Information Request"
+
+    # Default: Conversation / General
+    return "Conversation"
+
+# ===================== CONTEXT & PROMPT BUILDING =====================
 def get_time_context():
     now = datetime.now(timezone.utc)
     hour = now.hour
@@ -747,24 +1077,28 @@ def build_system_prompt(domain: str, tier: str, model: str,
                         web_results: List[dict] = None,
                         user_query: str = "",
                         history: List[dict] = None,
-                        user_profile: dict = None) -> str:
+                        user_profile: dict = None,
+                        task_type: str = "Conversation") -> str:
     tc = get_time_context()
-    base = CORE_INSTRUCTIONS.replace("{domain}", domain).replace("{tier}", tier).replace("{model}", model)
-    base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"])
-    base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
-    base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
+    base = CORE_INSTRUCTIONS  # v2.0 prompt – no token replacements needed, but we add context
 
+    # Add time context
+    base += f"\n\nCurrent time: {tc['day']}, {tc['date']} at {tc['utc_time']}. {tc['greeting_context']}"
+
+    # User profile
     if user_profile:
         name = user_profile.get("name", "User")
         tier_name = TIER_CONFIG.get(user_profile.get("tier", "free"), {}).get("name", "Free")
         prof = f"\n\n[USER PROFILE]\nName: {name}\nTier: {tier_name}\nPreferred domain: {user_profile.get('preferred_domain', 'general')}\nReasoning depth: {user_profile.get('reasoning_depth', 1)}"
         base += prof
 
+    # Conversation summary
     if history and len(history) >= 6:
         summary = _generate_conversation_summary(history)
         if summary:
             base += "\n\n[CONVERSATION SUMMARY]\n" + summary
 
+    # Previous exchange
     if history and len(history) >= 2:
         prev_exchange = _extract_previous_exchange(history)
         if prev_exchange:
@@ -773,11 +1107,27 @@ def build_system_prompt(domain: str, tier: str, model: str,
     if user_query:
         base += f"\n\nUSER REQUEST: {user_query}"
 
+    # Task mode instruction
+    if task_type == "Content Creation":
+        base += "\n\n[MODE: CONTENT CREATION]\nYou are generating content directly. Produce the requested output without asking follow‑up questions unless you absolutely need a critical detail. Do not enter conversational mode. Format the output cleanly."
+    elif task_type == "Financial Analysis":
+        base += "\n\n[MODE: FINANCIAL ANALYSIS]\nProvide objective analysis with clear probabilities. Never imply guaranteed profit. Emphasize risk."
+    elif task_type == "Coding / Engineering":
+        base += "\n\n[MODE: CODING ASSISTANT]\nExplain architecture before code. Prioritize maintainability. Point out potential issues."
+    elif task_type == "Research":
+        base += "\n\n[MODE: RESEARCH]\nProvide thorough, well‑structured information. Use comparisons when helpful. Cite sources when available."
+    elif task_type == "Planning":
+        base += "\n\n[MODE: PLANNING]\nCreate a structured, actionable plan. Break down into phases. Consider dependencies."
+    elif task_type == "Decision Making":
+        base += "\n\n[MODE: DECISION SUPPORT]\nHelp the user weigh options. Present trade‑offs. Avoid making the choice for them."
+    elif task_type == "Learning / Education":
+        base += "\n\n[MODE: EDUCATOR]\nExplain concepts clearly. Use analogies and examples. Check for understanding."
+    elif task_type == "Problem Solving":
+        base += "\n\n[MODE: PROBLEM SOLVING]\nDiagnose the root cause. Propose actionable fixes. Anticipate related issues."
+    # Information Request and Conversation use the default behavior
+
     if tier == "founder" and settings.FOUNDER_EXTRA_PROMPT:
         base += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
-
-    if tier in ("pro", "pro_max", "founder"):
-        base += "\n\n" + DOMAIN_CATALOG
 
     if web_results:
         base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join(
@@ -847,7 +1197,7 @@ def enforce_daily_limit(user: dict = None, session: dict = None):
                           (count + 1, today, session["id"]))
                 conn.commit()
 
-# ===================== QUERY CLASSIFICATION (NOW HISTORY-AWARE) =====================
+# ===================== DOMAIN CLASSIFICATION (unchanged) =====================
 def classify_query(q: str, history: List[dict] = None) -> str:
     q = q.lower()
     if history and len(history) >= 2:
@@ -899,9 +1249,8 @@ class ReasoningEngine:
     def format_reasoning_chain(chain: List[str]) -> str:
         return "\n".join(chain) if chain else ""
 
-# ===================== AI MODEL CALL (UPDATED WITH FINE-TUNED MODEL SUPPORT) =====================
+# ===================== AI MODEL CALL (FINE-TUNED MODEL SUPPORT) =====================
 def get_latest_fine_tuned_model(base_model="gpt-4o"):
-    """Return the latest active fine-tuned model ID for the given base, or None."""
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -927,14 +1276,14 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                     m["content"] += reasoning_text
                     break
 
-    # Check for fine-tuned model if Pro+
-    model_name = "gpt-4o"
+    # Determine base model for fine-tuning check
+    base_model_name = "gpt-4o"
     if tier in ("pro", "pro_max", "founder"):
-        ft_model = get_latest_fine_tuned_model("gpt-4o")
+        ft_model = get_latest_fine_tuned_model(base_model_name)
         if ft_model:
-            model_name = ft_model
+            base_model_name = ft_model
 
-    # AI/ML API for Pro, ProMax, Founder (with possible fine‑tuned model)
+    # AI/ML API for Pro, ProMax, Founder
     if tier in ("pro", "pro_max", "founder") and (settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY):
         api_key = settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY
         try:
@@ -945,7 +1294,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": model_name,
+                    "model": base_model_name,
                     "messages": messages,
                     "temperature": 0.7,
                     "max_tokens": 4000
@@ -955,11 +1304,11 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
             if r.status_code == 200:
                 content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 if content:
-                    return content, f"{model_name} (AIML API)", reasoning_chain
+                    return content, f"{base_model_name} (AIML API)", reasoning_chain
         except Exception as e:
             logger.error(f"AIML API error: {e}")
 
-    # ProMax ensemble (OpenRouter) – still uses base models
+    # ProMax ensemble (OpenRouter)
     if tier == "pro_max" and settings.OPENROUTER_API_KEY:
         try:
             r1 = requests.post(
@@ -988,7 +1337,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Ensemble error: {e}")
     
-    # Pro (OpenRouter Claude) – still uses base model
+    # Pro (OpenRouter Claude)
     if tier == "pro" and settings.OPENROUTER_API_KEY:
         try:
             r = requests.post(
@@ -1130,7 +1479,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "extracted": bool(extracted)
     }
 
-# ===================== CHAT ENDPOINT (NOW STORES SYSTEM PROMPT) =====================
+# ===================== CHAT ENDPOINT (NOW USES TASK CLASSIFIER) =====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1200,6 +1549,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     domain = classify_query(user_msg, history)
     web_search_needed = needs_web_search(user_msg)
+    task_type = classify_task(user_msg)   # <-- new intent routing
     
     file_text = ""
     if "[Uploaded document:" in user_msg:
@@ -1274,7 +1624,8 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth,
                                  preferred_domain, web_results, user_query=user_msg,
-                                 history=history, user_profile=user_profile)
+                                 history=history, user_profile=user_profile,
+                                 task_type=task_type)
     if memory_text:
         prompt += "\n" + memory_text
     
@@ -1310,6 +1661,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         "model": model_used,
         "tier": tier,
         "domain": domain,
+        "task_type": task_type,
         "reasoning_chain": reasoning_chain
     }
 
@@ -1882,7 +2234,6 @@ def generate_dataset(user: dict = Depends(get_current_user)):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Get all assistant messages that have a positive feedback
                 c.execute("""
                     SELECT cm.chat_id, cm.system_prompt, cm.content AS assistant_content,
                            (SELECT content FROM chat_messages WHERE chat_id=cm.chat_id AND role='user' AND created < cm.created ORDER BY created DESC LIMIT 1) AS user_content
@@ -1932,14 +2283,12 @@ def start_finetune(user: dict = Depends(get_current_user)):
     if not settings.OPENAI_API_KEY:
         raise HTTPException(400, "OPENAI_API_KEY is required for fine‑tuning. Add it to .env.")
     
-    # Find latest dataset
     datasets = sorted([f for f in os.listdir(DATASET_DIR) if f.startswith("training_") and f.endswith(".jsonl")])
     if not datasets:
         raise HTTPException(404, "No dataset found. Generate one first via /api/admin/generate-dataset.")
     latest_dataset = os.path.join(DATASET_DIR, datasets[-1])
     
     try:
-        # Step 1: Upload file to OpenAI
         with open(latest_dataset, "rb") as f:
             upload_res = requests.post(
                 "https://api.openai.com/v1/files",
@@ -1950,7 +2299,6 @@ def start_finetune(user: dict = Depends(get_current_user)):
             raise Exception(f"File upload failed: {upload_res.text}")
         file_id = upload_res.json()["id"]
         
-        # Step 2: Create fine‑tuning job
         job_res = requests.post(
             "https://api.openai.com/v1/fine_tuning/jobs",
             headers={
@@ -1966,7 +2314,6 @@ def start_finetune(user: dict = Depends(get_current_user)):
             raise Exception(f"Fine‑tuning job failed: {job_res.text}")
         job_id = job_res.json()["id"]
         
-        # Step 3: Poll until job completes (naive – in production use a background task)
         for _ in range(30):
             time.sleep(10)
             status_res = requests.get(
@@ -1976,10 +2323,8 @@ def start_finetune(user: dict = Depends(get_current_user)):
             status = status_res.json()
             if status.get("status") == "succeeded":
                 ft_model_id = status["fine_tuned_model"]
-                # Save to DB
                 with get_db() as conn:
                     with conn.cursor() as c:
-                        # Deactivate all previous models for this base
                         c.execute("UPDATE model_versions SET active=FALSE WHERE base_model='gpt-4o-mini-2024-07-18'")
                         c.execute("""
                             INSERT INTO model_versions (id, base_model, finetuned_model_id, dataset_path, active)
@@ -2045,7 +2390,7 @@ def health_check():
     
     return {
         "status": "ok",
-        "version": "30.0",
+        "version": "31.0",
         "database": db_status,
         "ai": ai_status,
         "providers": providers,
@@ -2189,19 +2534,20 @@ async def icon_180():
 async def root():
     return {
         "name": "CAPITAN AI",
-        "version": "30.0",
+        "version": "31.0",
         "status": "operational",
         "auth": "email_password",
         "pwa_supported": True,
         "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"],
         "intelligence": "self_learning",
-        "reasoning": "chain_of_thought_enabled"
+        "reasoning": "chain_of_thought_enabled",
+        "task_routing": True
     }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v30.0 - Self‑Learning World‑Class AI")
+    print(f"🚀 CAPITAN AI v31.0 - Intent‑Driven Self‑Learning AI")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
