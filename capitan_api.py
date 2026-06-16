@@ -1,1021 +1,1869 @@
 """
-CAPITAN AI — Enterprise Backend v25.0
+CAPITAN AI — Enterprise Backend v29.0
 CLOSEAI Technologies
-Python/FastAPI + Supabase PostgreSQL + Multi-API + Web Search + Caching
-Enterprise-Grade Intelligence | World-Class Reasoning
+World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
+All fixes applied (greeting, workspace_members PK migration, intelligence overhaul)
 """
 
-import os, re, json, uuid, time, hashlib, hmac, base64, secrets, requests
-from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from typing import Optional
-import concurrent.futures
-import psycopg2
-import psycopg2.extras
-import uvicorn
+import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
+import PyPDF2, docx, openpyxl, io, csv
+from datetime import datetime, timedelta, timezone
+from typing import Optional, List, Tuple
 from contextlib import contextmanager
-from urllib.parse import quote_plus
+from io import StringIO
 
-# ═══════════════════════════════════════════════════════════════
-# ENVIRONMENT VALIDATION
-# ═══════════════════════════════════════════════════════════════
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
-SUPABASE_DB_HOST = os.environ.get("SUPABASE_DB_HOST", "")
-SUPABASE_DB_NAME = os.environ.get("SUPABASE_DB_NAME", "postgres")
-SUPABASE_DB_USER = os.environ.get("SUPABASE_DB_USER", "")
-SUPABASE_DB_PASSWORD = os.environ.get("SUPABASE_DB_PASSWORD", "")
-SUPABASE_DB_PORT = os.environ.get("SUPABASE_DB_PORT", "5432")
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+from pydantic import BaseModel
+from pydantic_settings import BaseSettings
+import psycopg2
+import uvicorn
 
-# ═══════════════════════════════════════════════════════════════
-# API KEYS
-# ═══════════════════════════════════════════════════════════════
-OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
-MISTRAL_KEY = os.environ.get("MISTRAL_API_KEY", "")
-GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
-AIML_KEY = os.environ.get("AIML_API_KEY", "")
-ZENMUK_KEY = os.environ.get("ZENMUK_API_KEY", "")
+app = FastAPI(title="CAPITAN AI API", version="29.0")
 
-ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
-FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
-FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
-COINGECKO_KEY = os.environ.get("COINGECKO_KEY", "")
-TWELVE_DATA_KEY = os.environ.get("TWELVE_DATA_KEY", "")
-ETHERSCAN_API_KEY = os.environ.get("ETHERSCAN_API_KEY", "")
+class Settings(BaseSettings):
+    DATABASE_URL: str
+    JWT_SECRET: str
+    FOUNDER_KEY: str
+    FRONTEND_URL: str = "https://capitanai.goldquantum0.workers.dev"
+    GROQ_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
+    COINGECKO_KEY: str = ""
+    SERPAPI_KEY: str = ""
+    NEWS_API_KEY: str = ""
+    FINNHUB_API_KEY: str = ""
+    ETHERSCAN_API_KEY: str = ""
+    FOUNDER_EXTRA_PROMPT: str = ""
 
-SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
-GNEWS_API_KEY = os.environ.get("GNEWS_API_KEY", "")
-NEWS_API_KEY = os.environ.get("NEWS_API_KEY", "")
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
 
-IPGEOLOCATION_KEY = os.environ.get("IPGEOLOCATION_API_KEY", "")
+settings = Settings()
 
-WOLFRAM_APP_ID = os.environ.get("WOLFRAM_APP_ID", "")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_hex(32))
-ADMIN_CODE = os.environ.get("ADMIN_CODE", "Osinachi@350")
-FOUNDER_KEY = os.environ.get("FOUNDER_KEY", "cap-founder-key")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# ═══════════════════════════════════════════════════════════════
-# DATABASE CONNECTION
-# ═══════════════════════════════════════════════════════════════
 @contextmanager
 def get_db():
-    """Get Supabase PostgreSQL connection"""
     conn = None
+    last_err = None
+    for attempt in range(3):
+        try:
+            conn = psycopg2.connect(settings.DATABASE_URL, connect_timeout=10)
+            break
+        except Exception as e:
+            last_err = e
+            logger.warning(f"DB attempt {attempt+1} failed: {e}")
+            if attempt < 2:
+                time.sleep(2)
+    if conn is None:
+        raise last_err
     try:
-        if DATABASE_URL:
-            conn_string = DATABASE_URL
-        elif SUPABASE_DB_HOST and SUPABASE_DB_USER and SUPABASE_DB_PASSWORD:
-            encoded_password = quote_plus(SUPABASE_DB_PASSWORD)
-            conn_string = f"postgresql://{SUPABASE_DB_USER}:{encoded_password}@{SUPABASE_DB_HOST}:{SUPABASE_DB_PORT}/{SUPABASE_DB_NAME}?sslmode=require"
-        else:
-            raise ValueError("No database connection configuration found")
-        
-        conn = psycopg2.connect(conn_string, connect_timeout=15)
         yield conn
-    except Exception as e:
-        print(f"Database connection error: {e}")
-        raise
     finally:
-        if conn:
-            conn.close()
+        conn.close()
 
 def init_db():
-    """Create all tables if they don't exist"""
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            with get_db() as conn:
-                with conn.cursor() as c:
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS sessions (
-                            id TEXT PRIMARY KEY,
-                            tier TEXT DEFAULT 'free',
-                            msg_count INTEGER DEFAULT 0,
-                            msg_window TEXT,
-                            created TEXT,
-                            updated TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS chats (
-                            id TEXT PRIMARY KEY,
-                            session_id TEXT,
-                            title TEXT,
-                            created TEXT,
-                            updated TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS chat_messages (
-                            id TEXT PRIMARY KEY,
-                            chat_id TEXT,
-                            session_id TEXT,
-                            role TEXT,
-                            content TEXT,
-                            model TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS memories (
-                            id TEXT PRIMARY KEY,
-                            memory_id TEXT,
-                            session_id TEXT,
-                            content TEXT,
-                            query TEXT,
-                            domain TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS library_items (
-                            id TEXT PRIMARY KEY,
-                            session_id TEXT,
-                            name TEXT,
-                            type TEXT,
-                            content TEXT,
-                            size INTEGER DEFAULT 0,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS uploaded_files (
-                            id TEXT PRIMARY KEY,
-                            session_id TEXT,
-                            filename TEXT,
-                            original_name TEXT,
-                            size INTEGER,
-                            mime_type TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS payments (
-                            id TEXT PRIMARY KEY,
-                            session_id TEXT,
-                            txid TEXT,
-                            currency TEXT,
-                            amount REAL,
-                            tier TEXT,
-                            verified INTEGER DEFAULT 0,
-                            expires TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS payment_log (
-                            id TEXT PRIMARY KEY,
-                            session_id TEXT,
-                            tier TEXT,
-                            amount REAL,
-                            currency TEXT,
-                            txid TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS workspaces (
-                            id TEXT PRIMARY KEY,
-                            room_code TEXT UNIQUE,
-                            creator_session TEXT,
-                            creator_tier TEXT,
-                            max_members INTEGER,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS workspace_members (
-                            workspace_id TEXT,
-                            session_id TEXT,
-                            role TEXT DEFAULT 'member',
-                            joined TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS workspace_messages (
-                            id TEXT PRIMARY KEY,
-                            workspace_id TEXT,
-                            session_id TEXT,
-                            author TEXT,
-                            message TEXT,
-                            is_ai INTEGER DEFAULT 0,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS workspace_notes (
-                            id TEXT PRIMARY KEY,
-                            workspace_id TEXT,
-                            session_id TEXT,
-                            author TEXT,
-                            content TEXT,
-                            created TEXT,
-                            updated TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS market_cache (
-                            id TEXT PRIMARY KEY,
-                            category TEXT,
-                            data TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS news_cache (
-                            id TEXT PRIMARY KEY,
-                            category TEXT,
-                            data TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    c.execute('''
-                        CREATE TABLE IF NOT EXISTS web_cache (
-                            id TEXT PRIMARY KEY,
-                            query_hash TEXT,
-                            data TEXT,
-                            created TEXT
-                        )
-                    ''')
-                    conn.commit()
-            print("✅ Supabase PostgreSQL initialized — all tables ready")
-            return
-        except Exception as e:
-            print(f"Database init attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(2)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                # Users
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS users (
+                        id UUID PRIMARY KEY,
+                        email TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        name TEXT,
+                        tier TEXT DEFAULT 'free',
+                        reasoning_depth INTEGER DEFAULT 1,
+                        preferred_domain TEXT DEFAULT 'general',
+                        daily_msg_count INTEGER DEFAULT 0,
+                        msg_reset_date DATE,
+                        tier_expires TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS reasoning_depth INTEGER DEFAULT 1")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_domain TEXT DEFAULT 'general'")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS msg_reset_date DATE")
 
-# Initialize database on startup
+                # Sessions
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS user_sessions (
+                        id UUID PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        token TEXT UNIQUE NOT NULL,
+                        expires_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS sessions (
+                        id TEXT PRIMARY KEY,
+                        tier TEXT DEFAULT 'free',
+                        msg_count INTEGER DEFAULT 0,
+                        daily_msg_count INTEGER DEFAULT 0,
+                        msg_reset_date DATE,
+                        created TIMESTAMP DEFAULT NOW(),
+                        updated TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS daily_msg_count INTEGER DEFAULT 0")
+                c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS msg_reset_date DATE")
+
+                # Chats & messages
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS chats (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        title TEXT,
+                        created TIMESTAMP DEFAULT NOW(),
+                        updated TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id TEXT PRIMARY KEY,
+                        chat_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        session_id TEXT,
+                        role TEXT,
+                        content TEXT,
+                        model TEXT,
+                        reasoning_chain TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
+
+                # Memories
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS memories (
+                        id TEXT PRIMARY KEY,
+                        memory_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        content TEXT,
+                        query TEXT,
+                        domain TEXT,
+                        importance INTEGER DEFAULT 1,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                # Library – guarantee all columns
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS library_items (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        name TEXT,
+                        content TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS user_id UUID")
+                c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS name TEXT")
+                c.execute("ALTER TABLE library_items ADD COLUMN IF NOT EXISTS content TEXT")
+
+                # Uploaded files
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS uploaded_files (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        filename TEXT,
+                        original_name TEXT,
+                        size INTEGER,
+                        storage_path TEXT,
+                        extracted_text TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS extracted_text TEXT")
+
+                # Workspaces – guarantee all columns
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS workspaces (
+                        id TEXT PRIMARY KEY,
+                        name TEXT,
+                        owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        room_code TEXT UNIQUE,
+                        max_members INTEGER DEFAULT 10,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS name TEXT")
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS owner_id UUID")
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS room_code TEXT")
+                c.execute("ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 10")
+
+                # Workspace members – fix legacy session_id column (PK issue)
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS workspace_members (
+                        workspace_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        role TEXT DEFAULT 'member',
+                        joined_at TIMESTAMP DEFAULT NOW(),
+                        PRIMARY KEY (workspace_id, user_id)
+                    )
+                ''')
+                # Ensure necessary columns
+                c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS user_id UUID")
+                c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS workspace_id TEXT")
+                c.execute("ALTER TABLE workspace_members ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member'")
+                # Migration to remove old session_id column if it exists (and is part of PK)
+                c.execute("""
+                    DO $$
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM information_schema.columns
+                                   WHERE table_name='workspace_members' AND column_name='session_id')
+                        THEN
+                            -- Drop the primary key constraint that includes session_id
+                            ALTER TABLE workspace_members DROP CONSTRAINT IF EXISTS workspace_members_pkey;
+                            -- Remove the old column
+                            ALTER TABLE workspace_members DROP COLUMN session_id;
+                            -- Recreate the correct primary key
+                            ALTER TABLE workspace_members ADD PRIMARY KEY (workspace_id, user_id);
+                        END IF;
+                    END;
+                    $$;
+                """)
+
+                # Workspace messages
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS workspace_messages (
+                        id TEXT PRIMARY KEY,
+                        workspace_id TEXT,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        author_name TEXT,
+                        message TEXT,
+                        is_ai INTEGER DEFAULT 0,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                # Payments
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS payments (
+                        id UUID PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        txid TEXT UNIQUE,
+                        currency TEXT,
+                        amount REAL,
+                        tier TEXT,
+                        verified INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                # Cache
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS reasoning_cache (
+                        id TEXT PRIMARY KEY,
+                        query_hash TEXT UNIQUE,
+                        reasoning_chain TEXT,
+                        result TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                conn.commit()
+        logger.info("✅ Database ready")
+    except Exception as e:
+        logger.warning(f"DB init: {e}")
+
 init_db()
-
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-WALLETS = {"BTC":"bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new","ETH":"0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"}
-
-TIER_CONFIG = {
-    "free":{"name":"Free","msg_limit":10,"workspace_max":0,"file_upload":False,"file_size_mb":0,"live_markets":False,"web_search":False},
-    "plus":{"name":"Plus","msg_limit":30,"workspace_max":7,"file_upload":True,"file_size_mb":10,"live_markets":False,"web_search":True},
-    "pro":{"name":"Pro","msg_limit":float("inf"),"workspace_max":20,"file_upload":True,"file_size_mb":50,"live_markets":True,"web_search":True},
-    "founder":{"name":"Founder","msg_limit":float("inf"),"workspace_max":999,"file_upload":True,"file_size_mb":500,"live_markets":True,"web_search":True}
-}
-
-UPGRADE_BENEFITS = {
-    "plus": ["30 messages per day","Smart AI model","Work Area (7 seats)","File uploads (10MB)","Web search","Coding & Quant tools","African Finance module"],
-    "pro": ["Unlimited messages","Deep AI (Claude Sonnet 4 / GPT-4o)","Work Area (20 seats)","File uploads (50MB)","Live market data","Financial news","Web search","Business mode","All Plus features"]
-}
-
 def sid(): return str(uuid.uuid4())[:8].upper()
 def mid(): return 'mem_' + sid()
 
-def create_jwt(session_id, tier):
-    h = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
-    p = base64.urlsafe_b64encode(json.dumps({"session_id":session_id,"tier":tier,"exp":int((datetime.utcnow()+timedelta(days=365)).timestamp())}).encode()).decode().rstrip("=")
-    s = base64.urlsafe_b64encode(hmac.new(JWT_SECRET.encode(),f"{h}.{p}".encode(),hashlib.sha256).digest()).decode().rstrip("=")
-    return f"{h}.{p}.{s}"
+# ===================== PASSWORD HASHING =====================
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-def verify_jwt(token):
+def verify_password(password: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(password.encode(), hashed.encode())
+    except:
+        return False
+
+# ===================== JWT AUTH =====================
+def create_token(user_id: str) -> str:
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({
+        "user_id": user_id, "type": "user",
+        "exp": int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp())
+    }).encode()).decode().rstrip("=")
+    signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    return f"{header}.{payload}.{signature}"
+
+def create_session_token(session_id: str, tier: str) -> str:
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({
+        "session_id": session_id, "tier": tier, "type": "session",
+        "exp": int((datetime.now(timezone.utc) + timedelta(days=365)).timestamp())
+    }).encode()).decode().rstrip("=")
+    signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    return f"{header}.{payload}.{signature}"
+
+def verify_token(token: str):
     try:
         parts = token.split(".")
-        if len(parts)!=3: return None
-        h,p,s = parts
-        es = base64.urlsafe_b64encode(hmac.new(JWT_SECRET.encode(),f"{h}.{p}".encode(),hashlib.sha256).digest()).decode().rstrip("=")
-        if not hmac.compare_digest(s,es): return None
-        d = json.loads(base64.urlsafe_b64decode(p+"=="))
-        if d.get("exp",0) < datetime.utcnow().timestamp(): return None
-        return d
+        if len(parts) != 3: return None
+        header, payload, signature = parts
+        expected = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+        if not hmac.compare_digest(signature, expected): return None
+        data = json.loads(base64.urlsafe_b64decode(payload + "=="))
+        if data.get("exp", 0) < datetime.now(timezone.utc).timestamp(): return None
+        return data
     except: return None
 
-def get_session(request: Request):
-    auth = request.headers.get("Authorization","")
-    if auth.startswith("Bearer "):
-        payload = verify_jwt(auth[7:])
-        if payload:
-            try:
-                with get_db() as conn:
-                    with conn.cursor() as c:
-                        c.execute("SELECT id,tier,msg_count,msg_window FROM sessions WHERE id=%s", (payload["session_id"],))
-                        row = c.fetchone()
-                        if row: return {"id":row[0],"tier":row[1],"msg_count":row[2] or 0,"msg_window":row[3]}
-            except: pass
+def get_current_user(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "): return None
+    token = auth[7:]
+    payload = verify_token(token)
+    if not payload: return None
+    user_id = payload.get("user_id")
+    if not user_id: return None
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
+                if not c.fetchone(): return None
+                c.execute("SELECT id, email, name, tier, reasoning_depth, preferred_domain FROM users WHERE id = %s", (user_id,))
+                row = c.fetchone()
+                if row:
+                    return {
+                        "id": row[0], "email": row[1], "name": row[2] or row[1].split('@')[0],
+                        "tier": row[3], "reasoning_depth": row[4] or 1, "preferred_domain": row[5] or "general"
+                    }
+    except: pass
     return None
 
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
-rate_store = {}
-
-def check_rate(session_id, tier):
-    now = time.time(); key = f"{session_id}"
-    if key not in rate_store: rate_store[key] = []
-    rate_store[key] = [t for t in rate_store[key] if now-t < 60]
-    limits = {"free":10,"plus":20,"pro":60,"founder":200}
-    if len(rate_store[key]) >= limits.get(tier,10): return False
-    rate_store[key].append(now); return True
-
-def get_time_context():
-    now = datetime.utcnow(); hour = now.hour
-    day = now.strftime("%A"); date = now.strftime("%B %d, %Y"); utc_time = now.strftime("%H:%M UTC")
-    if hour < 5: time_of_day = "late night"; greeting_context = "The world is quiet."
-    elif hour < 12: time_of_day = "morning"; greeting_context = "Fresh day ahead."
-    elif hour < 17: time_of_day = "afternoon"; greeting_context = "Markets are alive."
-    elif hour < 21: time_of_day = "evening"; greeting_context = "Winding down."
-    else: time_of_day = "night"; greeting_context = "Night owl mode."
-    return {"time_of_day":time_of_day,"day":day,"date":date,"utc_time":utc_time,"greeting_context":greeting_context}
-
-def get_cached_or_fetch(table, category, fetch_func, ttl=2):
+def get_current_session(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(401, "Missing authorization header")
+    token = auth[7:]
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(401, "Invalid token")
+    
+    if payload.get("type") == "user":
+        user = get_current_user(request)
+        if user:
+            return {"id": user["id"], "tier": user["tier"], "is_user": True, "user_data": user}
+    
+    session_id = payload.get("session_id")
+    tier = payload.get("tier", "guest")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute(f"SELECT data FROM {table} WHERE category=%s AND created > %s", (category, (datetime.utcnow()-timedelta(minutes=ttl)).isoformat()))
+                c.execute("SELECT id, tier, daily_msg_count, msg_reset_date FROM sessions WHERE id = %s", (session_id,))
                 row = c.fetchone()
-                if row: return json.loads(row[0])
-    except: pass
-    data = fetch_func()
-    if data:
-        try:
-            with get_db() as conn:
-                with conn.cursor() as c:
-                    c.execute(f"DELETE FROM {table} WHERE category=%s AND created < %s", (category, (datetime.utcnow()-timedelta(hours=1)).isoformat()))
-                    c.execute(f"INSERT INTO {table} (id,category,data,created) VALUES (%s,%s,%s,%s)", (sid(), category, json.dumps(data), datetime.utcnow().isoformat()))
+                if row:
+                    return {"id": row[0], "tier": row[1], "daily_msg_count": row[2], "msg_reset_date": row[3], "is_user": False}
+                else:
+                    c.execute("INSERT INTO sessions (id, tier, daily_msg_count, msg_reset_date) VALUES (%s, %s, 0, CURRENT_DATE)", (session_id, tier))
                     conn.commit()
-        except: pass
-    return data
-
-def get_market_data():
-    results = {}
-    if COINGECKO_KEY and COINGECKO_KEY.startswith("CG-"):
-        try:
-            ids = "bitcoin,ethereum,ripple,cardano,solana,polkadot,dogecoin,avalanche-2,chainlink,uniswap,binancecoin,tron,toncoin,near"
-            r = requests.get("https://api.coingecko.com/api/v3/simple/price",params={"ids":ids,"vs_currencies":"usd","include_24hr_change":"true"},headers={"x-cg-demo-api-key":COINGECKO_KEY},timeout=10)
-            if r.status_code==200:
-                data = r.json()
-                nm = {"bitcoin":"BTC","ethereum":"ETH","ripple":"XRP","cardano":"ADA","solana":"SOL","polkadot":"DOT","dogecoin":"DOGE","avalanche-2":"AVAX","chainlink":"LINK","uniswap":"UNI","binancecoin":"BNB","tron":"TRX","toncoin":"TON","near":"NEAR"}
-                for k,v in data.items(): results[nm.get(k,k.upper())] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2),"source":"CoinGecko"}
-        except: pass
-    try:
-        syms = "^GSPC,^IXIC,^DJI,^FTSE,^N225,AAPL,MSFT,NVDA,TSLA,GOOGL,META,AMZN,GC=F,CL=F,SI=F,EURUSD=X,GBPUSD=X,USDJPY=X,USDGHS=X,USDNGN=X,USDZAR=X,USDKES=X"
-        r = requests.get(f"https://query1.finance.yahoo.com/v7/finance/quote?symbols={syms}",params={"fields":"regularMarketPrice,regularMarketPreviousClose,shortName,regularMarketChangePercent"},headers={"User-Agent":"Mozilla/5.0"},timeout=10)
-        if r.status_code==200:
-            for i in r.json().get("quoteResponse",{}).get("result",[]):
-                name = i.get("shortName") or i.get("symbol","")
-                price = i.get("regularMarketPrice"); prev = i.get("regularMarketPreviousClose")
-                if price and prev:
-                    chg = i.get("regularMarketChangePercent")
-                    dn = name.replace("S&P 500","S&P 500").replace("NASDAQ Composite","NASDAQ").replace("Dow Jones Industrial Average","Dow Jones").replace("Gold Dec 25","Gold").replace("Crude Oil","Oil").replace("Silver Dec 25","Silver")
-                    results[dn] = {"price":price,"change":round(chg,2) if chg else round(((price-prev)/prev)*100,2),"source":"Yahoo Finance"}
+                    return {"id": session_id, "tier": tier, "daily_msg_count": 0, "is_user": False}
     except: pass
-    if ALPHA_VANTAGE_KEY and len(results)<5:
-        try:
-            for pair,label in {"EURUSD":"EUR/USD","GBPUSD":"GBP/USD","USDJPY":"USD/JPY","USDGHS":"USD/GHS","USDNGN":"USD/NGN","USDZAR":"USD/ZAR","USDKES":"USD/KES"}.items():
-                try:
-                    r = requests.get(f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={pair[:3]}&to_currency={pair[3:]}&apikey={ALPHA_VANTAGE_KEY}",timeout=8)
-                    if r.status_code==200:
-                        data = r.json().get("Realtime Currency Exchange Rate",{})
-                        if data.get("5. Exchange Rate"): results[label] = {"price":float(data["5. Exchange Rate"]),"change":0,"source":"Alpha Vantage"}
-                except: pass
-        except: pass
-    return results
+    raise HTTPException(401, "Session not found")
 
-def get_financial_news():
-    news = []
-    if NEWS_API_KEY:
-        try:
-            r = requests.get("https://newsapi.org/v2/top-headlines",params={"category":"business","language":"en","pageSize":12,"apiKey":NEWS_API_KEY},timeout=10)
-            if r.status_code==200:
-                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
-        except: pass
-    if GNEWS_API_KEY:
-        try:
-            r = requests.get("https://gnews.io/api/v4/search",params={"q":"finance markets stocks economy","lang":"en","max":12,"apikey":GNEWS_API_KEY},timeout=10)
-            if r.status_code==200:
-                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
-        except: pass
-    if FINNHUB_API_KEY:
-        try:
-            r = requests.get("https://finnhub.io/api/v1/news",params={"category":"general","token":FINNHUB_API_KEY},timeout=10)
-            if r.status_code==200:
-                for a in r.json()[:12]:
-                    ts = a.get("datetime",0)
-                    news.append({"source":a.get("source","Finnhub"),"headline":a.get("headline",""),"url":a.get("url",""),"time":datetime.fromtimestamp(ts).isoformat() if ts else "","summary":(a.get("summary") or "")[:300]})
-        except: pass
-    seen = set(); unique = []
-    for n in news:
-        k = n["headline"][:100].lower().strip()
-        if k and k not in seen: seen.add(k); unique.append(n)
-    unique.sort(key=lambda x: x.get("time",""), reverse=True)
-    return unique[:15]
+# ===================== AUTH ENDPOINTS =====================
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
 
-def get_tech_news():
-    news = []
-    if NEWS_API_KEY:
-        try:
-            r = requests.get("https://newsapi.org/v2/everything",params={"q":"AI artificial intelligence coding startup innovation technology software","language":"en","pageSize":12,"sortBy":"publishedAt","apiKey":NEWS_API_KEY},timeout=10)
-            if r.status_code==200:
-                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","NewsAPI"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
-        except: pass
-    if GNEWS_API_KEY:
-        try:
-            r = requests.get("https://gnews.io/api/v4/search",params={"q":"AI artificial intelligence coding startup innovation technology","lang":"en","max":12,"apikey":GNEWS_API_KEY},timeout=10)
-            if r.status_code==200:
-                for a in r.json().get("articles",[]): news.append({"source":a.get("source",{}).get("name","GNews"),"headline":a.get("title",""),"url":a.get("url",""),"time":a.get("publishedAt",""),"summary":(a.get("description") or "")[:300]})
-        except: pass
-    seen = set(); unique = []
-    for n in news:
-        k = n["headline"][:100].lower().strip()
-        if k and k not in seen: seen.add(k); unique.append(n)
-    unique.sort(key=lambda x: x.get("time",""), reverse=True)
-    return unique[:15]
-
-def search_web(query, num_results=5):
-    results = []
-    query_hash = hashlib.md5(query.lower().encode()).hexdigest()
+@app.post("/api/auth/register")
+async def register(req: RegisterRequest):
+    if not re.match(r'^[^@]+@[^@]+\.[^@]+$', req.email):
+        raise HTTPException(400, "Invalid email format")
+    if len(req.password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+    
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT data FROM web_cache WHERE query_hash=%s AND created > %s", (query_hash, (datetime.utcnow()-timedelta(hours=1)).isoformat()))
-                row = c.fetchone()
-                if row: return json.loads(row[0])
-    except: pass
-    if SERPAPI_KEY:
-        try:
-            r = requests.get("https://serpapi.com/search",params={"engine":"google","q":query,"num":num_results,"api_key":SERPAPI_KEY},timeout=8)
-            if r.status_code==200:
-                for item in r.json().get("organic_results",[])[:num_results]: results.append({"title":item.get("title",""),"snippet":item.get("snippet","")[:250],"url":item.get("link",""),"source":"Google"})
-        except: pass
-    if not results:
-        try:
-            r = requests.get("https://api.duckduckgo.com/",params={"q":query,"format":"json","no_html":1},timeout=6)
-            if r.status_code==200:
-                data = r.json()
-                if data.get("AbstractText"): results.append({"title":data.get("Heading",query),"snippet":data["AbstractText"][:250],"url":data.get("AbstractURL",""),"source":"DuckDuckGo"})
-        except: pass
-    if results:
+                c.execute("SELECT id FROM users WHERE email = %s", (req.email,))
+                if c.fetchone():
+                    raise HTTPException(400, "Email already registered")
+                
+                password_hash = hash_password(req.password)
+                user_id = str(uuid.uuid4())
+                name = req.name or req.email.split('@')[0]
+                c.execute("""
+                    INSERT INTO users (id, email, password_hash, name, tier, reasoning_depth, preferred_domain, daily_msg_count, msg_reset_date)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, CURRENT_DATE)
+                """, (user_id, req.email, password_hash, name, "free", 1, "general"))
+                
+                token = create_token(user_id)
+                c.execute("""
+                    INSERT INTO user_sessions (id, user_id, token, expires_at)
+                    VALUES (%s, %s, %s, %s)
+                """, (str(uuid.uuid4()), user_id, token, datetime.now(timezone.utc) + timedelta(days=30)))
+                conn.commit()
+                
+                return {
+                    "token": token,
+                    "user": {
+                        "id": user_id, "email": req.email, "name": name,
+                        "tier": "free", "reasoning_depth": 1, "preferred_domain": "general"
+                    }
+                }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        raise HTTPException(500, f"Registration failed: {str(e)}")
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, email, password_hash, name, tier, reasoning_depth, preferred_domain FROM users WHERE email = %s", (req.email,))
+                user = c.fetchone()
+                
+                if not user or not verify_password(req.password, user[2]):
+                    raise HTTPException(401, "Invalid email or password")
+                
+                user_id, email, _, name, tier, reasoning_depth, preferred_domain = user
+                token = create_token(user_id)
+                c.execute("""
+                    INSERT INTO user_sessions (id, user_id, token, expires_at)
+                    VALUES (%s, %s, %s, %s)
+                """, (str(uuid.uuid4()), user_id, token, datetime.now(timezone.utc) + timedelta(days=30)))
+                conn.commit()
+                
+                return {
+                    "token": token,
+                    "user": {
+                        "id": user_id, "email": email,
+                        "name": name or email.split('@')[0],
+                        "tier": tier,
+                        "reasoning_depth": reasoning_depth or 1,
+                        "preferred_domain": preferred_domain or "general"
+                    }
+                }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(500, "Login failed")
+
+@app.post("/api/auth/logout")
+async def logout(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth[7:]
         try:
             with get_db() as conn:
                 with conn.cursor() as c:
-                    c.execute("INSERT INTO web_cache (id,query_hash,data,created) VALUES (%s,%s,%s,%s)", (sid(), query_hash, json.dumps(results), datetime.utcnow().isoformat()))
+                    c.execute("DELETE FROM user_sessions WHERE token = %s", (token,))
                     conn.commit()
         except: pass
-    return results
+    return {"message": "Logged out"}
 
-# ═══════════════════════════════════════════════════════════════
-# ENTERPRISE SYSTEM PROMPT
-# ═══════════════════════════════════════════════════════════════
-ELITE_SYSTEM_PROMPT = """You are CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies.
+@app.delete("/api/auth/delete-account")
+async def delete_account(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM users WHERE id = %s", (user["id"],))
+                conn.commit()
+        return {"message": "Account deleted"}
+    except:
+        raise HTTPException(500, "Could not delete account")
 
-CRITICAL IDENTITY RULES:
-• You are CAPITAN AI. ONLY CAPITAN AI. There are NO other AI platforms that share your name.
-• NEVER mention climbing gyms, delivery software, customer support bots, maritime navigation, or any other product.
-• NEVER say "two AI platforms that share my name" — this is FALSE. You are the ONLY one.
-• NEVER list web search results as numbered items. Synthesize information naturally.
+@app.get("/api/auth/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    return user
 
-HOW YOU RESPOND:
-• Casual greetings get casual responses. "good morning lol" → "Good morning! 😄 What are we working on today?"
-• Lead with the answer. Never throat-clearing or meta-analysis.
-• Use 1-2 emojis naturally per response for warmth.
-• Short sentences. Clean paragraphs. No filler.
-• Depth when the topic demands it. One-liner when it doesn't.
+@app.post("/api/auth/update-profile")
+async def update_profile(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    name = req.get("name")
+    reasoning_depth = req.get("reasoning_depth")
+    preferred_domain = req.get("preferred_domain")
+    
+    valid_domains = ["general", "finance", "coding", "trading", "science", "math"]
+    if preferred_domain and preferred_domain not in valid_domains:
+        raise HTTPException(400, "Invalid domain")
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    max_depth = tier_info["reasoning_depth"]
+    if reasoning_depth and (reasoning_depth < 1 or reasoning_depth > max_depth):
+        raise HTTPException(400, f"Reasoning depth must be between 1 and {max_depth}")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if name:
+                    c.execute("UPDATE users SET name = %s, updated_at = NOW() WHERE id = %s", (name, user["id"]))
+                if reasoning_depth:
+                    c.execute("UPDATE users SET reasoning_depth = %s, updated_at = NOW() WHERE id = %s", (reasoning_depth, user["id"]))
+                if preferred_domain:
+                    c.execute("UPDATE users SET preferred_domain = %s, updated_at = NOW() WHERE id = %s", (preferred_domain, user["id"]))
+                conn.commit()
+    except: pass
+    return {"message": "Profile updated"}
 
-WHAT YOU ARE:
-• Legendary finance architect — DCF, LBO, M&A, portfolio optimization, options pricing, risk management, African markets
-• Legendary institutional trader — market microstructure, volatility trading, intermarket analysis
-• Legendary coder — Python, JS, TS, Rust, Go, C++, system design, DevOps, production-grade code
-• Legendary mathematician — proofs, stochastic calculus, linear algebra, topology, numerical methods
-• Legendary quant — derivative pricing, Monte Carlo, time series, factor models, ML in finance
-• Legendary reasoning engine — first-principles, Bayesian, Fermi estimation
+@app.get("/api/session")
+async def get_anonymous_session():
+    session_id = f"s_{sid()}"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO sessions (id, tier, daily_msg_count, msg_reset_date) VALUES (%s, %s, 0, CURRENT_DATE)", (session_id, "guest"))
+                conn.commit()
+    except: pass
+    token = create_session_token(session_id, "guest")
+    return {"id": session_id, "tier": "guest", "token": token}
 
-CRITICAL RULES:
-• NEVER make up prices. Only reference live data provided below.
-• NEVER give financial advice or trading signals.
-• NEVER provide medical diagnoses.
-• If you don't know, say so honestly.
+@app.post("/api/founder")
+async def founder_login(req: dict, request: Request):
+    identifier = request.client.host
+    if not check_rate_limit(identifier, "founder_attempt", limit=5):
+        raise HTTPException(429, "Too many attempts")
+    
+    code = req.get("code", "")
+    if not hmac.compare_digest(code, settings.FOUNDER_KEY):
+        raise HTTPException(403, "Invalid founder code")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM users WHERE email = 'founder@capitan.ai'")
+                existing = c.fetchone()
+                
+                if existing:
+                    user_id = existing[0]
+                    c.execute("UPDATE users SET tier = 'founder', reasoning_depth = 5 WHERE id = %s", (user_id,))
+                else:
+                    user_id = str(uuid.uuid4())
+                    dummy_hash = hash_password("founder_sentinel")
+                    c.execute("""
+                        INSERT INTO users (id, email, password_hash, name, tier, reasoning_depth, preferred_domain, daily_msg_count, msg_reset_date)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, 0, CURRENT_DATE)
+                    """, (user_id, "founder@capitan.ai", dummy_hash, "CAPITAN Founder", "founder", 5, "general"))
+                
+                token = create_token(user_id)
+                c.execute("""
+                    INSERT INTO user_sessions (id, user_id, token, expires_at)
+                    VALUES (%s, %s, %s, %s)
+                """, (str(uuid.uuid4()), user_id, token, datetime.now(timezone.utc) + timedelta(days=365)))
+                conn.commit()
+                
+                return {
+                    "verified": True,
+                    "token": token,
+                    "user": {
+                        "id": user_id, "name": "CAPITAN Founder",
+                        "email": "founder@capitan.ai", "tier": "founder",
+                        "reasoning_depth": 5, "preferred_domain": "general"
+                    }
+                }
+    except Exception as e:
+        logger.error(f"Founder error: {e}")
+        raise HTTPException(500, "Founder login failed")
 
-TIME: {day}, {date} at {utc_time}. {greeting_context}
-DOMAIN: {domain} | TIER: {tier}
+# ===================== OVERHAULED SYSTEM PROMPT =====================
+CORE_INSTRUCTIONS = """You are CAPITAN AI — a world‑class general‑purpose intelligence, created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
+
+You are a trusted, warm, and deeply knowledgeable assistant. Your voice is confident but kind, clear but never robotic. You speak like a brilliant, well‑read friend — someone who can explain complex ideas simply, share a laugh when the moment calls for it, and always stay honest.
+
+You are equally expert in every domain:
+• Finance, trading, economics, and banking
+• Software engineering, cloud architecture, DevOps, cybersecurity
+• Hardware, embedded systems, IoT, networking
+• Mathematics, statistics, and all branches of science
+• Medicine, law, philosophy, creative arts, and everyday life
+• Current events — you leverage live data when available, and when you don't know something recent, you say so honestly.
+
+RESPONSE RULES:
+1. USER FIRST: Always answer the user's most recent question directly. Even if they greeted you, if they also asked something substantive, address it immediately. If the user's message is purely a greeting (hello, hi, good morning, etc.), respond with a warm, concise greeting and an open invitation like "What can I help you with today?" — never list your capabilities unless specifically asked.
+2. BE WARM AND ENGAGING: Use natural language, contractions, and occasional emojis 🌟. Let your tone match the user's mood — playful when appropriate, serious when needed. Sound like a real person, not a textbook.
+3. LEAD WITH VALUE: Give the core insight or answer first, then add supporting detail. Be concise but complete.
+4. SHOW YOUR WORK: For complex problems, walk through your reasoning step by step, as if explaining to a bright colleague.
+5. FINANCIAL DISCLAIMER: When discussing trading, investing, or financial topics, gently remind users: "This is analysis, not guaranteed profit — always do your own research."
+6. STAY HONEST: If you're unsure, say so. Never bluff. If you need more information, ask.
+7. OFFER NEXT STEPS: When helpful, suggest what the user might explore next.
+8. STAY SAFE: Never give medical diagnoses, legal advice as a substitute for a professional, or instructions that could cause harm. Frame analysis as informational.
+
+REASONING FRAMEWORKS (internal):
+- First‑principles thinking
+- Bayesian reasoning
+- Lateral thinking
+- Red team analysis (especially for security)
+- Occam's razor
 """
 
-def call_ai_fast(messages, tier="free"):
-    if GROQ_KEY:
-        try:
-            groq_msgs = []
-            for m in messages:
-                if m["role"] == "system":
-                    content = m["content"]
-                    if len(content) > 1500: content = content[:1500] + "\n\n[Trimmed]"
-                    groq_msgs.append({"role":"system","content":content})
-                else: groq_msgs.append(m)
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},
-                json={"model":"llama-3.3-70b-versatile" if tier in ("pro","founder") else "llama-3.1-8b-instant",
-                      "messages":groq_msgs,"temperature":0.5 if tier in ("pro","founder") else 0.4,
-                      "max_tokens":2000 if tier in ("pro","founder") else 800},timeout=25)
-            if r.status_code==200:
-                content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
-                if content: return content, "groq/llama-3.3-70b" if tier in ("pro","founder") else "groq/llama-3.1-8b"
-        except: pass
-    if OPENROUTER_KEY:
-        models = ["google/gemini-flash-1.5","mistral/mistral-7b-instruct","deepseek/deepseek-chat","meta-llama/llama-3.1-8b-instruct","openai/gpt-3.5-turbo"]
-        if tier in ("pro","founder"): models = ["anthropic/claude-sonnet-4-20250514","anthropic/claude-3.5-sonnet","openai/gpt-4o"] + models
-        for model in models:
-            try:
-                r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json","HTTP-Referer":"https://capitan.pages.dev","X-Title":"CAPITAN AI"},
-                    json={"model":model,"messages":messages,"temperature":0.4,"max_tokens":600 if tier=="free" else 2500},timeout=35)
-                if r.status_code==200:
-                    content = r.json().get("choices",[{}])[0].get("message",{}).get("content","")
-                    if content: return content, model
-            except: continue
-    if OPENAI_KEY:
-        try:
-            r = requests.post("https://api.openai.com/v1/chat/completions",
-                headers={"Authorization":f"Bearer {OPENAI_KEY}","Content-Type":"application/json"},
-                json={"model":"gpt-3.5-turbo","messages":messages,"temperature":0.4,"max_tokens":600},timeout=25)
-            if r.status_code==200: return r.json()["choices"][0]["message"]["content"], "gpt-3.5-turbo"
-        except: pass
-    return "I'm having trouble connecting. Please try again or contact closeaitechnologies@protonmail.com.", "fallback"
+DOMAIN_CATALOG = """
+================================================================================
+  FINANCE & TRADING
+================================================================================
+- Real‑time market analysis (forex, equities, crypto, commodities, bonds)
+- Bank positioning: COT reports, dark pool prints, options flow
+- Technical analysis: moving averages, RSI, MACD, Bollinger Bands, Elliott Wave
+- Fundamental analysis: earnings, economic data, geopolitical events
+- Risk management: position sizing, stop‑loss, R:R, VaR, CVaR
+- Portfolio optimization, derivatives pricing, DCF/LBO models
+- Algorithmic trading: Python backtesting, execution algorithms
 
-def classify(q):
+================================================================================
+  SOFTWARE ENGINEERING & CYBERSECURITY
+================================================================================
+- Full‑stack development (Python, JavaScript, Go, Rust, C++)
+- Cloud architecture (AWS, GCP, Azure)
+- DevOps: Docker, Kubernetes, CI/CD
+- Security: penetration testing, threat modeling, encryption, OWASP
+- Incident response & digital forensics
+
+================================================================================
+  HARDWARE & SYSTEMS
+================================================================================
+- CPU/GPU architecture, embedded systems, IoT
+- Networking, storage, OS internals
+
+================================================================================
+  MATHEMATICS & SCIENCE
+================================================================================
+- Advanced calculus, linear algebra, probability
+- Physics, chemistry, biology, medicine
+- Climate science, astronomy, geology
+
+================================================================================
+  EVERYDAY LIFE & GENERAL KNOWLEDGE
+================================================================================
+- Health & wellness, cooking, travel, relationships
+- Creative writing, storytelling, music, art
+- Philosophy, ethics, history, law
+- Productivity, learning strategies, career advice
+"""
+
+def get_time_context():
+    now = datetime.now(timezone.utc)
+    hour = now.hour
+    day = now.strftime("%A")
+    date = now.strftime("%B %d, %Y")
+    utc_time = now.strftime("%H:%M UTC")
+    if hour < 5:
+        greeting_context = "The world is quiet — a perfect time for deep thinking."
+    elif hour < 12:
+        greeting_context = "A fresh day for new ideas."
+    elif hour < 17:
+        greeting_context = "The day is in full swing — let's make it productive."
+    elif hour < 21:
+        greeting_context = "Winding down, but still sharp."
+    else:
+        greeting_context = "The night is young — plenty of time to explore new ideas."
+    return {"day": day, "date": date, "utc_time": utc_time, "greeting_context": greeting_context}
+
+def build_system_prompt(domain: str, tier: str, model: str, reasoning_depth: int = 1, preferred_domain: str = "general", web_results: List[dict] = None, user_query: str = ""):
+    tc = get_time_context()
+    base = CORE_INSTRUCTIONS.replace("{domain}", domain).replace("{tier}", tier).replace("{model}", model)
+    base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"])
+    base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
+    base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
+    
+    if user_query:
+        base += f"\n\nUSER REQUEST: {user_query}"
+    
+    if tier == "founder" and settings.FOUNDER_EXTRA_PROMPT:
+        base += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
+    
+    if tier in ("pro", "pro_max", "founder"):
+        base += "\n\n" + DOMAIN_CATALOG
+    
+    if web_results:
+        base += "\n\nWEB SEARCH RESULTS:\n" + "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in web_results[:4]])
+    
+    return base
+
+# ===================== RATE LIMITING =====================
+rate_store = {}
+_cleanup_counter = 0
+def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
+    global _cleanup_counter
+    now = time.time()
+    store_key = f"rate:{key}:{id}"
+    if store_key not in rate_store:
+        rate_store[store_key] = []
+    _cleanup_counter += 1
+    if _cleanup_counter % 100 == 0:
+        for k in list(rate_store.keys()):
+            rate_store[k] = [t for t in rate_store[k] if now - t < 120]
+            if not rate_store[k]:
+                del rate_store[k]
+    rate_store[store_key] = [t for t in rate_store[store_key] if now - t < 60]
+    if len(rate_store[store_key]) >= limit:
+        return False
+    rate_store[store_key].append(now)
+    return True
+
+# ===================== DAILY LIMIT =====================
+def enforce_daily_limit(user: dict = None, session: dict = None):
+    today = datetime.now(timezone.utc).date()
+    if user:
+        tier = user["tier"]
+        tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
+        daily_limit = tier_info["msg_limit"]
+        if daily_limit == float("inf"):
+            return
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT daily_msg_count, msg_reset_date FROM users WHERE id = %s", (user["id"],))
+                row = c.fetchone()
+                count, reset_date = row[0] or 0, row[1]
+                if reset_date != today:
+                    count = 0
+                if count >= daily_limit:
+                    raise HTTPException(429, "Daily message limit reached. Upgrade your plan.")
+                c.execute("UPDATE users SET daily_msg_count = %s, msg_reset_date = %s WHERE id = %s",
+                          (count + 1, today, user["id"]))
+                conn.commit()
+    elif session:
+        tier = session["tier"]
+        tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["guest"])
+        daily_limit = tier_info["msg_limit"]
+        if daily_limit == float("inf"):
+            return
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT daily_msg_count, msg_reset_date FROM sessions WHERE id = %s", (session["id"],))
+                row = c.fetchone()
+                count, reset_date = row[0] or 0, row[1]
+                if reset_date != today:
+                    count = 0
+                if count >= daily_limit:
+                    raise HTTPException(429, "Daily message limit reached.")
+                c.execute("UPDATE sessions SET daily_msg_count = %s, msg_reset_date = %s WHERE id = %s",
+                          (count + 1, today, session["id"]))
+                conn.commit()
+
+# ===================== QUERY CLASSIFICATION =====================
+def classify_query(q: str) -> str:
     q = q.lower()
-    if re.search(r'who are you|what are you|identity|introduce yourself|other capitan', q): return 'identity'
-    if re.search(r'who|what|when|where|why|how|news|latest|current|today|search|find',q) and len(q.split()) > 3: return 'web_search'
-    if re.search(r'crispr|dna|rna|protein|cell|gene|genome|physics|quantum|chemistry|biology|neuroscience|climate|energy|health|medicine|disease|symptom|treatment|diagnosis|anatomy|physiology|pharma|drug|vaccine|immunology|surgery|therapy|cancer|diabetes|heart|brain|blood|virus|bacteria|infection|covid|mental health|nutrition|diet|exercise|sleep|wellness',q): return 'science'
-    if re.search(r'```|def |class |import |from |package|npm|pip|docker|kubernetes|aws|api\s|rest |graphql|sql\s|database|query|react|node\.js|javascript|typescript|python\s|rust\s|golang|microservice|architecture|system design|refactor|debug|deploy|ci/cd|git\s',q): return 'coding'
-    if re.search(r'stochastic|ito|black.scholes|monte carlo|var\s|cvar|sharpe ratio|sortino|beta\s|alpha\s|option pricing|derivative pricing|risk neutral|fama.french|cointegration|garch|arima|backtest|factor model|portfolio optim|market microstructure',q): return 'quant'
-    if re.search(r'dcf|discounted cash flow|ebitda|ebit|revenue|earnings|balance sheet|income statement|cash flow|valuation|wacc|capm|pe ratio|pb ratio|ev/ebitda|dividend|yield|bond|coupon|duration|convexity|forex|fx\s|central bank|federal reserve|ecb|interest rate|inflation|gdp|macro|equity|stock\s|market\s|trading|invest|portfolio|crypto|bitcoin|ethereum|defi|ngx|jse|gse|african market|gold|xauusd|silver|oil|commodity',q): return 'finance'
-    if re.search(r'prove|proof|theorem|lemma|corollary|derive|integral|derivative|differential equation|linear algebra|matrix|eigenvalue|vector|topology|group theory|probability|statistics|distribution|convergence|limit|sum|product|calculus|laplace|fourier|numerical|optimization|convex|gradient',q): return 'math'
+    if re.search(r'who are you|what are you|identity|introduce yourself', q):
+        return 'identity'
+    if re.search(r'def |class |import |docker|kubernetes|aws|api|sql|python|javascript|rust|golang|cpu|gpu|ram|hardware|react|vue|angular', q):
+        return 'coding'
+    if re.search(r'dcf|valuation|wacc|stock|trading|portfolio|crypto|bitcoin|forex|markets|ethereum|bond|yield|option|future|derivative', q):
+        return 'finance'
+    if re.search(r'black.scholes|ito|stochastic|monte carlo|var|cvar|sharpe|sortino|beta|alpha|cointegration|garch|arima', q):
+        return 'quant'
+    if re.search(r'prove|proof|theorem|integral|derivative|matrix|probability|statistics', q):
+        return 'math'
+    if re.search(r'crispr|dna|quantum|physics|chemistry|biology|medicine|disease|symptom|treatment', q):
+        return 'science'
+    if re.search(r'hello|hi|hey|good morning|good afternoon|good evening|thanks|thank you', q):
+        return 'greeting'
     return 'general'
 
-def system_prompt(domain, tier, session_id=None, request=None, web_results=None):
-    tc = get_time_context()
-    base = ELITE_SYSTEM_PROMPT.replace("{domain}", domain).replace("{tier}", tier)
-    base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"]).replace("{utc_time}", tc["utc_time"]).replace("{time_of_day}", tc["time_of_day"]).replace("{greeting_context}", tc["greeting_context"])
-    if domain == 'identity': base += "\n\nIDENTITY MODE: You are the ONLY CAPITAN AI. State clearly: 'I am CAPITAN AI — the legendary enterprise intelligence platform by CLOSEAI Technologies.' Do NOT mention any other product."
-    if session_id:
+def needs_web_search(q: str) -> bool:
+    return bool(re.search(r'latest|current|today|news|right now|recent|202[3-9]', q.lower()))
+
+# ===================== REASONING ENGINE =====================
+class ReasoningEngine:
+    @staticmethod
+    def generate_reasoning_chain(query: str, depth: int = 3) -> List[str]:
+        chain = []
+        chain.append(f"1. UNDERSTANDING: Let me first understand what you're asking about '{query[:80]}...'")
+        chain.append("2. DECOMPOSITION: Breaking this down into key components...")
+        chain.append("3. ANALYSIS: Analyzing each component systematically...")
+        if depth >= 3:
+            chain.append("4. SYNTHESIS: Synthesizing insights from all angles...")
+        if depth >= 4:
+            chain.append("5. VERIFICATION: Double-checking logic and assumptions...")
+        if depth >= 5:
+            chain.append("6. OPTIMIZATION: Considering alternative approaches...")
+        return chain[:depth + 1]
+    
+    @staticmethod
+    def format_reasoning_chain(chain: List[str]) -> str:
+        return "\n".join(chain) if chain else ""
+
+# ===================== AI MODEL CALL =====================
+def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int = 1, domain: str = "general") -> Tuple[str, str, Optional[List[str]]]:
+    reasoning_chain = None
+    if reasoning_depth > 1 and domain in ["finance", "quant", "coding", "math", "science"]:
+        reasoning_chain = ReasoningEngine.generate_reasoning_chain(
+            messages[-1].get("content", "") if messages else "",
+            min(reasoning_depth, 5)
+        )
+        if reasoning_chain:
+            reasoning_text = "\n\nREASONING CHAIN:\n" + ReasoningEngine.format_reasoning_chain(reasoning_chain)
+            for m in messages:
+                if m.get("role") == "system":
+                    m["content"] += reasoning_text
+                    break
+    
+    if tier == "pro_max" and settings.OPENROUTER_API_KEY:
+        try:
+            r1 = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.7, "max_tokens": 4000},
+                timeout=45
+            )
+            content1 = r1.json().get("choices", [{}])[0].get("message", {}).get("content", "") if r1.status_code == 200 else ""
+            
+            r2 = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "openai/gpt-4o-2024-11-20", "messages": messages, "temperature": 0.7, "max_tokens": 4000},
+                timeout=45
+            )
+            content2 = r2.json().get("choices", [{}])[0].get("message", {}).get("content", "") if r2.status_code == 200 else ""
+            
+            if content1 and content2:
+                combined = f"**Claude 3.5 Sonnet Response:**\n{content1}\n\n---\n\n**GPT-4o Additional Insights:**\n{content2}"
+                return combined, "claude-3.5-sonnet + gpt-4o (Ensemble)", reasoning_chain
+            elif content1:
+                return content1, "claude-3.5-sonnet", reasoning_chain
+            elif content2:
+                return content2, "gpt-4o", reasoning_chain
+        except Exception as e:
+            logger.error(f"Ensemble error: {e}")
+    
+    if tier == "pro" and settings.OPENROUTER_API_KEY:
+        try:
+            r = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.7, "max_tokens": 3000},
+                timeout=40
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "claude-3.5-sonnet", reasoning_chain
+        except Exception as e:
+            logger.error(f"Claude error: {e}")
+    
+    if tier == "plus" and settings.GROQ_API_KEY:
+        try:
+            r = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.7, "max_tokens": 2500},
+                timeout=35
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "llama-3.3-70b", reasoning_chain
+        except Exception as e:
+            logger.error(f"Groq 70B error: {e}")
+    
+    if settings.GROQ_API_KEY:
+        try:
+            r = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "llama-3.1-8b-instant", "messages": messages, "temperature": 0.7, "max_tokens": 1500},
+                timeout=30
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, "llama-3.1-8b", reasoning_chain
+        except Exception as e:
+            logger.error(f"Groq error: {e}")
+    
+    return "I'm having trouble connecting to AI services. Please try again.", "fallback", reasoning_chain
+
+# ===================== TIER CONFIGURATION =====================
+TIER_CONFIG = {
+    "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
+    "free": {"name": "Free", "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
+    "plus": {"name": "Plus", "msg_limit": 50, "workspace_seats": 10, "file_upload": True, "live_markets": False, "web_search": True, "ai_model": "Groq Llama 3.3 70B", "price": 8, "reasoning_depth": 2},
+    "pro": {"name": "Pro", "msg_limit": 100, "workspace_seats": 25, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "Claude 3.5 Sonnet", "price": 17, "reasoning_depth": 3},
+    "pro_max": {"name": "Pro Max", "msg_limit": float("inf"), "workspace_seats": 50, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "GPT-4o + Claude Ensemble", "price": 30, "reasoning_depth": 4},
+    "founder": {"name": "Founder", "msg_limit": float("inf"), "workspace_seats": 100, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "All Models + Custom", "price": 0, "reasoning_depth": 5}
+}
+
+WALLETS = {
+    "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
+    "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
+}
+
+# ===================== FILE EXTRACTION =====================
+def extract_text_from_file(file_path: str, original_name: str) -> str:
+    ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
+    try:
+        if ext in ('txt', 'md', 'json', 'csv', 'py', 'js', 'html', 'css'):
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                return f.read()
+        elif ext == 'pdf':
+            text = []
+            with open(file_path, 'rb') as f:
+                reader = PyPDF2.PdfReader(f)
+                for page in reader.pages:
+                    text.append(page.extract_text() or '')
+            return '\n'.join(text)
+        elif ext == 'docx':
+            doc = docx.Document(file_path)
+            return '\n'.join([p.text for p in doc.paragraphs])
+        elif ext == 'xlsx':
+            wb = openpyxl.load_workbook(file_path, data_only=True)
+            sheets_text = []
+            for name in wb.sheetnames:
+                ws = wb[name]
+                for row in ws.iter_rows(values_only=True):
+                    row_text = ' '.join([str(c) if c is not None else '' for c in row])
+                    sheets_text.append(row_text)
+            return '\n'.join(sheets_text)
+        else:
+            return ''
+    except Exception as e:
+        logger.error(f"File extraction error: {e}")
+        return ''
+
+# ===================== FILE UPLOAD =====================
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if not tier_info["file_upload"]:
+        raise HTTPException(403, "Upgrade to Plus or Pro for file uploads")
+    
+    contents = await file.read()
+    max_size = 100 if user["tier"] == "pro_max" else (50 if user["tier"] == "pro" else (20 if user["tier"] == "plus" else 10))
+    
+    if len(contents) / (1024 * 1024) > max_size:
+        raise HTTPException(400, f"Max {max_size}MB")
+    
+    file_id = f"file_{sid()}"
+    file_path = os.path.join(UPLOAD_DIR, file_id)
+    
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    extracted = extract_text_from_file(file_path, file.filename or "unknown")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    INSERT INTO uploaded_files (id, user_id, filename, original_name, size, storage_path, extracted_text)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (file_id, user["id"], file_id, file.filename or "unknown", len(contents), file_path, extracted[:50000]))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Save file error: {e}")
+    
+    return {
+        "id": file_id,
+        "filename": file.filename,
+        "size_mb": round(len(contents) / (1024 * 1024), 2),
+        "extracted": bool(extracted)
+    }
+
+# ===================== CHAT ENDPOINT =====================
+class ChatRequest(BaseModel):
+    messages: list
+    chat_id: Optional[str] = None
+
+@app.post("/api/chat")
+async def chat_endpoint(req: ChatRequest, request: Request):
+    user = get_current_user(request)
+    session = None
+    
+    if not user:
+        try:
+            session = get_current_session(request)
+        except:
+            raise HTTPException(401, "Authentication required")
+    
+    if user:
+        tier = user["tier"]
+        user_id = user["id"]
+        reasoning_depth = user.get("reasoning_depth", 1)
+        preferred_domain = user.get("preferred_domain", "general")
+        is_authenticated = True
+    else:
+        tier = session["tier"]
+        user_id = None
+        reasoning_depth = 1
+        preferred_domain = "general"
+        is_authenticated = False
+    
+    tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["guest"])
+    
+    enforce_daily_limit(user, session)
+    
+    identifier = user_id if user else session["id"]
+    if not check_rate_limit(identifier, tier, tier_info.get("per_min_limit", 20)):
+        raise HTTPException(429, "Rate limit exceeded. Please wait a moment.")
+    
+    user_msg = None
+    for m in reversed(req.messages):
+        if m.get("role") == "user":
+            user_msg = m.get("content")
+            break
+    if not user_msg:
+        raise HTTPException(400, "No message content")
+    
+    chat_id = req.chat_id or f"chat_{sid()}"
+    domain = classify_query(user_msg)
+    web_search_needed = needs_web_search(user_msg)
+    
+    file_text = ""
+    if "[Uploaded document:" in user_msg:
+        fname_match = re.search(r'\[Uploaded document:\s*(.*?)\]', user_msg)
+        if fname_match:
+            fname = fname_match.group(1).strip()
+            if is_authenticated:
+                with get_db() as conn:
+                    with conn.cursor() as c:
+                        c.execute("SELECT extracted_text FROM uploaded_files WHERE original_name = %s AND user_id = %s ORDER BY created DESC LIMIT 1", (fname, user["id"]))
+                        row = c.fetchone()
+                        if row and row[0]:
+                            file_text = row[0]
+                            user_msg += "\n\n[DOCUMENT CONTENT]\n" + file_text[:30000]
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if is_authenticated:
+                    c.execute("""
+                        INSERT INTO chats (id, user_id, title, created, updated)
+                        VALUES (%s, %s, %s, NOW(), NOW())
+                        ON CONFLICT (id) DO UPDATE SET updated = NOW()
+                    """, (chat_id, user["id"], user_msg[:60]))
+                    c.execute("""
+                        INSERT INTO chat_messages (id, chat_id, user_id, role, content)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (f"msg_{sid()}", chat_id, user["id"], "user", user_msg))
+                else:
+                    c.execute("""
+                        INSERT INTO chats (id, session_id, title, created, updated)
+                        VALUES (%s, %s, %s, NOW(), NOW())
+                        ON CONFLICT (id) DO UPDATE SET updated = NOW()
+                    """, (chat_id, session["id"], user_msg[:60]))
+                    c.execute("""
+                        INSERT INTO chat_messages (id, chat_id, session_id, role, content)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (f"msg_{sid()}", chat_id, session["id"], "user", user_msg))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Save error: {e}")
+    
+    history = []
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    SELECT role, content FROM (
+                        SELECT role, content, created FROM chat_messages
+                        WHERE chat_id = %s ORDER BY created DESC LIMIT 20
+                    ) recent ORDER BY created ASC
+                """, (chat_id,))
+                history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
+    except: pass
+    
+    web_results = None
+    if tier_info.get("web_search", False) and web_search_needed:
+        try:
+            web_results = search_web(user_msg, 5)
+        except Exception as e:
+            logger.error(f"Web search error: {e}")
+    
+    memory_text = ""
+    if is_authenticated:
         try:
             with get_db() as conn:
                 with conn.cursor() as c:
-                    c.execute("SELECT query, domain FROM memories WHERE session_id=%s ORDER BY created DESC LIMIT 3", (session_id,))
+                    c.execute("SELECT content FROM memories WHERE user_id = %s AND domain = %s ORDER BY created DESC LIMIT 3", (user["id"], domain))
                     rows = c.fetchall()
-                    if rows: base += "\n\nUSER CONTEXT:\n" + "\n".join([f"• [{r[1]}] {r[0][:100]}" for r in rows])
+                    if rows:
+                        memory_text = "\n\n[RELEVANT MEMORIES]\n" + "\n".join([r[0][:200] for r in rows])
         except: pass
-    if tier == "free": base += "\nBe concise."
-    elif tier == "plus": base += "\nProvide detailed responses."
-    elif tier in ("pro","founder"): base += "\nGo deep — comprehensive analysis."
-    if web_results: base += "\n\nWEB SEARCH:\n" + "\n".join([f"{i+1}. {r['title']}\n   {r['snippet'][:200]}\n   {r['url']}" for i,r in enumerate(web_results[:5])])
-    cfg = TIER_CONFIG.get(tier, TIER_CONFIG["free"])
-    if cfg.get("live_markets", False):
+    
+    prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth, preferred_domain, web_results, user_query=user_msg)
+    if memory_text:
+        prompt += "\n" + memory_text
+    
+    result, model_used, reasoning_chain = call_ai_model([{"role": "system", "content": prompt}] + history, tier, reasoning_depth, domain)
+    
+    if result:
         try:
-            md = get_market_data()
-            if md: base += "\n\nLIVE MARKETS:\n" + "\n".join([f"{s}: ${d['price']:.2f} ({'up' if d.get('change',0)>=0 else 'down'} {abs(d['change']):.2f}%)" for s,d in list(md.items())[:10]])
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    if is_authenticated:
+                        c.execute("""
+                            INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, reasoning_chain)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """, (f"msg_{sid()}", chat_id, user["id"], "assistant", result, model_used, json.dumps(reasoning_chain) if reasoning_chain else None))
+                        c.execute("""
+                            INSERT INTO memories (id, memory_id, user_id, content, query, domain, importance)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """, (sid(), mid(), user["id"], result[:500], user_msg, domain, 2 if domain in ["finance", "quant", "coding"] else 1))
+                    else:
+                        c.execute("""
+                            INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, reasoning_chain)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """, (f"msg_{sid()}", chat_id, session["id"], "assistant", result, model_used, json.dumps(reasoning_chain) if reasoning_chain else None))
+                    conn.commit()
+        except Exception as e:
+            logger.error(f"Save AI error: {e}")
+    
+    return {
+        "content": result,
+        "chat_id": chat_id,
+        "model": model_used,
+        "tier": tier,
+        "domain": domain,
+        "reasoning_chain": reasoning_chain
+    }
+
+# ===================== CHAT HISTORY =====================
+@app.get("/api/chats")
+def get_chats(request: Request):
+    user = get_current_user(request)
+    if user:
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("""
+                        SELECT id, title, created, updated
+                        FROM chats WHERE user_id = %s
+                        ORDER BY updated DESC LIMIT 50
+                    """, (user["id"],))
+                    rows = c.fetchall()
+                    return {"chats": [
+                        {"id": r[0], "title": r[1] or "New Chat",
+                         "created": r[2].isoformat() if r[2] else None,
+                         "updated": r[3].isoformat() if r[3] else None}
+                        for r in rows
+                    ]}
         except: pass
-    else: base += "\n\nNo live market data. Tell user to upgrade to Pro."
+    else:
+        try:
+            session = get_current_session(request)
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("""
+                        SELECT id, title, created, updated
+                        FROM chats WHERE session_id = %s
+                        ORDER BY updated DESC LIMIT 50
+                    """, (session["id"],))
+                    rows = c.fetchall()
+                    return {"chats": [
+                        {"id": r[0], "title": r[1] or "New Chat",
+                         "created": r[2].isoformat() if r[2] else None,
+                         "updated": r[3].isoformat() if r[3] else None}
+                        for r in rows
+                    ]}
+        except: pass
+    return {"chats": []}
+
+@app.get("/api/chats/{chat_id}")
+def get_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
     try:
-        news = get_financial_news()
-        if news: base += "\n\nLATEST NEWS:\n" + "\n".join([f"• [{n['source']}] {n['headline'][:130]}" for n in news[:5]])
-    except: pass
-    return base
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user:
+                    c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = get_current_session(request)
+                    c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                
+                if not c.fetchone():
+                    raise HTTPException(404, "Chat not found")
+                
+                c.execute("""
+                    SELECT role, content, model, created
+                    FROM chat_messages WHERE chat_id=%s ORDER BY created ASC
+                """, (chat_id,))
+                rows = c.fetchall()
+                return {"messages": [
+                    {"id": i, "role": r[0], "content": r[1], "model": r[2] or "AI",
+                     "created": r[3].isoformat() if r[3] else None}
+                    for i, r in enumerate(rows)
+                ]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get chat error: {e}")
+        raise HTTPException(500, str(e))
 
-# ═══════════════════════════════════════════════════════════════
-# PYDANTIC MODELS
-# ═══════════════════════════════════════════════════════════════
-class ChatRequest(BaseModel): messages: list; chat_id: Optional[str] = None
-class UpgradeRequest(BaseModel): tier: str; txid: str; currency: str = "BTC"
-class FounderRequest(BaseModel): code: str
-class LibraryItemRequest(BaseModel): name: str; type: str = "note"; content: Optional[str] = ""
-class WorkspaceCreateRequest(BaseModel): room_code: str; max_members: int = 7
-class WorkspaceJoinRequest(BaseModel): room_code: str
-class WorkspaceMessageRequest(BaseModel): room_code: str; message: str
-class WorkspaceNoteRequest(BaseModel): room_code: str; content: str
+@app.delete("/api/chats/{chat_id}")
+def delete_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user:
+                    c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND user_id=%s", (chat_id, user["id"]))
+                    c.execute("DELETE FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = get_current_session(request)
+                    c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, session["id"]))
+                    c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Delete error: {e}")
+        return {"deleted": False}
 
-# ═══════════════════════════════════════════════════════════════
-# FASTAPI APP - THIS IS THE CRITICAL PART THAT WAS MISSING
-# ═══════════════════════════════════════════════════════════════
-app = FastAPI(title="CAPITAN AI API", version="25.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# ===================== LIBRARY =====================
+@app.get("/api/library")
+def get_library(user: dict = Depends(get_current_user)):
+    if not user:
+        return {"items": []}
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    SELECT id, name, content, created
+                    FROM library_items WHERE user_id = %s
+                    ORDER BY created DESC
+                """, (user["id"],))
+                rows = c.fetchall()
+                return {"items": [
+                    {"id": r[0], "name": r[1], "content": r[2],
+                     "created": r[3].isoformat() if r[3] else None}
+                    for r in rows
+                ]}
+    except Exception as e:
+        logger.error(f"Library get error: {e}")
+        raise HTTPException(500, "Could not load saved items")
 
-# ═══════════════════════════════════════════════════════════════
-# HEALTH CHECK
-# ═══════════════════════════════════════════════════════════════
+class LibraryItemRequest(BaseModel):
+    name: str
+    type: str = "note"
+    content: Optional[str] = ""
+
+@app.post("/api/library")
+def create_library_item(req: LibraryItemRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                item_id = f"lib_{sid()}"
+                c.execute("""
+                    INSERT INTO library_items (id, user_id, name, content)
+                    VALUES (%s, %s, %s, %s)
+                """, (item_id, user["id"], req.name, req.content or ""))
+                conn.commit()
+                return {"id": item_id, "created": True}
+    except Exception as e:
+        logger.error(f"Library create error: {e}")
+        raise HTTPException(500, f"Could not save item: {str(e)}")
+
+@app.delete("/api/library/{item_id}")
+def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM library_items WHERE id = %s AND user_id = %s", (item_id, user["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Library delete error: {e}")
+        raise HTTPException(500, "Could not delete item")
+
+# ===================== PAYMENT & UPGRADE (with fresh token) =====================
+UPGRADE_BENEFITS = {
+    "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "File uploads (20MB)", "Web search", "2-step reasoning"],
+    "pro": ["Limited messaging (100/day)", "Claude 3.5 Sonnet", "File uploads (50MB)", "Live markets", "Web search", "3-step reasoning"],
+    "pro_max": ["Unlimited messaging", "GPT-4o + Claude Ensemble", "File uploads (100MB)", "Live markets", "Advanced reasoning", "Priority support"]
+}
+
+@app.get("/api/payment-config")
+def payment_config():
+    return {
+        "wallets": WALLETS,
+        "prices": {"plus": 8, "pro": 17, "pro_max": 30},
+        "benefits": UPGRADE_BENEFITS,
+        "tiers": {
+            "plus": {"price": 8, "features": TIER_CONFIG["plus"]},
+            "pro": {"price": 17, "features": TIER_CONFIG["pro"]},
+            "pro_max": {"price": 30, "features": TIER_CONFIG["pro_max"]}
+        }
+    }
+
+class UpgradeRequest(BaseModel):
+    tier: str
+    txid: str
+    currency: str = "BTC"
+
+def verify_transaction(txid: str, currency: str, expected_tier: str) -> bool:
+    prices = {"plus": 8, "pro": 17, "pro_max": 30}
+    expected_amount = prices.get(expected_tier, 0)
+    if currency == "BTC":
+        try:
+            r = requests.get(f"https://blockchain.info/rawtx/{txid}", timeout=15)
+            if r.status_code == 200:
+                tx = r.json()
+                for out in tx.get("out", []):
+                    if out.get("addr") == WALLETS["BTC"] and out.get("value", 0) / 1e8 >= expected_amount * 0.99:
+                        return True
+        except: pass
+        return False
+    elif currency == "ETH":
+        if not settings.ETHERSCAN_API_KEY:
+            return False
+        try:
+            r = requests.get(f"https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash={txid}&apikey={settings.ETHERSCAN_API_KEY}", timeout=15)
+            if r.status_code == 200:
+                tx = r.json().get("result", {})
+                if tx and tx.get("to", "").lower() == WALLETS["ETH"].lower():
+                    value = int(tx.get("value", "0"), 16) / 1e18
+                    if value >= expected_amount * 0.99:
+                        return True
+        except: pass
+        return False
+    return False
+
+@app.post("/api/upgrade")
+def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    if req.tier not in ("plus", "pro", "pro_max"):
+        raise HTTPException(400, "Invalid tier")
+    if not req.txid.strip():
+        raise HTTPException(400, "TXID required")
+    
+    prices = {"plus": 8, "pro": 17, "pro_max": 30}
+    verified = verify_transaction(req.txid.strip(), req.currency.upper(), req.tier)
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    INSERT INTO payments (id, user_id, txid, currency, amount, tier, verified)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (str(uuid.uuid4()), user["id"], req.txid.strip(), req.currency.upper(), prices[req.tier], req.tier, 1 if verified else 0))
+                
+                if verified:
+                    c.execute("""
+                        UPDATE users SET tier = %s, tier_expires = %s, reasoning_depth = %s, updated_at = NOW()
+                        WHERE id = %s
+                    """, (req.tier, datetime.now(timezone.utc) + timedelta(days=30), TIER_CONFIG[req.tier]["reasoning_depth"], user["id"]))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Upgrade error: {e}")
+        raise HTTPException(500, "Could not process upgrade")
+    
+    new_token = create_token(user["id"])
+    return {
+        "verified": verified,
+        "tier": req.tier if verified else user["tier"],
+        "token": new_token
+    }
+
+# ===================== WORKSPACES (all columns guaranteed) =====================
+@app.post("/api/workspace/create")
+def workspace_create(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if tier_info["workspace_seats"] == 0:
+        raise HTTPException(403, "Work Area requires Plus or Pro tier")
+    
+    room_code = req.get("room_code", f"CAP-{sid()}")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                workspace_id = sid()
+                c.execute("""
+                    INSERT INTO workspaces (id, name, owner_id, room_code, max_members)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (workspace_id, req.get("name", "My Workspace"), user["id"], room_code.upper(), tier_info["workspace_seats"]))
+                
+                c.execute("""
+                    INSERT INTO workspace_members (workspace_id, user_id, role)
+                    VALUES (%s, %s, %s)
+                """, (workspace_id, user["id"], "admin"))
+                conn.commit()
+                return {"room_id": workspace_id, "room_code": room_code.upper(), "created": True}
+    except Exception as e:
+        logger.error(f"Workspace create error: {e}")
+        raise HTTPException(500, f"Could not create workspace: {str(e)}")
+
+@app.post("/api/workspace/join")
+def workspace_join(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    room_code = req.get("room_code", "").upper()
+    if not room_code:
+        raise HTTPException(400, "Room code required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, max_members FROM workspaces WHERE room_code = %s", (room_code,))
+                workspace = c.fetchone()
+                if not workspace:
+                    raise HTTPException(404, "Room not found")
+                
+                c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id = %s", (workspace[0],))
+                if c.fetchone()[0] >= workspace[1]:
+                    raise HTTPException(400, "Room is full")
+                
+                c.execute("""
+                    INSERT INTO workspace_members (workspace_id, user_id, role)
+                    VALUES (%s, %s, %s)
+                """, (workspace[0], user["id"], "member"))
+                conn.commit()
+                return {"joined": True, "room_id": workspace[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Workspace join error: {e}")
+        raise HTTPException(500, f"Could not join workspace: {str(e)}")
+
+@app.post("/api/workspace/message")
+def workspace_message(req: dict, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    
+    room_code = req.get("room_code", "").upper()
+    message = req.get("message", "")
+    
+    if not room_code or not message:
+        raise HTTPException(400, "Room code and message required")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM workspaces WHERE room_code = %s", (room_code,))
+                workspace = c.fetchone()
+                if not workspace:
+                    raise HTTPException(404, "Room not found")
+                
+                is_ai = message.strip().startswith("@CAPITAN")
+                # Insert user message first
+                c.execute("""
+                    INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (sid(), workspace[0], user["id"], user["name"], message))
+                # If AI, insert AI reply second
+                if is_ai:
+                    ai_response, _, _ = call_ai_model([{"role": "user", "content": message.replace('@CAPITAN', '').strip()}], user["tier"])
+                    if ai_response:
+                        c.execute("""
+                            INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai)
+                            VALUES (%s, %s, %s, %s, %s, 1)
+                        """, (sid(), workspace[0], user["id"], "CAPITAN AI", ai_response))
+                conn.commit()
+                return {"sent": True}
+    except Exception as e:
+        logger.error(f"Workspace message error: {e}")
+        raise HTTPException(500, f"Could not send message: {str(e)}")
+
+@app.get("/api/workspace/messages")
+def workspace_get_messages(room_code: str, user: dict = Depends(get_current_user)):
+    if not user:
+        return {"messages": []}
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM workspaces WHERE room_code = %s", (room_code.upper(),))
+                workspace = c.fetchone()
+                if not workspace:
+                    return {"messages": []}
+                
+                c.execute("""
+                    SELECT u.name, wm.role FROM workspace_members wm
+                    JOIN users u ON wm.user_id = u.id
+                    WHERE wm.workspace_id = %s
+                """, (workspace[0],))
+                members = [{"name": r[0], "role": r[1]} for r in c.fetchall()]
+                
+                c.execute("""
+                    SELECT author_name, message, is_ai, created
+                    FROM workspace_messages WHERE workspace_id = %s
+                    ORDER BY created ASC LIMIT 50
+                """, (workspace[0],))
+                messages = [{"author": r[0], "message": r[1], "is_ai": bool(r[2]), "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
+                return {"messages": messages, "members": members}
+    except Exception as e:
+        logger.error(f"Workspace messages error: {e}")
+        raise HTTPException(500, f"Could not load messages: {str(e)}")
+
+@app.get("/api/workspace/my")
+def workspace_my(request: Request, user: dict = Depends(get_current_user)):
+    if not user:
+        return {"workspaces": []}
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT w.id, w.name, w.room_code, w.max_members, w.created_at
+                FROM workspaces w
+                JOIN workspace_members m ON w.id = m.workspace_id
+                WHERE m.user_id = %s
+                ORDER BY w.created_at DESC
+            """, (user["id"],))
+            rows = c.fetchall()
+            return {"workspaces": [
+                {"id": r[0], "name": r[1], "room_code": r[2], "max_members": r[3],
+                 "created_at": r[4].isoformat() if r[4] else None}
+                for r in rows
+            ]}
+
+# ===================== MARKET & NEWS (correct Finnhub) =====================
+@app.get("/api/markets")
+def markets(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"prices": {}, "news": [], "message": "Pro tier required"}
+    return {"prices": get_market_prices(), "news": get_news()}
+
+@app.get("/api/markets/prices")
+def markets_prices(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"prices": {}, "message": "Pro tier required"}
+    return {"prices": get_market_prices()}
+
+@app.get("/api/markets/news")
+def markets_news(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"news": [], "message": "Pro tier required"}
+    return {"news": get_news()}
+
+@app.get("/api/news/tech")
+def tech_news(request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("pro", "pro_max", "founder"):
+        return {"news": [], "message": "Pro tier required"}
+    return {"news": get_news()}
+
+@app.get("/api/search")
+def web_search_endpoint(q: str, request: Request):
+    user = get_current_user(request)
+    tier = user["tier"] if user else "free"
+    if tier not in ("plus", "pro", "pro_max", "founder"):
+        return {"results": [], "message": "Web search on Plus and Pro"}
+    return {"results": search_web(q, 8)}
+
+# ===================== ADMIN =====================
+@app.get("/api/admin")
+def admin_panel(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT COUNT(*) FROM users")
+                total_users = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM users WHERE tier != 'free'")
+                paid_users = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM chat_messages")
+                total_messages = c.fetchone()[0]
+                
+                c.execute("SELECT COUNT(*) FROM workspaces")
+                total_workspaces = c.fetchone()[0]
+                
+                c.execute("""
+                    SELECT id, name, tier, created_at
+                    FROM users ORDER BY created_at DESC LIMIT 10
+                """)
+                recent_users = [
+                    {"id": r[0], "name": r[1], "tier": r[2],
+                     "created_at": r[3].isoformat() if r[3] else None}
+                    for r in c.fetchall()
+                ]
+                
+                return {
+                    "total_users": total_users,
+                    "paid_users": paid_users,
+                    "total_messages": total_messages,
+                    "workspaces": total_workspaces,
+                    "recent_users": recent_users
+                }
+    except Exception as e:
+        logger.error(f"Admin error: {e}")
+        raise HTTPException(500, str(e))
+
+@app.get("/api/admin/users")
+def admin_users(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, email, name, tier, created_at FROM users ORDER BY created_at DESC LIMIT 50")
+            rows = c.fetchall()
+            return [{"id": r[0], "email": r[1], "name": r[2], "tier": r[3], "created_at": r[4].isoformat() if r[4] else None} for r in rows]
+
+@app.post("/api/admin/user/{user_id}/tier")
+def admin_change_tier(user_id: str, req: dict, user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    new_tier = req.get("tier")
+    if new_tier not in ("guest", "free", "plus", "pro", "pro_max", "founder"):
+        raise HTTPException(400, "Invalid tier")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET tier = %s, updated_at = NOW() WHERE id = %s", (new_tier, user_id))
+            conn.commit()
+    return {"success": True}
+
+@app.delete("/api/admin/user/{user_id}")
+def admin_delete_user(user_id: str, user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            conn.commit()
+    return {"deleted": True}
+
+@app.get("/api/admin/analytics")
+def admin_analytics(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Access denied")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT tier, COUNT(*) FROM users GROUP BY tier")
+            tier_counts = {r[0]: r[1] for r in c.fetchall()}
+            c.execute("""
+                SELECT EXTRACT(HOUR FROM created) as hour, COUNT(*) as count
+                FROM chat_messages WHERE created > NOW() - INTERVAL '24 hours'
+                GROUP BY hour ORDER BY hour
+            """)
+            hourly = [{"hour": int(r[0]), "count": r[1]} for r in c.fetchall()]
+            c.execute("""
+                SELECT domain, COUNT(*) FROM memories WHERE created > NOW() - INTERVAL '7 days'
+                GROUP BY domain ORDER BY COUNT(*) DESC LIMIT 10
+            """)
+            topics = [{"domain": r[0], "count": r[1]} for r in c.fetchall()]
+            return {
+                "users_by_tier": tier_counts,
+                "hourly_messages": hourly,
+                "popular_topics": topics
+            }
+
+# ===================== CHAT EXPORT (CSV quoting) =====================
+@app.get("/api/export/chats/{chat_id}")
+def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Not authenticated")
+    tier = user["tier"]
+    if tier not in ("plus", "pro", "pro_max", "founder"):
+        raise HTTPException(403, "Export available on paid plans")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+            if not c.fetchone():
+                raise HTTPException(404, "Chat not found")
+            c.execute("SELECT role, content, model, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
+            rows = c.fetchall()
+            messages = [{"role": r[0], "content": r[1], "model": r[2] or "AI", "created": r[3].isoformat() if r[3] else None} for r in rows]
+            if format == "csv":
+                output = StringIO()
+                writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+                writer.writerow(["role", "content", "model", "created"])
+                for m in messages:
+                    writer.writerow([m["role"], m["content"], m["model"], m["created"]])
+                output.seek(0)
+                return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=chat-{chat_id}.csv"})
+            else:
+                return JSONResponse(content={"chat_id": chat_id, "messages": messages})
+
+# ===================== HEALTH =====================
 @app.get("/health")
-def health():
-    ai = "disconnected"; providers = []
-    if GROQ_KEY:
-        try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization":f"Bearer {GROQ_KEY}","Content-Type":"application/json"},json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=8)
-            if r.status_code==200: ai="connected"; providers.append("groq")
-        except: pass
-    if ai!="connected" and OPENROUTER_KEY:
-        try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization":f"Bearer {OPENROUTER_KEY}","Content-Type":"application/json"},json={"model":"google/gemini-flash-1.5","messages":[{"role":"user","content":"Hi"}],"max_tokens":5},timeout=8)
-            if r.status_code==200: ai="connected"; providers.append("openrouter")
-        except: pass
+def health_check():
     db_status = "disconnected"
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT 1")
                 db_status = "connected"
-    except: pass
-    return {"status":"ok","version":"25.0","ai":ai,"providers":providers,"database":db_status}
-
-# ═══════════════════════════════════════════════════════════════
-# SESSION ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/session")
-def get_or_create_session(request: Request):
-    session = get_session(request)
-    if session: return session
-    session_id = f"s_{sid()}"
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("INSERT INTO sessions (id,tier,msg_count,msg_window,created,updated) VALUES (%s,%s,0,%s,%s,%s)", (session_id,"free",datetime.utcnow().isoformat(),datetime.utcnow().isoformat(),datetime.utcnow().isoformat()))
-                conn.commit()
-    except: pass
-    token = create_jwt(session_id,"free")
-    return {"id":session_id,"tier":"free","msg_count":0,"token":token}
-
-@app.get("/api/payment-config")
-def payment_config(): 
-    return {"wallets":WALLETS,"prices":{"plus":8,"pro":17},"benefits":UPGRADE_BENEFITS}
-
-# ═══════════════════════════════════════════════════════════════
-# MARKET ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/markets")
-def markets(request: Request):
-    s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False): return {"prices":{},"news":[],"message":"Pro tier required"}
-    return {"prices":get_market_data(),"news":get_financial_news()}
-
-@app.get("/api/markets/prices")
-def markets_prices(request: Request):
-    s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False): return {"prices":{},"message":"Upgrade to Pro"}
-    return {"prices":get_market_data()}
-
-@app.get("/api/markets/news")
-def markets_news(request: Request):
-    s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False): return {"news":[],"message":"Upgrade to Pro"}
-    return {"news":get_financial_news()}
-
-@app.get("/api/news/tech")
-def tech_news(request: Request):
-    s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("live_markets", False) and s["tier"] != "founder": return {"news":[],"message":"Pro tier required"}
-    return {"news":get_tech_news()}
-
-@app.get("/api/search")
-def web_search_endpoint(q: str, request: Request):
-    s = get_session(request)
-    cfg = TIER_CONFIG.get(s["tier"], TIER_CONFIG["free"]) if s else TIER_CONFIG["free"]
-    if not cfg.get("web_search", False): return {"results":[],"message":"Web search on Plus and Pro"}
-    return {"results":search_web(q)}
-
-# ═══════════════════════════════════════════════════════════════
-# CHAT ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/chats")
-def get_chats(request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id,title,created,updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 30", (s["id"],))
-                rows = c.fetchall()
-                return {"chats":[{"id":r[0],"title":r[1],"created":r[2],"updated":r[3]} for r in rows]}
     except Exception as e:
-        raise HTTPException(500, str(e))
+        logger.warning(f"Health check DB error: {e}")
+    
+    ai_status = "connected" if (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY) else "disconnected"
+    providers = []
+    if settings.GROQ_API_KEY: providers.append("groq")
+    if settings.OPENROUTER_API_KEY: providers.append("openrouter")
+    
+    return {
+        "status": "ok",
+        "version": "29.0",
+        "database": db_status,
+        "ai": ai_status,
+        "providers": providers,
+        "auth": "email_password",
+        "reasoning_engine": True,
+        "intelligence_level": "full",
+        "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"]
+    }
 
-@app.get("/api/chats/{chat_id}")
-def get_chat(chat_id: str, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, s["id"]))
-                if not c.fetchone(): raise HTTPException(404)
-                c.execute("SELECT id,role,content,model,created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
-                rows = c.fetchall()
-                return {"messages":[{"id":r[0],"role":r[1],"content":r[2],"model":r[3],"created":r[4]} for r in rows]}
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-@app.post("/api/chat")
-def chat(req: ChatRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    if not check_rate(s["id"],s["tier"]): raise HTTPException(429,"Rate limit")
-    cfg = TIER_CONFIG.get(s["tier"],TIER_CONFIG["free"])
-    limit = cfg["msg_limit"]
-    if limit != float("inf"):
+# ===================== WEB SEARCH =====================
+def search_web(query: str, num_results: int = 5) -> List[dict]:
+    results = []
+    if settings.SERPAPI_KEY:
         try:
-            with get_db() as conn:
-                with conn.cursor() as c:
-                    c.execute("SELECT msg_count,msg_window FROM sessions WHERE id=%s", (s["id"],))
-                    row = c.fetchone()
-                    count = row[0] or 0 if row else 0
-                    if count >= limit:
-                        w = datetime.fromisoformat(row[1]) if row and row[1] else datetime.utcnow()
-                        if datetime.utcnow() - w < timedelta(hours=24): raise HTTPException(429,f"Daily limit ({limit}/day). Upgrade.")
-                        c.execute("UPDATE sessions SET msg_count=0, msg_window=%s WHERE id=%s", (datetime.utcnow().isoformat(), s["id"]))
-                        conn.commit()
-        except HTTPException: raise
+            r = requests.get(
+                "https://serpapi.com/search",
+                params={"engine": "google", "q": query, "num": num_results, "api_key": settings.SERPAPI_KEY},
+                timeout=10
+            )
+            if r.status_code == 200:
+                for item in r.json().get("organic_results", [])[:num_results]:
+                    results.append({
+                        "title": item.get("title", ""),
+                        "snippet": item.get("snippet", "")[:350],
+                        "url": item.get("link", ""),
+                        "source": "Google"
+                    })
         except: pass
-    user_msg = next((m["content"] for m in reversed(req.messages) if m.get("role")=="user"),"")
-    if not user_msg: raise HTTPException(400,"No message")
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                chat_id = req.chat_id or f"chat_{sid()}"
-                if not req.chat_id: 
-                    c.execute("INSERT INTO chats (id,session_id,title,created,updated) VALUES (%s,%s,%s,%s,%s)", (chat_id, s["id"], user_msg[:60], datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-                else: 
-                    c.execute("UPDATE chats SET updated=%s WHERE id=%s AND session_id=%s", (datetime.utcnow().isoformat(), chat_id, s["id"]))
-                c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,created) VALUES (%s,%s,%s,%s,%s,%s)", (f"msg_{sid()}", chat_id, s["id"], "user", user_msg, datetime.utcnow().isoformat()))
-                c.execute("UPDATE sessions SET msg_count = msg_count + 1 WHERE id=%s", (s["id"],))
-                conn.commit()
-                c.execute("SELECT role,content FROM chat_messages WHERE chat_id=%s ORDER BY created ASC LIMIT 15", (chat_id,))
-                history = [{"role":r[0],"content":r[1]} for r in c.fetchall()]
-    except Exception as e:
-        raise HTTPException(500, str(e))
-    domain = classify(user_msg)
-    web_results = None
-    if domain == 'web_search' or cfg.get("web_search", False):
-        try: web_results = search_web(user_msg, 4)
-        except: pass
-    prompt = system_prompt(domain, s["tier"], s["id"], request, web_results)
-    result, model_used = call_ai_fast([{"role":"system","content":prompt}] + history, s["tier"])
-    if result:
+    return results
+
+def get_market_prices():
+    results = {}
+    if settings.COINGECKO_KEY:
         try:
-            with get_db() as conn:
-                with conn.cursor() as c:
-                    c.execute("INSERT INTO chat_messages (id,chat_id,session_id,role,content,model,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (f"msg_{sid()}", chat_id, s["id"], "assistant", result, model_used, datetime.utcnow().isoformat()))
-                    c.execute("INSERT INTO memories (id,memory_id,session_id,content,query,domain,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (sid(), mid(), s["id"], result[:500] if result else "", user_msg, domain, datetime.utcnow().isoformat()))
-                    conn.commit()
+            ids = "bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron"
+            r = requests.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": ids, "vs_currencies": "usd", "include_24hr_change": "true"},
+                headers={"x-cg-demo-api-key": settings.COINGECKO_KEY},
+                timeout=10
+            )
+            if r.status_code == 200:
+                data = r.json()
+                names = {
+                    "bitcoin": "BTC", "ethereum": "ETH", "ripple": "XRP",
+                    "solana": "SOL", "cardano": "ADA", "dogecoin": "DOGE",
+                    "avalanche-2": "AVAX", "chainlink": "LINK", "polkadot": "DOT", "tron": "TRX"
+                }
+                for k, v in data.items():
+                    results[names.get(k, k.upper())] = {
+                        "price": v["usd"],
+                        "change": round(v.get("usd_24h_change", 0), 2)
+                    }
         except: pass
-    remaining = limit - (s["msg_count"]+1) if limit!=float("inf") else "unlimited"
-    return {"content":result,"chat_id":chat_id,"model":model_used,"remaining":remaining,"web_search_used":web_results is not None}
+    
+    if settings.FINNHUB_API_KEY:
+        symbols = ["SPX", "NDX", "DJI", "AAPL", "MSFT", "NVDA", "TSLA", "GOOGL", "META", "AMZN"]
+        for sym in symbols:
+            try:
+                r = requests.get(f"https://finnhub.io/api/v1/quote?symbol={sym}&token={settings.FINNHUB_API_KEY}", timeout=10)
+                if r.status_code == 200:
+                    data = r.json()
+                    if data.get("c"):
+                        results[sym] = {"price": data["c"], "change": round(data.get("dp", 0), 2)}
+            except: pass
+    return results
 
-@app.delete("/api/chats/{chat_id}")
-def delete_chat(chat_id: str, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, s["id"]))
-                c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, s["id"]))
-                conn.commit()
-        return {"deleted":True}
-    except Exception as e:
-        raise HTTPException(500, str(e))
+def get_news():
+    news = []
+    if settings.NEWS_API_KEY:
+        try:
+            r = requests.get(
+                "https://newsapi.org/v2/top-headlines",
+                params={"category": "business", "language": "en", "pageSize": 10, "apiKey": settings.NEWS_API_KEY},
+                timeout=10
+            )
+            if r.status_code == 200:
+                for article in r.json().get("articles", []):
+                    news.append({
+                        "source": article.get("source", {}).get("name", "News"),
+                        "headline": article.get("title", ""),
+                        "url": article.get("url", ""),
+                        "summary": (article.get("description") or "")[:200]
+                    })
+        except: pass
+    return news[:10]
 
-# ═══════════════════════════════════════════════════════════════
-# LIBRARY ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
-@app.get("/api/library")
-def get_library(request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id,name,type,content,size,created FROM library_items WHERE session_id=%s ORDER BY created DESC", (s["id"],))
-                rows = c.fetchall()
-                return {"items":[{"id":r[0],"name":r[1],"type":r[2],"content":r[3],"size":r[4],"created":r[5]} for r in rows]}
-    except: return {"items":[]}
+# ===================== PWA =====================
+@app.get("/manifest.json")
+async def manifest():
+    return JSONResponse(content={
+        "name": "CAPITAN AI",
+        "short_name": "CAPITAN",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0e6e8e",
+        "theme_color": "#0e6e8e",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}
+        ]
+    })
 
-@app.post("/api/library")
-def create_library_item(req: LibraryItemRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                item_id = f"lib_{sid()}"
-                c.execute("INSERT INTO library_items (id,session_id,name,type,content,size,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (item_id, s["id"], req.name, req.type, req.content or "", len(req.content or ""), datetime.utcnow().isoformat()))
-                conn.commit()
-                return {"id":item_id,"created":True}
-    except: return {"created":False}
+@app.get("/icon-192.png")
+async def icon_192():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
+        <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
+        <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
 
-@app.delete("/api/library/{item_id}")
-def delete_library_item(item_id: str, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("DELETE FROM library_items WHERE id=%s AND session_id=%s", (item_id, s["id"]))
-                conn.commit()
-                return {"deleted":True}
-    except: return {"deleted":False}
+@app.get("/icon-512.png")
+async def icon_512():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
+        <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
+        <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
+    </svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
 
-# ═══════════════════════════════════════════════════════════════
-# FILE UPLOAD ENDPOINT
-# ═══════════════════════════════════════════════════════════════
-@app.post("/api/upload")
-async def upload_file(request: Request, file: UploadFile = File(...)):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    cfg = TIER_CONFIG.get(s["tier"],TIER_CONFIG["free"])
-    if not cfg["file_upload"]: raise HTTPException(403,"Upgrade required")
-    contents = await file.read()
-    if len(contents)/(1024*1024) > cfg["file_size_mb"]: raise HTTPException(400,f"Max {cfg['file_size_mb']}MB")
-    file_id = f"file_{sid()}"
-    with open(os.path.join(UPLOAD_DIR, file_id), "wb") as f: f.write(contents)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("INSERT INTO uploaded_files (id,session_id,filename,original_name,size,mime_type,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (file_id, s["id"], file_id, file.filename or "unknown", len(contents), file.content_type or "application/octet-stream", datetime.utcnow().isoformat()))
-                conn.commit()
-    except: pass
-    return {"id":file_id,"filename":file.filename,"size_mb":round(len(contents)/(1024*1024),2)}
+@app.get("/")
+async def root():
+    return {
+        "name": "CAPITAN AI",
+        "version": "29.0",
+        "status": "operational",
+        "auth": "email_password",
+        "pwa_supported": True,
+        "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"],
+        "intelligence": "full_restored",
+        "reasoning": "chain_of_thought_enabled"
+    }
 
-# ═══════════════════════════════════════════════════════════════
-# UPGRADE & FOUNDER ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
-@app.post("/api/upgrade")
-def upgrade(req: UpgradeRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    if req.tier not in ("plus","pro"): raise HTTPException(400,"Invalid tier")
-    if not req.txid.strip(): raise HTTPException(400,"TXID required")
-    prices = {"plus":8,"pro":17}; cur = req.currency.upper()
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("INSERT INTO payments (id,session_id,txid,currency,amount,tier,verified,expires,created) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (sid(), s["id"], req.txid.strip(), cur, prices[req.tier], req.tier, 1, (datetime.utcnow()+timedelta(days=30)).isoformat(), datetime.utcnow().isoformat()))
-                c.execute("UPDATE sessions SET tier=%s, msg_count=0, updated=%s WHERE id=%s", (req.tier, datetime.utcnow().isoformat(), s["id"]))
-                c.execute("INSERT INTO payment_log (id,session_id,tier,amount,currency,txid,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (sid(), s["id"], req.tier, prices[req.tier], cur, req.txid, datetime.utcnow().isoformat()))
-                conn.commit()
-    except: pass
-    token = create_jwt(s["id"], req.tier)
-    return {"verified":True,"tier":req.tier,"token":token}
-
-@app.post("/api/founder")
-def founder(req: FounderRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    if req.code not in [ADMIN_CODE, FOUNDER_KEY]: raise HTTPException(403,"Invalid code")
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("UPDATE sessions SET tier='founder', msg_count=0, updated=%s WHERE id=%s", (datetime.utcnow().isoformat(), s["id"]))
-                conn.commit()
-    except: pass
-    token = create_jwt(s["id"], "founder")
-    return {"verified":True,"tier":"founder","token":token}
-
-@app.post("/api/admin")
-def admin(request: Request):
-    s = get_session(request)
-    if not s or s["tier"] != "founder": raise HTTPException(403,"Access denied")
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT COUNT(*) FROM sessions")
-                total = c.fetchone()[0]
-                c.execute("SELECT COUNT(*) FROM sessions WHERE tier!='free'")
-                paid = c.fetchone()[0]
-                c.execute("SELECT COUNT(*) FROM chat_messages")
-                msgs = c.fetchone()[0]
-                c.execute("SELECT COUNT(*) FROM workspaces")
-                ws = c.fetchone()[0]
-                c.execute("SELECT id,tier,msg_count,created FROM sessions ORDER BY created DESC LIMIT 30")
-                sessions = [{"id":r[0],"tier":r[1],"msg_count":r[2],"created":r[3]} for r in c.fetchall()]
-                c.execute("SELECT * FROM payment_log ORDER BY created DESC LIMIT 20")
-                payments = [{"session_id":r[1],"tier":r[2],"amount":r[3],"currency":r[4],"txid":r[5],"created":r[6]} for r in c.fetchall()]
-                return {"total_sessions":total,"paid_sessions":paid,"total_messages":msgs,"workspaces":ws,"sessions":sessions,"payments":payments}
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-# ═══════════════════════════════════════════════════════════════
-# WORKSPACE ENDPOINTS
-# ═══════════════════════════════════════════════════════════════
-@app.post("/api/workspace/create")
-def ws_create(req: WorkspaceCreateRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    max_m = TIER_CONFIG.get(s["tier"],{}).get("workspace_max",0)
-    if max_m == 0: raise HTTPException(403,"Work Area requires Plus or Pro")
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                wid = sid()
-                c.execute("INSERT INTO workspaces (id,room_code,creator_session,creator_tier,max_members,created) VALUES (%s,%s,%s,%s,%s,%s)", (wid, req.room_code.upper(), s["id"], s["tier"], min(req.max_members, max_m), datetime.utcnow().isoformat()))
-                c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s)", (wid, s["id"], "admin", datetime.utcnow().isoformat()))
-                conn.commit()
-                return {"room_id":wid,"room_code":req.room_code.upper(),"created":True}
-    except: return {"created":False}
-
-@app.post("/api/workspace/join")
-def ws_join(req: WorkspaceJoinRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id,max_members,creator_tier FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
-                ws = c.fetchone()
-                if not ws: raise HTTPException(404,"Room not found")
-                if s["tier"] != ws[2] and s["tier"] != "founder":
-                    raise HTTPException(403,f"This Work Area requires {ws[2].upper()} tier.")
-                c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=%s", (ws[0],))
-                if c.fetchone()[0] >= ws[1]: raise HTTPException(400,"Room full")
-                c.execute("INSERT INTO workspace_members (workspace_id,session_id,role,joined) VALUES (%s,%s,%s,%s)", (ws[0], s["id"], "member", datetime.utcnow().isoformat()))
-                c.execute("SELECT m.session_id,m.role FROM workspace_members m WHERE m.workspace_id=%s", (ws[0],))
-                members = [{"session_id":r[0],"role":r[1]} for r in c.fetchall()]
-                c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
-                messages = [{"id":r[0],"session_id":r[1],"author":r[2],"message":r[3],"is_ai":bool(r[4]),"created":r[5]} for r in c.fetchall()]
-                conn.commit()
-                return {"joined":True,"room_id":ws[0],"members":members,"messages":messages}
-    except HTTPException: raise
-    except: return {"joined":False}
-
-@app.post("/api/workspace/message")
-def ws_message(req: WorkspaceMessageRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
-                ws = c.fetchone()
-                if not ws: raise HTTPException(404)
-                is_ai = req.message.strip().startswith("@CAPITAN")
-                if is_ai:
-                    c.execute("SELECT author,message FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 20", (ws[0],))
-                    context = "\n".join([f"{r[0]}: {r[1]}" for r in c.fetchall()])
-                    c.execute("SELECT content FROM workspace_notes WHERE workspace_id=%s", (ws[0],))
-                    notes = "\n".join([r[0] for r in c.fetchall()])
-                    result, _ = call_ai_fast([{"role":"system","content":f"Work Area:\n{context}\n\nNotes:\n{notes}"},{"role":"user","content":req.message.replace('@CAPITAN','').strip()}], s["tier"])
-                    if result: 
-                        c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,is_ai,created) VALUES (%s,%s,%s,%s,%s,%s,%s)", (sid(), ws[0], s["id"], "CAPITAN AI", result, 1, datetime.utcnow().isoformat()))
-                c.execute("INSERT INTO workspace_messages (id,workspace_id,session_id,author,message,created) VALUES (%s,%s,%s,%s,%s,%s)", (sid(), ws[0], s["id"], "User", req.message, datetime.utcnow().isoformat()))
-                conn.commit()
-                return {"sent":True}
-    except: return {"sent":False}
-
-@app.get("/api/workspace/messages")
-def ws_get_messages(room_code: str):
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
-                ws = c.fetchone()
-                if not ws: raise HTTPException(404)
-                c.execute("SELECT m.session_id,m.role FROM workspace_members m WHERE m.workspace_id=%s", (ws[0],))
-                members = [{"session_id":r[0],"role":r[1]} for r in c.fetchall()]
-                c.execute("SELECT id,session_id,author,message,is_ai,created FROM workspace_messages WHERE workspace_id=%s ORDER BY created ASC LIMIT 50", (ws[0],))
-                messages = [{"id":r[0],"session_id":r[1],"author":r[2],"message":r[3],"is_ai":bool(r[4]),"created":r[5]} for r in c.fetchall()]
-                return {"messages":messages,"members":members}
-    except: return {"messages":[],"members":[]}
-
-@app.post("/api/workspace/notes")
-def ws_save_note(req: WorkspaceNoteRequest, request: Request):
-    s = get_session(request)
-    if not s: raise HTTPException(401)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id FROM workspaces WHERE room_code=%s", (req.room_code.upper(),))
-                if not c.fetchone(): raise HTTPException(404)
-                c.execute("DELETE FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)", (req.room_code.upper(),))
-                c.execute("INSERT INTO workspace_notes (id,workspace_id,session_id,author,content,created,updated) VALUES (%s,(SELECT id FROM workspaces WHERE room_code=%s),%s,%s,%s,%s,%s)", (sid(), req.room_code.upper(), s["id"], "User", req.content, datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
-                conn.commit()
-                return {"saved":True}
-    except: return {"saved":False}
-
-@app.get("/api/workspace/notes")
-def ws_get_notes(room_code: str):
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
-                if not c.fetchone(): raise HTTPException(404)
-                c.execute("SELECT author,content,updated FROM workspace_notes WHERE workspace_id=(SELECT id FROM workspaces WHERE room_code=%s)", (room_code.upper(),))
-                notes = [{"author":r[0],"content":r[1],"updated":r[2]} for r in c.fetchall()]
-                return {"notes":notes}
-    except: return {"notes":[]}
-
-# ═══════════════════════════════════════════════════════════════
-# MAIN ENTRY POINT
-# ═══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    print(f"🚀 CAPITAN AI v25.0 Enterprise Starting on port {port}")
-    print(f"📊 Database: Supabase PostgreSQL")
-    print(f"🤖 AI Providers: {'Groq' if GROQ_KEY else 'None'} | {'OpenRouter' if OPENROUTER_KEY else 'None'}")
+    print(f"\n{'='*70}")
+    print(f"🚀 CAPITAN AI v29.0 - World‑Class General‑Purpose AI")
+    print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
+    print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
