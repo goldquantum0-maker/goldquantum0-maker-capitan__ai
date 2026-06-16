@@ -1,9 +1,10 @@
 """
-CAPITAN AI — Enterprise Backend v31.1 (Full Notifications + Workspace Alerts)
+CAPITAN AI — Enterprise Backend v31.2 (Conversation‑Mode Fix)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Intent‑Driven | Trustworthy | Warm & Engaging
-Full task/intent routing, content generation mode, conversation continuity.
-Self‑learning pipeline, feedback, fine‑tuning, dynamic icons, and now complete notifications.
+Task/intent routing, content generation mode, conversation continuity.
+Self‑learning pipeline, feedback, fine‑tuning, dynamic icons, full notifications.
+FIXED: Casual greetings now use natural conversational tone instead of rigid structure.
 All original features intact.
 """
 
@@ -22,7 +23,7 @@ from pydantic_settings import BaseSettings
 import psycopg2
 import uvicorn
 
-app = FastAPI(title="CAPITAN AI API", version="31.1")
+app = FastAPI(title="CAPITAN AI API", version="31.2")
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -829,8 +830,6 @@ Capabilities:
 - Risk Management
 - Portfolio Construction
 - Algorithmic Trading
-- African Finance
-- Global Finance
 
 When discussing markets:
 
@@ -942,6 +941,10 @@ Only offer what is genuinely useful.
 # ===================== TASK CLASSIFIER =====================
 def classify_task(q: str) -> str:
     q_lower = q.lower()
+    # Pure greetings override
+    if re.search(r'^(hello|hi|hey|good morning|good afternoon|good evening|greetings)\b', q_lower) and len(q_lower.split()) < 4:
+        return "Conversation"
+
     content_kw = [
         "landing page", "website", "homepage", "service page", "about page",
         "pricing page", "copywriting", "write a", "generate a", "create a",
@@ -1103,6 +1106,7 @@ def build_system_prompt(domain: str, tier: str, model: str,
     if user_query:
         base += f"\n\nUSER REQUEST: {user_query}"
 
+    # Task mode instructions
     if task_type == "Content Creation":
         base += "\n\n[MODE: CONTENT CREATION]\nYou are generating content directly. Produce the requested output without asking follow‑up questions unless you absolutely need a critical detail. Do not enter conversational mode. Format the output cleanly."
     elif task_type == "Financial Analysis":
@@ -1119,6 +1123,8 @@ def build_system_prompt(domain: str, tier: str, model: str,
         base += "\n\n[MODE: EDUCATOR]\nExplain concepts clearly. Use analogies and examples. Check for understanding."
     elif task_type == "Problem Solving":
         base += "\n\n[MODE: PROBLEM SOLVING]\nDiagnose the root cause. Propose actionable fixes. Anticipate related issues."
+    elif task_type == "Conversation":
+        base += "\n\n[MODE: CONVERSATION]\nYou are having a casual, natural conversation. Do NOT use the structured response format (Context, Analysis, Recommendation, Next Step). Be warm, concise, and human. Respond directly to what the user said."
 
     if tier == "founder" and settings.FOUNDER_EXTRA_PROMPT:
         base += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
@@ -1151,7 +1157,7 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     rate_store[store_key].append(now)
     return True
 
-# ===================== DAILY LIMIT (NOW WITH WARNING NOTIFICATION) =====================
+# ===================== DAILY LIMIT (WITH WARNING NOTIFICATION) =====================
 def enforce_daily_limit(user: dict = None, session: dict = None):
     today = datetime.now(timezone.utc).date()
     if user:
@@ -2500,7 +2506,7 @@ def health_check():
     
     return {
         "status": "ok",
-        "version": "31.1",
+        "version": "31.2",
         "database": db_status,
         "ai": ai_status,
         "providers": providers,
@@ -2645,7 +2651,7 @@ async def icon_180():
 async def root():
     return {
         "name": "CAPITAN AI",
-        "version": "31.1",
+        "version": "31.2",
         "status": "operational",
         "auth": "email_password",
         "pwa_supported": True,
@@ -2653,13 +2659,14 @@ async def root():
         "intelligence": "self_learning",
         "reasoning": "chain_of_thought_enabled",
         "task_routing": True,
-        "notifications": True
+        "notifications": True,
+        "conversation_mode_fixed": True
     }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v31.1 - Full Notification Engine Active")
+    print(f"🚀 CAPITAN AI v31.2 - Natural Conversation Mode Active")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
