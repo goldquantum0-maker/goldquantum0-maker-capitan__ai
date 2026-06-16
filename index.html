@@ -1632,35 +1632,64 @@
 
     // Init
     async function init() {
-    // Backup: force-hide the splash after 8 seconds no matter what
-    setTimeout(() => {
-        let splash = document.getElementById('splashScreen');
-        if (splash) splash.classList.add('hide');
-    }, 8000);
+    try {
+        setTheme(state.theme);
 
-    setTheme(state.theme);
-    if (localStorage.getItem('session_expired') && !state.token) {
-        document.getElementById('sessionExpiredMsg').style.display = 'block';
-        localStorage.removeItem('session_expired');
+        if (localStorage.getItem('session_expired') && !state.token) {
+            let msg = document.getElementById('sessionExpiredMsg');
+            if (msg) msg.style.display = 'block';
+            localStorage.removeItem('session_expired');
+        }
+
+        if (state.token) {
+            try {
+                await initSession();
+                await loadChats();
+                renderMessages();
+                updateUIBasedOnTier();
+                loadWorkspaces();
+            } catch (e) {
+                console.warn('Session init failed, continuing anyway', e);
+            }
+        }
+
+        // Attach event listeners
+        let toggleBtn = document.getElementById('toggleSidebarBtn');
+        if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+
+        // Also attach sidebar close on outside click
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768 &&
+                document.getElementById('sidebar').classList.contains('open') &&
+                !document.getElementById('sidebar').contains(e.target) &&
+                !document.getElementById('toggleSidebarBtn').contains(e.target)) {
+                closeSidebar();
+            }
+        });
+
+        let textarea = document.getElementById('messageInput');
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            });
+        }
+
+        setupScrollButton();
+
+    } catch (e) {
+        console.error('Init error:', e);
     }
+
+    // Always hide splash and show the app, even if there were errors
+    let splash = document.getElementById('splashScreen');
+    if (splash) splash.classList.add('hide');
+
     if (state.token) {
         document.getElementById('authContainer').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
-        await initSession();
-        await loadChats();
-        renderMessages();
-        updateUIBasedOnTier();
-        loadWorkspaces();
     }
-    document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
-    document.addEventListener('click', (e) => { if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') && !document.getElementById('sidebar').contains(e.target) && !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar(); });
-    const textarea = document.getElementById('messageInput');
-    textarea.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 100) + 'px'; });
-    setupScrollButton();
-    // Normal splash fade-out (still works even with backup)
-    setTimeout(() => { let splash = document.getElementById('splashScreen'); if (splash) splash.classList.add('hide'); }, 1600);
 }
-    init();
 </script>
 </body>
 </html>
