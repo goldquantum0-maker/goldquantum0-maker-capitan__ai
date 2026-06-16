@@ -22,6 +22,9 @@ import uvicorn
 
 app = FastAPI(title="CAPITAN AI API", version="29.0")
 
+from fastapi.staticfiles import StaticFiles
+app.mount("/icons", StaticFiles(directory="icons"), name="icons")
+
 class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
@@ -1829,23 +1832,7 @@ async def manifest():
         ]
     })
 
-@app.get("/icon-192.png")
-async def icon_192():
-    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-        <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
-        <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
-        <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
-    </svg>'''
-    return Response(content=svg, media_type="image/svg+xml")
 
-@app.get("/icon-512.png")
-async def icon_512():
-    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-        <rect width="100" height="100" fill="#0e6e8e" rx="20"/>
-        <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="6"/>
-        <text x="50" y="68" text-anchor="middle" font-size="50" fill="white" font-family="Arial,sans-serif" font-weight="bold">C</text>
-    </svg>'''
-    return Response(content=svg, media_type="image/svg+xml")
 
 @app.get("/")
 async def root():
