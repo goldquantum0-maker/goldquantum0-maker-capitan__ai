@@ -7,13 +7,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0e6e8e">
     <title>CAPITAN AI — Enterprise Intelligence</title>
-    <!-- PWA manifest (adjust icon paths inside this file for real PNGs) -->
     <link rel="manifest" href="https://capitan-ai-jxu8.onrender.com/manifest.json">
-    <!-- Static icons (place the actual files in your public folder) -->
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/icon-180.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
+        /* All existing CSS unchanged */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root {
             --bg-primary-light:#ffffff; --bg-secondary-light:#f8fafc; --bg-tertiary-light:#f1f5f9;
@@ -42,7 +41,7 @@
         @media (min-width:769px){ .sidebar.collapsed { transform:translateX(calc(-1 * 270px)); position:fixed; height:100%; } }
         @media (max-width:768px){ .sidebar { position:fixed; left:0; top:0; height:100%; width:100%; max-width:320px; transform:translateX(-100%); z-index:40; box-shadow:20px 0 40px rgba(0,0,0,0.3); } .sidebar.open { transform:translateX(0); } .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:35; display:none; } .overlay.open { display:block; } }
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-        .sidebar-brand { padding:18px 16px 10px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; color:var(--text-primary); letter-spacing:-0.3px; cursor:pointer; user-select:none; }
+        .sidebar-brand { padding:18px 16px 10px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; color:var(--text-primary); letter-spacing:-0.3px; cursor:pointer; user-select:none; position:relative; }
         .sidebar-brand svg { width:26px; height:15px; }
         .top-bar { position:fixed; top:12px; right:12px; z-index:45; display:flex; justify-content:flex-end; align-items:center; pointer-events:none; }
         .toggle-sidebar { pointer-events:auto; background:var(--surface); border:1px solid var(--border); border-radius:40px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s cubic-bezier(0.4,0,0.2,1); color:var(--text-secondary); box-shadow:var(--shadow-sm); }
@@ -180,11 +179,117 @@
         .success-msg { color:#10b981; font-size:10px; margin:-8px 0 10px; display:none; }
         .scroll-to-bottom { position:fixed; bottom:90px; right:26px; width:36px; height:36px; border-radius:50%; background:var(--accent-glow); border:1.5px solid var(--accent); color:var(--accent); box-shadow:0 2px 8px rgba(56,189,248,0.3); display:none; align-items:center; justify-content:center; cursor:pointer; z-index:50; transition:all 0.2s; }
         .scroll-to-bottom:hover { transform:scale(1.05); background:var(--accent); color:white; }
+
+        /* ===================== NOTIFICATION STYLES ===================== */
+        .notif-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            display: none;
+            box-shadow: 0 0 6px rgba(239,68,68,0.5);
+            z-index: 5;
+        }
+        .pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            animation: pulseRing 1.8s ease-out infinite;
+            pointer-events: none;
+            display: none;
+        }
+        @keyframes pulseRing {
+            0% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+        }
+        .notif-panel {
+            position: fixed;
+            top: 0;
+            right: -390px;
+            width: 370px;
+            max-width: 90%;
+            height: 100vh;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+            z-index: 200;
+            transition: right 0.3s cubic-bezier(0.2,0.9,0.4,1.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .notif-panel.open { right: 0; }
+        .notif-panel h3 { margin-bottom: 16px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .notif-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            cursor: default;
+            transition: background 0.2s;
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+        .notif-item:hover { background: var(--bg-tertiary); }
+        .notif-item.unread { background: var(--accent-glow); border-left: 3px solid var(--accent); }
+        .notif-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+            background: var(--bg-tertiary);
+        }
+        .notif-message { flex: 1; line-height: 1.4; }
+        .notif-time { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+        .notif-delete {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 4px;
+            opacity: 0.6;
+            border-radius: 4px;
+        }
+        .notif-delete:hover { color: #ef4444; opacity: 1; background: rgba(239,68,68,0.1); }
+        .notif-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .notif-empty {
+            text-align: center;
+            color: var(--text-tertiary);
+            margin-top: 40px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
 
-<!-- Splash screen with new logo -->
+<!-- Splash screen -->
 <div class="splash" id="splashScreen">
     <svg class="splash-logo" viewBox="0 0 640 360">
         <rect width="640" height="360" fill="#0e6e8e"/>
@@ -236,9 +341,11 @@
 <!-- Main App -->
 <div id="app" class="app">
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand" id="founderClickTarget">
+        <div class="sidebar-brand" id="notificationTrigger">
             <svg viewBox="0 0 640 360"><rect width="640" height="360" fill="#0e6e8e"/><circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/><text x="320" y="205" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text></svg>
             CAPITAN AI
+            <span class="notif-badge" id="notifBadge"></span>
+            <div class="pulse-ring" id="pulseRing"></div>
         </div>
         <div class="new-chat-btn" onclick="newChat()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -248,7 +355,6 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             <span>Saved <span id="savedCount" style="font-size:9px; opacity:0.7;"></span></span>
         </div>
-        <!-- Workspaces (visible for Plus+) -->
         <div id="workspaceSection" style="display:none;">
             <div class="collapsible-header" onclick="toggleCollapsible('workspace')">
                 <span>Work Areas</span>
@@ -296,7 +402,6 @@
         <div class="chat-history" id="chatHistoryList">
             <div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">Sign in to see recent chats</div>
         </div>
-        <!-- Guest buttons -->
         <div id="guestButtons" style="display:none;">
             <button class="guest-action-btn" onclick="openGuestLoginModal()">Sign in</button>
             <button class="guest-action-btn" onclick="openGuestSignupModal()">Create account</button>
@@ -314,7 +419,6 @@
     </aside>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
     
-    <!-- Top bar -->
     <div class="top-bar">
         <button class="toggle-sidebar" id="toggleSidebarBtn">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
@@ -345,9 +449,21 @@
     <button class="scroll-to-bottom" id="scrollToBottomBtn" onclick="document.getElementById('messagesArea').scrollTo({top: document.getElementById('messagesArea').scrollHeight, behavior:'smooth'})">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
+
+    <!-- Notification Slide-out Panel -->
+    <div class="notif-panel" id="notifPanel">
+        <h3>
+            Notifications
+            <button onclick="markAllRead()" style="font-size:11px; background:var(--accent); border:none; color:white; padding:4px 12px; border-radius:20px; cursor:pointer;">Mark all read</button>
+        </h3>
+        <div id="notifList"></div>
+        <div class="notif-actions">
+            <button class="btn btn-outline" onclick="closeNotifPanel()">Close</button>
+        </div>
+    </div>
 </div>
 
-<!-- Modals (unchanged) -->
+<!-- Modals -->
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
 <div id="upgradeModal" class="modal-overlay"><div class="modal" id="upgradeModalContent"></div></div>
 <div id="libraryModal" class="modal-overlay"><div class="modal saved-modal" id="libraryModalContent"></div></div>
@@ -403,7 +519,6 @@
         return null;
     }
 
-    // Restore token from cookie if localStorage lost it
     if (!state.token) {
         let cookieToken = getCookie('ct');
         if (cookieToken) {
@@ -541,7 +656,7 @@
         }
     }
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('founderClickTarget').addEventListener('click', handleFounderClick);
+        document.getElementById('notificationTrigger').addEventListener('click', handleFounderClick);
     });
 
     async function openFounderDashboard() {
@@ -574,6 +689,7 @@
                 closeModal('founderModal');
                 toast('Founder status activated!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
                 await loadChats();
+                await fetchNotifications();
             } else { toast('Activation failed: ' + (data.detail || 'Unknown error')); }
         } catch(e) {
             let msg = 'Activation failed';
@@ -760,7 +876,8 @@
             updateProfileUI();
             updateUIBasedOnTier();
             loadWorkspaces();
-            await loadChats(); // ensure recent chats appear after session init
+            await loadChats();
+            await fetchNotifications();
         } catch(e) {
             console.warn('Session init failed, using stored user');
             if (state.token && state.user) {
@@ -768,6 +885,7 @@
                 updateUIBasedOnTier();
                 loadWorkspaces();
                 await loadChats();
+                await fetchNotifications();
             }
         }
     }
@@ -788,7 +906,7 @@
             document.getElementById('chatHistoryList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">Sign in to see recent chats</div>';
         }
         loadWorkspaces();
-        renderChatHistory(); // refresh sidebar visibility
+        renderChatHistory();
     }
     async function uploadProfilePhoto() {
         if (!state.user) { toast('Sign in to change photo'); return; }
@@ -1020,6 +1138,7 @@
             updateUIBasedOnTier();
             closeModal('upgradeModal');
             toast(`Upgraded to ${state.selectedTier.toUpperCase()}!`, '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>');
+            await fetchNotifications();
         } catch(e) { toast('Verification failed'); }
     }
 
@@ -1241,6 +1360,7 @@
                 closeModal('guestSignupModal');
                 toast('Account created! Welcome to CAPITAN AI.');
                 await loadChats();
+                await fetchNotifications();
             } else {
                 errorDiv.innerText = data.detail || 'Signup failed';
                 errorDiv.style.display = 'block';
@@ -1282,6 +1402,7 @@
                 closeModal('guestLoginModal');
                 toast(`Welcome back, ${state.user?.name || email.split('@')[0]}!`);
                 await loadChats();
+                await fetchNotifications();
             } else {
                 errorDiv.innerText = data.detail || 'Login failed';
                 errorDiv.style.display = 'block';
@@ -1390,6 +1511,116 @@
         location.reload();
     }
 
+    // ===================== NOTIFICATION UI =====================
+    let notifications = [];
+    let unreadCount = 0;
+
+    async function fetchNotifications() {
+        if (!state.token) return;
+        try {
+            const res = await fetch(`${CFG.API}/api/notifications`, {
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            const data = await res.json();
+            notifications = data.notifications || [];
+            unreadCount = notifications.filter(n => !n.read).length;
+            updateNotifBadge();
+            if (document.getElementById('notifPanel').classList.contains('open')) {
+                renderNotifList();
+            }
+        } catch(e) {}
+    }
+
+    function updateNotifBadge() {
+        const badge = document.getElementById('notifBadge');
+        const ring = document.getElementById('pulseRing');
+        if (!badge || !ring) return;
+        if (unreadCount > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            ring.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+            ring.style.display = 'none';
+        }
+    }
+
+    function openNotifPanel() {
+        document.getElementById('notifPanel').classList.add('open');
+        renderNotifList();
+    }
+
+    function closeNotifPanel() {
+        document.getElementById('notifPanel').classList.remove('open');
+    }
+
+    function renderNotifList() {
+        const container = document.getElementById('notifList');
+        if (!container) return;
+        if (notifications.length === 0) {
+            container.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+            return;
+        }
+        container.innerHTML = notifications.map(n => {
+            const iconMap = {
+                info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌',
+                workspace: '🏢', system: '💡'
+            };
+            const icon = iconMap[n.type] || '🔔';
+            const date = new Date(n.created).toLocaleString();
+            return `
+                <div class="notif-item ${n.read ? '' : 'unread'}">
+                    <div class="notif-icon">${icon}</div>
+                    <div class="notif-message">
+                        <div>${escapeHtml(n.message)}</div>
+                        <div class="notif-time">${date}</div>
+                    </div>
+                    <button class="notif-delete" onclick="deleteNotification('${n.id}')">✕</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function markAllRead() {
+        try {
+            await fetch(`${CFG.API}/api/notifications/mark-read`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            await fetchNotifications();
+        } catch(e) {}
+    }
+
+    async function deleteNotification(id) {
+        try {
+            await fetch(`${CFG.API}/api/notifications/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            await fetchNotifications();
+        } catch(e) {}
+    }
+
+    // Override logo click to handle notifications and founder activation
+    document.getElementById('notificationTrigger').addEventListener('click', (e) => {
+        if (state.founderClickCount >= 13) return; // let founder activation handle it
+        e.stopPropagation();
+        openNotifPanel();
+    });
+
+    // Click outside to close panel
+    document.addEventListener('click', (e) => {
+        const panel = document.getElementById('notifPanel');
+        const trigger = document.getElementById('notificationTrigger');
+        if (panel.classList.contains('open') && !panel.contains(e.target) && !trigger.contains(e.target)) {
+            closeNotifPanel();
+        }
+    });
+
+    // Periodic refresh (every 30 seconds)
+    setInterval(fetchNotifications, 30000);
+
+    // ===================== INIT =====================
     async function init() {
         setTheme(state.theme);
         if (localStorage.getItem('session_expired') && !state.token) {
