@@ -1,8 +1,9 @@
 """
-CAPITAN AI — Enterprise Backend v29.0
+CAPITAN AI — Enterprise Backend v29.0 (AI/ML API integration)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
 All fixes applied (greeting, workspace_members PK migration, intelligence overhaul)
+AIML API key added for Pro/ProMax/Founder tiers.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -35,6 +36,9 @@ class Settings(BaseSettings):
     FINNHUB_API_KEY: str = ""
     ETHERSCAN_API_KEY: str = ""
     FOUNDER_EXTRA_PROMPT: str = ""
+    # NEW: AI/ML API key (both possible names)
+    AIMLAPI_API_KEY: str = ""
+    ALMLAPI_API_KEY: str = ""
 
     class Config:
         env_file = ".env"
@@ -803,7 +807,7 @@ class ReasoningEngine:
     def format_reasoning_chain(chain: List[str]) -> str:
         return "\n".join(chain) if chain else ""
 
-# ===================== AI MODEL CALL =====================
+# ===================== AI MODEL CALL (UPDATED WITH AI/ML API) =====================
 def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int = 1, domain: str = "general") -> Tuple[str, str, Optional[List[str]]]:
     reasoning_chain = None
     if reasoning_depth > 1 and domain in ["finance", "quant", "coding", "math", "science"]:
@@ -817,7 +821,34 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                 if m.get("role") == "system":
                     m["content"] += reasoning_text
                     break
-    
+
+    # ---------- NEW: AI/ML API for Pro, ProMax, Founder ----------
+    if tier in ("pro", "pro_max", "founder") and (settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY):
+        api_key = settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY
+        model_name = "gpt-4o"  # best available model
+        try:
+            r = requests.post(
+                "https://api.aimlapi.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 4000
+                },
+                timeout=60
+            )
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content, f"{model_name} (AIML API)", reasoning_chain
+        except Exception as e:
+            logger.error(f"AIML API error: {e}")
+
+    # ---------- Existing ProMax ensemble (OpenRouter) ----------
     if tier == "pro_max" and settings.OPENROUTER_API_KEY:
         try:
             r1 = requests.post(
@@ -846,6 +877,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Ensemble error: {e}")
     
+    # ---------- Existing Pro (OpenRouter Claude) ----------
     if tier == "pro" and settings.OPENROUTER_API_KEY:
         try:
             r = requests.post(
@@ -861,6 +893,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Claude error: {e}")
     
+    # ---------- Existing Plus (Groq 70B) ----------
     if tier == "plus" and settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -876,6 +909,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Groq 70B error: {e}")
     
+    # ---------- Fallback: Groq 8B ----------
     if settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -1718,10 +1752,11 @@ def health_check():
     except Exception as e:
         logger.warning(f"Health check DB error: {e}")
     
-    ai_status = "connected" if (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY) else "disconnected"
+    ai_status = "connected" if (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY or settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY) else "disconnected"
     providers = []
     if settings.GROQ_API_KEY: providers.append("groq")
     if settings.OPENROUTER_API_KEY: providers.append("openrouter")
+    if settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY: providers.append("aimlapi")
     
     return {
         "status": "ok",
