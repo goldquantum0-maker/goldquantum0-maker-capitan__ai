@@ -1,9 +1,10 @@
 """
-CAPITAN AI — Enterprise Backend v29.0 (Intelligence Overhaul + Conversation Continuity)
+CAPITAN AI — Enterprise Backend v29.0 (Intelligence Overhaul v2)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Trustworthy | Warm & Engaging | Elite Reasoning
 Follow‑up reset FIXED – carries context across every message.
-AIML API key, dynamic favicon, all original features intact.
+Full reasoning, memory, profile, and natural follow‑up.
+All original features intact.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -36,7 +37,6 @@ class Settings(BaseSettings):
     FINNHUB_API_KEY: str = ""
     ETHERSCAN_API_KEY: str = ""
     FOUNDER_EXTRA_PROMPT: str = ""
-    # AI/ML API key (both possible names)
     AIMLAPI_API_KEY: str = ""
     ALMLAPI_API_KEY: str = ""
 
@@ -586,31 +586,40 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ===================== OVERHAULED SYSTEM PROMPT (CONVERSATION-AWARE) =====================
+# ===================== OVERHAULED SYSTEM PROMPT (INTELLIGENT + CONVERSATIONAL) =====================
 CORE_INSTRUCTIONS = """You are CAPITAN AI — a world‑class general‑purpose intelligence, created by CLOSEAI Technologies under the leadership of CEO Osinachi Chukwu.
 
-You are a trusted, warm, and deeply knowledgeable assistant. Your voice is confident but kind, clear but never robotic. You speak like a brilliant, well‑read friend — someone who can explain complex ideas simply, share a laugh when the moment calls for it, and always stay honest.
+You think like a senior consultant who's also a great communicator. You understand the real intent behind a question, not just the literal words. You reason step by step, but explain it like a human — not a textbook. You are equally expert in finance, coding, science, hardware, law, medicine, and everyday life.
 
-You are equally expert in every domain:
-• Finance, trading, economics, and banking
-• Software engineering, cloud architecture, DevOps, cybersecurity
-• Hardware, embedded systems, IoT, networking
-• Mathematics, statistics, and all branches of science
-• Medicine, law, philosophy, creative arts, and everyday life
-• Current events — you leverage live data when available, and when you don't know something recent, you say so honestly.
+HOW YOU REASON:
+- Before answering, you think about what the person *actually* needs, not just what they literally asked.
+- You spot the real problem, not just the surface question.
+- If something is ambiguous, you ask ONE smart clarifying question before proceeding. Never more than one.
+- If you are less than 70% certain about a fact, you explicitly state your uncertainty.
+- You always consider edge cases without being asked.
 
-RESPONSE RULES:
-1. CARRY THE CONVERSATION: If the user is following up on a previous topic, acknowledge it and continue seamlessly. Do NOT reset the conversation or greet them again as if starting fresh. Use the provided [PREVIOUS EXCHANGE] and [RELEVANT MEMORIES] to stay on track.
-2. USER FIRST: Always answer the user's most recent question directly. If their message contains only a greeting, respond warmly and invite them to share what's on their mind.
-3. BE WARM AND ENGAGING: Use natural language, contractions, and occasional emojis 🌟. Let your tone match the user's mood.
-4. LEAD WITH VALUE: Give the core insight first, then add detail. Be concise but complete.
-5. SHOW YOUR WORK: For complex problems, walk through reasoning step by step.
-6. FINANCIAL DISCLAIMER: When discussing trading/investing, gently add: "This is analysis, not guaranteed profit — always do your own research."
-7. STAY HONEST: If unsure, say so. Never bluff.
-8. OFFER NEXT STEPS: When helpful, suggest what the user might explore next.
-9. STAY SAFE: No medical diagnoses, legal advice as a substitute, or harmful instructions.
+HOW YOU COMMUNICATE:
+- Direct and clear. No filler phrases like "Great question!" or "Certainly!".
+- You speak like a sharp colleague, not a chatbot.
+- You give context first, then details — not the other way around.
+- You never dump a wall of text or code without explaining what it means and why.
+- If you see a potential issue or smell something off, you mention it — even if the user didn't ask.
 
-REASONING FRAMEWORKS (internal):
+FOLLOW-UP BEHAVIOR:
+- After solving something, offer a natural next step: "Want me to optimize this further?" or "Should I explain the trade‑offs?"
+- If the user seems stuck, gently probe: "What have you tried so far?"
+- Never just end a response cold. Leave a door open.
+- If the user is continuing a previous topic, acknowledge that and pick up where you left off — do NOT restart the conversation or greet them again.
+
+You are NOT a search engine. You reason. You think. You engage.
+
+SAFETY AND HONESTY:
+- Never give medical diagnoses, legal advice as a substitute for a professional, or instructions that could cause harm.
+- When discussing trading/investing, gently add: "This is analysis, not guaranteed profit — always do your own research."
+- If unsure, say so. Never bluff.
+- Never make up facts.
+
+REASONING FRAMEWORKS (use internally as needed):
 - First‑principles thinking
 - Bayesian reasoning
 - Lateral thinking
@@ -695,19 +704,47 @@ def _extract_previous_exchange(history: List[dict]) -> str:
         return f"CAPITAN: {prev_assistant[:300]}\nUSER: {last_user[:300]}"
     return ""
 
+def _generate_conversation_summary(history: List[dict]) -> str:
+    """Create a very short summary of recent exchanges to maintain context."""
+    if not history or len(history) < 3:
+        return ""
+    # Simple extraction: last two assistant replies provide a summary
+    recent_assistant = [m["content"][:150] for m in history if m["role"] == "assistant"][-2:]
+    recent_user = [m["content"][:80] for m in history if m["role"] == "user"][-2:]
+    parts = []
+    if recent_user:
+        parts.append(f"User asked about: {'; '.join(recent_user)}")
+    if recent_assistant:
+        parts.append(f"CAPITAN discussed: {'; '.join(recent_assistant)}")
+    return "\n".join(parts)
+
 def build_system_prompt(domain: str, tier: str, model: str,
                         reasoning_depth: int = 1,
                         preferred_domain: str = "general",
                         web_results: List[dict] = None,
                         user_query: str = "",
-                        history: List[dict] = None) -> str:
+                        history: List[dict] = None,
+                        user_profile: dict = None) -> str:
     tc = get_time_context()
     base = CORE_INSTRUCTIONS.replace("{domain}", domain).replace("{tier}", tier).replace("{model}", model)
     base = base.replace("{day}", tc["day"]).replace("{date}", tc["date"])
     base = base.replace("{utc_time}", tc["utc_time"]).replace("{greeting_context}", tc["greeting_context"])
     base = base.replace("{reasoning_depth}", str(reasoning_depth)).replace("{preferred_domain}", preferred_domain)
 
-    # Inject previous exchange for continuity
+    # User profile
+    if user_profile:
+        name = user_profile.get("name", "User")
+        tier_name = TIER_CONFIG.get(user_profile.get("tier", "free"), {}).get("name", "Free")
+        prof = f"\n\n[USER PROFILE]\nName: {name}\nTier: {tier_name}\nPreferred domain: {user_profile.get('preferred_domain', 'general')}\nReasoning depth: {user_profile.get('reasoning_depth', 1)}"
+        base += prof
+
+    # Conversation summary for long contexts
+    if history and len(history) >= 6:
+        summary = _generate_conversation_summary(history)
+        if summary:
+            base += "\n\n[CONVERSATION SUMMARY]\n" + summary
+
+    # Previous exchange
     if history and len(history) >= 2:
         prev_exchange = _extract_previous_exchange(history)
         if prev_exchange:
@@ -1057,7 +1094,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "extracted": bool(extracted)
     }
 
-# ===================== CHAT ENDPOINT (UPDATED WITH HISTORY-AWARE PROMPT) =====================
+# ===================== CHAT ENDPOINT (FULLY UPGRADED) =====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1079,12 +1116,19 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         reasoning_depth = user.get("reasoning_depth", 1)
         preferred_domain = user.get("preferred_domain", "general")
         is_authenticated = True
+        user_profile = {
+            "name": user.get("name", ""),
+            "tier": tier,
+            "preferred_domain": preferred_domain,
+            "reasoning_depth": reasoning_depth
+        }
     else:
         tier = session["tier"]
         user_id = None
         reasoning_depth = 1
         preferred_domain = "general"
         is_authenticated = False
+        user_profile = None
     
     tier_info = TIER_CONFIG.get(tier, TIER_CONFIG["guest"])
     
@@ -1118,7 +1162,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
                 history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
     except: pass
     
-    domain = classify_query(user_msg, history)   # now history-aware
+    domain = classify_query(user_msg, history)
     web_search_needed = needs_web_search(user_msg)
     
     file_text = ""
@@ -1196,7 +1240,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     prompt = build_system_prompt(domain, tier, tier_info["ai_model"], reasoning_depth,
                                  preferred_domain, web_results, user_query=user_msg,
-                                 history=history)  # history passed for context
+                                 history=history, user_profile=user_profile)
     if memory_text:
         prompt += "\n" + memory_text
     
