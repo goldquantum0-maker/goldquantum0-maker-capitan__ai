@@ -1,9 +1,10 @@
 """
-CAPITAN AI — Enterprise Backend v31.0 (System Prompt v2.0 + Task Classifier)
+CAPITAN AI — Enterprise Backend v31.0 (System Prompt v2.0 + Task Classifier + Notifications)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Intent‑Driven | Trustworthy | Warm & Engaging
 Full task/intent routing, content generation mode, conversation continuity.
-Self‑learning pipeline, feedback, fine‑tuning, dynamic icons – all original.
+Self‑learning pipeline, feedback, fine‑tuning, dynamic icons, and now real‑time notifications.
+All original features intact.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -298,6 +299,18 @@ def init_db():
                         finetuned_model_id TEXT,
                         dataset_path TEXT,
                         active BOOLEAN DEFAULT FALSE,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                # ===================== NEW: Notifications table =====================
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        type TEXT DEFAULT 'info',
+                        message TEXT NOT NULL,
+                        read BOOLEAN DEFAULT FALSE,
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
@@ -924,15 +937,9 @@ Do not force follow-up questions.
 Only offer what is genuinely useful.
 """
 
-# ===================== TASK CLASSIFIER (INTENT DETECTION) =====================
+# ===================== TASK CLASSIFIER =====================
 def classify_task(q: str) -> str:
-    """Classify the user's actual goal based on keywords and patterns.
-    Returns one of: Information Request, Problem Solving, Decision Making,
-    Content Creation, Coding / Engineering, Financial Analysis, Research,
-    Planning, Learning / Education, Conversation."""
     q_lower = q.lower()
-
-    # Content Creation signals
     content_kw = [
         "landing page", "website", "homepage", "service page", "about page",
         "pricing page", "copywriting", "write a", "generate a", "create a",
@@ -945,7 +952,6 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Content Creation"
 
-    # Coding / Engineering
     coding_kw = [
         "code", "function", "api", "debug", "refactor", "optimize",
         "sql", "query", "database", "script", "library", "framework",
@@ -958,7 +964,6 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Coding / Engineering"
 
-    # Financial Analysis
     finance_kw = [
         "stock", "forex", "crypto", "trade", "entry", "exit",
         "analysis", "market", "portfolio", "option", "future",
@@ -970,7 +975,6 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Financial Analysis"
 
-    # Research
     research_kw = [
         "research", "explain", "compare", "summary", "overview",
         "deep dive", "investigate", "study", "report", "analyze",
@@ -981,7 +985,6 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Research"
 
-    # Planning
     plan_kw = [
         "plan", "roadmap", "steps to", "how do i", "schedule",
         "timeline", "goal", "strategy", "approach", "framework",
@@ -991,7 +994,6 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Planning"
 
-    # Decision Making
     decision_kw = [
         "should i", "which one", "pick", "choose", "better option",
         "vs", "versus", "or", "worth it", "recommend", "suggest"
@@ -1000,7 +1002,6 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Decision Making"
 
-    # Learning / Education
     learn_kw = [
         "teach me", "explain like", "tutorial", "beginner", "new to",
         "learn", "understand", "concept", "definition", "meaning"
@@ -1009,7 +1010,6 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Learning / Education"
 
-    # Problem Solving
     problem_kw = [
         "issue", "error", "not working", "broken", "fix", "help",
         "stuck", "can't", "won't", "fail", "crash", "bug"
@@ -1018,11 +1018,9 @@ def classify_task(q: str) -> str:
         if kw in q_lower:
             return "Problem Solving"
 
-    # Information Request – generic what/when/where/who queries
     if re.search(r'^(what|when|where|who|how many|how much|how long|how far)\b', q_lower):
         return "Information Request"
 
-    # Default: Conversation / General
     return "Conversation"
 
 # ===================== CONTEXT & PROMPT BUILDING =====================
@@ -1080,25 +1078,21 @@ def build_system_prompt(domain: str, tier: str, model: str,
                         user_profile: dict = None,
                         task_type: str = "Conversation") -> str:
     tc = get_time_context()
-    base = CORE_INSTRUCTIONS  # v2.0 prompt – no token replacements needed, but we add context
+    base = CORE_INSTRUCTIONS
 
-    # Add time context
     base += f"\n\nCurrent time: {tc['day']}, {tc['date']} at {tc['utc_time']}. {tc['greeting_context']}"
 
-    # User profile
     if user_profile:
         name = user_profile.get("name", "User")
         tier_name = TIER_CONFIG.get(user_profile.get("tier", "free"), {}).get("name", "Free")
         prof = f"\n\n[USER PROFILE]\nName: {name}\nTier: {tier_name}\nPreferred domain: {user_profile.get('preferred_domain', 'general')}\nReasoning depth: {user_profile.get('reasoning_depth', 1)}"
         base += prof
 
-    # Conversation summary
     if history and len(history) >= 6:
         summary = _generate_conversation_summary(history)
         if summary:
             base += "\n\n[CONVERSATION SUMMARY]\n" + summary
 
-    # Previous exchange
     if history and len(history) >= 2:
         prev_exchange = _extract_previous_exchange(history)
         if prev_exchange:
@@ -1107,7 +1101,6 @@ def build_system_prompt(domain: str, tier: str, model: str,
     if user_query:
         base += f"\n\nUSER REQUEST: {user_query}"
 
-    # Task mode instruction
     if task_type == "Content Creation":
         base += "\n\n[MODE: CONTENT CREATION]\nYou are generating content directly. Produce the requested output without asking follow‑up questions unless you absolutely need a critical detail. Do not enter conversational mode. Format the output cleanly."
     elif task_type == "Financial Analysis":
@@ -1124,7 +1117,6 @@ def build_system_prompt(domain: str, tier: str, model: str,
         base += "\n\n[MODE: EDUCATOR]\nExplain concepts clearly. Use analogies and examples. Check for understanding."
     elif task_type == "Problem Solving":
         base += "\n\n[MODE: PROBLEM SOLVING]\nDiagnose the root cause. Propose actionable fixes. Anticipate related issues."
-    # Information Request and Conversation use the default behavior
 
     if tier == "founder" and settings.FOUNDER_EXTRA_PROMPT:
         base += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
@@ -1276,14 +1268,12 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                     m["content"] += reasoning_text
                     break
 
-    # Determine base model for fine-tuning check
     base_model_name = "gpt-4o"
     if tier in ("pro", "pro_max", "founder"):
         ft_model = get_latest_fine_tuned_model(base_model_name)
         if ft_model:
             base_model_name = ft_model
 
-    # AI/ML API for Pro, ProMax, Founder
     if tier in ("pro", "pro_max", "founder") and (settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY):
         api_key = settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY
         try:
@@ -1308,7 +1298,6 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"AIML API error: {e}")
 
-    # ProMax ensemble (OpenRouter)
     if tier == "pro_max" and settings.OPENROUTER_API_KEY:
         try:
             r1 = requests.post(
@@ -1337,7 +1326,6 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Ensemble error: {e}")
     
-    # Pro (OpenRouter Claude)
     if tier == "pro" and settings.OPENROUTER_API_KEY:
         try:
             r = requests.post(
@@ -1353,7 +1341,6 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Claude error: {e}")
     
-    # Plus (Groq 70B)
     if tier == "plus" and settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -1369,7 +1356,6 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
         except Exception as e:
             logger.error(f"Groq 70B error: {e}")
     
-    # Fallback: Groq 8B
     if settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -1479,7 +1465,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "extracted": bool(extracted)
     }
 
-# ===================== CHAT ENDPOINT (NOW USES TASK CLASSIFIER) =====================
+# ===================== CHAT ENDPOINT (NOW WITH TASK ROUTING) =====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1533,7 +1519,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     chat_id = req.chat_id or f"chat_{sid()}"
     
-    # Retrieve message history
     history = []
     try:
         with get_db() as conn:
@@ -1549,7 +1534,7 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     
     domain = classify_query(user_msg, history)
     web_search_needed = needs_web_search(user_msg)
-    task_type = classify_task(user_msg)   # <-- new intent routing
+    task_type = classify_task(user_msg)
     
     file_text = ""
     if "[Uploaded document:" in user_msg:
@@ -1665,10 +1650,10 @@ async def chat_endpoint(req: ChatRequest, request: Request):
         "reasoning_chain": reasoning_chain
     }
 
-# ===================== FEEDBACK ENDPOINT =====================
+# ===================== FEEDBACK ENDPOINT (unchanged) =====================
 class FeedbackRequest(BaseModel):
     message_id: str
-    rating: int  # 1 = like, 0 = dislike
+    rating: int
     comment: Optional[str] = ""
 
 @app.post("/api/feedback")
@@ -1687,6 +1672,68 @@ async def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current
     except Exception as e:
         logger.error(f"Feedback error: {e}")
         raise HTTPException(500, "Could not save feedback")
+
+# ===================== NOTIFICATION ENDPOINTS =====================
+@app.get("/api/notifications")
+def get_notifications(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    SELECT id, type, message, read, created FROM notifications
+                    WHERE user_id = %s ORDER BY created DESC LIMIT 50
+                """, (user["id"],))
+                rows = c.fetchall()
+                return {"notifications": [
+                    {"id": r[0], "type": r[1], "message": r[2], "read": r[3], "created": r[4].isoformat()}
+                    for r in rows
+                ]}
+    except Exception as e:
+        logger.error(f"Notifications error: {e}")
+        raise HTTPException(500, "Could not fetch notifications")
+
+@app.post("/api/notifications/mark-read")
+def mark_notifications_read(user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("UPDATE notifications SET read=TRUE WHERE user_id=%s", (user["id"],))
+                conn.commit()
+                return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Mark read error: {e}")
+        raise HTTPException(500, "Could not mark notifications as read")
+
+@app.delete("/api/notifications/{notif_id}")
+def delete_notification(notif_id: str, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM notifications WHERE id=%s AND user_id=%s", (notif_id, user["id"]))
+                conn.commit()
+                return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Delete notification error: {e}")
+        raise HTTPException(500, "Could not delete notification")
+
+# Helper to create a notification for a specific user
+def create_notification(user_id: str, type: str, message: str):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    INSERT INTO notifications (id, user_id, type, message)
+                    VALUES (%s, %s, %s, %s)
+                """, (sid(), user_id, type, message))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Create notification error: {e}")
 
 # ===================== CHAT HISTORY (unchanged) =====================
 @app.get("/api/chats")
@@ -1917,6 +1964,7 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
                         UPDATE users SET tier = %s, tier_expires = %s, reasoning_depth = %s, updated_at = NOW()
                         WHERE id = %s
                     """, (req.tier, datetime.now(timezone.utc) + timedelta(days=30), TIER_CONFIG[req.tier]["reasoning_depth"], user["id"]))
+                    create_notification(user["id"], "success", f"Your tier has been upgraded to {req.tier.upper()}! Enjoy your new benefits.")
                 conn.commit()
     except Exception as e:
         logger.error(f"Upgrade error: {e}")
@@ -2331,6 +2379,8 @@ def start_finetune(user: dict = Depends(get_current_user)):
                             VALUES (%s, %s, %s, %s, TRUE)
                         """, (sid(), "gpt-4o-mini-2024-07-18", ft_model_id, latest_dataset))
                         conn.commit()
+                # Notify the founder that fine‑tuning is complete
+                create_notification(user["id"], "success", f"Fine‑tuning complete! New model ID: {ft_model_id}")
                 return {
                     "status": "fine-tuned",
                     "model_id": ft_model_id,
@@ -2340,6 +2390,7 @@ def start_finetune(user: dict = Depends(get_current_user)):
                 raise Exception("Fine‑tuning job failed: " + str(status))
         raise Exception("Fine‑tuning job timed out")
     except Exception as e:
+        create_notification(user["id"], "error", f"Fine‑tuning failed: {str(e)}")
         logger.error(f"Fine‑tuning error: {e}")
         raise HTTPException(500, str(e))
 
@@ -2397,7 +2448,8 @@ def health_check():
         "auth": "email_password",
         "reasoning_engine": True,
         "intelligence_level": "full",
-        "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"]
+        "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"],
+        "notifications": True
     }
 
 # ===================== WEB SEARCH (unchanged) =====================
@@ -2541,13 +2593,14 @@ async def root():
         "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"],
         "intelligence": "self_learning",
         "reasoning": "chain_of_thought_enabled",
-        "task_routing": True
+        "task_routing": True,
+        "notifications": True
     }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v31.0 - Intent‑Driven Self‑Learning AI")
+    print(f"🚀 CAPITAN AI v31.0 - Intent‑Driven Self‑Learning AI with Notifications")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
