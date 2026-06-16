@@ -1,0 +1,11 @@
+!-- Favicon --
+link rel=icon type=imagepng sizes=96x96 href=httpscapitan-ai-jxu8.onrender.comiconsfavicon-96x96.pngv=20260616
+link rel=icon type=imagesvg+xml href=httpscapitan-ai-jxu8.onrender.comiconsfavicon.svgv=20260616
+link rel=shortcut icon href=httpscapitan-ai-jxu8.onrender.comiconsfavicon.icov=20260616
+
+!-- Apple touch icon --
+link rel=apple-touch-icon sizes=180x180 href=httpscapitan-ai-jxu8.onrender.comiconsapple-touch-icon.pngv=20260616
+meta name=apple-mobile-web-app-title content=Capitan
+
+!-- PWA Manifest (updated to match your new manifest file) --
+link rel=manifest href=httpscapitan-ai-jxu8.onrender.comiconssite.webmanifestv=20260616
