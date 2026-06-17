@@ -1792,11 +1792,12 @@ def health_check():
         "security_monitor": settings.ENABLE_SECURITY_MONITOR,
         "tiers": list(TIER_CONFIG.keys())
     }
+
 @app.get("/manifest.json")
 async def manifest():
     return JSONResponse(content={
-        "name": "CapitanAI by CLOSEAI",
-        "short_name": "CAPITAN AI",
+        "name": "CAPITAN AI",
+        "short_name": "CAPITAN",
         "start_url": "/",
         "display": "standalone",
         "background_color": "#0f172a",
@@ -1804,31 +1805,8 @@ async def manifest():
         "icons": [
             {"src": "/icon-192.png", "sizes": "192x192", "type": "image/svg+xml"},
             {"src": "/icon-512.png", "sizes": "512x512", "type": "image/svg+xml"}
-        ],
-        "screenshots": [
-            {
-                "src": "/screenshots/home.png",
-                "sizes": "1280x720",
-                "type": "image/png",
-                "label": "CAPITAN AI home screen"
-            },
-            {
-                "src": "/screenshots/chat.png",
-                "sizes": "1280x720",
-                "type": "image/png",
-                "label": "Chat with CAPITAN AI"
-            }
-        ],
-        "description": "Capitan AI is your intelligent companion for conversations, learning, productivity, and creativity.",
-        "dir": "auto",
-        "lang": "en",
-        "orientation": "any",
-        "display_override": ["window-controls-overlay", "standalone"],
-        "categories": ["productivity"]
-    })
         ]
-    
-    }
+    })
 
 @app.get("/icon-192.png")
 async def icon_192():
