@@ -1,1 +1,32 @@
-{ "name": "CapitanAI by CLOSEAI", "short_name": "CAPITAN AI", "start_url": "/https://capitan-ai-jxu8.onrender.com", "display": "standalone", "background_color": "#0f172a", "theme_color": "#0e6e8e", "icons": [ { "src": "/icon-192.png", "sizes": "192x192", "type": "image/svg+xml" }, { "src": "/icon-512.png", "sizes": "512x512", "type": "image/svg+xml" } ], "screenshots": [ { "src": "/screenshots/home.png", "sizes": "1280x720", "type": "image/png", "label": "CAPITAN AI home screen" }, { "src": "/screenshots/chat.png", "sizes": "1280x720", "type": "image/png", "label": "Chat with CAPITAN AI" } ], "id": "com.capitan.ai", "description": "Capitan AI is your intelligent companion for conversations, learning, productivity, and creativity. Ask questions, generate ideas, solve problems, write content, and receive thoughtful responses in natural language. Designed for smooth, human-like interaction, Capitan AI helps you stay informed, productive, and inspired wherever you are.", "dir": "auto", "lang": "en", "orientation": "any", "display_override": [ "window-controls-overlay", "standalone" ], "categories": [ "productivity" ] }
+{
+  "name": "CapitanAI by CLOSEAI",
+  "short_name": "CAPITAN AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0e6e8e",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/svg+xml" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/svg+xml" }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "CAPITAN AI home screen"
+    },
+    {
+      "src": "/screenshots/chat.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Chat with CAPITAN AI"
+    }
+  ],
+  "description": "Capitan AI is your intelligent companion for conversations, learning, productivity, and creativity. Ask questions, generate ideas, solve problems, write content, and receive thoughtful responses in natural language. Designed for smooth, human-like interaction, Capitan AI helps you stay informed, productive, and inspired wherever you are.",
+  "dir": "auto",
+  "lang": "en",
+  "orientation": "any",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "categories": ["productivity"]
+}
