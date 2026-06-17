@@ -12,7 +12,6 @@
     <link rel="apple-touch-icon" href="/icon-180.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
-        /* All CSS rules identical to the last full version (unchanged) */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root {
             --bg-primary-light:#ffffff; --bg-secondary-light:#f8fafc; --bg-tertiary-light:#f1f5f9;
@@ -180,7 +179,7 @@
         .scroll-to-bottom { position:fixed; bottom:90px; right:26px; width:36px; height:36px; border-radius:50%; background:var(--accent-glow); border:1.5px solid var(--accent); color:var(--accent); box-shadow:0 2px 8px rgba(56,189,248,0.3); display:none; align-items:center; justify-content:center; cursor:pointer; z-index:50; transition:all 0.2s; }
         .scroll-to-bottom:hover { transform:scale(1.05); background:var(--accent); color:white; }
 
-        /* Notification styles */
+        /* Notification styles (unchanged) */
         .notif-badge { position: absolute; top: 6px; right: 6px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; display: none; box-shadow: 0 0 6px rgba(239,68,68,0.5); z-index: 5; }
         .pulse-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--accent); animation: pulseRing 1.8s ease-out infinite; pointer-events: none; display: none; }
         @keyframes pulseRing { 0% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
