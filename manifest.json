@@ -5,10 +5,18 @@ async def manifest():
         "short_name": "CAPITAN",
         "start_url": "/",
         "display": "standalone",
-        "background_color": "#0a0a0a",
+        "background_color": "#0f172a",   # matches splash screen start colour
         "theme_color": "#0e6e8e",
         "icons": [
-            {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-            {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+            {
+                "src": "/icon-192.png",      # corrected path
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "/icon-512.png",      # corrected path
+                "sizes": "512x512",
+                "type": "image/png"
+            }
         ]
     })
