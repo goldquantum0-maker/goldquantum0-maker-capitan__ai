@@ -1802,24 +1802,10 @@ async def manifest():
         "background_color": "#0f172a",
         "theme_color": "#0e6e8e",
         "icons": [
-            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/svg+xml"},
-            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/svg+xml"}
+            {"src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml"},
+            {"src": "/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml"}
         ],
-        "screenshots": [
-            {
-                "src": "/screenshots/home.png",
-                "sizes": "1280x720",
-                "type": "image/png",
-                "label": "CAPITAN AI home screen"
-            },
-            {
-                "src": "/screenshots/chat.png",
-                "sizes": "1280x720",
-                "type": "image/png",
-                "label": "Chat with CAPITAN AI"
-            }
-        ],
-        "description": "Capitan AI is your intelligent companion for conversations, learning, productivity, and creativity.",
+        "description": "Capitan AI — your intelligent companion for conversations, learning, productivity, and creativity.",
         "dir": "auto",
         "lang": "en",
         "orientation": "any",
