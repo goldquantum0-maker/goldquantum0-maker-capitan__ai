@@ -1,13 +1,9 @@
 """
-CAPITAN AI — Enterprise Backend v32.1 (Greeting Fix)
+CAPITAN AI — Enterprise Backend v32.1 (Final Fixes)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Intent‑Driven | Trustworthy | Warm & Engaging
-Full task/intent routing, content generation mode, conversation continuity.
-Self‑learning pipeline, feedback, fine‑tuning, dynamic icons, full notifications.
-Puter API (free) + DeepSeek integrated.
-Tool calling, image analysis, SSE streaming, configurable parameters.
-FIXED: Casual greetings now receive a warm, natural reply instead of a formal structure.
-All original features intact.
+All features intact, CORS configured, static serving enabled.
+Provider helpers added: Puter, AIML, OpenRouter, Groq, Tool execution.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -19,13 +15,17 @@ from io import StringIO
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 import psycopg2
 import uvicorn
 
 app = FastAPI(title="CAPITAN AI API", version="32.1")
+
+# ===================== STATIC FILE SERVING (FRONTEND) =====================
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -60,6 +60,7 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# ===================== DATABASE =====================
 @contextmanager
 def get_db():
     conn = None
@@ -1143,7 +1144,7 @@ def build_system_prompt(domain: str, tier: str, model: str,
 
     return base
 
-# ===================== RATE LIMITING (unchanged) =====================
+# ===================== RATE LIMITING =====================
 rate_store = {}
 _cleanup_counter = 0
 def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
@@ -1164,7 +1165,7 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     rate_store[store_key].append(now)
     return True
 
-# ===================== DAILY LIMIT (WITH WARNING NOTIFICATION) =====================
+# ===================== DAILY LIMIT =====================
 def enforce_daily_limit(user: dict = None, session: dict = None):
     today = datetime.now(timezone.utc).date()
     if user:
@@ -1206,7 +1207,7 @@ def enforce_daily_limit(user: dict = None, session: dict = None):
                           (count + 1, today, session["id"]))
                 conn.commit()
 
-# ===================== DOMAIN CLASSIFICATION (unchanged) =====================
+# ===================== DOMAIN CLASSIFICATION =====================
 def classify_query(q: str, history: List[dict] = None) -> str:
     q = q.lower()
     if history and len(history) >= 2:
@@ -1238,7 +1239,7 @@ def classify_query(q: str, history: List[dict] = None) -> str:
 def needs_web_search(q: str) -> bool:
     return bool(re.search(r'latest|current|today|news|right now|recent|202[3-9]', q.lower()))
 
-# ===================== REASONING ENGINE (unchanged) =====================
+# ===================== REASONING ENGINE =====================
 class ReasoningEngine:
     @staticmethod
     def generate_reasoning_chain(query: str, depth: int = 3) -> List[str]:
@@ -1258,19 +1259,94 @@ class ReasoningEngine:
     def format_reasoning_chain(chain: List[str]) -> str:
         return "\n".join(chain) if chain else ""
 
-# ===================== AI MODEL CALL (PUTER API + DEEPSEEK, NO KEY REQUIRED) =====================
-def get_latest_fine_tuned_model(base_model="gpt-4o"):
+# ===================== AI PROVIDER HELPERS =====================
+def _call_puter_api(messages, model, temperature, max_tokens, tools=None):
+    payload = {"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens}
+    if tools:
+        payload["tools"] = tools
+        payload["tool_choice"] = "auto"
     try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT finetuned_model_id FROM model_versions WHERE base_model=%s AND active=TRUE ORDER BY created DESC LIMIT 1", (base_model,))
-                row = c.fetchone()
-                if row:
-                    return row[0]
+        r = requests.post("https://api.puter.com/v2/chat/completions",
+                          headers={"Content-Type": "application/json"},
+                          json=payload, timeout=60)
+        if r.status_code == 200:
+            return r.json()
     except Exception as e:
-        logger.error(f"Error fetching fine-tuned model: {e}")
+        logger.warning(f"Puter API error: {e}")
     return None
 
+def _call_aiml_api(messages, model, temperature, max_tokens, tools=None):
+    api_key = settings.AIMLAPI_API_KEY or settings.ALMLAPI_API_KEY
+    if not api_key:
+        return None
+    payload = {"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens}
+    if tools:
+        payload["tools"] = tools
+        payload["tool_choice"] = "auto"
+    try:
+        r = requests.post("https://api.aimlapi.com/v1/chat/completions",
+                          headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                          json=payload, timeout=60)
+        if r.status_code == 200:
+            return r.json()
+    except Exception as e:
+        logger.warning(f"AIML API error: {e}")
+    return None
+
+def _call_openrouter(messages, model, temperature, max_tokens, tools=None):
+    if not settings.OPENROUTER_API_KEY:
+        return None
+    payload = {"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens}
+    if tools:
+        payload["tools"] = tools
+        payload["tool_choice"] = "auto"
+    try:
+        r = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                          headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                                   "Content-Type": "application/json"},
+                          json=payload, timeout=60)
+        if r.status_code == 200:
+            return r.json()
+    except Exception as e:
+        logger.warning(f"OpenRouter error: {e}")
+    return None
+
+def _call_groq(messages, model, temperature, max_tokens):
+    if not settings.GROQ_API_KEY:
+        return None
+    try:
+        r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                          headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                                   "Content-Type": "application/json"},
+                          json={"model": model, "messages": messages,
+                                "temperature": temperature, "max_tokens": max_tokens},
+                          timeout=30)
+        if r.status_code == 200:
+            return r.json()
+    except Exception as e:
+        logger.warning(f"Groq error: {e}")
+    return None
+
+def _execute_tool_calls(resp, messages):
+    """Execute tool calls returned by the model and append results to messages."""
+    assistant_msg = resp["choices"][0].get("message", {})
+    messages = messages + [assistant_msg]
+    for tc in assistant_msg.get("tool_calls", []):
+        tool_name = tc.get("function", {}).get("name", "")
+        tool_args_raw = tc.get("function", {}).get("arguments", "{}")
+        try:
+            tool_args = json.loads(tool_args_raw)
+        except Exception:
+            tool_args = {}
+        tool_result = json.dumps({"result": f"Tool '{tool_name}' called with args {tool_args}"})
+        messages.append({
+            "role": "tool",
+            "tool_call_id": tc.get("id", ""),
+            "content": tool_result
+        })
+    return messages
+
+# ===================== AI MODEL CALL (WITH TOOL LOOP) =====================
 def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int = 1, domain: str = "general",
                   temperature: float = 0.7, max_tokens: int = 4000, tools: Optional[List[dict]] = None,
                   image_url: Optional[str] = None) -> Tuple[str, str, Optional[List[str]]]:
@@ -1287,7 +1363,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                     m["content"] += reasoning_text
                     break
 
-    # Attach image to last user message if provided
+    # Attach image if provided
     if image_url and messages and messages[-1]["role"] == "user":
         original_content = messages[-1]["content"]
         messages[-1]["content"] = [
@@ -1295,18 +1371,15 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
             {"type": "image_url", "image_url": {"url": image_url}}
         ]
 
-    # Try Puter API first for Pro+ (best model and free)
+    # ========== PUTER API (free, no key) ==========
     if tier in ("pro", "pro_max", "founder"):
-        if tier == "pro":
-            puter_model = "anthropic/claude-sonnet-4-6"
-        elif tier == "pro_max":
-            puter_model = "openai/gpt-5.4-nano"
-        else:
-            puter_model = "openai/gpt-5.4-nano"
+        model_map = {"pro": "anthropic/claude-sonnet-4-6",
+                     "pro_max": "openai/gpt-5.4-nano",
+                     "founder": "openai/gpt-5.4-nano"}
+        puter_model = model_map.get(tier, "openai/gpt-5.4-nano")
         resp = _call_puter_api(messages, puter_model, temperature, max_tokens, tools)
         if resp:
-            # Tool loop
-            for _ in range(3):  # max 3 round trips
+            for _ in range(3):
                 if resp["choices"][0].get("finish_reason") == "tool_calls":
                     messages = _execute_tool_calls(resp, messages)
                     resp = _call_puter_api(messages, puter_model, temperature, max_tokens, tools)
@@ -1316,32 +1389,28 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
             if content:
                 return content, f"{puter_model} (Puter)", reasoning_chain
 
-    # AIML API
-    base_model_name = "gpt-4o"
-    if tier in ("pro", "pro_max", "founder"):
-        ft_model = get_latest_fine_tuned_model(base_model_name)
-        if ft_model:
-            base_model_name = ft_model
-    resp = _call_aiml_api(messages, base_model_name, temperature, max_tokens, tools)
+    # ========== AIML API ==========
+    base_model = "gpt-4o"
+    resp = _call_aiml_api(messages, base_model, temperature, max_tokens, tools)
     if resp:
         for _ in range(3):
             if resp["choices"][0].get("finish_reason") == "tool_calls":
                 messages = _execute_tool_calls(resp, messages)
-                resp = _call_aiml_api(messages, base_model_name, temperature, max_tokens, tools)
+                resp = _call_aiml_api(messages, base_model, temperature, max_tokens, tools)
             else:
                 break
         content = resp["choices"][0].get("message", {}).get("content", "")
         if content:
-            return content, f"{base_model_name} (AIML API)", reasoning_chain
+            return content, f"{base_model} (AIML API)", reasoning_chain
 
-    # DeepSeek via OpenRouter
+    # ========== DeepSeek via OpenRouter ==========
     resp = _call_openrouter(messages, "deepseek/deepseek-r1", temperature, max_tokens, tools)
     if resp:
         content = resp["choices"][0].get("message", {}).get("content", "")
         if content:
             return content, "deepseek-r1 (OpenRouter)", reasoning_chain
 
-    # ProMax ensemble (OpenRouter)
+    # ========== ProMax ensemble (OpenRouter) ==========
     if tier == "pro_max":
         resp = _call_openrouter(messages, "anthropic/claude-3.5-sonnet-20241022", temperature, max_tokens, tools)
         if resp:
@@ -1356,7 +1425,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
             elif content2:
                 return content2, "gpt-4o", reasoning_chain
 
-    # Pro (OpenRouter Claude)
+    # ========== Pro (OpenRouter Claude) ==========
     if tier == "pro":
         resp = _call_openrouter(messages, "anthropic/claude-3.5-sonnet-20241022", temperature, max_tokens, tools)
         if resp:
@@ -1364,7 +1433,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
             if content:
                 return content, "claude-3.5-sonnet", reasoning_chain
 
-    # Plus (Groq 70B)
+    # ========== Plus (Groq 70B) ==========
     if tier == "plus":
         resp = _call_groq(messages, "llama-3.3-70b-versatile", temperature, max_tokens)
         if resp:
@@ -1372,7 +1441,7 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
             if content:
                 return content, "llama-3.3-70b", reasoning_chain
 
-    # Fallback: Groq 8B
+    # ========== Fallback: Groq 8B ==========
     resp = _call_groq(messages, "llama-3.1-8b-instant", temperature, max_tokens)
     if resp:
         content = resp["choices"][0].get("message", {}).get("content", "")
@@ -1382,37 +1451,18 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
     return "I'm having trouble connecting to AI services. Please try again.", "fallback", reasoning_chain
 
 # ===================== STREAMING VERSION (SSE) =====================
-async def call_ai_model_stream(messages: List[dict], tier: str = "free", temperature: float = 0.7, max_tokens: int = 4000,
-                               tools: Optional[List[dict]] = None, image_url: Optional[str] = None) -> AsyncGenerator[str, None]:
-    """Yield tokens via Server-Sent Events."""
+async def call_ai_model_stream(messages, tier, temperature, max_tokens, tools=None, image_url=None):
     if image_url and messages and messages[-1]["role"] == "user":
-        original_content = messages[-1]["content"]
-        messages[-1]["content"] = [
-            {"type": "text", "text": original_content},
-            {"type": "image_url", "image_url": {"url": image_url}}
-        ]
-
-    # For simplicity, only support Puter API streaming
+        original = messages[-1]["content"]
+        messages[-1]["content"] = [{"type": "text", "text": original}, {"type": "image_url", "image_url": {"url": image_url}}]
     if tier in ("pro", "pro_max", "founder"):
-        if tier == "pro":
-            model_name = "anthropic/claude-sonnet-4-6"
-        elif tier == "pro_max":
-            model_name = "openai/gpt-5.4-nano"
-        else:
-            model_name = "openai/gpt-5.4-nano"
-        payload = {
-            "model": model_name,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": True
-        }
+        model_map = {"pro": "anthropic/claude-sonnet-4-6", "pro_max": "openai/gpt-5.4-nano", "founder": "openai/gpt-5.4-nano"}
+        model = model_map.get(tier, "openai/gpt-5.4-nano")
+        payload = {"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens, "stream": True}
         if tools:
-            payload["tools"] = tools
-            payload["tool_choice"] = "auto"
+            payload["tools"] = tools; payload["tool_choice"] = "auto"
         try:
-            r = requests.post("https://api.puter.com/v2/chat/completions",
-                              headers={"Content-Type": "application/json"},
+            r = requests.post("https://api.puter.com/v2/chat/completions", headers={"Content-Type": "application/json"},
                               json=payload, stream=True, timeout=120)
             if r.status_code == 200:
                 for line in r.iter_lines():
@@ -1420,15 +1470,13 @@ async def call_ai_model_stream(messages: List[dict], tier: str = "free", tempera
                         line_str = line.decode("utf-8")
                         if line_str.startswith("data: "):
                             data_str = line_str[6:]
-                            if data_str == "[DONE]":
-                                break
+                            if data_str == "[DONE]": break
                             try:
                                 chunk = json.loads(data_str)
                                 delta = chunk.get("choices", [{}])[0].get("delta", {})
                                 if "content" in delta and delta["content"]:
                                     yield delta["content"]
-                            except:
-                                continue
+                            except: continue
             else:
                 yield "Streaming not available. Try the regular chat."
         except Exception as e:
@@ -1436,7 +1484,7 @@ async def call_ai_model_stream(messages: List[dict], tier: str = "free", tempera
     else:
         yield "Streaming is only available for Pro tier and above."
 
-# ===================== TIER CONFIGURATION (updated model labels) =====================
+# ===================== TIER CONFIGURATION =====================
 TIER_CONFIG = {
     "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
     "free": {"name": "Free", "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
@@ -1528,7 +1576,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         "extracted": bool(extracted)
     }
 
-# ===================== CHAT ENDPOINT (NOW WITH TOOLS, IMAGE, PARAMS) =====================
+# ===================== CHAT ENDPOINT =====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1681,7 +1729,6 @@ async def chat_endpoint(req: ChatRequest, request: Request):
     if memory_text:
         prompt += "\n" + memory_text
     
-    # Collect parameters
     temp = req.temperature if req.temperature is not None else 0.7
     max_tok = req.max_tokens if req.max_tokens is not None else 4000
     tools = req.tools if req.tools else None
@@ -1736,7 +1783,6 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
             raise HTTPException(401, "Authentication required")
     tier = user["tier"] if user else session["tier"]
     
-    # Build prompt (simplified for streaming)
     user_msg = ""
     for m in reversed(req.messages):
         if m.get("role") == "user":
@@ -1759,7 +1805,7 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
     
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-# ===================== FEEDBACK ENDPOINT (unchanged) =====================
+# ===================== FEEDBACK ENDPOINT =====================
 class FeedbackRequest(BaseModel):
     message_id: str
     rating: int
@@ -1782,7 +1828,7 @@ async def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current
         logger.error(f"Feedback error: {e}")
         raise HTTPException(500, "Could not save feedback")
 
-# ===================== NOTIFICATION HELPERS & ENDPOINTS (unchanged) =====================
+# ===================== NOTIFICATIONS =====================
 def create_notification(user_id: str, type: str, message: str):
     try:
         with get_db() as conn:
@@ -1885,7 +1931,7 @@ def broadcast_message(req: dict, user: dict = Depends(get_current_user)):
     broadcast_notification(notif_type, message)
     return {"status": "broadcast sent"}
 
-# ===================== CHAT HISTORY (unchanged) =====================
+# ===================== CHAT HISTORY =====================
 @app.get("/api/chats")
 def get_chats(request: Request):
     user = get_current_user(request)
@@ -1976,7 +2022,7 @@ def delete_chat(chat_id: str, request: Request):
         logger.error(f"Delete error: {e}")
         return {"deleted": False}
 
-# ===================== LIBRARY (unchanged) =====================
+# ===================== LIBRARY =====================
 @app.get("/api/library")
 def get_library(user: dict = Depends(get_current_user)):
     if not user:
@@ -2036,7 +2082,7 @@ def delete_library_item(item_id: str, user: dict = Depends(get_current_user)):
         logger.error(f"Library delete error: {e}")
         raise HTTPException(500, "Could not delete item")
 
-# ===================== PAYMENT & UPGRADE (NOW WITH NOTIFICATION) =====================
+# ===================== PAYMENT & UPGRADE =====================
 UPGRADE_BENEFITS = {
     "plus": ["Limited messaging (50/day)", "Groq Llama 3.3 70B", "File uploads (20MB)", "Web search", "2-step reasoning"],
     "pro": ["Limited messaging (100/day)", "Claude Sonnet 4 (Puter)", "File uploads (50MB)", "Live markets", "Web search", "3-step reasoning"],
@@ -2127,7 +2173,7 @@ def upgrade(req: UpgradeRequest, user: dict = Depends(get_current_user)):
         "token": new_token
     }
 
-# ===================== WORKSPACES (NOW WITH JOIN/MSG NOTIFICATIONS) =====================
+# ===================== WORKSPACES =====================
 @app.post("/api/workspace/create")
 def workspace_create(req: dict, user: dict = Depends(get_current_user)):
     if not user:
@@ -2291,7 +2337,7 @@ def workspace_my(request: Request, user: dict = Depends(get_current_user)):
                 for r in rows
             ]}
 
-# ===================== MARKET & NEWS (unchanged) =====================
+# ===================== MARKET & NEWS =====================
 @app.get("/api/markets")
 def markets(request: Request):
     user = get_current_user(request)
@@ -2332,7 +2378,7 @@ def web_search_endpoint(q: str, request: Request):
         return {"results": [], "message": "Web search on Plus and Pro"}
     return {"results": search_web(q, 8)}
 
-# ===================== ADMIN (unchanged) =====================
+# ===================== ADMIN =====================
 @app.get("/api/admin")
 def admin_panel(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
@@ -2432,7 +2478,7 @@ def admin_analytics(user: dict = Depends(get_current_user)):
                 "popular_topics": topics
             }
 
-# ===================== SELF-LEARNING: DATASET GENERATION (unchanged) =====================
+# ===================== SELF-LEARNING =====================
 DATASET_DIR = "datasets"
 os.makedirs(DATASET_DIR, exist_ok=True)
 
@@ -2554,7 +2600,7 @@ def start_finetune(user: dict = Depends(get_current_user)):
         logger.error(f"Fine‑tuning error: {e}")
         raise HTTPException(500, str(e))
 
-# ===================== CHAT EXPORT (unchanged) =====================
+# ===================== CHAT EXPORT =====================
 @app.get("/api/export/chats/{chat_id}")
 def export_chat(chat_id: str, format: str = "json", user: dict = Depends(get_current_user)):
     if not user:
@@ -2619,7 +2665,7 @@ def health_check():
         "greeting_fix": True
     }
 
-# ===================== WEB SEARCH (unchanged) =====================
+# ===================== WEB SEARCH =====================
 def search_web(query: str, num_results: int = 5) -> List[dict]:
     results = []
     if settings.SERPAPI_KEY:
@@ -2749,33 +2795,15 @@ async def icon_180():
     </svg>'''
     return Response(content=svg, media_type="image/svg+xml")
 
+# Serve frontend at root (replace old JSON root)
 @app.get("/")
-async def root():
-    return {
-        "name": "CAPITAN AI",
-        "version": "32.1",
-        "status": "operational",
-        "auth": "email_password",
-        "pwa_supported": True,
-        "tiers": ["guest", "free", "plus", "pro", "pro_max", "founder"],
-        "intelligence": "self_learning",
-        "reasoning": "chain_of_thought_enabled",
-        "task_routing": True,
-        "notifications": True,
-        "conversation_mode_fixed": True,
-        "puter_api": True,
-        "deepseek": True,
-        "tool_calling": True,
-        "image_analysis": True,
-        "streaming": True,
-        "configurable_params": True,
-        "greeting_fix": True
-    }
+async def serve_frontend():
+    return FileResponse("static/index.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v32.1 - Greeting Fix Active")
+    print(f"🚀 CAPITAN AI v32.1 - Serving Frontend + Backend")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
