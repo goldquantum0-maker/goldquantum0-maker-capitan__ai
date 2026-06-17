@@ -389,9 +389,11 @@
 <div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div></div>
 
 <script>
-    const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' }; // Change to your backend URL if needed
+    // ---------- CONFIGURATION ----------
+    const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };   // change to localhost if testing locally
     const WALLETS = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
     
+    // ---------- GLOBAL STATE ----------
     let state = {
         token: localStorage.getItem('ct') || null,
         user: null,
@@ -410,6 +412,7 @@
         currentStreamer: null
     };
 
+    // ---------- COOKIE HELPERS ----------
     function setCookie(name, value, days) {
         let expires = "";
         if (days) {
@@ -429,6 +432,7 @@
         return null;
     }
 
+    // Restore token from cookie if localStorage lost it
     if (!state.token) {
         let cookieToken = getCookie('ct');
         if (cookieToken) {
@@ -448,6 +452,7 @@
         }
     })();
 
+    // ---------- UI UTILS ----------
     let collapsibleState = { appearance: false, about: false, workspace: false };
     function toggleCollapsible(key) {
         collapsibleState[key] = !collapsibleState[key];
@@ -472,6 +477,16 @@
     function updateGreeting() { const el = document.getElementById('greetingText'); if (el) el.textContent = getDynamicGreeting(); }
     setInterval(updateGreeting, 60000);
     updateGreeting();
+
+    // ---------- MARKDOWN & STREAMING ----------
+    function formatMarkdown(t) {
+        if (!t) return '';
+        return t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/\n/g, '<br>');
+    }
 
     class SmoothStreamer {
         constructor(content, container, onComplete) {
@@ -527,15 +542,245 @@
         }
     }
 
-    function formatMarkdown(t) {
-        if (!t) return '';
-        return t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/`(.*?)`/g, '<code>$1</code>')
-                .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-                .replace(/\n/g, '<br>');
+    class StreamReader {
+        constructor(container) {
+            this.container = container;
+            this.content = '';
+            this.cursor = document.createElement('span');
+            this.cursor.className = 'stream-cursor';
+            this.container.innerHTML = '';
+            this.container.appendChild(this.cursor);
+        }
+        appendToken(token) {
+            this.content += token;
+            this.container.childNodes[this.container.childNodes.length-1]?.remove();
+            this.container.innerHTML = escapeHtml(this.content);
+            this.container.appendChild(this.cursor);
+            scrollBottom();
+        }
+        finish() {
+            if (this.cursor) this.cursor.remove();
+            this.container.innerHTML = formatMarkdown(this.content);
+            scrollBottom();
+        }
     }
 
+    // ---------- SEND MESSAGE (SAFE, WITH FALLBACK) ----------
+    async function sendMessage() {
+        let input = document.getElementById('messageInput'); let text = input.value.trim();
+        if (!text || state.loading) return;
+        input.value = '';
+
+        state.messages.push({ role: 'user', content: text });
+        renderMessages();
+        state.loading = true;
+
+        let aiIdx = state.messages.length;
+        state.messages.push({ role: 'assistant', content: '', isTyping: true });
+        renderMessages();
+
+        // Wait a tick so the DOM definitely has the new message bubble
+        await new Promise(resolve => setTimeout(resolve, 20));
+
+        // Change this to true if you want streaming for Pro+ users
+        const isStreamingEnabled = false;
+        const endpoint = isStreamingEnabled ? '/api/chat/stream' : '/api/chat';
+
+        try {
+            if (isStreamingEnabled) {
+                const streamContainer = document.getElementById(`msg-${aiIdx}`);
+                // Extra safety: if the container still doesn’t exist, fall back to non‑streaming
+                if (!streamContainer) {
+                    console.warn('Stream container not ready, falling back to classic mode');
+                    throw new Error('container missing');
+                }
+                const streamReader = new StreamReader(streamContainer);
+
+                const res = await fetch(`${CFG.API}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({
+                        messages: state.messages.slice(0, -1),
+                        chat_id: state.activeChatId
+                    })
+                });
+
+                if (!res.ok) throw new Error('Stream failed');
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                streamReader.finish();
+                                state.loading = false;
+                                state.messages[aiIdx] = { id: 'stream_' + Date.now(), role: 'assistant', content: streamReader.content };
+                                await loadChats();
+                                return;
+                            }
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.token) {
+                                    streamReader.appendToken(parsed.token);
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                }
+                streamReader.finish();
+                state.loading = false;
+                state.messages[aiIdx] = { id: 'stream_' + Date.now(), role: 'assistant', content: streamReader.content };
+                await loadChats();
+            } else {
+                // Classic non‑streaming path (existing SmoothStreamer)
+                let res = await apiCall('/api/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        messages: state.messages.slice(0, -1),
+                        chat_id: state.activeChatId
+                    })
+                });
+                const finalContent = res.content || 'No response';
+                state.messages[aiIdx] = { id: 'msg_' + Date.now(), role: 'assistant', content: finalContent };
+                renderMessages();
+                const streamTarget = document.getElementById(`msg-${aiIdx}`);
+                if (streamTarget) {
+                    new SmoothStreamer(finalContent, streamTarget, () => { state.loading = false; });
+                } else {
+                    state.loading = false;
+                }
+                state.activeChatId = res.chat_id;
+                await loadChats();
+            }
+        } catch(err) {
+            // If streaming fails or container is missing, fall back to classic chat
+            if (isStreamingEnabled && err.message === 'container missing') {
+                try {
+                    let res = await apiCall('/api/chat', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            messages: state.messages.slice(0, -1),
+                            chat_id: state.activeChatId
+                        })
+                    });
+                    const finalContent = res.content || 'No response';
+                    state.messages[aiIdx] = { id: 'msg_' + Date.now(), role: 'assistant', content: finalContent };
+                    renderMessages();
+                    const streamTarget = document.getElementById(`msg-${aiIdx}`);
+                    if (streamTarget) {
+                        new SmoothStreamer(finalContent, streamTarget, () => { state.loading = false; });
+                    } else {
+                        state.loading = false;
+                    }
+                    state.activeChatId = res.chat_id;
+                    await loadChats();
+                } catch(e2) {
+                    state.messages[aiIdx] = { id: 'error_' + Date.now(), role: 'assistant', content: `Error: ${e2.message}` };
+                    renderMessages();
+                    toast(e2.message);
+                    state.loading = false;
+                }
+            } else {
+                state.messages[aiIdx] = { id: 'error_' + Date.now(), role: 'assistant', content: `Error: ${err.message}` };
+                renderMessages();
+                toast(err.message);
+                state.loading = false;
+            }
+        }
+    }
+
+    function renderMessages() {
+        let c = document.getElementById('messagesArea'); if (!c) return;
+        if (!state.messages.length) {
+            c.innerHTML = `<div style="text-align:center;padding:60px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><p style="color:var(--text-secondary);margin-top:8px;font-size:12px;">Ask me anything — finance, code, research, or upload documents for analysis.</p></div>`;
+            updateGreeting(); return;
+        }
+        c.innerHTML = state.messages.map((m, i) => {
+            if (m.isTyping) return `<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>`;
+            let contentHtml = m.role === 'user' ? escapeHtml(m.content) : formatMarkdown(m.content);
+            let actionIcons = '';
+            if (m.role === 'assistant' && !m.isTyping && m.id) {
+                actionIcons = `
+                <div class="action-icons">
+                    <button onclick="copyMessage(${i})" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                    <button onclick="likeMessage('${m.id}')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+                    <button onclick="dislikeMessage('${m.id}')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
+                    <button onclick="shareMessage(${i})" title="Share"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+                    <button onclick="saveMessage('${m.id}')" title="Save to Library"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+                </div>`;
+            }
+            return `<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${contentHtml}</div>${actionIcons}</div>`;
+        }).join('');
+        if (document.getElementById('greetingText')) updateGreeting();
+        scrollBottom();
+    }
+
+    function renderChatHistory() {
+        let c = document.getElementById('chatHistoryList'); if (!c) return;
+        if (!state.user) {
+            c.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">Sign in to see recent chats</div>';
+            return;
+        }
+        if (!state.chats.length) {
+            c.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">No conversations yet — start a new chat!</div>';
+            return;
+        }
+        c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:12px;">&times;</button></div>`).join('');
+    }
+
+    // ---------- MESSAGE ACTIONS ----------
+    function copyMessage(idx) { const msg = state.messages[idx]; if (!msg) return; navigator.clipboard.writeText(msg.content).then(() => toast('Copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')); }
+    function likeMessage(msgId) {
+        if (!state.user || !msgId) return;
+        fetch(`${CFG.API}/api/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+            body: JSON.stringify({ message_id: msgId, rating: 1 })
+        }).catch(() => {});
+        toast('Thanks for your feedback!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>');
+    }
+    function dislikeMessage(msgId) {
+        if (!state.user || !msgId) return;
+        fetch(`${CFG.API}/api/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+            body: JSON.stringify({ message_id: msgId, rating: 0 })
+        }).catch(() => {});
+        toast('Feedback noted.', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>');
+    }
+    function shareMessage(idx) { const chatId = state.activeChatId || 'chat'; navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>')); }
+    async function saveMessage(msgId) {
+        if (!state.user) { toast('Sign in to save to Library'); return; }
+        const msg = state.messages.find(m => m.id === msgId);
+        if (!msg) return;
+        try {
+            let res = await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat`, type: 'note', content: msg.content }) });
+            if (res.created) {
+                toast('Saved to Library', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
+                try { let lib = await apiCall('/api/library'); state.library = lib.items || []; updateSavedCount(); } catch(e) {}
+            } else {
+                toast('Save did not return success – please check.');
+            }
+        } catch(e) {
+            let msg = 'Could not save';
+            try { let err = JSON.parse(e.message); msg = err.detail || msg; } catch(_) {}
+            toast(msg);
+        }
+    }
+
+    // ---------- THEME & LAYOUT ----------
     function setTheme(theme) {
         state.theme = theme;
         document.body.className = theme;
@@ -558,6 +803,7 @@
         document.getElementById('overlay').classList.remove('open');
     }
 
+    // ---------- FOUNDER EASTER EGG ----------
     function handleFounderClick() {
         state.founderClickCount++;
         if (state.founderClickCount >= 13) {
@@ -654,7 +900,7 @@
         } catch(e) { toast('Failed'); }
     }
 
-    // Workspace functions
+    // ---------- WORKSPACES ----------
     async function loadWorkspaces() {
         if (!state.user || ['guest','free'].includes(state.tier)) return;
         document.getElementById('workspaceSection').style.display = 'block';
@@ -761,6 +1007,7 @@
         }
     });
 
+    // ---------- API HELPER ----------
     async function apiCall(endpoint, opts = {}) {
         let headers = { 'Content-Type': 'application/json' };
         if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
@@ -769,6 +1016,8 @@
         if (!res.ok) throw new Error(await res.text());
         return res.json();
     }
+
+    // ---------- SESSION & PROFILE ----------
     async function initSession() {
         try {
             if (state.token) {
@@ -828,6 +1077,7 @@
         input.click();
     }
 
+    // ---------- CHATS ----------
     async function loadChats() {
         if (!state.token) return;
         try {
@@ -863,222 +1113,116 @@
         toast('Chat deleted');
     }
 
-    // ============ Streaming Support ============
-    class StreamReader {
-        constructor(container) {
-            this.container = container;
-            this.content = '';
-            this.cursor = document.createElement('span');
-            this.cursor.className = 'stream-cursor';
-            this.container.innerHTML = '';
-            this.container.appendChild(this.cursor);
-        }
-        appendToken(token) {
-            this.content += token;
-            this.container.childNodes[this.container.childNodes.length-1]?.remove();
-            this.container.innerHTML = escapeHtml(this.content);
-            this.container.appendChild(this.cursor);
-            scrollBottom();
-        }
-        finish() {
-            if (this.cursor) this.cursor.remove();
-            this.container.innerHTML = formatMarkdown(this.content);
-            scrollBottom();
-        }
-    }
+    // ---------- NOTIFICATIONS ----------
+    let notifications = [];
+    let unreadCount = 0;
 
-    async function sendMessage() {
-        let input = document.getElementById('messageInput'); let text = input.value.trim();
-        if (!text || state.loading) return;
-        input.value = '';
-
-        state.messages.push({ role: 'user', content: text });
-        renderMessages();
-        state.loading = true;
-
-        let aiIdx = state.messages.length;
-        state.messages.push({ role: 'assistant', content: '', isTyping: true });
-        renderMessages();
-
-        const isStreamingEnabled = ['pro', 'pro_max', 'founder'].includes(state.tier);
-        const endpoint = isStreamingEnabled ? '/api/chat/stream' : '/api/chat';
-
+    async function fetchNotifications() {
+        if (!state.token) return;
         try {
-            if (isStreamingEnabled) {
-                const streamContainer = document.getElementById(`msg-${aiIdx}`);
-                const streamReader = new StreamReader(streamContainer);
-
-                const res = await fetch(`${CFG.API}${endpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${state.token}`
-                    },
-                    body: JSON.stringify({
-                        messages: state.messages.slice(0, -1),
-                        chat_id: state.activeChatId
-                    })
-                });
-
-                if (!res.ok) throw new Error('Stream failed');
-
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop() || '';
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') {
-                                streamReader.finish();
-                                state.loading = false;
-                                state.messages[aiIdx] = { id: 'stream_' + Date.now(), role: 'assistant', content: streamReader.content };
-                                await loadChats();
-                                return;
-                            }
-                            try {
-                                const parsed = JSON.parse(data);
-                                if (parsed.token) {
-                                    streamReader.appendToken(parsed.token);
-                                }
-                            } catch(e) {}
-                        }
-                    }
-                }
-                streamReader.finish();
-                state.loading = false;
-                state.messages[aiIdx] = { id: 'stream_' + Date.now(), role: 'assistant', content: streamReader.content };
-                await loadChats();
-            } else {
-                let res = await apiCall('/api/chat', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        messages: state.messages.slice(0, -1),
-                        chat_id: state.activeChatId
-                    })
-                });
-                const finalContent = res.content || 'No response';
-                state.messages[aiIdx] = { id: 'msg_' + Date.now(), role: 'assistant', content: finalContent };
-                renderMessages();
-                const streamTarget = document.getElementById(`msg-${aiIdx}`);
-                if (streamTarget) {
-                    new SmoothStreamer(finalContent, streamTarget, () => { state.loading = false; });
-                } else {
-                    state.loading = false;
-                }
-                state.activeChatId = res.chat_id;
-                await loadChats();
+            const res = await fetch(`${CFG.API}/api/notifications`, {
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            const data = await res.json();
+            notifications = data.notifications || [];
+            unreadCount = notifications.filter(n => !n.read).length;
+            updateNotifBadge();
+            if (document.getElementById('notifPanel').classList.contains('open')) {
+                renderNotifList();
             }
-        } catch(err) {
-            state.messages[aiIdx] = { id: 'error_' + Date.now(), role: 'assistant', content: `Error: ${err.message}` };
-            renderMessages();
-            toast(err.message);
-            state.loading = false;
+        } catch(e) {}
+    }
+
+    function updateNotifBadge() {
+        const badge = document.getElementById('notifBadge');
+        const ring = document.getElementById('pulseRing');
+        if (!badge || !ring) return;
+        if (unreadCount > 0) {
+            badge.style.display = 'flex';
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            ring.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+            ring.style.display = 'none';
         }
     }
 
-    function renderMessages() {
-        let c = document.getElementById('messagesArea'); if (!c) return;
-        if (!state.messages.length) {
-            c.innerHTML = `<div style="text-align:center;padding:60px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><p style="color:var(--text-secondary);margin-top:8px;font-size:12px;">Ask me anything — finance, code, research, or upload documents for analysis.</p></div>`;
-            updateGreeting(); return;
+    function openNotifPanel() {
+        document.getElementById('notifPanel').classList.add('open');
+        renderNotifList();
+    }
+
+    function closeNotifPanel() {
+        document.getElementById('notifPanel').classList.remove('open');
+    }
+
+    function renderNotifList() {
+        const container = document.getElementById('notifList');
+        if (!container) return;
+        if (notifications.length === 0) {
+            container.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+            return;
         }
-        c.innerHTML = state.messages.map((m, i) => {
-            if (m.isTyping) return `<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>`;
-            let contentHtml = m.role === 'user' ? escapeHtml(m.content) : formatMarkdown(m.content);
-            let actionIcons = '';
-            if (m.role === 'assistant' && !m.isTyping && m.id) {
-                actionIcons = `
-                <div class="action-icons">
-                    <button onclick="copyMessage(${i})" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                    <button onclick="likeMessage('${m.id}')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
-                    <button onclick="dislikeMessage('${m.id}')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
-                    <button onclick="shareMessage(${i})" title="Share"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-                    <button onclick="saveMessage('${m.id}')" title="Save to Library"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
-                </div>`;
-            }
-            return `<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${contentHtml}</div>${actionIcons}</div>`;
+        container.innerHTML = notifications.map(n => {
+            const iconMap = {
+                info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌',
+                workspace: '🏢', system: '💡'
+            };
+            const icon = iconMap[n.type] || '🔔';
+            const date = new Date(n.created).toLocaleString();
+            return `
+                <div class="notif-item ${n.read ? '' : 'unread'}">
+                    <div class="notif-icon">${icon}</div>
+                    <div class="notif-message">
+                        <div>${escapeHtml(n.message)}</div>
+                        <div class="notif-time">${date}</div>
+                    </div>
+                    <button class="notif-delete" onclick="deleteNotification('${n.id}')">✕</button>
+                </div>
+            `;
         }).join('');
-        if (document.getElementById('greetingText')) updateGreeting();
-        scrollBottom();
-    }
-    function renderChatHistory() {
-        let c = document.getElementById('chatHistoryList'); if (!c) return;
-        if (!state.user) {
-            c.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">Sign in to see recent chats</div>';
-            return;
-        }
-        if (!state.chats.length) {
-            c.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:10px;">No conversations yet — start a new chat!</div>';
-            return;
-        }
-        c.innerHTML = state.chats.map(chat => `<div class="chat-item ${state.activeChatId === chat.id ? 'active' : ''}" onclick="loadChat('${chat.id}')"><span style="flex:1;">${escapeHtml(chat.title || 'Chat')}</span><button onclick="event.stopPropagation(); deleteChat('${chat.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:12px;">&times;</button></div>`).join('');
     }
 
-    function copyMessage(idx) { const msg = state.messages[idx]; if (!msg) return; navigator.clipboard.writeText(msg.content).then(() => toast('Copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')); }
-    function likeMessage(msgId) {
-        if (!state.user || !msgId) return;
-        fetch(`${CFG.API}/api/feedback`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
-            body: JSON.stringify({ message_id: msgId, rating: 1 })
-        }).catch(() => {});
-        toast('Thanks for your feedback!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>');
-    }
-    function dislikeMessage(msgId) {
-        if (!state.user || !msgId) return;
-        fetch(`${CFG.API}/api/feedback`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
-            body: JSON.stringify({ message_id: msgId, rating: 0 })
-        }).catch(() => {});
-        toast('Feedback noted.', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>');
-    }
-    function shareMessage(idx) { const chatId = state.activeChatId || 'chat'; navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>')); }
-    async function saveMessage(msgId) {
-        if (!state.user) { toast('Sign in to save to Library'); return; }
-        const msg = state.messages.find(m => m.id === msgId);
-        if (!msg) return;
+    async function markAllRead() {
         try {
-            let res = await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat`, type: 'note', content: msg.content }) });
-            if (res.created) {
-                toast('Saved to Library', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
-                try { let lib = await apiCall('/api/library'); state.library = lib.items || []; updateSavedCount(); } catch(e) {}
-            } else {
-                toast('Save did not return success – please check.');
-            }
-        } catch(e) {
-            let msg = 'Could not save';
-            try { let err = JSON.parse(e.message); msg = err.detail || msg; } catch(_) {}
-            toast(msg);
+            await fetch(`${CFG.API}/api/notifications/mark-read`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            await fetchNotifications();
+        } catch(e) {}
+    }
+
+    async function deleteNotification(id) {
+        try {
+            await fetch(`${CFG.API}/api/notifications/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            await fetchNotifications();
+        } catch(e) {}
+    }
+
+    // Override logo click to handle notifications and founder activation
+    document.getElementById('notificationTrigger').addEventListener('click', (e) => {
+        if (state.founderClickCount >= 13) return;
+        e.stopPropagation();
+        openNotifPanel();
+    });
+
+    // Click outside to close panel
+    document.addEventListener('click', (e) => {
+        const panel = document.getElementById('notifPanel');
+        const trigger = document.getElementById('notificationTrigger');
+        if (panel.classList.contains('open') && !panel.contains(e.target) && !trigger.contains(e.target)) {
+            closeNotifPanel();
         }
-    }
+    });
 
-    function setupScrollButton() {
-        const area = document.getElementById('messagesArea');
-        const btn = document.getElementById('scrollToBottomBtn');
-        if (!area || !btn) return;
-        area.addEventListener('scroll', () => {
-            const atBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 100;
-            btn.style.display = atBottom ? 'none' : 'flex';
-        });
-    }
+    // Periodic refresh
+    setInterval(fetchNotifications, 30000);
 
-    function openProfileModal() {
-        const modal = document.getElementById('profileModalContent');
-        const isFounder = state.tier === 'founder';
-        const isLoggedIn = !!state.user;
-        const photoAction = isLoggedIn ? `<button class="btn" style="margin:0;width:auto;padding:7px 14px;font-size:11px;" onclick="uploadProfilePhoto()">Change Photo</button>` : `<span style="font-size:10px;color:var(--text-tertiary);">Sign in to change</span>`;
-        modal.innerHTML = `<h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;object-fit:cover;background:var(--accent-glow);" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${photoAction}</div><div style="font-weight:600;margin-top:12px;font-size:14px;">${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</div><div style="color:var(--accent);font-size:11px;margin-bottom:18px;">${isFounder ? 'Founder' : state.tier.toUpperCase()}${state.tier === 'pro_max' || state.tier === 'founder' ? ' - Unlimited' : ' - Limited messaging'}</div>${!isFounder ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>&rarr;</span></div>` : ''}${isLoggedIn ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>Saved</span><span>&rarr;</span></div>` : ''}<div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data &amp; Legal</span><span>&rarr;</span></div>${isLoggedIn ? `<div class="modal-setting" onclick="logout(); closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span><span>&rarr;</span></div>` : ''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
-        document.getElementById('profileModal').classList.add('open');
-    }
-
+    // ---------- PAYMENT & UPGRADE ----------
     function openUpgradeModal() {
         const modal = document.getElementById('upgradeModalContent');
         modal.innerHTML = `<h2>Upgrade CAPITAN AI</h2>
@@ -1158,7 +1302,7 @@
         } catch(e) { toast('Verification failed'); }
     }
 
-    // Saved (Library)
+    // ---------- LIBRARY ----------
     function updateSavedCount() {
         const count = state.library.length;
         const el = document.getElementById('savedCount');
@@ -1527,114 +1671,24 @@
         location.reload();
     }
 
-    // ===================== NOTIFICATION UI =====================
-    let notifications = [];
-    let unreadCount = 0;
-
-    async function fetchNotifications() {
-        if (!state.token) return;
-        try {
-            const res = await fetch(`${CFG.API}/api/notifications`, {
-                headers: { 'Authorization': `Bearer ${state.token}` }
-            });
-            const data = await res.json();
-            notifications = data.notifications || [];
-            unreadCount = notifications.filter(n => !n.read).length;
-            updateNotifBadge();
-            if (document.getElementById('notifPanel').classList.contains('open')) {
-                renderNotifList();
-            }
-        } catch(e) {}
+    function setupScrollButton() {
+        const area = document.getElementById('messagesArea');
+        const btn = document.getElementById('scrollToBottomBtn');
+        if (!area || !btn) return;
+        area.addEventListener('scroll', () => {
+            const atBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 100;
+            btn.style.display = atBottom ? 'none' : 'flex';
+        });
     }
 
-    function updateNotifBadge() {
-        const badge = document.getElementById('notifBadge');
-        const ring = document.getElementById('pulseRing');
-        if (!badge || !ring) return;
-        if (unreadCount > 0) {
-            badge.style.display = 'flex';
-            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-            ring.style.display = 'block';
-        } else {
-            badge.style.display = 'none';
-            ring.style.display = 'none';
-        }
+    function openProfileModal() {
+        const modal = document.getElementById('profileModalContent');
+        const isFounder = state.tier === 'founder';
+        const isLoggedIn = !!state.user;
+        const photoAction = isLoggedIn ? `<button class="btn" style="margin:0;width:auto;padding:7px 14px;font-size:11px;" onclick="uploadProfilePhoto()">Change Photo</button>` : `<span style="font-size:10px;color:var(--text-tertiary);">Sign in to change</span>`;
+        modal.innerHTML = `<h2>Profile</h2><div class="avatar-upload"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;object-fit:cover;background:var(--accent-glow);" src="${state.profilePhoto || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'8\' r=\'4\' fill=\'%2338bdf8\'/%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\' fill=\'%2338bdf8\'/%3E%3C/svg%3E'}">${photoAction}</div><div style="font-weight:600;margin-top:12px;font-size:14px;">${state.user?.name || state.user?.email?.split('@')[0] || 'Guest'}</div><div style="color:var(--accent);font-size:11px;margin-bottom:18px;">${isFounder ? 'Founder' : state.tier.toUpperCase()}${state.tier === 'pro_max' || state.tier === 'founder' ? ' - Unlimited' : ' - Limited messaging'}</div>${!isFounder ? `<div class="modal-setting" onclick="openUpgradeModal(); closeModal('profileModal')"><span>Upgrade Plan</span><span>&rarr;</span></div>` : ''}${isLoggedIn ? `<div class="modal-setting" onclick="openLibrary(); closeModal('profileModal')"><span>Saved</span><span>&rarr;</span></div>` : ''}<div class="modal-setting" onclick="openDataModal(); closeModal('profileModal')"><span>Data &amp; Legal</span><span>&rarr;</span></div>${isLoggedIn ? `<div class="modal-setting" onclick="logout(); closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span><span>&rarr;</span></div>` : ''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
+        document.getElementById('profileModal').classList.add('open');
     }
-
-    function openNotifPanel() {
-        document.getElementById('notifPanel').classList.add('open');
-        renderNotifList();
-    }
-
-    function closeNotifPanel() {
-        document.getElementById('notifPanel').classList.remove('open');
-    }
-
-    function renderNotifList() {
-        const container = document.getElementById('notifList');
-        if (!container) return;
-        if (notifications.length === 0) {
-            container.innerHTML = '<div class="notif-empty">No notifications yet</div>';
-            return;
-        }
-        container.innerHTML = notifications.map(n => {
-            const iconMap = {
-                info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌',
-                workspace: '🏢', system: '💡'
-            };
-            const icon = iconMap[n.type] || '🔔';
-            const date = new Date(n.created).toLocaleString();
-            return `
-                <div class="notif-item ${n.read ? '' : 'unread'}">
-                    <div class="notif-icon">${icon}</div>
-                    <div class="notif-message">
-                        <div>${escapeHtml(n.message)}</div>
-                        <div class="notif-time">${date}</div>
-                    </div>
-                    <button class="notif-delete" onclick="deleteNotification('${n.id}')">✕</button>
-                </div>
-            `;
-        }).join('');
-    }
-
-    async function markAllRead() {
-        try {
-            await fetch(`${CFG.API}/api/notifications/mark-read`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${state.token}` }
-            });
-            await fetchNotifications();
-        } catch(e) {}
-    }
-
-    async function deleteNotification(id) {
-        try {
-            await fetch(`${CFG.API}/api/notifications/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${state.token}` }
-            });
-            await fetchNotifications();
-        } catch(e) {}
-    }
-
-    // Override logo click to handle notifications and founder activation
-    document.getElementById('notificationTrigger').addEventListener('click', (e) => {
-        if (state.founderClickCount >= 13) return;
-        e.stopPropagation();
-        openNotifPanel();
-    });
-
-    // Click outside to close panel
-    document.addEventListener('click', (e) => {
-        const panel = document.getElementById('notifPanel');
-        const trigger = document.getElementById('notificationTrigger');
-        if (panel.classList.contains('open') && !panel.contains(e.target) && !trigger.contains(e.target)) {
-            closeNotifPanel();
-        }
-    });
-
-    // Periodic refresh
-    setInterval(fetchNotifications, 30000);
 
     // ===================== INIT =====================
     async function init() {
