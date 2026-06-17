@@ -1,9 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v32.1 (Final Fixes)
+CAPITAN AI — Enterprise Backend v32.1 (Final – Static Serving)
 CLOSEAI Technologies
 World‑Class General‑Purpose AI | Intent‑Driven | Trustworthy | Warm & Engaging
-All features intact, CORS configured, static serving enabled.
-Provider helpers added: Puter, AIML, OpenRouter, Groq, Tool execution.
+All features intact, static frontend served from same domain, CORS no longer needed.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -24,7 +23,8 @@ import uvicorn
 
 app = FastAPI(title="CAPITAN AI API", version="32.1")
 
-# ===================== STATIC FILE SERVING (FRONTEND) =====================
+# ===================== STATIC FILE SERVING (NO CORS NEEDED) =====================
+os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class Settings(BaseSettings):
@@ -60,7 +60,6 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# ===================== DATABASE =====================
 @contextmanager
 def get_db():
     conn = None
@@ -2795,10 +2794,12 @@ async def icon_180():
     </svg>'''
     return Response(content=svg, media_type="image/svg+xml")
 
-# Serve frontend at root (replace old JSON root)
+# Serve frontend at root
 @app.get("/")
 async def serve_frontend():
-    return FileResponse("static/index.html")
+    if os.path.isfile("static/index.html"):
+        return FileResponse("static/index.html")
+    return {"status": "ok", "version": "32.1", "frontend": "missing"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
