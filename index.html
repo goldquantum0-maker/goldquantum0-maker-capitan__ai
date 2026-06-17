@@ -179,7 +179,7 @@
         .scroll-to-bottom { position:fixed; bottom:90px; right:26px; width:36px; height:36px; border-radius:50%; background:var(--accent-glow); border:1.5px solid var(--accent); color:var(--accent); box-shadow:0 2px 8px rgba(56,189,248,0.3); display:none; align-items:center; justify-content:center; cursor:pointer; z-index:50; transition:all 0.2s; }
         .scroll-to-bottom:hover { transform:scale(1.05); background:var(--accent); color:white; }
 
-        /* Notification styles (unchanged) */
+        /* Notification styles */
         .notif-badge { position: absolute; top: 6px; right: 6px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; display: none; box-shadow: 0 0 6px rgba(239,68,68,0.5); z-index: 5; }
         .pulse-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--accent); animation: pulseRing 1.8s ease-out infinite; pointer-events: none; display: none; }
         @keyframes pulseRing { 0% { transform: translate(-50%, -50%) scale(0.95); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
@@ -389,7 +389,7 @@
 <div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div></div>
 
 <script>
-    const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
+    const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' }; // Change to your backend URL if needed
     const WALLETS = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
     
     let state = {
@@ -602,9 +602,7 @@
                 await fetchNotifications();
             } else { toast('Activation failed: ' + (data.detail || 'Unknown error')); }
         } catch(e) {
-            let msg = 'Activation failed';
-            try { msg = JSON.parse(e.message).detail || msg; } catch(_) {}
-            toast(msg);
+            toast('Activation failed: ' + e.message);
         }
     }
 
@@ -865,7 +863,7 @@
         toast('Chat deleted');
     }
 
-    // ============ NEW: Streaming Support ============
+    // ============ Streaming Support ============
     class StreamReader {
         constructor(container) {
             this.container = container;
@@ -940,8 +938,7 @@
                             if (data === '[DONE]') {
                                 streamReader.finish();
                                 state.loading = false;
-                                state.messages[aiIdx] = { role: 'assistant', content: streamReader.content };
-                                state.activeChatId = 'stream_' + Date.now();
+                                state.messages[aiIdx] = { id: 'stream_' + Date.now(), role: 'assistant', content: streamReader.content };
                                 await loadChats();
                                 return;
                             }
@@ -956,8 +953,7 @@
                 }
                 streamReader.finish();
                 state.loading = false;
-                state.messages[aiIdx] = { role: 'assistant', content: streamReader.content };
-                state.activeChatId = 'stream_' + Date.now();
+                state.messages[aiIdx] = { id: 'stream_' + Date.now(), role: 'assistant', content: streamReader.content };
                 await loadChats();
             } else {
                 let res = await apiCall('/api/chat', {
@@ -968,7 +964,7 @@
                     })
                 });
                 const finalContent = res.content || 'No response';
-                state.messages[aiIdx] = { role: 'assistant', content: finalContent };
+                state.messages[aiIdx] = { id: 'msg_' + Date.now(), role: 'assistant', content: finalContent };
                 renderMessages();
                 const streamTarget = document.getElementById(`msg-${aiIdx}`);
                 if (streamTarget) {
@@ -980,7 +976,7 @@
                 await loadChats();
             }
         } catch(err) {
-            state.messages[aiIdx] = { role: 'assistant', content: `Error: ${err.message}` };
+            state.messages[aiIdx] = { id: 'error_' + Date.now(), role: 'assistant', content: `Error: ${err.message}` };
             renderMessages();
             toast(err.message);
             state.loading = false;
@@ -997,14 +993,14 @@
             if (m.isTyping) return `<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>`;
             let contentHtml = m.role === 'user' ? escapeHtml(m.content) : formatMarkdown(m.content);
             let actionIcons = '';
-            if (m.role === 'assistant' && !m.isTyping) {
+            if (m.role === 'assistant' && !m.isTyping && m.id) {
                 actionIcons = `
                 <div class="action-icons">
                     <button onclick="copyMessage(${i})" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                    <button onclick="likeMessage(${i})" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
-                    <button onclick="dislikeMessage(${i})" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
+                    <button onclick="likeMessage('${m.id}')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+                    <button onclick="dislikeMessage('${m.id}')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
                     <button onclick="shareMessage(${i})" title="Share"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
-                    <button onclick="saveMessage(${i})" title="Save to Library"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+                    <button onclick="saveMessage('${m.id}')" title="Save to Library"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
                 </div>`;
             }
             return `<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${contentHtml}</div>${actionIcons}</div>`;
@@ -1026,14 +1022,31 @@
     }
 
     function copyMessage(idx) { const msg = state.messages[idx]; if (!msg) return; navigator.clipboard.writeText(msg.content).then(() => toast('Copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>')); }
-    function likeMessage(idx) { toast('Thanks for your feedback!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'); }
-    function dislikeMessage(idx) { toast('Feedback noted. We\'ll improve.', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>'); }
+    function likeMessage(msgId) {
+        if (!state.user || !msgId) return;
+        fetch(`${CFG.API}/api/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+            body: JSON.stringify({ message_id: msgId, rating: 1 })
+        }).catch(() => {});
+        toast('Thanks for your feedback!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>');
+    }
+    function dislikeMessage(msgId) {
+        if (!state.user || !msgId) return;
+        fetch(`${CFG.API}/api/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
+            body: JSON.stringify({ message_id: msgId, rating: 0 })
+        }).catch(() => {});
+        toast('Feedback noted.', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>');
+    }
     function shareMessage(idx) { const chatId = state.activeChatId || 'chat'; navigator.clipboard.writeText(`CAPITAN AI conversation: ${chatId}`).then(() => toast('Chat ID copied!', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>')); }
-    async function saveMessage(idx) {
+    async function saveMessage(msgId) {
         if (!state.user) { toast('Sign in to save to Library'); return; }
-        const msg = state.messages[idx]; if (!msg) return;
+        const msg = state.messages.find(m => m.id === msgId);
+        if (!msg) return;
         try {
-            let res = await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat ${state.activeChatId || 'new'}`, type: 'note', content: msg.content }) });
+            let res = await apiCall('/api/library', { method: 'POST', body: JSON.stringify({ name: `Saved from chat`, type: 'note', content: msg.content }) });
             if (res.created) {
                 toast('Saved to Library', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>');
                 try { let lib = await apiCall('/api/library'); state.library = lib.items || []; updateSavedCount(); } catch(e) {}
