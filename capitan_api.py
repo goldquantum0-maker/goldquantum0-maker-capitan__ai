@@ -23,6 +23,15 @@ import uvicorn
 
 app = FastAPI(title="CAPITAN AI API", version="32.1")
 
+import os
+from fastapi.staticfiles import StaticFiles
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
+os.makedirs(STATIC_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 # ===================== STATIC FILE SERVING (NO CORS NEEDED) =====================
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
