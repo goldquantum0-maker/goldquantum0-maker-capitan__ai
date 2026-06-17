@@ -1796,9 +1796,6 @@ def health_check():
 @app.get("/manifest.json")
 async def manifest():
     return JSONResponse(content={
- @app.get("/manifest.json")
-async def manifest():
-    return JSONResponse(content={
         "name": "CAPITAN AI",
         "short_name": "CAPITAN",
         "start_url": "/",
