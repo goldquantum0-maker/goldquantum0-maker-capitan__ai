@@ -1807,26 +1807,65 @@ async def manifest():
             {"src": "/icon-512.png", "sizes": "512x512", "type": "image/svg+xml"}
         ]
     })
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-@app.get("/icon-192.png")
-async def icon_192():
-    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="100%" height="100%">
-  <rect width="192" height="192" fill="#0b6d8c"/>
-  <circle cx="96" cy="96" r="52" fill="none" stroke="#ffffff" stroke-width="6"/>
-  <text x="96" y="108" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="54" fill="#ffffff" text-anchor="middle">C</text>
-</svg>'''
-    return Response(content=svg, media_type="image/svg+xml")
+app = FastAPI(title="CAPITAN AI")
+
+# Serve static assets
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-@app.get("/icon-512.png")
-async def icon_512():
-    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <rect width="512" height="512" fill="#0b6d8c"/>
-  <circle cx="256" cy="256" r="140" fill="none" stroke="#ffffff" stroke-width="16"/>
-  <text x="256" y="290" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="145" fill="#ffffff" text-anchor="middle">C</text>
-</svg>'''
-    return Response(content=svg, media_type="image/svg+xml")
-
+@app.get("/manifest.json")
+async def manifest():
+    return JSONResponse({
+        "name": "CAPITAN AI",
+        "short_name": "CAPITAN",
+        "description": "Your intelligent companion for thoughtful answers and clear insights.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": "#0f172a",
+        "theme_color": "#0b6d8c",
+        "lang": "en",
+        "categories": ["productivity", "utilities", "education"],
+        "icons": [
+            {
+                "src": "/static/icon-192x192.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "/static/icon-512x512.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            },
+            {
+                "src": "/static/icon-512x512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable any"
+            }
+        ],
+        "screenshots": [
+            {
+                "src": "/static/screenshots/home.png",
+                "sizes": "1280x720",
+                "type": "image/png",
+                "form_factor": "wide",
+                "label": "CAPITAN AI Home Screen"
+            },
+            {
+                "src": "/static/screenshots/chat.png",
+                "sizes": "1280x720",
+                "type": "image/png",
+                "form_factor": "wide",
+                "label": "Chat with CAPITAN AI"
+            }
+        ]
+    })
 @app.get("/")
 async def root():
     return {"name": "CAPITAN AI", "version": "31.0", "edition": "Safety & Research"}
