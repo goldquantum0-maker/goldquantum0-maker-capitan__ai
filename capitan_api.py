@@ -1793,61 +1793,60 @@ def health_check():
         "tiers": list(TIER_CONFIG.keys())
     }
 
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, JSONResponse
+
+app = FastAPI()
+
+
+@app.get("/icon-192.png")
+async def icon_192():
+    return FileResponse(
+        "static/icon-192x192.png",
+        media_type="image/png"
+    )
+
+
+@app.get("/icon-512.png")
+async def icon_512():
+    return FileResponse(
+        "static/icon-512x512.png",
+        media_type="image/png"
+    )
+
 
 @app.get("/manifest.json")
 async def manifest():
-    return JSONResponse(
-        content={
-            "id": "/",
-            "name": "CAPITAN AI",
-            "short_name": "CAPITAN",
-            "description": "Your intelligent companion for thoughtful answers and clear insights.",
-            "start_url": "/",
-            "scope": "/",
-            "display": "standalone",
-            "orientation": "portrait",
-            "background_color": "#0f172a",
-            "theme_color": "#0b6d8c",
-            "lang": "en",
-
-            "icons": [
-                {
-                    "src": "https://capitan-ai-jxu8.onrender.com/icon-192.png",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                },
-                {
-                    "src": "https://capitan-ai-jxu8.onrender.com/icon-512.png",
-                    "sizes": "512x512",
-                    "type": "image/png"
-                },
-                {
-                    "src": "https://capitan-ai-jxu8.onrender.com/icon-512.png",
-                    "sizes": "512x512",
-                    "type": "image/png",
-                    "purpose": "maskable any"
-                }
-            ],
-
-            "screenshots": [
-                {
-                    "src": "https://capitan-ai-jxu8.onrender.com/screenshots/home.png",
-                    "sizes": "1280x720",
-                    "type": "image/png",
-                    "form_factor": "wide",
-                    "label": "CAPITAN AI Home Screen"
-                },
-                {
-                    "src": "https://capitan-ai-jxu8.onrender.com/screenshots/chat.png",
-                    "sizes": "1280x720",
-                    "type": "image/png",
-                    "form_factor": "wide",
-                    "label": "Chat with CAPITAN AI"
-                }
-            ]
-        }
-    )
+    return JSONResponse({
+        "id": "/",
+        "name": "CAPITAN AI",
+        "short_name": "CAPITAN",
+        "description": "Your intelligent companion for thoughtful answers and clear insights.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": "#0f172a",
+        "theme_color": "#0b6d8c",
+        "icons": [
+            {
+                "src": "/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            },
+            {
+                "src": "/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable any"
+            }
+        ]
+    })
 @app.get("/")
 async def root():
     return {"name": "CAPITAN AI", "version": "31.0", "edition": "Safety & Research"}
