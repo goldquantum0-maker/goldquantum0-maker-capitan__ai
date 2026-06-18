@@ -1793,34 +1793,12 @@ def health_check():
         "tiers": list(TIER_CONFIG.keys())
     }
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
-
-app = FastAPI()
-
-
-@app.get("/icon-192.png")
-async def icon_192():
-    return FileResponse(
-        "static/icon-192x192.png",
-        media_type="image/png"
-    )
-
-
-@app.get("/icon-512.png")
-async def icon_512():
-    return FileResponse(
-        "static/icon-512x512.png",
-        media_type="image/png"
-    )
-
-
 @app.get("/manifest.json")
 async def manifest():
     return JSONResponse({
         "id": "/",
-        "name": "CAPITAN AI",
-        "short_name": "CAPITAN",
+        "name": "CapitanAI by CLOSEAI",
+        "short_name": "CAPITAN AI",
         "description": "Your intelligent companion for thoughtful answers and clear insights.",
         "start_url": "/",
         "scope": "/",
@@ -1844,6 +1822,20 @@ async def manifest():
                 "sizes": "512x512",
                 "type": "image/png",
                 "purpose": "maskable any"
+            }
+        ],
+        "screenshots": [
+            {
+                "src": "/screenshots/home.png",
+                "sizes": "1280x720",
+                "type": "image/png",
+                "label": "CAPITAN AI home screen"
+            },
+            {
+                "src": "/screenshots/chat.png",
+                "sizes": "1280x720",
+                "type": "image/png",
+                "label": "Chat with CAPITAN AI"
             }
         ]
     })
