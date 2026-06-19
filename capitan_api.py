@@ -239,6 +239,13 @@ def founder_only(user: dict = Depends(get_current_user)):
     except: pass
     raise HTTPException(401, "Session not found")
 
+def user_token_balance(user_id: str) -> int:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT token_balance FROM users WHERE id = %s", (user_id,))
+            row = c.fetchone()
+            return row[0] if row else 0
+
 # ================================================================================
 # TIERS
 # ================================================================================
