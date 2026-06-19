@@ -213,6 +213,32 @@ async def get_current_session(request: Request):
     except: pass
     raise HTTPException(401, "Session not found")
 
+
+# ======== THIS FUNCTION MUST BE HERE (top‑level) ========
+def founder_only(user: dict = Depends(get_current_user)):
+    if not user or user["tier"] != "founder":
+        raise HTTPException(403, "Founder access required")
+    return user
+    if payload.get("type") == "user":
+        user = get_current_user(request)
+        if user:
+            return {"id": user["id"], "tier": user["tier"], "is_user": True, "user_data": user}
+    session_id = payload.get("session_id")
+    tier = payload.get("tier", "guest")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, tier, daily_msg_count, msg_reset_date FROM sessions WHERE id = %s", (session_id,))
+                row = c.fetchone()
+                if row:
+                    return {"id": row[0], "tier": row[1], "daily_msg_count": row[2], "msg_reset_date": row[3], "is_user": False}
+                else:
+                    c.execute("INSERT INTO sessions (id, tier, daily_msg_count, msg_reset_date) VALUES (%s, %s, 0, CURRENT_DATE)", (session_id, tier))
+                    conn.commit()
+                    return {"id": session_id, "tier": tier, "daily_msg_count": 0, "is_user": False}
+    except: pass
+    raise HTTPException(401, "Session not found")
+
 # ================================================================================
 # TIERS
 # ================================================================================
