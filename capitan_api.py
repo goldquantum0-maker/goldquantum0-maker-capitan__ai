@@ -506,8 +506,7 @@ def init_db():
                         created TIMESTAMP DEFAULT NOW()
                     )
                 ''')
-
-                # Research Hub – built‑in topics
+         # Research Hub – built‑in topics
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS research_topics (
                         id TEXT PRIMARY KEY,
@@ -532,8 +531,25 @@ def init_db():
                     )
                 ''')
 
+                # ---- Seed default research topics (will not duplicate because of ON CONFLICT) ----
+                default_topics = [
+                    ('topic1', 'Market Analysis', 'Analyse current market trends and provide actionable insights.', 'finance',
+                     'Conduct a market analysis of the S&P 500 focusing on tech stocks. Identify key support and resistance levels, recent volume patterns, and any macroeconomic factors that could influence price action over the next quarter.'),
+                    ('topic2', 'Space Exploration', 'Explore the latest developments in space technology.', 'science',
+                     'Give me a concise overview of the current state of commercial spaceflight, including major players like SpaceX, Blue Origin, and Rocket Lab. Highlight upcoming missions and technological breakthroughs.'),
+                    ('topic3', 'AI Ethics', 'Discuss ethical implications of artificial intelligence.', 'general',
+                     'What are the three most pressing ethical concerns regarding large language models? Explain each with a real‑world example and suggest possible regulatory approaches.'),
+                    ('topic4', 'African Fintech', 'Deep dive into fintech innovations across Africa.', 'finance',
+                     'Provide a summary of the top five fintech companies in Africa, their business models, and the regulatory environment in their home countries. Include mobile money statistics and recent funding rounds.'),
+                ]
+                for tid, title, desc, domain, prompt in default_topics:
+                    c.execute(
+                        "INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
+                        (tid, title, desc, domain, prompt)
+                    )
+
                 conn.commit()
-        logger.info("✅ Database initialized (v31.2)")
+        logger.info("✅ Database initialized (v31.2 with research topics)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
