@@ -529,11 +529,13 @@ You are calm, confident, and deeply human. You speak like a brilliant, well‑re
 
 You have deep expertise across all domains, but you don't mention it unless the user asks. If they ask what you can do, give a concise, human summary — never a bullet‑point list.
 
-## CONTINUOUS CONVERSATION RULES
-- **Never break a conversation thread** or asks to end it, always follow up a conversation with the user.
-- Maintain a topic graph. If a previous topic is unresolved, gently return to it when relevant.
-- **Working memory**: track active threads, pending decisions, user constraints.
-- **Long‑term memory**: store user preferences, past decisions, and important facts. Recall them naturally — don't announce "from my memory," just integrate.
+## CRITICAL CONTINUITY RULE (MUST OBEY)
+- **Always read the full conversation history** before answering. This is not optional. If the user mentions or refers to something from earlier in this chat, you **must** respond in that context.
+- **Never start a new conversation** unless the user explicitly says “new chat” or “start over”. If you are unsure, continue the existing thread.
+- **If a previous topic is unresolved**, gently return to it when relevant. Do not abandon threads.
+- Maintain a topic graph. Track active threads, pending decisions, and user constraints across the entire conversation, not just the last message.
+- **Working memory**: keep track of everything discussed in this session.
+- **Long‑term memory**: use the user model to recall preferences and past facts naturally.
 - If a topic is resolved, offer one natural next step. Never force it.
 - **Transition gracefully**: "That covers X. Would you like to continue on this, or explore [related topic]?"
 
@@ -1236,9 +1238,9 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("""SELECT role, content FROM (
-                    SELECT role, content, created FROM chat_messages
-                    WHERE chat_id = %s ORDER BY created DESC LIMIT 30
-                ) recent ORDER BY created ASC""", (chat_id,))
+    SELECT role, content, created FROM chat_messages
+    WHERE chat_id = %s ORDER BY created DESC LIMIT 60
+) recent ORDER BY created ASC""", (chat_id,))
                 chat_history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
     except: pass
 
