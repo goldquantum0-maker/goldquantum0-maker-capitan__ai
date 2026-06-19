@@ -54,6 +54,10 @@
         @keyframes fadeSlideUp { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
         .greeting-text { font-size:24px; font-weight:700; background:linear-gradient(135deg,var(--accent),#f59e0b,var(--accent-light)); background-size:200% 200%; -webkit-background-clip:text; color:transparent; animation:gradientShift 6s ease infinite; }
         @keyframes gradientShift { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+        .suggestion-pills { display:flex; gap:10px; justify-content:center; margin:20px 0 30px; flex-wrap:wrap; animation:fadeSlideUp 0.5s ease; }
+        .suggestion-pill { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:24px; border:1px solid var(--border); background:var(--bg-secondary); cursor:pointer; transition:0.2s; font-size:12px; color:var(--text-secondary); white-space:nowrap; }
+        .suggestion-pill:hover { border-color:var(--accent); background:var(--accent-glow); transform:translateY(-1px); box-shadow:var(--shadow-md); }
+        .suggestion-pill svg { width:14px; height:14px; }
         .message { margin-bottom:18px; animation:messageSlideIn 0.25s ease; }
         @keyframes messageSlideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .message.user { display:flex; justify-content:flex-end; }
@@ -334,7 +338,22 @@
             <div class="messages-area" id="messagesArea">
                 <div style="text-align:center;padding:50px 16px;">
                     <div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div>
-                    <p style="color:var(--text-secondary);margin-top:6px;font-size:11px;">Ask me anything — finance, code, research.</p>
+                    <!-- Floating suggestion pills -->
+                    <div id="suggestionPills" class="suggestion-pills">
+                        <button class="suggestion-pill" onclick="useSuggestion('Give me today\'s top business headlines')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg>
+                            Business
+                        </button>
+                        <button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg>
+                            Tech
+                        </button>
+                        <button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+                            Everyday Life
+                        </button>
+                    </div>
+                    <p style="color:var(--text-secondary);margin-top:6px;font-size:11px;">Ask Capitan anything...</p>
                 </div>
             </div>
             <div class="input-area">
@@ -342,7 +361,7 @@
                     <button class="upload-btn" onclick="triggerFileUpload()" title="Upload file">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </button>
-                    <textarea class="input-field" id="messageInput" rows="1" placeholder="Send a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+                    <textarea class="input-field" id="messageInput" rows="1" placeholder="Ask Capitan anything…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
                     <button class="send-btn" onclick="sendMessage()">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
@@ -410,6 +429,10 @@
 <script>
 const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
 const WALLETS = { BTC: 'bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new', ETH: '0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1' };
+const TOKEN_WALLETS = {
+    BTC: 'bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2',
+    ETH: '0x28c18922072f904f91499A603d7AF8F9C57aDD8b'
+};
 const TOKEN_PACKAGES = [
     { amount: 5, tokens: 2500 },
     { amount: 10, tokens: 5000 },
@@ -482,6 +505,10 @@ async function apiCall(endpoint,opts={}){let headers={'Content-Type':'applicatio
 function updateProfileUI(){let n=state.user?.name||state.user?.email?.split('@')[0]||'Guest';document.getElementById('profileName').innerText=n;let tier=state.user?.tier||'free';let msg=(tier==='pro_max'||tier==='founder')?'Unlimited':'Limited';document.getElementById('profileTier').innerHTML=tier+' · '+msg;if(state.profilePhoto)document.getElementById('profileAvatar').src=state.profilePhoto}
 function updateUIBasedOnTier(){let logged=!!state.user;document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';let paid=logged&&state.user?.tier!=='free'&&state.user?.tier!=='guest';document.getElementById('hubMenuItem').style.display=paid?'flex':'none';document.getElementById('developerMenuItem').style.display=(logged&&(state.user?.tier==='pro'||state.user?.tier==='pro_max'||state.user?.tier==='founder'))?'flex':'none';document.getElementById('recentLabel').style.display=logged?'block':'none';document.getElementById('guestButtons').style.display=logged?'none':'block';document.getElementById('workspaceSection').style.display=paid?'block':'none';if(!logged)document.getElementById('chatHistoryList').innerHTML='<div style="padding:16px;text-align:center;font-size:10px;">Sign in to see recent chats</div>'}
 
+// Suggestion handler
+function useSuggestion(text){document.getElementById('messageInput').value=text;sendMessage();hideSuggestions()}
+function hideSuggestions(){let pills=document.getElementById('suggestionPills');if(pills)pills.style.display='none'}
+
 // Auth functions
 function showLogin(){document.getElementById('loginForm').style.display='block';document.getElementById('signupForm').style.display='none';document.getElementById('forgotForm').style.display='none'}
 function showSignup(){document.getElementById('loginForm').style.display='none';document.getElementById('signupForm').style.display='block';document.getElementById('forgotForm').style.display='none'}
@@ -506,7 +533,7 @@ function renderChatHistory(){let c=document.getElementById('chatHistoryList');if
 
 async function sendMessage(){let input=document.getElementById('messageInput'),text=input.value.trim();if(!text||state.loading)return;input.value='';state.messages.push({role:'user',content:text});renderMessages();state.loading=true;let aiIdx=state.messages.length;state.messages.push({role:'assistant',content:'',isTyping:true});renderMessages();try{let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify({messages:state.messages.slice(0,-1),chat_id:state.activeChatId,show_reasoning:false})});const content=res.content||'No response';state.messages[aiIdx]={role:'assistant',content:content,message_id:res.message_id};renderMessages();let streamTarget=document.getElementById('msg-'+aiIdx);if(streamTarget)new SmoothStreamer(content,streamTarget,()=>{state.loading=false});else state.loading=false;state.activeChatId=res.chat_id;await loadChats()}catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();toast(err.message);state.loading=false}}
 
-function renderMessages(){let c=document.getElementById('messagesArea');if(!c)return;if(!state.messages.length){c.innerHTML='<div style="text-align:center;padding:50px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">'+getDynamicGreeting()+'</div></div><p style="color:var(--text-secondary);margin-top:6px;font-size:11px;">Ask me anything — finance, code, research, or upload documents.</p></div>';updateGreeting();return}c.innerHTML=state.messages.map((m,i)=>{if(m.isTyping)return'<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>';let html=m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content);let actions='';if(m.role==='assistant'&&!m.isTyping){actions='<div class="action-icons"><button onclick="copyMessage('+i+')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button onclick="likeMessage('+i+')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button><button onclick="dislikeMessage('+i+')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button><button onclick="saveToPortfolio('+i+')" title="Save to Portfolio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button></div>'}return'<div class="message '+m.role+'"><div class="message-content" id="msg-'+i+'">'+html+'</div>'+actions+'</div>'}).join('');scrollBottom()}
+function renderMessages(){let c=document.getElementById('messagesArea');if(!c)return;if(!state.messages.length){c.innerHTML='<div style="text-align:center;padding:50px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">'+getDynamicGreeting()+'</div></div><div id="suggestionPills" class="suggestion-pills"><button class="suggestion-pill" onclick="useSuggestion(\'Give me today\\\'s top business headlines\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg>Business</button><button class="suggestion-pill" onclick="useSuggestion(\'Explain quantum computing in simple terms\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg>Tech</button><button class="suggestion-pill" onclick="useSuggestion(\'What are three easy recipes for dinner tonight?\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>Everyday Life</button></div><p style="color:var(--text-secondary);margin-top:6px;font-size:11px;">Ask Capitan anything...</p></div>';updateGreeting();return}c.innerHTML=state.messages.map((m,i)=>{if(m.isTyping)return'<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>';let html=m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content);let actions='';if(m.role==='assistant'&&!m.isTyping){actions='<div class="action-icons"><button onclick="copyMessage('+i+')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button onclick="likeMessage('+i+')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button><button onclick="dislikeMessage('+i+')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button><button onclick="saveToPortfolio('+i+')" title="Save to Portfolio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button></div>'}return'<div class="message '+m.role+'"><div class="message-content" id="msg-'+i+'">'+html+'</div>'+actions+'</div>'}).join('');scrollBottom()}
 
 function copyMessage(idx){let m=state.messages[idx];if(m){navigator.clipboard.writeText(m.content);toast('Copied!')}}
 async function likeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:5})});toast('Thanks! 👍')}catch(e){}}else toast('Thanks!')}
@@ -553,9 +580,9 @@ async function verifyPayment(){let txid=document.getElementById('txidInput').val
 
 // Token purchase
 async function fetchTokenBalance(){try{let d=await apiCall('/api/tokens/balance');state.tokenBalance=d.balance||0}catch(e){}}
-function openTokenPurchase(pkg){let modal=document.getElementById('tokenPurchaseModalContent');modal.innerHTML=`<h2>Buy ${pkg.tokens} Tokens</h2><p>Amount: $${pkg.amount} USD</p><div class="payment-note" style="background:var(--bg-tertiary);padding:10px;border-radius:8px;margin:12px 0;"><strong>Send exactly $${pkg.amount} worth of crypto to the address below, then paste the TXID.</strong></div><div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn" style="flex:1;" onclick="setTokenCoin('BTC')">BTC</button><button class="btn" style="flex:1;" onclick="setTokenCoin('ETH')">ETH</button></div><div class="wallet-address" id="tokenWalletAddr" style="font-size:11px;background:var(--bg-tertiary);padding:10px;border-radius:8px;word-break:break-all;margin-bottom:10px;"></div><input type="text" id="tokenTxidInput" class="auth-input" placeholder="Transaction ID"><button class="btn" onclick="verifyTokenPurchase(${pkg.amount})">Verify Payment</button><button class="btn btn-outline" onclick="closeModal('tokenPurchaseModal')">Cancel</button>`;updateTokenWalletDisplay();document.getElementById('tokenPurchaseModal').classList.add('open');}
+function openTokenPurchase(pkg){let modal=document.getElementById('tokenPurchaseModalContent');modal.innerHTML=`<h2>Buy ${pkg.tokens} Tokens</h2><p>Amount: $${pkg.amount} USD</p><div class="payment-note" style="background:var(--bg-tertiary);padding:10px;border-radius:8px;margin:12px 0;"><strong>Send exactly $${pkg.amount} worth of crypto to the token address below, then paste the TXID.</strong></div><div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn" style="flex:1;" onclick="setTokenCoin('BTC')">BTC</button><button class="btn" style="flex:1;" onclick="setTokenCoin('ETH')">ETH</button></div><div class="wallet-address" id="tokenWalletAddr" style="font-size:11px;background:var(--bg-tertiary);padding:10px;border-radius:8px;word-break:break-all;margin-bottom:10px;"></div><input type="text" id="tokenTxidInput" class="auth-input" placeholder="Transaction ID"><button class="btn" onclick="verifyTokenPurchase(${pkg.amount})">Verify Payment</button><button class="btn btn-outline" onclick="closeModal('tokenPurchaseModal')">Cancel</button>`;updateTokenWalletDisplay();document.getElementById('tokenPurchaseModal').classList.add('open');}
 function setTokenCoin(c){state.selectedCoin=c;updateTokenWalletDisplay()}
-function updateTokenWalletDisplay(){let addrEl=document.getElementById('tokenWalletAddr');if(addrEl)addrEl.innerText=WALLETS[state.selectedCoin];}
+function updateTokenWalletDisplay(){let addrEl=document.getElementById('tokenWalletAddr');if(addrEl)addrEl.innerText=TOKEN_WALLETS[state.selectedCoin];}
 async function verifyTokenPurchase(amount){let txid=document.getElementById('tokenTxidInput').value.trim();if(!txid){toast('Enter TXID');return}try{let res=await apiCall('/api/tokens/purchase',{method:'POST',body:JSON.stringify({package_amount:amount,txid,currency:state.selectedCoin})});if(res.verified){state.tokenBalance=res.new_balance;closeModal('tokenPurchaseModal');toast(`Added ${res.tokens_added} tokens!`)}else{toast('Verification pending: '+res.message)}}catch(e){toast('Verification failed')}}
 
 // Developer Page
