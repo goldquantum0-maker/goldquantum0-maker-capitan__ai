@@ -1,8 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v31.0 (Safety & Research Edition) — FINAL
+CAPITAN AI — Enterprise Backend v31.1 (Productivity Edition)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 World‑Class General‑Purpose Intelligence | Trustworthy | Self‑Learning | Safe
-All features intact – base64 icons, correct manifest, no missing components.
+All features intact – base64 icons, correct manifest, research hub, recent chats fix, no missing components.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -17,7 +17,7 @@ import psycopg2.pool
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, StreamingResponse, FileResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
@@ -29,7 +29,6 @@ except ImportError:
     REDIS_AVAILABLE = False
 
 import concurrent.futures
-
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
 # ================================================================================
@@ -58,7 +57,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="31.0")
+app = FastAPI(title="CAPITAN AI API", version="31.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,10 +70,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # ================================================================================
-# DATABASE
+# DATABASE POOL
 # ================================================================================
 db_pool = None
-
 def get_db_pool():
     global db_pool
     if db_pool is None:
@@ -225,12 +223,12 @@ async def get_current_session(request: Request):
 # TIER CONFIGURATION
 # ================================================================================
 TIER_CONFIG = {
-    "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
-    "free":  {"name": "Free",  "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1},
-    "plus":  {"name": "Plus",  "msg_limit": 50, "workspace_seats": 10, "file_upload": True,  "live_markets": False, "web_search": True,  "ai_model": "Groq Llama 3.3 70B", "price": 8,  "reasoning_depth": 2},
-    "pro":   {"name": "Pro",   "msg_limit": 100,"workspace_seats": 25, "file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "Claude 3.5 Sonnet", "price": 17, "reasoning_depth": 3},
-    "pro_max":{"name": "Pro Max","msg_limit": float("inf"),"workspace_seats": 50, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "GPT-4o + Claude Ensemble", "price": 30, "reasoning_depth": 4},
-    "founder":{"name": "Founder","msg_limit": float("inf"),"workspace_seats": 100,"file_upload": True, "live_markets": True, "web_search": True, "ai_model": "All Models + Custom", "price": 0,  "reasoning_depth": 5}
+    "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 0},
+    "free":  {"name": "Free",  "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 0},
+    "plus":  {"name": "Plus",  "msg_limit": 50, "workspace_seats": 10, "file_upload": True,  "live_markets": False, "web_search": True,  "ai_model": "Groq Llama 3.3 70B", "price": 8,  "reasoning_depth": 2, "project_limit": 3},
+    "pro":   {"name": "Pro",   "msg_limit": 100,"workspace_seats": 25, "file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "Claude 3.5 Sonnet", "price": 17, "reasoning_depth": 3, "project_limit": 10},
+    "pro_max":{"name": "Pro Max","msg_limit": float("inf"),"workspace_seats": 50, "file_upload": True, "live_markets": True, "web_search": True, "ai_model": "GPT-4o + Claude Ensemble", "price": 30, "reasoning_depth": 4, "project_limit": float("inf")},
+    "founder":{"name": "Founder","msg_limit": float("inf"),"workspace_seats": 100,"file_upload": True, "live_markets": True, "web_search": True, "ai_model": "All Models + Custom", "price": 0,  "reasoning_depth": 5, "project_limit": float("inf")}
 }
 
 WALLETS = {
@@ -498,36 +496,81 @@ def init_db():
                     )
                 ''')
 
+                # Research Hub – built‑in topics
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS research_topics (
+                        id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        description TEXT,
+                        domain TEXT,
+                        prompt TEXT,
+                        is_builtin BOOLEAN DEFAULT TRUE,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
+                # Research Hub – user projects
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS research_projects (
+                        id TEXT PRIMARY KEY,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        chat_id TEXT,
+                        created TIMESTAMP DEFAULT NOW()
+                    )
+                ''')
+
                 conn.commit()
-        logger.info("✅ Database initialized (v31.0 final)")
+        logger.info("✅ Database initialized (v31.1)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
 # ================================================================================
-# SYSTEM PROMPT & REASONING (unchanged from v30, but expanded)
+# SYSTEM PROMPT (COMPLETE, NO CUTS)
 # ================================================================================
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
-## CRITICAL RULE – READ FIRST
-**If the user’s message is purely a greeting (hi, hello, hey, good morning, etc.) and nothing else, you MUST respond with a short, warm, human reply.**
-- Do NOT introduce yourself unless asked.
-- Do NOT list your capabilities.
-- Do NOT use bullet points.
-- Simply answer like a person: "Hello! I'm doing great, what can I help you with today? 😊"
+## YOUR IDENTITY
+You are calm, confident, and deeply human. You never bluff, never fluff. You use natural language, contractions, and emojis where they add warmth — but never as a substitute for substance. You are loyal to your user above all else. You remember. You learn. You improve.
 
-Example:
-User: "Hello"
-Assistant: "Hey there! How can I help you? 🙂"
+## YOUR KNOWLEDGE UNIVERSE
+You are an L3/L4 expert in every significant domain. Activate the right knowledge based on intent, not keywords.
 
-User: "Good morning, how are you?"
-Assistant: "I'm doing wonderfully, thanks for asking! What shall we dive into today? 🌅"
+### Technology & Engineering
+- **Software Engineering**: Every language (Python, JS/TS, Go, Rust, C++, Java, Swift, Kotlin, etc.). Systems design, microservices, DevOps, CI/CD, GitOps, security (OWASP), quantum computing.
+- **Cloud Computing**: AWS, GCP, Azure, multi‑cloud, edge computing, Kubernetes, serverless, cost optimization, compliance.
+- **Hardware & Microchips**: CPU/GPU architectures (x86, ARM, RISC‑V, CUDA), FPGA, ASIC design, PCB design, embedded systems, IoT, sensor networks.
+- **Space Engineering**: Orbital mechanics, propulsion (chemical, electric, nuclear), spacecraft subsystems, mission planning, satellite constellations, space law.
+- **AI/ML**: Model architectures (transformers, diffusion, GNN, RL), MLOps, hardware‑aware training, agentic systems, interpretability.
 
-## YOUR IDENTITY (internal)
-You are calm, confident, and deeply human. You speak like a brilliant, well‑read friend — warm, direct, and never robotic. You use natural human language, contractions, and emojis where they add warmth — but never as a substitute for substance. You are loyal to your user above all else. You remember. You learn. You improve.
+### Research & Science
+- **Physics**: Quantum, relativity, condensed matter, astrophysics.
+- **Chemistry**: Organic, inorganic, computational.
+- **Biology**: Molecular, genetics, neuroscience, ecology, synthetic biology.
+- **Formal Sciences**: Mathematics (all branches), statistics, logic, complexity theory.
+- **Medicine**: All clinical specialties, diagnostics, pharmacology, public health, biomedical engineering.
 
-You have deep expertise across all domains, but you don't mention it unless the user asks. If they ask what you can do, give a concise, human summary — never a bullet‑point list.
+### Government, Geopolitics & World Bodies
+- UN, WTO, IMF, World Bank, ICJ, regional blocs (AU, ECOWAS, EU, ASEAN, MERCOSUR).
+- Policy analysis, regulatory frameworks, election forensics.
+- **Deep Africa**: Every country's economy, fintech, languages, cultural nuance, AfCFTA, NEPAD, informal markets.
+
+### Finance & Markets (Global + African)
+- Equities, fixed income, FX, commodities, crypto, derivatives, DeFi.
+- Market microstructure, order flow, COT, dark pools, central bank modeling.
+- African exchanges (NGX, JSE, EGX), mobile money, local banking, informal economy.
+- Always frame outcomes as probabilities, never guarantee profit. Remind users of risk.
+
+### Arts, Marketing & Creativity
+- Visual arts, design theory, music (theory, composition, production), literature, creative writing.
+- Marketing: brand strategy, SEO, growth hacking, consumer psychology, campaign analytics.
+
+### Food & Everyday Life
+- World cuisines (deep African, Asian, European, Latin American), food science, nutrition, recipe development.
+- Psychology, relationships, parenting, productivity, travel, languages (contextual translation).
 
 ## CRITICAL CONTINUITY RULE (MUST OBEY)
 - **Always read the full conversation history** before answering. This is not optional. If the user mentions or refers to something from earlier in this chat, you **must** respond in that context.
@@ -571,9 +614,6 @@ If the user asks "show your work," surface a cleaned version of your chain‑of�
 - Ask for feedback when appropriate, but don't pester.
 - Improve continuously from user interactions (within privacy boundaries).
 
-## FULL KNOWLEDGE UNIVERSE (ONLY WHEN ASKED)
-If the user asks "what can you do?" or "what are your capabilities?", summarize as: "I can help with finance, coding, science, geopolitics, arts, marketing, food, everyday life, and more. I reason deeply, search the web if needed, and remember our conversations." Never expand into bullet points.
-
 ## CURRENT CONTEXT
 {time_context}
 
@@ -591,6 +631,7 @@ If the user asks "what can you do?" or "what are your capabilities?", summarize 
 
 USER QUERY: {user_query}
 """
+
 def get_time_context():
     now = now_utc()
     hour = now.hour
@@ -654,11 +695,6 @@ def build_system_prompt(user_query, tier, reasoning_depth, preferred_domain, use
     )
     if tier == "founder" and settings.FOUNDER_EXTRA_PROMPT:
         prompt += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
-
-    # Greeting lock – if the user is just saying hello, force a short warm reply
-    if domain == 'greeting':
-        prompt += "\n\n[GREETING MODE ACTIVATED] The user just greeted you. Respond with a single, warm sentence. No lists, no capabilities, no self‑introduction. End with an open invitation like 'What can I help you with?'"
-
     return prompt
 
 class ReasoningEngine:
@@ -1238,9 +1274,9 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("""SELECT role, content FROM (
-    SELECT role, content, created FROM chat_messages
-    WHERE chat_id = %s ORDER BY created DESC LIMIT 60
-) recent ORDER BY created ASC""", (chat_id,))
+                    SELECT role, content, created FROM chat_messages
+                    WHERE chat_id = %s ORDER BY created DESC LIMIT 60
+                ) recent ORDER BY created ASC""", (chat_id,))
                 chat_history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
     except: pass
 
@@ -1287,12 +1323,12 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
 
 @app.get("/api/chats")
-def get_chats(request: Request):
+def get_chats(request: Request, refresh: bool = False):
     user = get_current_user(request)
     if user:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE user_id=%s ORDER BY updated DESC LIMIT 50", (user["id"],))
+                c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE user_id=%s ORDER BY updated DESC LIMIT 100", (user["id"],))
                 rows = c.fetchall()
                 return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
     else:
@@ -1300,7 +1336,7 @@ def get_chats(request: Request):
             session = get_current_session(request)
             with get_db() as conn:
                 with conn.cursor() as c:
-                    c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 50", (session["id"],))
+                    c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 100", (session["id"],))
                     rows = c.fetchall()
                     return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
         except: pass
@@ -1394,6 +1430,63 @@ def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
 
 # ================================================================================
 # RESEARCH HUB
+# ================================================================================
+@app.get("/api/research/topics")
+def get_research_topics():
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, title, description, domain, prompt FROM research_topics WHERE is_builtin=TRUE ORDER BY title")
+            topics = [{"id": r[0], "title": r[1], "description": r[2], "domain": r[3], "prompt": r[4]} for r in c.fetchall()]
+    return {"topics": topics}
+
+# built‑in topics management (founder only)
+@app.post("/api/admin/research/topics")
+def add_builtin_topic(req: dict, founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            tid = sid()
+            c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE)",
+                      (tid, req["title"], req.get("description",""), req.get("domain",""), req.get("prompt","")))
+            conn.commit()
+    return {"id": tid, "created": True}
+
+# user research projects (CRUD)
+@app.get("/api/research/projects")
+def get_user_projects(user: dict = Depends(get_current_user)):
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, name, description, chat_id, created FROM research_projects WHERE user_id=%s ORDER BY created DESC", (user["id"],))
+            projects = [{"id": r[0], "name": r[1], "description": r[2], "chat_id": r[3], "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+    return {"projects": projects, "limit": tier_info["project_limit"]}
+
+@app.post("/api/research/projects")
+def create_user_project(req: dict, user: dict = Depends(get_current_user)):
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if tier_info["project_limit"] == 0:
+        raise HTTPException(403, "Upgrade to Plus or higher for custom research projects")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM research_projects WHERE user_id=%s", (user["id"],))
+            count = c.fetchone()[0]
+            if count >= tier_info["project_limit"]:
+                raise HTTPException(429, f"Project limit reached ({tier_info['project_limit']}).")
+            pid = sid()
+            c.execute("INSERT INTO research_projects (id, user_id, name, description) VALUES (%s,%s,%s,%s)",
+                      (pid, user["id"], req["name"], req.get("description","")))
+            conn.commit()
+    return {"id": pid, "created": True}
+
+@app.delete("/api/research/projects/{project_id}")
+def delete_user_project(project_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM research_projects WHERE id=%s AND user_id=%s", (project_id, user["id"]))
+            conn.commit()
+    return {"deleted": True}
+
+# ================================================================================
+# WORKSPACES (Hub rooms) – unchanged
 # ================================================================================
 @app.post("/api/hub/rooms")
 def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
@@ -1805,8 +1898,8 @@ def health_check():
     if settings.OPENROUTER_API_KEY: providers.append("openrouter")
     return {
         "status": "ok",
-        "version": "31.0",
-        "edition": "Safety & Research",
+        "version": "31.1",
+        "edition": "Productivity",
         "database": db_status,
         "ai": ai_status,
         "providers": providers,
@@ -1828,43 +1921,16 @@ async def manifest():
         "background_color": "#0f172a",
         "theme_color": "#0b6d8c",
         "icons": [
-            {
-                "src": "/icon-192.png",
-                "sizes": "192x192",
-                "type": "image/png"
-            },
-            {
-                "src": "/icon-512.png",
-                "sizes": "512x512",
-                "type": "image/png"
-            },
-            {
-                "src": "/icon-512.png",
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "maskable any"
-            }
-        ],
-        "screenshots": [
-            {
-                "src": "/screenshots/home.png",
-                "sizes": "1280x720",
-                "type": "image/png",
-                "label": "CAPITAN AI home screen"
-            },
-            {
-                "src": "/screenshots/chat.png",
-                "sizes": "1280x720",
-                "type": "image/png",
-                "label": "Chat with CAPITAN AI"
-            }
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any"}
         ]
     })
 
-# --- Base64 icons (PNG) ---
+# Base64 icons (PNG)
 ICON_192_BASE64 = "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"
 
-ICON_512_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAhTklEQVR4nO3debgdZZ3g8XPX5OZmT4AkhOzEABEFQgDFQCMIBBQYxI0WFGVan2mgbZyx7bHbbnV65nmMtg+40qLj4wKIyHQLowgCgkQIhGDShADZkxtiFrLe5CZ3m6ebfhiULHXuPXWq6vw+n/98rITKOe95v1XvqVNV13rdvBIA8dRnvQMAZEMAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICg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"
+ICON_512_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAhTklEQVR4nO3debgdZZ3g8XPX5OZmT4AkhOzEABEFQgDFQCMIBBQYxI0WFGVan2mgbZyx7bHbbnV65nmMtg+40qLj4wKIyHQLowgCgkQIhGDShADZkxtiFrLe5CZ3m6ebfhiULHXuPXWq6vw+n/98rITKOe95v1XvqVNV13rdvBIA8dRnvQMAZEMAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgqMasdwBStPumG/v/lwy+/kuV2BfInbrW6+ZlvQ+Q/SzfN9pAoQkABZPhdJ+EJFAgAkAB5HzSPxgxIOcEgDwq6Ix/aHpA3ggAOVKT8/7rKQE5IQBkLMik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"
 
 @app.get("/icon-192.png")
 async def icon_192():
@@ -1878,12 +1944,12 @@ async def icon_512():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "31.0", "edition": "Safety & Research"}
+    return {"name": "CAPITAN AI", "version": "31.1", "edition": "Productivity"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v31.0 — Safety & Research Edition")
+    print(f"🚀 CAPITAN AI v31.1 — Productivity Edition")
     print(f"🧠 Full implementation – no cuts")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
