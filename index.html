@@ -248,6 +248,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             <span>Research Hub</span>
         </div>
+        <div class="menu-item" onclick="openIntegrations()" id="integrationsMenuItem" style="display:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>Integrations</span>
+        </div>
         <div id="workspaceSection" style="display:none;">
             <div class="collapsible-header" onclick="toggleCollapsible('workspace')">
                 <span>Work Areas</span>
@@ -284,7 +288,8 @@
                     <strong>Core Capabilities</strong><br>
                     • Finance & Trading, Software Engineering, Hardware, Science, Research, Geopolitics, Arts, Marketing, Food, Everyday life.<br>
                     • Advanced reasoning, chain-of-thought, document analysis, real‑time web search, live markets.<br>
-                    • Research Hub for teams, Portfolio for personal knowledge vault.<br><br>
+                    • Research Hub for teams, Portfolio for personal knowledge vault.<br>
+                    • Integrations: API keys, webhooks, embeddable widgets.<br><br>
                     <strong>Our Mission</strong><br>To democratise elite intelligence.
                 </div>
             </div>
@@ -372,6 +377,7 @@
 <div id="upgradeModal" class="modal-overlay"><div class="modal" id="upgradeModalContent"></div></div>
 <div id="portfolioModal" class="modal-overlay"><div class="modal" id="portfolioModalContent" style="max-width:680px;"></div></div>
 <div id="researchHubModal" class="modal-overlay"><div class="modal" id="researchHubModalContent" style="max-width:700px;"></div></div>
+<div id="integrationsModal" class="modal-overlay"><div class="modal" id="integrationsModalContent" style="max-width:680px;"></div></div>
 <div id="founderModal" class="modal-overlay"><div class="modal" id="founderModalContent" style="max-width:800px;"></div></div>
 <div id="dataModal" class="modal-overlay"><div class="modal" id="dataModalContent"></div></div>
 <div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
@@ -397,6 +403,8 @@ let state = {
     workspaces: [],
     researchTopics: [],
     researchProjects: [],
+    apiKeys: [],
+    webhooks: [],
     theme: localStorage.getItem('theme') || 'light',
     profilePhoto: localStorage.getItem('profilePhoto') || null,
     founderClickCount: 0,
@@ -443,7 +451,7 @@ document.addEventListener('DOMContentLoaded',()=>{document.getElementById('notif
 async function apiCall(endpoint,opts={}){let headers={'Content-Type':'application/json'};if(state.token)headers['Authorization']='Bearer '+state.token;let res=await fetch(CFG.API+endpoint,{...opts,headers});if(res.status===401){logout();throw new Error('Session expired')}if(!res.ok){let err=await res.text();try{err=JSON.parse(err).detail||err}catch(e){}throw new Error(err)}return res.json()}
 
 function updateProfileUI(){let n=state.user?.name||state.user?.email?.split('@')[0]||'Guest';document.getElementById('profileName').innerText=n;let tier=state.user?.tier||'free';let msg=(tier==='pro_max'||tier==='founder')?'Unlimited':'Limited';document.getElementById('profileTier').innerHTML=tier+' · '+msg;if(state.profilePhoto)document.getElementById('profileAvatar').src=state.profilePhoto}
-function updateUIBasedOnTier(){let logged=!!state.user;document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';let paid=logged&&state.user?.tier!=='free'&&state.user?.tier!=='guest';document.getElementById('hubMenuItem').style.display=paid?'flex':'none';document.getElementById('recentLabel').style.display=logged?'block':'none';document.getElementById('guestButtons').style.display=logged?'none':'block';document.getElementById('workspaceSection').style.display=paid?'block':'none';if(!logged)document.getElementById('chatHistoryList').innerHTML='<div style="padding:16px;text-align:center;font-size:10px;">Sign in to see recent chats</div>'}
+function updateUIBasedOnTier(){let logged=!!state.user;document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';let paid=logged&&state.user?.tier!=='free'&&state.user?.tier!=='guest';document.getElementById('hubMenuItem').style.display=paid?'flex':'none';document.getElementById('integrationsMenuItem').style.display=logged?'flex':'none';document.getElementById('recentLabel').style.display=logged?'block':'none';document.getElementById('guestButtons').style.display=logged?'none':'block';document.getElementById('workspaceSection').style.display=paid?'block':'none';if(!logged)document.getElementById('chatHistoryList').innerHTML='<div style="padding:16px;text-align:center;font-size:10px;">Sign in to see recent chats</div>'}
 
 // Auth functions
 function showLogin(){document.getElementById('loginForm').style.display='block';document.getElementById('signupForm').style.display='none';document.getElementById('forgotForm').style.display='none'}
@@ -476,7 +484,7 @@ async function likeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){tr
 async function dislikeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:1,reason:'Not helpful'})});toast('Feedback noted.')}catch(e){}}else toast('Noted.')}
 async function saveToPortfolio(idx){let m=state.messages[idx];if(!m||!state.user){toast('Sign in to save');return}const title=(m.content||'').substring(0,50).trim()+(m.content.length>50?'…':'');try{await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name:title||'Saved from chat',content:m.content,folder:'General',tags:[],attachments:[],chat_id:state.activeChatId})});toast('Saved to Portfolio 📌')}catch(e){toast('Could not save')}}
 
-// Portfolio – full page view
+// Portfolio – full page view with chat tabs
 let portfolioActiveChat = 'ALL';
 
 async function getChatMap(){let map={};if(state.user){try{let d=await apiCall('/api/chats');(d.chats||[]).forEach(c=>{map[c.id]=c.title||'Chat'})}catch(e){}}return map;}
@@ -501,6 +509,36 @@ function renderResearchHubModal(){let modal=document.getElementById('researchHub
 function switchResearchTab(tab){document.querySelectorAll('.research-hub-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`.research-hub-tab[onclick="switchResearchTab('${tab}')"]`).classList.add('active');let content=document.getElementById('researchTabContent');if(tab==='topics'){content.innerHTML=state.researchTopics.map(t=>`<div class="saved-card" onclick="startTopicChat('${t.id}')"><div class="saved-card-title">${escapeHtml(t.title)} <span style="font-size:10px;">(${t.domain})</span></div><div class="saved-card-preview">${escapeHtml(t.description||'')}</div></div>`).join('')||'<p>No topics yet.</p>'}else{content.innerHTML=`<div style="margin-bottom:12px;"><button class="btn" onclick="createResearchProject()">+ New Project</button></div>`+state.researchProjects.map(p=>`<div class="saved-card" onclick="loadChat('${p.chat_id||'new'}')"><div class="saved-card-title">${escapeHtml(p.name)}</div><div class="saved-card-preview">${escapeHtml(p.description||'')}</div></div>`).join('')||'<p>No projects yet.</p>'}}
 function startTopicChat(topicId){let topic=state.researchTopics.find(t=>t.id===topicId);if(!topic)return;closeModal('researchHubModal');newChat();state.messages.push({role:'user',content:topic.prompt||`Let's explore ${topic.title}`});renderMessages();sendMessage()}
 async function createResearchProject(){let name=prompt('Project name:');if(!name)return;let desc=prompt('Description (optional):')||'';try{let res=await apiCall('/api/research/projects',{method:'POST',body:JSON.stringify({name,description:desc})});if(res.created){toast('Project created');loadResearchHub()}}catch(e){toast('Could not create: '+e.message)}}
+
+// Integrations (API keys, Webhooks, Widget)
+function openIntegrations(){if(!state.user){toast('Sign in to access Integrations');return}loadIntegrations()}
+async function loadIntegrations(){try{let keys=await apiCall('/api/keys');let hooks=await apiCall('/api/webhooks');state.apiKeys=keys.keys||[];state.webhooks=hooks.webhooks||[];renderIntegrationsModal()}catch(e){toast('Could not load integrations')}}
+function renderIntegrationsModal(){let modal=document.getElementById('integrationsModalContent');modal.innerHTML=`
+    <h2>Integrations</h2>
+    <div class="dashboard-tabs">
+        <div class="dashboard-tab active" onclick="switchIntegrationTab('keys')">API Keys</div>
+        <div class="dashboard-tab" onclick="switchIntegrationTab('webhooks')">Webhooks</div>
+        <div class="dashboard-tab" onclick="switchIntegrationTab('widget')">Widget</div>
+    </div>
+    <div id="integrationTabContent"></div>
+    <button class="btn btn-outline" onclick="closeModal('integrationsModal')">Close</button>
+`;document.getElementById('integrationsModal').classList.add('open');switchIntegrationTab('keys')}
+function switchIntegrationTab(tab){document.querySelectorAll('#integrationsModalContent .dashboard-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#integrationsModalContent .dashboard-tab[onclick="switchIntegrationTab('${tab}')"]`).classList.add('active');let content=document.getElementById('integrationTabContent');if(tab==='keys'){content.innerHTML=`
+    <div style="margin-bottom:12px;"><button class="btn" onclick="createApiKey()">+ Generate New Key</button></div>
+    ${state.apiKeys.map(k=>`<div class="saved-card"><div class="saved-card-title">${escapeHtml(k.name)} <span style="font-size:10px;">(${k.scopes})</span></div><div class="saved-card-meta">Last used: ${k.last_used?new Date(k.last_used).toLocaleString():'never'}</div><button class="btn btn-outline" style="width:auto;margin-top:4px;" onclick="deleteApiKey('${k.id}')">Delete</button></div>`).join('')||'<p>No API keys yet.</p>'}
+`}else if(tab==='webhooks'){content.innerHTML=`
+    <div style="margin-bottom:12px;"><button class="btn" onclick="createWebhook()">+ Add Webhook</button></div>
+    ${state.webhooks.map(w=>`<div class="saved-card"><div class="saved-card-title">${escapeHtml(w.url)}</div><div class="saved-card-meta">Events: ${(w.events||[]).join(', ')||'all'}</div><button class="btn btn-outline" style="width:auto;margin-top:4px;" onclick="deleteWebhook('${w.id}')">Delete</button></div>`).join('')||'<p>No webhooks yet.</p>'}
+`}else if(tab==='widget'){content.innerHTML=`
+    <p>Copy the following code and paste it into any website to embed the CAPITAN AI chat widget.</p>
+    <textarea class="auth-input" rows="4" readonly id="widgetCode"><script src="${CFG.API}/widget/widget_123.js"></script></textarea>
+    <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('widgetCode').value);toast('Copied!')">Copy Code</button>
+    <p style="font-size:10px;color:var(--text-tertiary);margin-top:8px;">The widget uses your API key for authentication. Create an API key first and replace <code>YOUR_API_KEY</code> in the widget script or use the public widget ID.</p>
+`}}
+async function createApiKey(){let name=prompt('Key name (e.g., My App):');if(!name)return;try{let res=await apiCall('/api/keys',{method:'POST',body:JSON.stringify({name})});if(res.key){toast('Key created: '+res.key.substring(0,12)+'… (copy now!)');loadIntegrations()}}catch(e){toast('Failed to create key')}}
+async function deleteApiKey(id){if(!confirm('Delete this key? Any services using it will stop working.'))return;try{await apiCall('/api/keys/'+id,{method:'DELETE'});toast('Key deleted');loadIntegrations()}catch(e){toast('Failed')}}
+async function createWebhook(){let url=prompt('Webhook URL:');if(!url)return;let events=prompt('Events (comma separated, e.g., chat.created, research.completed):')||'';try{let res=await apiCall('/api/webhooks',{method:'POST',body:JSON.stringify({url,events:events.split(',').map(e=>e.trim()).filter(e=>e)})});if(res.created){toast('Webhook added');loadIntegrations()}}catch(e){toast('Failed')}}
+async function deleteWebhook(id){if(!confirm('Delete this webhook?'))return;try{await apiCall('/api/webhooks/'+id,{method:'DELETE'});toast('Webhook deleted');loadIntegrations()}catch(e){toast('Failed')}}
 
 // Notifications
 async function fetchNotifications(){if(!state.user)return;try{let d=await apiCall('/api/notifications');state.notifications=d.notifications||[];state.unreadCount=state.notifications.filter(n=>!n.read).length;updateNotifBadge();renderNotifList()}catch(e){}}
@@ -539,7 +577,7 @@ function openWorkspaceJoinModal(){let modal=document.getElementById('workspaceJo
 async function joinWorkspace(){let code=document.getElementById('joinRoomCode').value.trim().toUpperCase();try{await apiCall('/api/workspace/join',{method:'POST',body:JSON.stringify({room_code:code})});toast('Joined');closeModal('workspaceJoinModal');loadWorkspaces()}catch(e){toast('Failed')}}
 
 // Profile & legal
-function openProfileModal(){let modal=document.getElementById('profileModalContent');let logged=!!state.user;modal.innerHTML=`<h2>Profile</h2><div style="text-align:center;"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%2338bdf8%22/%3E%3Cpath d=%22M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2%22 fill=%22%2338bdf8%22/%3E%3C/svg%3E'}">${logged?'<button class="btn" style="width:auto;padding:4px 12px;font-size:10px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}</div><div style="font-weight:600;margin-top:8px;">${logged?state.user.name||state.user.email:'Guest'}</div><div style="color:var(--accent);font-size:11px;margin-bottom:12px;">${logged?state.user.tier:'Guest'}${logged&&state.user.tier!=='free'?' · '+state.user.reasoning_depth+'‑step reasoning':''}</div>${!logged?`<div class="modal-setting" onclick="openGuestLoginModal()"><span>Sign in</span></div>`:''}${!logged?`<div class="modal-setting" onclick="openGuestSignupModal()"><span>Create account</span></div>`:''}${logged&&state.user.tier!=='founder'?`<div class="modal-setting" onclick="openUpgradeModal();closeModal('profileModal')"><span>Upgrade Plan</span></div>`:''}${logged?`<div class="modal-setting" onclick="openPortfolio();closeModal('profileModal')"><span>Portfolio</span></div>`:''}<div class="modal-setting" onclick="openDataModal();closeModal('profileModal')"><span>Data &amp; Legal</span></div>${logged?`<div class="modal-setting" onclick="logout();closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span></div>`:''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;document.getElementById('profileModal').classList.add('open')}
+function openProfileModal(){let modal=document.getElementById('profileModalContent');let logged=!!state.user;modal.innerHTML=`<h2>Profile</h2><div style="text-align:center;"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%2338bdf8%22/%3E%3Cpath d=%22M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2%22 fill=%22%2338bdf8%22/%3E%3C/svg%3E'}">${logged?'<button class="btn" style="width:auto;padding:4px 12px;font-size:10px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}</div><div style="font-weight:600;margin-top:8px;">${logged?state.user.name||state.user.email:'Guest'}</div><div style="color:var(--accent);font-size:11px;margin-bottom:12px;">${logged?state.user.tier:'Guest'}${logged&&state.user.tier!=='free'?' · '+state.user.reasoning_depth+'‑step reasoning':''}</div>${!logged?`<div class="modal-setting" onclick="openGuestLoginModal()"><span>Sign in</span></div>`:''}${!logged?`<div class="modal-setting" onclick="openGuestSignupModal()"><span>Create account</span></div>`:''}${logged&&state.user.tier!=='founder'?`<div class="modal-setting" onclick="openUpgradeModal();closeModal('profileModal')"><span>Upgrade Plan</span></div>`:''}${logged?`<div class="modal-setting" onclick="openIntegrations();closeModal('profileModal')"><span>Integrations</span></div>`:''}<div class="modal-setting" onclick="openDataModal();closeModal('profileModal')"><span>Data &amp; Legal</span></div>${logged?`<div class="modal-setting" onclick="logout();closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span></div>`:''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;document.getElementById('profileModal').classList.add('open')}
 function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
 function openDataModal(){let modal=document.getElementById('dataModalContent');modal.innerHTML=`<h2>Data & Legal</h2><div class="modal-setting" onclick="openPrivacyModal();closeModal('dataModal')">Privacy Policy</div><div class="modal-setting" onclick="openTermsModal();closeModal('dataModal')">Terms & Conditions</div>${state.user?`<div class="modal-setting" onclick="exportUserData()">Export My Data</div>`:''}${state.user?`<div class="modal-setting" onclick="deleteAccount()" style="color:var(--danger);">Delete Account</div>`:''}<button class="btn btn-outline" onclick="closeModal('dataModal')">Close</button>`;document.getElementById('dataModal').classList.add('open')}
 function openPrivacyModal(){let modal=document.getElementById('privacyModalContent');modal.innerHTML=`<h2>Privacy Policy</h2><div style="font-size:12px;line-height:1.5;"><p><strong>Effective Date:</strong> June 15, 2026</p><p>CAPITAN AI ("we", "our", "us") is committed to protecting your privacy...</p></div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;document.getElementById('privacyModal').classList.add('open')}
