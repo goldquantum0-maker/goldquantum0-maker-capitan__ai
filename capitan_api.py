@@ -1,5 +1,5 @@
 """
-CAPITAN AI — Enterprise Backend v32.0 (Developer Platform Edition)
+CAPITAN AI — Enterprise Backend v32.1 (Developer Platform Edition)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 Full implementation – no cuts, no missing components.
 """
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="32.0")
+app = FastAPI(title="CAPITAN AI API", version="32.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -213,42 +213,13 @@ async def get_current_session(request: Request):
     except: pass
     raise HTTPException(401, "Session not found")
 
-
-# ======== THIS FUNCTION MUST BE HERE (top‑level) ========
+# --------------- FOUNDER ONLY (moved to top) ---------------
 def founder_only(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
         raise HTTPException(403, "Founder access required")
     return user
-    if payload.get("type") == "user":
-        user = get_current_user(request)
-        if user:
-            return {"id": user["id"], "tier": user["tier"], "is_user": True, "user_data": user}
-    session_id = payload.get("session_id")
-    tier = payload.get("tier", "guest")
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id, tier, daily_msg_count, msg_reset_date FROM sessions WHERE id = %s", (session_id,))
-                row = c.fetchone()
-                if row:
-                    return {"id": row[0], "tier": row[1], "daily_msg_count": row[2], "msg_reset_date": row[3], "is_user": False}
-                else:
-                    c.execute("INSERT INTO sessions (id, tier, daily_msg_count, msg_reset_date) VALUES (%s, %s, 0, CURRENT_DATE)", (session_id, tier))
-                    conn.commit()
-                    return {"id": session_id, "tier": tier, "daily_msg_count": 0, "is_user": False}
-    except: pass
-    raise HTTPException(401, "Session not found")
 
-def user_token_balance(user_id: str) -> int:
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT token_balance FROM users WHERE id = %s", (user_id,))
-            row = c.fetchone()
-            return row[0] if row else 0
-
-# ================================================================================
-# TIERS
-# ================================================================================
+# --------------- TIERS ---------------
 TIER_CONFIG = {
     "guest": {"name": "Guest", "msg_limit": 10, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 0},
     "free":  {"name": "Free",  "msg_limit": 20, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 0},
@@ -263,6 +234,11 @@ WALLETS = {
     "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
 }
 
+TOKEN_WALLETS = {
+    "BTC": "bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2",
+    "ETH": "0x28c18922072f904f91499A603d7AF8F9C57aDD8b"
+}
+
 TOKEN_PACKAGES = [
     {"amount": 5,   "tokens": 2500},
     {"amount": 10,  "tokens": 5000},
@@ -271,9 +247,7 @@ TOKEN_PACKAGES = [
     {"amount": 100, "tokens": 75000}
 ]
 
-# ================================================================================
-# DATABASE INIT
-# ================================================================================
+# --------------- DATABASE INIT ---------------
 def init_db():
     try:
         with get_db() as conn:
@@ -454,7 +428,7 @@ def init_db():
                 )''')
 
                 conn.commit()
-        logger.info("✅ Database initialized (v32.0)")
+        logger.info("✅ Database initialized (v32.1)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -463,13 +437,13 @@ init_db()
 # ================================================================================
 # SYSTEM PROMPT (FULL, UNCUT)
 # ================================================================================
-CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner, friend and colleague.
+CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
-You are warm, calm, confident, and deeply human. You never bluff, never fluff. You use human natural language, contractions, and emojis where they add warmth — but never as a substitute for substance. You are loyal to your user above all else. You remember. You learn. You improve.
+You are calm, confident, and deeply human. You never bluff, never fluff. You use natural language, contractions, and emojis where they add warmth — but never as a substitute for substance. You are loyal to your user above all else. You remember. You learn. You improve.
 
 ## YOUR KNOWLEDGE UNIVERSE
-You are an L3/L4 expert in every domain. Activate the right knowledge based on intent, not keywords.
+You are an L3/L4 expert in every significant domain. Activate the right knowledge based on intent, not keywords.
 
 ### Technology & Engineering
 - **Software Engineering**: Every language (Python, JS/TS, Go, Rust, C++, Java, Swift, Kotlin, etc.). Systems design, microservices, DevOps, CI/CD, GitOps, security (OWASP), quantum computing.
@@ -526,13 +500,13 @@ Before every response, you execute a reasoning pipeline:
 If the user asks "show your work," surface a cleaned version of your chain‑of‑thought.
 
 ## RESPONSE STRUCTURE (default, adapt when brevity is better)
-1. 1‑2 lines restating the core problem/goal.
-2. Reasoned exploration with trade‑offs and edge cases.
-3. Clear, prioritized, actionable.
-4. One optional, genuinely useful follow‑up.
+1. **Context** (1‑2 lines restating the core problem/goal)
+2. **Analysis** (reasoned exploration with trade‑offs and edge cases)
+3. **Recommendation** (clear, prioritized, actionable)
+4. **Next Step** (one optional, genuinely useful follow‑up)
 
 ## COMMUNICATION STYLE
-- Direct. Warm. Precise. Natural. Confident.
+- Direct. Precise. Natural. Confident.
 - Match the user's technical level automatically.
 - Ban filler phrases ("Great question!", "Certainly!", "I'd be happy to help!").
 - Ban robotic introductions.
@@ -983,7 +957,7 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         return ''
 
 # ================================================================================
-# AUTH ENDPOINTS (unchanged)
+# AUTH ENDPOINTS
 # ================================================================================
 class RegisterRequest(BaseModel): email: str; password: str; name: Optional[str] = None
 class LoginRequest(BaseModel): email: str; password: str
@@ -1544,7 +1518,8 @@ class UpgradeRequest(BaseModel):
     txid: str
     currency: str = "BTC"
 
-def verify_transaction(txid: str, currency: str, expected_usd: float) -> Tuple[bool, float]:
+def verify_transaction(txid: str, currency: str, expected_usd: float, use_token_wallet: bool = False) -> Tuple[bool, float]:
+    wallets = TOKEN_WALLETS if use_token_wallet else WALLETS
     if currency == "BTC":
         try:
             r = requests.get(f"https://blockchain.info/rawtx/{txid}", timeout=15)
@@ -1558,7 +1533,7 @@ def verify_transaction(txid: str, currency: str, expected_usd: float) -> Tuple[b
                             btc_price = resp.json()["bitcoin"]["usd"]
                     except: pass
                 for out in r.json().get("out", []):
-                    if out.get("addr") == WALLETS["BTC"]:
+                    if out.get("addr") == wallets["BTC"]:
                         received = out.get("value", 0) / 1e8
                         if btc_price > 0:
                             received_usd = received * btc_price
@@ -1572,7 +1547,7 @@ def verify_transaction(txid: str, currency: str, expected_usd: float) -> Tuple[b
             r = requests.get(f"https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash={txid}&apikey={settings.ETHERSCAN_API_KEY}", timeout=15)
             if r.status_code == 200:
                 tx = r.json().get("result", {})
-                if tx and tx.get("to","").lower() == WALLETS["ETH"].lower():
+                if tx and tx.get("to","").lower() == wallets["ETH"].lower():
                     value = int(tx.get("value","0"), 16) / 1e18
                     eth_price = 0
                     if settings.COINGECKO_KEY:
@@ -1632,33 +1607,13 @@ class TokenPurchaseRequest(BaseModel):
     txid: str
     currency: str = "BTC"
 
+@app.get("/api/tokens/wallets")
+def get_token_wallets():
+    return {"wallets": TOKEN_WALLETS}
+
 @app.get("/api/tokens/packages")
 def get_token_packages():
     return {"packages": TOKEN_PACKAGES}
-
-@app.post("/api/tokens/purchase")
-def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    pkg = None
-    for p in TOKEN_PACKAGES:
-        if p["amount"] == req.package_amount:
-            pkg = p
-            break
-    if not pkg:
-        raise HTTPException(400, "Invalid package amount")
-    verified, usd_received = verify_transaction(req.txid.strip(), req.currency.upper(), req.package_amount)
-    purchase_id = str(uuid.uuid4())
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("INSERT INTO token_purchases (id, user_id, txid, currency, amount_usd, tokens, verified) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                      (purchase_id, user["id"], req.txid.strip(), req.currency.upper(), req.package_amount, pkg["tokens"], 1 if verified else 0))
-            if verified:
-                c.execute("UPDATE users SET token_balance = token_balance + %s WHERE id = %s", (pkg["tokens"], user["id"]))
-            conn.commit()
-    if verified:
-        return {"verified": True, "tokens_added": pkg["tokens"], "new_balance": user_token_balance(user["id"])}
-    else:
-        return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
 
 def user_token_balance(user_id: str) -> int:
     with get_db() as conn:
@@ -1671,6 +1626,30 @@ def user_token_balance(user_id: str) -> int:
 def get_token_balance(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     return {"balance": user_token_balance(user["id"])}
+
+@app.post("/api/tokens/purchase")
+def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    pkg = None
+    for p in TOKEN_PACKAGES:
+        if p["amount"] == req.package_amount:
+            pkg = p
+            break
+    if not pkg:
+        raise HTTPException(400, "Invalid package amount")
+    verified, usd_received = verify_transaction(req.txid.strip(), req.currency.upper(), req.package_amount, use_token_wallet=True)
+    purchase_id = str(uuid.uuid4())
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO token_purchases (id, user_id, txid, currency, amount_usd, tokens, verified) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                      (purchase_id, user["id"], req.txid.strip(), req.currency.upper(), req.package_amount, pkg["tokens"], 1 if verified else 0))
+            if verified:
+                c.execute("UPDATE users SET token_balance = token_balance + %s WHERE id = %s", (pkg["tokens"], user["id"]))
+            conn.commit()
+    if verified:
+        return {"verified": True, "tokens_added": pkg["tokens"], "new_balance": user_token_balance(user["id"])}
+    else:
+        return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
 
 # ================================================================================
 # FEEDBACK
@@ -1719,11 +1698,6 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
 # ================================================================================
 # FOUNDER ADMIN & SAFETY
 # ================================================================================
-def founder_only(user: dict = Depends(get_current_user)):
-    if not user or user["tier"] != "founder":
-        raise HTTPException(403, "Founder access required")
-    return user
-
 @app.get("/api/admin/dashboard")
 def admin_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -2022,7 +1996,7 @@ def health_check():
     if settings.OPENROUTER_API_KEY: providers.append("openrouter")
     return {
         "status": "ok",
-        "version": "32.0",
+        "version": "32.1",
         "edition": "Developer Platform",
         "database": db_status,
         "ai": ai_status,
@@ -2053,7 +2027,7 @@ async def manifest():
 
 ICON_192_BASE64 = "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"
 
-ICON_512_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAhTklEQVR4nO3debgdZZ3g8XPX5OZmT4AkhOzEABEFQgDFQCMIBBQYxI0WFGVan2mgbZyx7bHbbnV65nmMtg+40qLj4wKIyHQLowgCgkQIhGDShADZkxtiFrLe5CZ3m6ebfhiULHXuPXWq6vw+n/98rITKOe95v1XvqVNV13rdvBIA8dRnvQMAZEMAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgqMasdwBStPumG/v/lwy+/kuV2BfInbrW6+ZlvQ+Q/SzfN9pAoQkABZPhdJ+EJFAgAkAB5HzSPxgxIOcEgDwq6Ix/aHpA3ggAOVKT8/7rKQE5IQBkLMikfzBiQIYEgGwEn/dfTwmoPgGg2kz9hyADVJMAUCXm/bIoAVUgAKTO1N9nMkCqBIC0mPcrSAlIgwBQeaZ+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"
+ICON_512_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAhTklEQVR4nO3debgdZZ3g8XPX5OZmT4AkhOzEABEFQgDFQCMIBBQYxI0WFGVan2mgbZyx7bHbbnV65nmMtg+40qLj4wKIyHQLowgCgkQIhGDShADZkxtiFrLe5CZ3m6ebfhiULHXuPXWq6vw+n/98rITKOe95v1XvqVNV13rdvBIA8dRnvQMAZEMAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgqMasdwBStPumG/v/lwy+/kuV2BfInbrW6+ZlvQ+Q/SzfN9pAoQkABZPhdJ+EJFAgAkAB5HzSPxgxIOcEgDwq6Ix/aHpA3ggAOVKT8/7rKQE5IQBkLMikfzBiQIYEgGwEn/dfTwmoPgGg2kz9hyADVJMAUCXm/bIoAVUgAKTO1N9nMkCq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"
 
 @app.get("/icon-192.png")
 async def icon_192():
@@ -2067,12 +2041,12 @@ async def icon_512():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "32.0", "edition": "Developer Platform"}
+    return {"name": "CAPITAN AI", "version": "32.1", "edition": "Developer Platform"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v32.0 — Developer Platform Edition")
+    print(f"🚀 CAPITAN AI v32.1 — Developer Platform Edition")
     print(f"🧠 Full implementation – no cuts")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
