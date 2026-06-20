@@ -1,5 +1,5 @@
 """
-CAPITAN AI — Enterprise Backend v33.0 (Global Research Edition)
+CAPITAN AI — Enterprise Backend v33.1 (Global Research Edition)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 Complete implementation – no cuts, no missing components.
 """
@@ -19,6 +19,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse, FileResponse
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
+
+# Optional tiktoken for accurate token counting
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
 
 # Optional Redis
 try:
@@ -43,9 +50,11 @@ class Settings(BaseSettings):
     FINNHUB_API_KEY: str = ""
     ETHERSCAN_API_KEY: str = ""
     FOUNDER_EXTRA_PROMPT: str = ""
-    MODERATION_API_KEY: str = ""
+    MODERATION_API_KEY: str = ""           # OpenAI API key for moderation (optional)
     ENABLE_MODERATION: bool = True
     ENABLE_SECURITY_MONITOR: bool = True
+    PRIVACY_POLICY_TEXT: str = ""          # HTML or Markdown text for Privacy Policy
+    TERMS_CONDITIONS_TEXT: str = ""        # HTML or Markdown text for Terms & Conditions
 
     class Config:
         env_file = ".env"
@@ -53,7 +62,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="33.0")
+app = FastAPI(title="CAPITAN AI API", version="33.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -153,7 +162,8 @@ def verify_token(token: str):
         data = json.loads(base64.urlsafe_b64decode(payload + "=="))
         if data.get("exp", 0) < now_utc().timestamp(): return None
         return data
-    except: return None
+    except:
+        return None
 
 def get_current_user(request: Request):
     auth = request.headers.get("Authorization", "")
@@ -176,7 +186,8 @@ def get_current_user(request: Request):
                         "tier": row[3], "reasoning_depth": row[4] or 1, "preferred_domain": row[5] or "general",
                         "token_balance": row[6] or 0
                     }
-    except: pass
+    except Exception as e:
+        logger.error(f"get_current_user error: {e}")
     return None
 
 async def get_current_session(request: Request):
@@ -204,7 +215,8 @@ async def get_current_session(request: Request):
                     c.execute("INSERT INTO sessions (id, tier, token_balance) VALUES (%s, %s, 2000)", (session_id, tier))
                     conn.commit()
                     return {"id": session_id, "tier": tier, "token_balance": 2000, "is_user": False}
-    except: pass
+    except Exception as e:
+        logger.error(f"get_current_session error: {e}")
     raise HTTPException(401, "Session not found")
 
 # Founder only
@@ -455,7 +467,7 @@ def init_db():
                 )''')
 
                 conn.commit()
-        logger.info("✅ Database initialized (v33.0)")
+        logger.info("✅ Database initialized (v33.1)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -664,6 +676,17 @@ class ReasoningEngine:
     def format_visible_chain(chain: List[str]) -> str:
         return "\n".join(chain)
 
+def count_tokens(text: str) -> int:
+    """Accurate token counting using tiktoken if available, else fallback."""
+    if TIKTOKEN_AVAILABLE:
+        try:
+            enc = tiktoken.encoding_for_model("gpt-4o")  # or "claude" but we use OpenAI's
+            return len(enc.encode(text))
+        except:
+            pass
+    # fallback: approximate (words/0.75)
+    return int(len(text.split()) / 0.75)
+
 def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int = 1,
                   domain: str = "general", enable_debate: bool = False) -> Tuple[str, str, Optional[List[str]], float]:
     chain = None
@@ -728,7 +751,8 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                 if content:
                     confidence = ReasoningEngine.estimate_confidence(content, domain, False)
                     return content, "claude-3.5-sonnet", chain, confidence
-        except: pass
+        except Exception as e:
+            logger.error(f"Claude error: {e}")
 
     # Plus: Groq 70B
     if tier == "plus" and settings.GROQ_API_KEY:
@@ -744,7 +768,8 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                 if content:
                     confidence = ReasoningEngine.estimate_confidence(content, domain, False)
                     return content, "llama-3.3-70b", chain, confidence
-        except: pass
+        except Exception as e:
+            logger.error(f"Groq 70B error: {e}")
 
     # Default: Groq 8B
     if settings.GROQ_API_KEY:
@@ -760,13 +785,15 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
                 if content:
                     confidence = ReasoningEngine.estimate_confidence(content, domain, False)
                     return content, "llama-3.1-8b", chain, confidence
-        except: pass
+        except Exception as e:
+            logger.error(f"Groq 8B error: {e}")
 
     return "I'm having trouble connecting to AI services. Please try again in a moment.", "fallback", chain, 0.3
 
 def estimate_tokens(user_msg: str, ai_response: str) -> int:
-    words = len((user_msg + ai_response).split())
-    return max(1, int(words / 0.75))
+    """Return accurate token count using tiktoken if available."""
+    combined = user_msg + ai_response
+    return count_tokens(combined)
 
 def deduct_tokens(user_id: str = None, session_id: str = None, tokens_used: int = 0):
     with get_db() as conn:
@@ -795,7 +822,8 @@ def get_thread_context(chat_id: str, user_id: str = None, session_id: str = None
                     if r[0] == "user":
                         threads.append(f"- User asked: '{r[1][:100]}...'")
                 return "Recent conversation threads:\n" + "\n".join(threads) if threads else "No active threads."
-    except:
+    except Exception as e:
+        logger.error(f"get_thread_context error: {e}")
         return "Thread data unavailable."
 
 def get_user_model(user_id: str) -> str:
@@ -812,7 +840,8 @@ def get_user_model(user_id: str) -> str:
                 if domains:
                     model_parts.append("Frequent domains: " + ", ".join([f"{d[0]}({d[1]}x)" for d in domains]))
                 return " ".join(model_parts)
-    except:
+    except Exception as e:
+        logger.error(f"get_user_model error: {e}")
         return "User model unavailable."
 
 def store_memory(user_id: str, content: str, query: str, domain: str, importance: int = 1):
@@ -822,9 +851,11 @@ def store_memory(user_id: str, content: str, query: str, domain: str, importance
                 c.execute("INSERT INTO memories (id, memory_id, user_id, content, query, domain, importance) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                           (sid(), mid(), user_id, content[:500], query, domain, importance))
                 conn.commit()
-    except: pass
+    except Exception as e:
+        logger.error(f"store_memory error: {e}")
 
 def moderate_content(text: str) -> Tuple[bool, str, str]:
+    # First pass: regex patterns
     text_lower = text.lower()
     patterns = [
         (r'(hack|exploit|ddos|malware|ransomware|phish|keylog|botnet|crack)', 'Potential cyberattack', 'high'),
@@ -835,6 +866,27 @@ def moderate_content(text: str) -> Tuple[bool, str, str]:
     for pattern, reason, severity in patterns:
         if re.search(pattern, text_lower):
             return True, reason, severity
+
+    # Optional second pass: OpenAI Moderation API (if key provided)
+    if settings.MODERATION_API_KEY:
+        try:
+            resp = requests.post(
+                "https://api.openai.com/v1/moderations",
+                headers={"Authorization": f"Bearer {settings.MODERATION_API_KEY}", "Content-Type": "application/json"},
+                json={"input": text},
+                timeout=10
+            )
+            if resp.status_code == 200:
+                result = resp.json()
+                flagged = result.get("results", [{}])[0].get("flagged", False)
+                if flagged:
+                    categories = result["results"][0].get("categories", {})
+                    for cat, val in categories.items():
+                        if val:
+                            return True, f"OpenAI flagged: {cat}", "medium"
+        except Exception as e:
+            logger.error(f"OpenAI moderation error: {e}")
+
     return False, "", "low"
 
 def create_notification(user_id: str, type: str, message: str):
@@ -844,7 +896,8 @@ def create_notification(user_id: str, type: str, message: str):
                 c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, type, message))
                 conn.commit()
-    except: pass
+    except Exception as e:
+        logger.error(f"create_notification error: {e}")
 
 def log_activity(user_id: str, action: str, details: str = ""):
     try:
@@ -853,7 +906,8 @@ def log_activity(user_id: str, action: str, details: str = ""):
                 c.execute("INSERT INTO activity_log (id, user_id, action, details) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, action, details))
                 conn.commit()
-    except: pass
+    except Exception as e:
+        logger.error(f"log_activity error: {e}")
 
 def log_security_event(event_type: str, ip: str, user_agent: str, details: str, severity: str = "low"):
     try:
@@ -862,7 +916,8 @@ def log_security_event(event_type: str, ip: str, user_agent: str, details: str, 
                 c.execute("INSERT INTO security_events (id, event_type, ip_address, user_agent, details, severity) VALUES (%s,%s,%s,%s,%s,%s)",
                           (str(uuid.uuid4()), event_type, ip, user_agent, details, severity))
                 conn.commit()
-    except: pass
+    except Exception as e:
+        logger.error(f"log_security_event error: {e}")
 
 def search_web(query: str, num_results: int = 5) -> List[dict]:
     results = []
@@ -874,7 +929,8 @@ def search_web(query: str, num_results: int = 5) -> List[dict]:
             if r.status_code == 200:
                 for item in r.json().get("organic_results", [])[:num_results]:
                     results.append({"title": item.get("title",""), "snippet": item.get("snippet","")[:350], "url": item.get("link",""), "source": "Google"})
-        except: pass
+        except Exception as e:
+            logger.error(f"search_web error: {e}")
     return results
 
 def get_market_prices():
@@ -891,7 +947,8 @@ def get_market_prices():
                          "dogecoin":"DOGE","avalanche-2":"AVAX","chainlink":"LINK","polkadot":"DOT","tron":"TRX"}
                 for k,v in data.items():
                     results[names.get(k,k.upper())] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2)}
-        except: pass
+        except Exception as e:
+            logger.error(f"get_market_prices error: {e}")
     if settings.FINNHUB_API_KEY:
         symbols = ["SPX","NDX","DJI","AAPL","MSFT","NVDA","TSLA","GOOGL","META","AMZN"]
         for sym in symbols:
@@ -901,7 +958,8 @@ def get_market_prices():
                     data = r.json()
                     if data.get("c"):
                         results[sym] = {"price":data["c"],"change":round(data.get("dp",0),2)}
-            except: pass
+            except Exception as e:
+                logger.error(f"Finnhub error for {sym}: {e}")
     return results
 
 def get_news():
@@ -914,7 +972,8 @@ def get_news():
                 for article in r.json().get("articles",[]):
                     news.append({"source":article.get("source",{}).get("name","News"),"headline":article.get("title",""),
                                  "url":article.get("url",""),"summary":(article.get("description") or "")[:200]})
-        except: pass
+        except Exception as e:
+            logger.error(f"get_news error: {e}")
     return news[:10]
 
 def extract_text_from_file(file_path: str, original_name: str) -> str:
@@ -948,7 +1007,69 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         logger.error(f"File extraction error: {e}")
         return ''
 
+# ========================
+# Legal endpoints
+# ========================
+@app.get("/api/legal/privacy")
+async def get_privacy():
+    """Return privacy policy text from environment or default."""
+    default_text = """
+<h2>Privacy Policy</h2>
+<p><strong>Effective Date:</strong> June 20, 2026</p>
+<p>CAPITAN AI ("we", "our", "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.</p>
+<h3>Information We Collect</h3>
+<ul>
+    <li><strong>Personal Data:</strong> Email address, name, and payment information (processed securely).</li>
+    <li><strong>Usage Data:</strong> Chat history, interactions, and feedback.</li>
+    <li><strong>Technical Data:</strong> IP address, browser type, device information.</li>
+</ul>
+<h3>How We Use Your Information</h3>
+<ul>
+    <li>To provide and improve our services.</li>
+    <li>To personalise your experience.</li>
+    <li>To process transactions and manage your account.</li>
+    <li>To comply with legal obligations.</li>
+</ul>
+<h3>Data Security</h3>
+<p>We implement appropriate technical and organisational measures to protect your data. All communication is encrypted.</p>
+<h3>Your Rights</h3>
+<p>You have the right to access, correct, or delete your personal data. Contact us at <a href="mailto:privacy@capitan.ai">privacy@capitan.ai</a>.</p>
+<h3>Changes to This Policy</h3>
+<p>We may update this policy periodically. We will notify you of any changes.</p>
+    """
+    text = settings.PRIVACY_POLICY_TEXT or default_text
+    return {"text": text}
+
+@app.get("/api/legal/terms")
+async def get_terms():
+    """Return terms and conditions from environment or default."""
+    default_text = """
+<h2>Terms & Conditions</h2>
+<p><strong>Effective Date:</strong> June 20, 2026</p>
+<p>Welcome to CAPITAN AI. By accessing or using our platform, you agree to be bound by these Terms & Conditions.</p>
+<h3>Acceptance of Terms</h3>
+<p>By creating an account or using our services, you accept these terms. If you do not agree, do not use the platform.</p>
+<h3>User Accounts</h3>
+<p>You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorised use.</p>
+<h3>Acceptable Use</h3>
+<p>You agree to use the platform only for lawful purposes and in a manner that does not infringe the rights of others.</p>
+<h3>Intellectual Property</h3>
+<p>All content on the platform, including text, graphics, logos, and software, is the property of CAPITAN AI and protected by copyright laws.</p>
+<h3>Disclaimer of Warranties</h3>
+<p>The platform is provided "as is" without warranties of any kind. We do not guarantee uninterrupted or error-free service.</p>
+<h3>Limitation of Liability</h3>
+<p>In no event shall CAPITAN AI be liable for any indirect, incidental, or consequential damages arising from your use of the platform.</p>
+<h3>Governing Law</h3>
+<p>These terms shall be governed by the laws of Nigeria.</p>
+<h3>Changes to Terms</h3>
+<p>We may revise these terms at any time. Continued use after changes constitutes acceptance.</p>
+    """
+    text = settings.TERMS_CONDITIONS_TEXT or default_text
+    return {"text": text}
+
+# ========================
 # Auth endpoints
+# ========================
 class RegisterRequest(BaseModel): email: str; password: str; name: Optional[str] = None
 class LoginRequest(BaseModel): email: str; password: str
 
@@ -967,9 +1088,10 @@ async def register(req: RegisterRequest):
                 password_hash = hash_password(req.password)
                 user_id = str(uuid.uuid4())
                 name = req.name or req.email.split('@')[0]
+                initial_tokens = TIER_TOKEN_BALANCES["free"]
                 c.execute("""INSERT INTO users (id, email, password_hash, name, tier, reasoning_depth, preferred_domain, token_balance, last_active)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,NOW())""",
-                    (user_id, req.email, password_hash, name, "free", 1, "general", TIER_TOKEN_BALANCES["free"]))
+                    (user_id, req.email, password_hash, name, "free", 1, "general", initial_tokens))
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
@@ -980,9 +1102,24 @@ async def register(req: RegisterRequest):
                           (str(uuid.uuid4()), user_id, key_hash, raw_key[:10]+"...", "CAPITAN Web App", "chat,research,portfolio"))
                 conn.commit()
                 log_activity(user_id, "register")
-                return {"token": token, "user": {"id": user_id, "email": req.email, "name": name, "tier": "free", "reasoning_depth": 1, "preferred_domain": "general", "token_balance": TIER_TOKEN_BALANCES["free"]}}
-    except HTTPException: raise
-    except Exception as e: logger.error(f"Register: {e}"); raise HTTPException(500, "Registration failed")
+                # Return token_balance in response
+                return {
+                    "token": token,
+                    "user": {
+                        "id": user_id,
+                        "email": req.email,
+                        "name": name,
+                        "tier": "free",
+                        "reasoning_depth": 1,
+                        "preferred_domain": "general",
+                        "token_balance": initial_tokens
+                    }
+                }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Register: {e}")
+        raise HTTPException(500, "Registration failed")
 
 @app.post("/api/auth/login")
 async def login(req: LoginRequest, request: Request):
@@ -1000,9 +1137,23 @@ async def login(req: LoginRequest, request: Request):
                 c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
                 conn.commit()
                 log_activity(user_id, "login", f"IP: {request.client.host}")
-                return {"token": token, "user": {"id": user_id, "email": email, "name": name or email.split('@')[0], "tier": tier, "reasoning_depth": reasoning_depth or 1, "preferred_domain": preferred_domain or "general", "token_balance": token_balance or 0}}
-    except HTTPException: raise
-    except Exception as e: logger.error(f"Login: {e}"); raise HTTPException(500, "Login failed")
+                return {
+                    "token": token,
+                    "user": {
+                        "id": user_id,
+                        "email": email,
+                        "name": name or email.split('@')[0],
+                        "tier": tier,
+                        "reasoning_depth": reasoning_depth or 1,
+                        "preferred_domain": preferred_domain or "general",
+                        "token_balance": token_balance or 0
+                    }
+                }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login: {e}")
+        raise HTTPException(500, "Login failed")
 
 @app.post("/api/auth/logout")
 async def logout(request: Request):
@@ -1013,7 +1164,8 @@ async def logout(request: Request):
                 with conn.cursor() as c:
                     c.execute("DELETE FROM user_sessions WHERE token = %s", (auth[7:],))
                     conn.commit()
-        except: pass
+        except Exception as e:
+            logger.error(f"Logout error: {e}")
     return {"message": "Logged out"}
 
 @app.get("/api/auth/me")
@@ -1041,7 +1193,9 @@ async def update_profile(req: dict, user: dict = Depends(get_current_user)):
                 if preferred_domain: c.execute("UPDATE users SET preferred_domain=%s, updated_at=NOW() WHERE id=%s", (preferred_domain, user["id"]))
                 conn.commit()
         return {"message": "Profile updated"}
-    except: raise HTTPException(500, "Update failed")
+    except Exception as e:
+        logger.error(f"update_profile error: {e}")
+        raise HTTPException(500, "Update failed")
 
 @app.delete("/api/auth/delete-account")
 async def delete_account(user: dict = Depends(get_current_user)):
@@ -1052,7 +1206,9 @@ async def delete_account(user: dict = Depends(get_current_user)):
                 c.execute("DELETE FROM users WHERE id = %s", (user["id"],))
                 conn.commit()
         return {"message": "Account deleted"}
-    except: raise HTTPException(500, "Delete failed")
+    except Exception as e:
+        logger.error(f"delete_account error: {e}")
+        raise HTTPException(500, "Delete failed")
 
 @app.get("/api/session")
 async def get_anonymous_session():
@@ -1062,7 +1218,8 @@ async def get_anonymous_session():
             with conn.cursor() as c:
                 c.execute("INSERT INTO sessions (id, tier, token_balance) VALUES (%s,'guest',2000)", (session_id,))
                 conn.commit()
-    except: pass
+    except Exception as e:
+        logger.error(f"get_anonymous_session error: {e}")
     token = create_session_token(session_id, "guest")
     return {"id": session_id, "tier": "guest", "token": token, "token_balance": 2000}
 
@@ -1092,9 +1249,13 @@ async def founder_login(req: dict, request: Request):
                 conn.commit()
                 log_activity(user_id, "founder_login", f"IP: {identifier}")
                 return {"verified": True, "token": token, "user": {"id": user_id, "name": "CAPITAN Founder", "email": "founder@capitan.ai", "tier": "founder", "reasoning_depth": 5, "preferred_domain": "general", "token_balance": "unlimited"}}
-    except Exception as e: logger.error(f"Founder: {e}"); raise HTTPException(500, "Founder login failed")
+    except Exception as e:
+        logger.error(f"Founder login error: {e}")
+        raise HTTPException(500, "Founder login failed")
 
-# Chat endpoint (no daily limits, token deduction)
+# ========================
+# Chat endpoint
+# ========================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1157,7 +1318,8 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                     c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content) VALUES (%s,%s,%s,%s,%s)",
                               (f"msg_{sid()}", chat_id, session["id"], "user", user_msg))
                 conn.commit()
-    except Exception as e: logger.error(f"Save user msg error: {e}")
+    except Exception as e:
+        logger.error(f"Save user msg error: {e}")
 
     if settings.ENABLE_MODERATION and is_authenticated:
         flagged, reason, severity = moderate_content(user_msg)
@@ -1178,7 +1340,8 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                     WHERE chat_id = %s ORDER BY created DESC LIMIT 60
                 ) recent ORDER BY created ASC""", (chat_id,))
                 chat_history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
-    except: pass
+    except Exception as e:
+        logger.error(f"Fetch chat history error: {e}")
 
     thread_context = get_thread_context(chat_id, user_id if is_authenticated else None, session["id"] if not is_authenticated else None)
     user_model = get_user_model(user_id) if is_authenticated else "Anonymous user."
@@ -1188,7 +1351,8 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         try:
             results = search_web(user_msg, 5)
             if results: web_results_text = "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in results[:4]])
-        except: pass
+        except Exception as e:
+            logger.error(f"Web search error: {e}")
 
     system_prompt = build_system_prompt(user_msg, tier, reasoning_depth, preferred_domain, user_model, thread_context, web_results_text)
     messages_for_ai = [{"role": "system", "content": system_prompt}] + chat_history
@@ -1211,7 +1375,8 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                                   (msg_id, chat_id, session["id"], "assistant", result, model_used,
                                    json.dumps(reasoning_chain) if reasoning_chain else None, confidence))
                     conn.commit()
-        except Exception as e: logger.error(f"Save AI msg error: {e}")
+        except Exception as e:
+            logger.error(f"Save AI msg error: {e}")
 
         tokens_used = estimate_tokens(user_msg, result)
         deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
@@ -1242,7 +1407,8 @@ def get_chats(request: Request, refresh: bool = False):
                     c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 100", (session["id"],))
                     rows = c.fetchall()
                     return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
-        except: pass
+        except Exception as e:
+            logger.error(f"get_chats error: {e}")
     return {"chats": []}
 
 @app.get("/api/chats/{chat_id}")
@@ -1259,8 +1425,11 @@ def get_chat(chat_id: str, request: Request):
                 c.execute("SELECT role, content, model, reasoning_chain, confidence_score, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
                 rows = c.fetchall()
                 return {"messages": [{"id": i, "role": r[0], "content": r[1], "model": r[2] or "AI", "reasoning_chain": json.loads(r[3]) if r[3] else None, "confidence": r[4], "created": r[5].isoformat() if r[5] else None} for i, r in enumerate(rows)]}
-    except HTTPException: raise
-    except Exception as e: raise HTTPException(500, str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"get_chat error: {e}")
+        raise HTTPException(500, str(e))
 
 @app.delete("/api/chats/{chat_id}")
 def delete_chat(chat_id: str, request: Request):
@@ -1277,7 +1446,9 @@ def delete_chat(chat_id: str, request: Request):
             conn.commit()
     return {"deleted": True}
 
-# Portfolio
+# ========================
+# Portfolio endpoints (unchanged)
+# ========================
 class PortfolioItemCreate(BaseModel):
     name: str
     content: str = ""
@@ -1333,7 +1504,9 @@ def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"deleted": True}
 
-# Research Hub
+# ========================
+# Research Hub (unchanged)
+# ========================
 @app.get("/api/research/topics")
 def get_research_topics(domain: Optional[str] = None):
     with get_db() as conn:
@@ -1379,7 +1552,9 @@ def delete_user_project(project_id: str, user: dict = Depends(get_current_user))
             conn.commit()
     return {"deleted": True}
 
-# Workspaces
+# ========================
+# Workspaces (enhanced)
+# ========================
 @app.post("/api/hub/rooms")
 def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1458,10 +1633,16 @@ def send_hub_message(room_code: str, req: dict, user: dict = Depends(get_current
             room = c.fetchone()
             if not room: raise HTTPException(404)
             is_ai = message.strip().startswith("@CAPITAN")
+            # Save user message
             c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message) VALUES (%s,%s,%s,%s,%s)",
                       (sid(), room[0], user["id"], user["name"], message))
             if is_ai:
-                ai_response, _, _, _ = call_ai_model([{"role":"user","content":message.replace('@CAPITAN','').strip()}], user["tier"])
+                # Fetch last 5 messages for context
+                c.execute("SELECT author_name, message, is_ai FROM workspace_messages WHERE workspace_id=%s ORDER BY created DESC LIMIT 5", (room[0],))
+                history = c.fetchall()
+                context = "\n".join([f"{'AI' if r[2] else r[0]}: {r[1]}" for r in reversed(history)])
+                ai_prompt = f"Previous conversation in workspace:\n{context}\n\nNew question: {message.replace('@CAPITAN','').strip()}"
+                ai_response, _, _, _ = call_ai_model([{"role":"user","content":ai_prompt}], user["tier"])
                 if ai_response:
                     c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai) VALUES (%s,%s,%s,%s,%s,1)",
                               (sid(), room[0], user["id"], "CAPITAN AI", ai_response))
@@ -1476,7 +1657,9 @@ def pin_message(room_code: str, message_id: str, user: dict = Depends(get_curren
             conn.commit()
     return {"ok": True}
 
-# Notifications
+# ========================
+# Notifications (unchanged)
+# ========================
 @app.get("/api/notifications")
 def get_notifications(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1495,7 +1678,9 @@ def mark_read(user: dict = Depends(get_current_user)):
             conn.commit()
     return {"ok": True}
 
-# Upgrade
+# ========================
+# Upgrade (unchanged)
+# ========================
 class UpgradeRequest(BaseModel):
     tier: str
     txid: str
@@ -1514,7 +1699,8 @@ def verify_transaction(txid: str, currency: str, expected_usd: float, use_token_
                                             headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=5)
                         if resp.status_code == 200:
                             btc_price = resp.json()["bitcoin"]["usd"]
-                    except: pass
+                    except Exception as e:
+                        logger.error(f"BTC price error: {e}")
                 for out in r.json().get("out", []):
                     if out.get("addr") == wallets["BTC"]:
                         received = out.get("value", 0) / 1e8
@@ -1524,7 +1710,8 @@ def verify_transaction(txid: str, currency: str, expected_usd: float, use_token_
                                 return True, received_usd
                         else:
                             return True, received * 40000
-        except: pass
+        except Exception as e:
+            logger.error(f"BTC verification error: {e}")
     elif currency == "ETH" and settings.ETHERSCAN_API_KEY:
         try:
             r = requests.get(f"https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash={txid}&apikey={settings.ETHERSCAN_API_KEY}", timeout=15)
@@ -1539,14 +1726,16 @@ def verify_transaction(txid: str, currency: str, expected_usd: float, use_token_
                                                 headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=5)
                             if resp.status_code == 200:
                                 eth_price = resp.json()["ethereum"]["usd"]
-                        except: pass
+                        except Exception as e:
+                            logger.error(f"ETH price error: {e}")
                     if eth_price > 0:
                         received_usd = value * eth_price
                         if received_usd >= expected_usd * 0.95:
                             return True, received_usd
                     else:
                         return True, value * 2000
-        except: pass
+        except Exception as e:
+            logger.error(f"ETH verification error: {e}")
     return False, 0.0
 
 @app.post("/api/upgrade")
@@ -1582,7 +1771,9 @@ def get_payments(user: dict = Depends(get_current_user)):
             payments = [{"id": r[0], "txid": r[1], "currency": r[2], "amount": r[3], "tier": r[4], "status": r[5], "created_at": r[6].isoformat() if r[6] else None} for r in c.fetchall()]
     return {"payments": payments}
 
-# Token purchase
+# ========================
+# Token purchase (unchanged)
+# ========================
 class TokenPurchaseRequest(BaseModel):
     package_amount: float
     txid: str
@@ -1612,7 +1803,6 @@ def get_token_balance(user: dict = Depends(get_current_user)):
 @app.post("/api/tokens/purchase")
 def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    # Check both regular and enterprise packages
     pkg = None
     for p in TOKEN_PACKAGES + ENTERPRISE_TOKEN_PACKAGES:
         if p["amount"] == req.package_amount:
@@ -1634,7 +1824,9 @@ def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_
     else:
         return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
 
-# Feedback
+# ========================
+# Feedback (unchanged)
+# ========================
 class FeedbackRequest(BaseModel):
     message_id: str
     rating: int = Field(..., ge=1, le=5)
@@ -1651,7 +1843,9 @@ def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)
             conn.commit()
     return {"received": True}
 
-# File upload
+# ========================
+# File upload (unchanged)
+# ========================
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -1674,7 +1868,9 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
             conn.commit()
     return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
 
-# Founder admin & safety
+# ========================
+# Founder admin & safety (unchanged)
+# ========================
 @app.get("/api/admin/dashboard")
 def admin_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -1750,7 +1946,9 @@ def admin_confirm_payment(payment_id: str, founder: dict = Depends(founder_only)
             conn.commit()
     return {"ok": True}
 
-# Safety
+# ========================
+# Safety (unchanged)
+# ========================
 @app.get("/api/admin/safety/dashboard")
 def safety_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -1815,7 +2013,9 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
-# Security middleware
+# ========================
+# Security middleware (unchanged)
+# ========================
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     if settings.ENABLE_SECURITY_MONITOR:
@@ -1836,7 +2036,9 @@ async def security_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# Developer endpoints
+# ========================
+# Developer endpoints (unchanged)
+# ========================
 @app.post("/api/developer/keys")
 def create_api_key(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1919,7 +2121,9 @@ def get_api_usage(user: dict = Depends(get_current_user)):
             usage = [{"endpoint": r[0], "requests": r[1], "tokens": r[2]} for r in c.fetchall()]
     return {"usage": usage}
 
-# API key middleware
+# ========================
+# API key middleware (unchanged)
+# ========================
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     auth = request.headers.get("Authorization", "")
@@ -1947,7 +2151,9 @@ async def api_key_middleware(request: Request, call_next):
     else:
         return await call_next(request)
 
-# Health, manifest, icons
+# ========================
+# Health, manifest, icons (unchanged)
+# ========================
 @app.get("/health")
 def health_check():
     db_status = "disconnected"
@@ -1956,14 +2162,15 @@ def health_check():
             with conn.cursor() as c:
                 c.execute("SELECT 1")
                 db_status = "connected"
-    except: pass
+    except Exception as e:
+        logger.error(f"Health DB check error: {e}")
     ai_status = "connected" if (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY) else "disconnected"
     providers = []
     if settings.GROQ_API_KEY: providers.append("groq")
     if settings.OPENROUTER_API_KEY: providers.append("openrouter")
     return {
         "status": "ok",
-        "version": "33.0",
+        "version": "33.1",
         "edition": "Global Research",
         "database": db_status,
         "ai": ai_status,
@@ -1998,12 +2205,12 @@ async def icon_512():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "33.0", "edition": "Global Research"}
+    return {"name": "CAPITAN AI", "version": "33.1", "edition": "Global Research"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v33.0 — Global Research Edition")
+    print(f"🚀 CAPITAN AI v33.1 — Global Research Edition")
     print(f"🧠 Full implementation – no cuts")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
