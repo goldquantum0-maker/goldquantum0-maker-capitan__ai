@@ -1,8 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v32.5 (Token Economy Edition)
+CAPITAN AI — Enterprise Backend v33.0 (Global Research Edition)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-No daily limits · Token balances per tier · Research hub removed · API key labels
-Halved token prices · PWA icon fix · Full implementation, no cuts.
+Complete implementation – no cuts, no missing components.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -17,7 +16,7 @@ import psycopg2.pool
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse, FileResponse
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
@@ -31,9 +30,6 @@ except ImportError:
 import concurrent.futures
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
-# ================================================================================
-# SETTINGS
-# ================================================================================
 class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
@@ -57,7 +53,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="32.5")
+app = FastAPI(title="CAPITAN AI API", version="33.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,9 +65,7 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# ================================================================================
-# DATABASE POOL
-# ================================================================================
+# Database pool
 db_pool = None
 def get_db_pool():
     global db_pool
@@ -97,9 +91,7 @@ if REDIS_AVAILABLE and hasattr(settings, 'REDIS_URL') and settings.REDIS_URL:
     except:
         pass
 
-# ================================================================================
-# HELPERS
-# ================================================================================
+# Helpers
 def sid(): return secrets.token_hex(4).upper()
 def mid(): return 'mem_' + sid()
 def now_utc(): return datetime.now(timezone.utc)
@@ -215,24 +207,20 @@ async def get_current_session(request: Request):
     except: pass
     raise HTTPException(401, "Session not found")
 
-# ================================================================================
-# FOUNDER ONLY
-# ================================================================================
+# Founder only
 def founder_only(user: dict = Depends(get_current_user)):
     if not user or user["tier"] != "founder":
         raise HTTPException(403, "Founder access required")
     return user
 
-# ================================================================================
-# TIERS
-# ================================================================================
+# TIERS – msg_limit kept for reference but not used in UI; all usage is token-based
 TIER_CONFIG = {
-    "guest":   {"name": "Guest",   "msg_limit": 0, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 0},
-    "free":    {"name": "Free",    "msg_limit": 0, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 0},
-    "plus":    {"name": "Plus",    "msg_limit": 0, "workspace_seats": 10, "file_upload": True,  "live_markets": False, "web_search": True,  "ai_model": "Groq Llama 3.3 70B", "price": 8,  "reasoning_depth": 2, "project_limit": 3},
-    "pro":     {"name": "Pro",     "msg_limit": 0, "workspace_seats": 25, "file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "Claude 3.5 Sonnet", "price": 17, "reasoning_depth": 3, "project_limit": 10},
-    "pro_max": {"name": "Pro Max", "msg_limit": 0, "workspace_seats": 50, "file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "GPT-4o + Claude Ensemble", "price": 30, "reasoning_depth": 4, "project_limit": float("inf")},
-    "founder": {"name": "Founder", "msg_limit": 0, "workspace_seats": 100,"file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "All Models + Custom", "price": 0,  "reasoning_depth": 5, "project_limit": float("inf")}
+    "guest":   {"name": "Guest",   "msg_limit": 0, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 0, "room_limit": 0},
+    "free":    {"name": "Free",    "msg_limit": 0, "workspace_seats": 0, "file_upload": False, "live_markets": False, "web_search": False, "ai_model": "Groq Llama 3.1 8B", "price": 0, "reasoning_depth": 1, "project_limit": 1, "room_limit": 0},
+    "plus":    {"name": "Plus",    "msg_limit": 0, "workspace_seats": 10,"file_upload": True,  "live_markets": False, "web_search": True,  "ai_model": "Groq Llama 3.3 70B", "price": 8,  "reasoning_depth": 2, "project_limit": 3, "room_limit": 3},
+    "pro":     {"name": "Pro",     "msg_limit": 0, "workspace_seats": 25,"file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "Claude 3.5 Sonnet", "price": 17, "reasoning_depth": 3, "project_limit": 10, "room_limit": 10},
+    "pro_max": {"name": "Pro Max", "msg_limit": 0, "workspace_seats": 50,"file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "GPT-4o + Claude Ensemble", "price": 30, "reasoning_depth": 4, "project_limit": float("inf"), "room_limit": float("inf")},
+    "founder": {"name": "Founder", "msg_limit": 0, "workspace_seats": 100,"file_upload": True,  "live_markets": True,  "web_search": True,  "ai_model": "All Models + Custom", "price": 0,  "reasoning_depth": 5, "project_limit": float("inf"), "room_limit": float("inf")}
 }
 
 WALLETS = {
@@ -245,12 +233,20 @@ TOKEN_WALLETS = {
     "ETH": "0x28c18922072f904f91499A603d7AF8F9C57aDD8b"
 }
 
+# Regular token packages
 TOKEN_PACKAGES = [
     {"amount": 5,   "tokens": 5000},
     {"amount": 10,  "tokens": 10000},
     {"amount": 20,  "tokens": 24000},
     {"amount": 50,  "tokens": 70000},
     {"amount": 100, "tokens": 150000}
+]
+
+# Enterprise token packages (higher cost, higher volume)
+ENTERPRISE_TOKEN_PACKAGES = [
+    {"amount": 200, "tokens": 320000},
+    {"amount": 500, "tokens": 850000},
+    {"amount": 1000,"tokens": 2000000}
 ]
 
 TIER_TOKEN_BALANCES = {
@@ -262,9 +258,6 @@ TIER_TOKEN_BALANCES = {
     "founder": float("inf")
 }
 
-# ================================================================================
-# DATABASE INIT
-# ================================================================================
 def init_db():
     try:
         with get_db() as conn:
@@ -287,7 +280,6 @@ def init_db():
                 ''')
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_balance INTEGER DEFAULT 0")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active TIMESTAMP DEFAULT NOW()")
-                # Remove old daily limit columns if they exist
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS msg_reset_date")
 
@@ -405,6 +397,38 @@ def init_db():
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     action TEXT, details TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
+                # Research topics
+                c.execute('''CREATE TABLE IF NOT EXISTS research_topics (
+                    id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT,
+                    domain TEXT, prompt TEXT, is_builtin BOOLEAN DEFAULT TRUE,
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+                # Research projects
+                c.execute('''CREATE TABLE IF NOT EXISTS research_projects (
+                    id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    name TEXT NOT NULL, description TEXT, chat_id TEXT, created TIMESTAMP DEFAULT NOW()
+                )''')
+                # Seed research topics
+                seed_topics = [
+                    ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks. Identify key support and resistance levels, recent volume patterns, and any macroeconomic factors that could influence price action over the next quarter.'),
+                    ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements. Highlight the top three gainers and losers, any major news events, and what technical indicators suggest for the coming days.'),
+                    ('tech1','Quantum Computing','Introduction to quantum computing','technology','Explain quantum computing in simple terms. What are qubits, superposition, and entanglement? How far are we from practical quantum computers?'),
+                    ('tech2','Cloud Architecture','Designing scalable cloud systems','technology','Describe best practices for multi‑cloud architecture. Compare AWS, GCP, and Azure for a startup building a global SaaS product.'),
+                    ('sci1','Climate Change','Latest climate research','science','Summarize the latest IPCC report findings. What are the most effective mitigation strategies available today?'),
+                    ('sci2','CRISPR Technology','Gene editing with CRISPR','science','Explain how CRISPR‑Cas9 works and its potential applications in medicine and agriculture. What ethical concerns exist?'),
+                    ('health1','Nutrition Science','Evidence‑based nutrition','health','What does the latest research say about intermittent fasting? Compare it with other dietary approaches for long‑term health.'),
+                    ('health2','Mental Health','Mental wellness strategies','health','Provide evidence‑based techniques for managing anxiety. Include cognitive behavioral therapy, mindfulness, and lifestyle changes.'),
+                    ('arts1','Art History','Renaissance art','arts','Describe the key characteristics of Renaissance art. Who were the major artists and what innovations did they bring?'),
+                    ('arts2','Music Theory','Basics of music composition','arts','Explain the circle of fifths and its use in music composition. How do chord progressions create emotional responses?'),
+                    ('edu1','Learning Techniques','Effective study methods','education','What are the most effective learning strategies according to cognitive science? Include spaced repetition, active recall, and interleaving.'),
+                    ('edu2','STEM Education','Teaching science and math','education','How can project‑based learning improve STEM outcomes? Provide examples of successful implementations.'),
+                    ('law1','Intellectual Property','IP law basics','legal','Explain the difference between patents, trademarks, and copyrights. How do they apply to software and AI inventions?'),
+                    ('law2','Contract Law','Understanding contracts','legal','What are the essential elements of a valid contract? Provide examples of common contract disputes.'),
+                ]
+                for tid, title, desc, domain, prompt in seed_topics:
+                    c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
+                              (tid, title, desc, domain, prompt))
+
                 # Developer platform
                 c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -431,15 +455,13 @@ def init_db():
                 )''')
 
                 conn.commit()
-        logger.info("✅ Database initialized (v32.5)")
+        logger.info("✅ Database initialized (v33.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
-# ================================================================================
-# SYSTEM PROMPT (FULL, UNCHANGED)
-# ================================================================================
+# System prompt (full, unchanged)
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
@@ -503,13 +525,13 @@ Before every response, you execute a reasoning pipeline:
 If the user asks "show your work," surface a cleaned version of your chain‑of‑thought.
 
 ## RESPONSE STRUCTURE (default, adapt when brevity is better)
-1. 1‑2 lines restating the core problem/goal.
-2. Reasoned exploration with trade‑offs and edge cases.
-3. Clear, prioritized, actionable.
-4. One optional, genuinely useful follow‑up.
+1. **Context** (1‑2 lines restating the core problem/goal)
+2. **Analysis** (reasoned exploration with trade‑offs and edge cases)
+3. **Recommendation** (clear, prioritized, actionable)
+4. **Next Step** (one optional, genuinely useful follow‑up)
 
 ## COMMUNICATION STYLE
-- Direct. Warm. Precise. Natural. Confident.
+- Direct. Precise. Natural. Confident.
 - Match the user's technical level automatically.
 - Ban filler phrases ("Great question!", "Certainly!", "I'd be happy to help!").
 - Ban robotic introductions.
@@ -742,7 +764,6 @@ def call_ai_model(messages: List[dict], tier: str = "free", reasoning_depth: int
 
     return "I'm having trouble connecting to AI services. Please try again in a moment.", "fallback", chain, 0.3
 
-# Token deduction helper
 def estimate_tokens(user_msg: str, ai_response: str) -> int:
     words = len((user_msg + ai_response).split())
     return max(1, int(words / 0.75))
@@ -756,7 +777,6 @@ def deduct_tokens(user_id: str = None, session_id: str = None, tokens_used: int 
                 c.execute("UPDATE sessions SET token_balance = GREATEST(0, token_balance - %s) WHERE id = %s", (tokens_used, session_id))
             conn.commit()
 
-# Context & memory (unchanged)
 def get_thread_context(chat_id: str, user_id: str = None, session_id: str = None) -> str:
     try:
         with get_db() as conn:
@@ -804,7 +824,6 @@ def store_memory(user_id: str, content: str, query: str, domain: str, importance
                 conn.commit()
     except: pass
 
-# Moderation
 def moderate_content(text: str) -> Tuple[bool, str, str]:
     text_lower = text.lower()
     patterns = [
@@ -818,7 +837,6 @@ def moderate_content(text: str) -> Tuple[bool, str, str]:
             return True, reason, severity
     return False, "", "low"
 
-# Notifications & logging
 def create_notification(user_id: str, type: str, message: str):
     try:
         with get_db() as conn:
@@ -846,7 +864,6 @@ def log_security_event(event_type: str, ip: str, user_agent: str, details: str, 
                 conn.commit()
     except: pass
 
-# Web search & market data
 def search_web(query: str, num_results: int = 5) -> List[dict]:
     results = []
     if settings.SERPAPI_KEY:
@@ -931,9 +948,7 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         logger.error(f"File extraction error: {e}")
         return ''
 
-# ================================================================================
-# AUTH ENDPOINTS
-# ================================================================================
+# Auth endpoints
 class RegisterRequest(BaseModel): email: str; password: str; name: Optional[str] = None
 class LoginRequest(BaseModel): email: str; password: str
 
@@ -1079,9 +1094,7 @@ async def founder_login(req: dict, request: Request):
                 return {"verified": True, "token": token, "user": {"id": user_id, "name": "CAPITAN Founder", "email": "founder@capitan.ai", "tier": "founder", "reasoning_depth": 5, "preferred_domain": "general", "token_balance": "unlimited"}}
     except Exception as e: logger.error(f"Founder: {e}"); raise HTTPException(500, "Founder login failed")
 
-# ================================================================================
-# CHAT (CORE) – No daily limits, token deduction added
-# ================================================================================
+# Chat endpoint (no daily limits, token deduction)
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1200,7 +1213,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                     conn.commit()
         except Exception as e: logger.error(f"Save AI msg error: {e}")
 
-        # Deduct tokens
         tokens_used = estimate_tokens(user_msg, result)
         deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
 
@@ -1265,9 +1277,7 @@ def delete_chat(chat_id: str, request: Request):
             conn.commit()
     return {"deleted": True}
 
-# ================================================================================
-# PORTFOLIO
-# ================================================================================
+# Portfolio
 class PortfolioItemCreate(BaseModel):
     name: str
     content: str = ""
@@ -1323,20 +1333,67 @@ def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"deleted": True}
 
-# ================================================================================
-# WORKSPACES
-# ================================================================================
+# Research Hub
+@app.get("/api/research/topics")
+def get_research_topics(domain: Optional[str] = None):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if domain:
+                c.execute("SELECT id, title, description, domain, prompt FROM research_topics WHERE is_builtin=TRUE AND domain=%s ORDER BY title", (domain,))
+            else:
+                c.execute("SELECT id, title, description, domain, prompt FROM research_topics WHERE is_builtin=TRUE ORDER BY title")
+            topics = [{"id": r[0], "title": r[1], "description": r[2], "domain": r[3], "prompt": r[4]} for r in c.fetchall()]
+    return {"topics": topics}
+
+@app.get("/api/research/projects")
+def get_user_projects(user: dict = Depends(get_current_user)):
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, name, description, chat_id, created FROM research_projects WHERE user_id=%s ORDER BY created DESC", (user["id"],))
+            projects = [{"id": r[0], "name": r[1], "description": r[2], "chat_id": r[3], "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+    return {"projects": projects, "limit": tier_info["project_limit"]}
+
+@app.post("/api/research/projects")
+def create_user_project(req: dict, user: dict = Depends(get_current_user)):
+    tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
+    if tier_info["project_limit"] == 0:
+        raise HTTPException(403, "Your tier does not support research projects")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM research_projects WHERE user_id=%s", (user["id"],))
+            count = c.fetchone()[0]
+            if count >= tier_info["project_limit"]:
+                raise HTTPException(429, f"Project limit reached ({tier_info['project_limit']}).")
+            pid = sid()
+            c.execute("INSERT INTO research_projects (id, user_id, name, description) VALUES (%s,%s,%s,%s)",
+                      (pid, user["id"], req["name"], req.get("description","")))
+            conn.commit()
+    return {"id": pid, "created": True}
+
+@app.delete("/api/research/projects/{project_id}")
+def delete_user_project(project_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM research_projects WHERE id=%s AND user_id=%s", (project_id, user["id"]))
+            conn.commit()
+    return {"deleted": True}
+
+# Workspaces
 @app.post("/api/hub/rooms")
 def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     tier_info = TIER_CONFIG.get(user["tier"], TIER_CONFIG["free"])
-    if tier_info["workspace_seats"] == 0:
-        raise HTTPException(403, "Upgrade to Plus or higher for Research Hub access")
-    room_code = req.get("room_code", f"HUB-{sid()}")
-    password = req.get("password")
-    password_hash = hash_password(password) if password else None
+    if tier_info["room_limit"] == 0:
+        raise HTTPException(403, "Your tier does not support workspaces")
     with get_db() as conn:
         with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM workspaces WHERE owner_id=%s", (user["id"],))
+            if c.fetchone()[0] >= tier_info["room_limit"]:
+                raise HTTPException(429, f"Workspace limit reached ({tier_info['room_limit']}).")
+            room_code = req.get("room_code", f"HUB-{sid()}")
+            password = req.get("password")
+            password_hash = hash_password(password) if password else None
             ws_id = sid()
             c.execute("INSERT INTO workspaces (id, name, description, topic, owner_id, room_code, password_hash, max_members) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                       (ws_id, req.get("name","Research Room"), req.get("description",""), req.get("topic",""), user["id"], room_code.upper(), password_hash, tier_info["workspace_seats"]))
@@ -1419,9 +1476,7 @@ def pin_message(room_code: str, message_id: str, user: dict = Depends(get_curren
             conn.commit()
     return {"ok": True}
 
-# ================================================================================
-# NOTIFICATIONS
-# ================================================================================
+# Notifications
 @app.get("/api/notifications")
 def get_notifications(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1440,9 +1495,7 @@ def mark_read(user: dict = Depends(get_current_user)):
             conn.commit()
     return {"ok": True}
 
-# ================================================================================
-# UPGRADE
-# ================================================================================
+# Upgrade
 class UpgradeRequest(BaseModel):
     tier: str
     txid: str
@@ -1529,9 +1582,7 @@ def get_payments(user: dict = Depends(get_current_user)):
             payments = [{"id": r[0], "txid": r[1], "currency": r[2], "amount": r[3], "tier": r[4], "status": r[5], "created_at": r[6].isoformat() if r[6] else None} for r in c.fetchall()]
     return {"payments": payments}
 
-# ================================================================================
-# TOKEN PURCHASE (Pay‑as‑you‑go)
-# ================================================================================
+# Token purchase
 class TokenPurchaseRequest(BaseModel):
     package_amount: float
     txid: str
@@ -1542,8 +1593,9 @@ def get_token_wallets():
     return {"wallets": TOKEN_WALLETS}
 
 @app.get("/api/tokens/packages")
-def get_token_packages():
-    return {"packages": TOKEN_PACKAGES}
+def get_token_packages(enterprise: bool = False):
+    packages = ENTERPRISE_TOKEN_PACKAGES if enterprise else TOKEN_PACKAGES
+    return {"packages": packages}
 
 def user_token_balance(user_id: str) -> int:
     with get_db() as conn:
@@ -1560,8 +1612,9 @@ def get_token_balance(user: dict = Depends(get_current_user)):
 @app.post("/api/tokens/purchase")
 def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
+    # Check both regular and enterprise packages
     pkg = None
-    for p in TOKEN_PACKAGES:
+    for p in TOKEN_PACKAGES + ENTERPRISE_TOKEN_PACKAGES:
         if p["amount"] == req.package_amount:
             pkg = p
             break
@@ -1581,9 +1634,7 @@ def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_
     else:
         return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
 
-# ================================================================================
-# FEEDBACK
-# ================================================================================
+# Feedback
 class FeedbackRequest(BaseModel):
     message_id: str
     rating: int = Field(..., ge=1, le=5)
@@ -1600,9 +1651,7 @@ def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)
             conn.commit()
     return {"received": True}
 
-# ================================================================================
-# FILE UPLOAD
-# ================================================================================
+# File upload
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -1625,9 +1674,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
             conn.commit()
     return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
 
-# ================================================================================
-# FOUNDER ADMIN & SAFETY
-# ================================================================================
+# Founder admin & safety
 @app.get("/api/admin/dashboard")
 def admin_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -1768,9 +1815,7 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
-# ================================================================================
-# SECURITY MIDDLEWARE
-# ================================================================================
+# Security middleware
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     if settings.ENABLE_SECURITY_MONITOR:
@@ -1791,23 +1836,20 @@ async def security_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# ================================================================================
-# DEVELOPER ENDPOINTS
-# ================================================================================
+# Developer endpoints
 @app.post("/api/developer/keys")
 def create_api_key(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    label = req.get("label", "Unlabelled")
     raw_key = "cap_" + secrets.token_hex(32)
     key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
     prefix = raw_key[:10] + "..."
     scopes = "chat,research,portfolio"
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, label, scopes) VALUES (%s,%s,%s,%s,%s,%s)",
-                      (str(uuid.uuid4()), user["id"], key_hash, prefix, label, scopes))
+            c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, scopes) VALUES (%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], key_hash, prefix, scopes))
             conn.commit()
-    return {"key": raw_key, "prefix": prefix, "label": label, "scopes": scopes}
+    return {"key": raw_key, "prefix": prefix, "scopes": scopes}
 
 @app.get("/api/developer/keys")
 def list_api_keys(user: dict = Depends(get_current_user)):
@@ -1877,9 +1919,7 @@ def get_api_usage(user: dict = Depends(get_current_user)):
             usage = [{"endpoint": r[0], "requests": r[1], "tokens": r[2]} for r in c.fetchall()]
     return {"usage": usage}
 
-# ================================================================================
-# API KEY MIDDLEWARE
-# ================================================================================
+# API key middleware
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     auth = request.headers.get("Authorization", "")
@@ -1907,9 +1947,7 @@ async def api_key_middleware(request: Request, call_next):
     else:
         return await call_next(request)
 
-# ================================================================================
-# HEALTH, MANIFEST, ICONS
-# ================================================================================
+# Health, manifest, icons
 @app.get("/health")
 def health_check():
     db_status = "disconnected"
@@ -1925,8 +1963,8 @@ def health_check():
     if settings.OPENROUTER_API_KEY: providers.append("openrouter")
     return {
         "status": "ok",
-        "version": "32.5",
-        "edition": "Token Economy",
+        "version": "33.0",
+        "edition": "Global Research",
         "database": db_status,
         "ai": ai_status,
         "providers": providers,
@@ -1940,25 +1978,15 @@ async def manifest():
     return JSONResponse(content={
         "name": "CapitanAI by CLOSEAI",
         "short_name": "CAPITAN AI",
-        "description": "Your intelligent companion for thoughtful answers and clear insights.",
         "start_url": "/",
-        "scope": "/",
         "display": "standalone",
-        "orientation": "portrait",
         "background_color": "#0f172a",
         "theme_color": "#0b6d8c",
         "icons": [
-            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
-            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"}
+            {"src": "https://capitan-ai-jxu8.onrender.com/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "https://capitan-ai-jxu8.onrender.com/icon-512.png", "sizes": "512x512", "type": "image/png"}
         ]
     })
-
-# Valid PNG base64 (simple teal square with white "C")
-ICON_192_BASE64 = "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"
-
-ICON_512_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAhTklEQVR4nO3debgdZZ3g8XPX5OZmT4AkhOzEABEFQgDFQCMIBBQYxI0WFGVan2mgbZyx7bHbbnV65nmMtg+40qLj4wKIyHQLowgCgkQIhGDShADZkxtiFrLe5CZ3m6ebfhiULHXuPXWq6vw+n/98rITKOe95v1XvqVNV13rdvBIA8dRnvQMAZEMAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgKAEACEoAAIISAICgBAAgqMasdwBStPumG/v/lwy+/kuV2BfInbrW6+ZlvQ+Q/SzfN9pAoQkABZPhdJ+EJFAgAkAB5HzSPxgxIOcEgDwq6Ix/aHpA3ggAOVKT8/7rKQE5IQBkLMikfzBiQIYEgGwEn/dfTwmoPgGg2kz9hyADVJMAUCXm/bIoAVUgAKTO1N9nMkCqBIC0mPcrSAlIgwBQeaZ+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"
-
-from fastapi.responses import FileResponse
 
 @app.get("/icon-192.png")
 async def icon_192():
@@ -1970,12 +1998,12 @@ async def icon_512():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "32.5", "edition": "Token Economy"}
+    return {"name": "CAPITAN AI", "version": "33.0", "edition": "Global Research"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v32.5 — Token Economy Edition")
+    print(f"🚀 CAPITAN AI v33.0 — Global Research Edition")
     print(f"🧠 Full implementation – no cuts")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
