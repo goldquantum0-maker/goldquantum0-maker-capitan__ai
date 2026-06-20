@@ -219,7 +219,7 @@
     </svg>
 </div>
 
-<!-- Auth Container (with improved error handling and loading states) -->
+<!-- Auth Container -->
 <div id="authContainer" class="auth-container">
     <div class="auth-card">
         <h1>CAPITAN AI</h1>
@@ -363,7 +363,6 @@
             <div class="messages-area" id="messagesArea">
                 <div style="text-align:center;padding:50px 16px;">
                     <div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div>
-                    <!-- Floating suggestion pills -->
                     <div id="suggestionPills" class="suggestion-pills">
                         <button class="suggestion-pill" onclick="useSuggestion('Give me today\'s top business headlines')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg>
@@ -550,8 +549,50 @@ setTheme(state.theme);
 function toggleSidebar(){let s=document.getElementById('sidebar'),o=document.getElementById('overlay');if(window.innerWidth<=768){s.classList.toggle('open');o.classList.toggle('open')}else{s.classList.toggle('collapsed')}}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
 
-function handleFounderClick(){state.founderClickCount++;if(state.founderClickCount>=13){state.founderClickCount=0;openFounderDashboard()}}
-document.addEventListener('DOMContentLoaded',()=>{document.getElementById('notificationTrigger').addEventListener('click',e=>{e.stopPropagation();handleFounderClick();openNotifPanel()})});
+// Founder handler: easter-egg + new button
+function handleFounderClick(){state.founderClickCount++;if(state.founderClickCount>=13){state.founderClickCount=0;promptFounderLogin();}}
+function promptFounderLogin(){
+    const code = prompt('Enter CloseAI Founder Key:');
+    if(!code)return;
+    fetch(CFG.API+'/api/founder',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({code})
+    })
+    .then(r=>r.json())
+    .then(data=>{
+        if(data.verified){
+            state.token=data.token;
+            state.user=data.user;
+            state.tier='founder';
+            state.tokenBalance=0; // unlimited
+            localStorage.setItem('ct',data.token);
+            setCookie('ct',data.token,365);
+            localStorage.setItem('cu',JSON.stringify(data.user));
+            document.getElementById('authContainer').style.display='none';
+            document.getElementById('app').style.display='flex';
+            updateProfileUI();
+            updateUIBasedOnTier();
+            updateTokenDisplay();
+            loadChats();
+            renderMessages();
+            fetchNotifications();
+            toast('Welcome Founder 🚀');
+        }else{
+            toast('Invalid Founder Key ❌');
+        }
+    })
+    .catch(e=>toast('Error: '+e.message));
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('notificationTrigger').addEventListener('click',e=>{
+        e.stopPropagation();
+        handleFounderClick(); // if 13 clicks, triggers prompt; otherwise just opens notif
+        // but we also want to open notif panel normally
+        openNotifPanel();
+    });
+});
 
 async function apiCall(endpoint,opts={}){let headers={'Content-Type':'application/json'};if(state.token)headers['Authorization']='Bearer '+state.token;let res=await fetch(CFG.API+endpoint,{...opts,headers});if(res.status===401){logout();throw new Error('Session expired')}if(!res.ok){let err=await res.text();try{err=JSON.parse(err).detail||err}catch(e){}throw new Error(err)}return res.json()}
 
@@ -580,6 +621,8 @@ async function handleLogin(){
             localStorage.setItem('cu',JSON.stringify(d.user));
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
             updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay(); await loadChats(); renderMessages(); fetchNotifications();
+            // Refresh token balance from server
+            await fetchTokenBalance();
             toast('Welcome back, '+state.user.name||e.split('@')[0]);
         }else{
             err.innerText=d.detail||'Login failed'; err.style.display='block';
@@ -602,6 +645,8 @@ async function handleSignup(){
             state.token=d.token; state.user=d.user; state.tier='free'; state.tokenBalance=d.user.token_balance||0;
             localStorage.setItem('ct',d.token); setCookie('ct',d.token,30);
             localStorage.setItem('cu',JSON.stringify(d.user));
+            // Fetch latest balance
+            await fetchTokenBalance();
             setTimeout(()=>{
                 document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
                 updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay(); renderMessages(); loadChats(); fetchNotifications();
@@ -805,20 +850,38 @@ async function reviewFlag(id,action){try{await apiCall('/api/admin/safety/flags/
 async function unblockIP(ip){try{await apiCall('/api/admin/safety/unblock-ip/'+ip,{method:'DELETE'});toast('IP unblocked');loadDashSafety()}catch(e){}}
 
 // Profile & legal
-function openProfileModal(){let modal=document.getElementById('profileModalContent');let logged=!!state.user;modal.innerHTML=`<h2>Profile</h2><div style="text-align:center;"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%2338bdf8%22/%3E%3Cpath d=%22M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2%22 fill=%22%2338bdf8%22/%3E%3C/svg%3E'}">${logged?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}</div><div style="font-weight:600;margin-top:8px;">${logged?state.user.name||state.user.email:'Guest'}</div><div style="color:var(--accent);font-size:12px;margin-bottom:12px;">${logged?state.user.tier:'Guest'} · ${state.tokenBalance||0} tokens</div>${!logged?`<div class="modal-setting" onclick="openGuestLoginModal()"><span>Sign in</span></div>`:''}${!logged?`<div class="modal-setting" onclick="openGuestSignupModal()"><span>Create account</span></div>`:''}${logged&&state.user.tier!=='founder'?`<div class="modal-setting" onclick="openUpgradeModal();closeModal('profileModal')"><span>Upgrade Plan</span></div>`:''}${logged?`<div class="modal-setting" onclick="openPortfolio();closeModal('profileModal')"><span>Portfolio</span></div>`:''}${logged?`<div class="modal-setting" onclick="openResearchHub();closeModal('profileModal')"><span>Research Hub</span></div>`:''}${logged?`<div class="modal-setting" onclick="openDeveloperPage();closeModal('profileModal')"><span>Developer</span></div>`:''}<div class="modal-setting" onclick="openDataModal();closeModal('profileModal')"><span>Data &amp; Legal</span></div>${logged?`<div class="modal-setting" onclick="logout();closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span></div>`:''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;document.getElementById('profileModal').classList.add('open')}
+function openProfileModal(){let modal=document.getElementById('profileModalContent');let logged=!!state.user;modal.innerHTML=`<h2>Profile</h2><div style="text-align:center;"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%2338bdf8%22/%3E%3Cpath d=%22M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2%22 fill=%22%2338bdf8%22/%3E%3C/svg%3E'}">${logged?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}</div><div style="font-weight:600;margin-top:8px;">${logged?state.user.name||state.user.email:'Guest'}</div><div style="color:var(--accent);font-size:12px;margin-bottom:12px;">${logged?state.user.tier:'Guest'} · ${state.tokenBalance||0} tokens</div>${!logged?`<div class="modal-setting" onclick="openGuestLoginModal()"><span>Sign in</span></div>`:''}${!logged?`<div class="modal-setting" onclick="openGuestSignupModal()"><span>Create account</span></div>`:''}${logged&&state.user.tier!=='founder'?`<div class="modal-setting" onclick="openUpgradeModal();closeModal('profileModal')"><span>Upgrade Plan</span></div>`:''}${logged?`<div class="modal-setting" onclick="openPortfolio();closeModal('profileModal')"><span>Portfolio</span></div>`:''}${logged?`<div class="modal-setting" onclick="openResearchHub();closeModal('profileModal')"><span>Research Hub</span></div>`:''}${logged?`<div class="modal-setting" onclick="openDeveloperPage();closeModal('profileModal')"><span>Developer</span></div>`:''}<div class="modal-setting" onclick="openDataModal();closeModal('profileModal')"><span>Data &amp; Legal</span></div>${logged?`<div class="modal-setting" onclick="promptFounderLogin()" style="color:var(--accent);border:1px solid var(--accent);border-radius:10px;margin-top:6px;padding:8px;text-align:center;"><span>CloseAI</span></div>`:''}${logged?`<div class="modal-setting" onclick="logout();closeModal('profileModal')" style="color:var(--danger);"><span>Sign Out</span></div>`:''}<button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;document.getElementById('profileModal').classList.add('open')}
 function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
 function openDataModal(){let modal=document.getElementById('dataModalContent');modal.innerHTML=`<h2>Data & Legal</h2><div class="modal-setting" onclick="openPrivacyModal();closeModal('dataModal')">Privacy Policy</div><div class="modal-setting" onclick="openTermsModal();closeModal('dataModal')">Terms & Conditions</div>${state.user?`<div class="modal-setting" onclick="exportUserData()">Export My Data</div>`:''}${state.user?`<div class="modal-setting" onclick="deleteAccount()" style="color:var(--danger);">Delete Account</div>`:''}<button class="btn btn-outline" onclick="closeModal('dataModal')">Close</button>`;document.getElementById('dataModal').classList.add('open')}
-function openPrivacyModal(){let modal=document.getElementById('privacyModalContent');modal.innerHTML=`<h2>Privacy Policy</h2><div style="font-size:13px;line-height:1.5;"><p><strong>Effective Date:</strong> June 15, 2026</p><p>CAPITAN AI ("we", "our", "us") is committed to protecting your privacy...</p></div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;document.getElementById('privacyModal').classList.add('open')}
-function openTermsModal(){let modal=document.getElementById('termsModalContent');modal.innerHTML=`<h2>Terms & Conditions</h2><div style="font-size:13px;line-height:1.5;"><p><strong>Effective Date:</strong> June 15, 2026</p><p>By accessing or using CAPITAN AI...</p></div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;document.getElementById('termsModal').classList.add('open')}
+function openPrivacyModal(){let modal=document.getElementById('privacyModalContent');modal.innerHTML=`<h2>Privacy Policy</h2><div id="privacyText" style="font-size:13px;line-height:1.5;">Loading...</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;document.getElementById('privacyModal').classList.add('open');
+    fetch(CFG.API+'/api/legal/privacy')
+        .then(r=>r.json())
+        .then(data=>{
+            document.getElementById('privacyText').innerHTML = data.text || 'Privacy policy not available.';
+        })
+        .catch(()=>{
+            document.getElementById('privacyText').innerHTML = 'Failed to load privacy policy. Please refresh.';
+        });
+}
+function openTermsModal(){let modal=document.getElementById('termsModalContent');modal.innerHTML=`<h2>Terms & Conditions</h2><div id="termsText" style="font-size:13px;line-height:1.5;">Loading...</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;document.getElementById('termsModal').classList.add('open');
+    fetch(CFG.API+'/api/legal/terms')
+        .then(r=>r.json())
+        .then(data=>{
+            document.getElementById('termsText').innerHTML = data.text || 'Terms not available.';
+        })
+        .catch(()=>{
+            document.getElementById('termsText').innerHTML = 'Failed to load terms. Please refresh.';
+        });
+}
 async function exportUserData(){try{let chats=await apiCall('/api/chats');let blob=new Blob([JSON.stringify({user:state.user,chats,exportDate:new Date().toISOString()},null,2)],{type:'application/json'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download='capitan-export-'+Date.now()+'.json';a.click();URL.revokeObjectURL(url);toast('Exported')}catch(e){toast('Failed')}}
 async function deleteAccount(){if(!confirm('Delete account permanently?'))return;try{await apiCall('/api/auth/delete-account',{method:'DELETE'});logout();toast('Account deleted')}catch(e){toast('Failed')}}
 async function triggerFileUpload(){if(!state.user){toast('Sign in to upload files');return}if(state.user.tier==='free'||state.user.tier==='guest'){toast('Upgrade to Plus/Pro for file uploads');return}let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';inp.onchange=async e=>{let file=e.target.files[0];if(!file)return;let maxSize=state.user.tier==='pro_max'?100:state.user.tier==='pro'?50:20;if(file.size/(1024*1024)>maxSize){toast('Max '+maxSize+'MB for '+state.user.tier);return}let fd=new FormData();fd.append('file',file);try{let res=await fetch(CFG.API+'/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+state.token},body:fd});let data=await res.json();toast('Uploaded: '+file.name+(data.extracted?' (text extracted)':''));state.messages.push({role:'user',content:`[Uploaded document: ${file.name}]\n\nPlease analyze this document.`});renderMessages();sendMessage()}catch(e){toast('Upload failed')}};inp.click()}
 
 // Guest modals
 function openGuestLoginModal(){let modal=document.getElementById('guestLoginModalContent');modal.innerHTML=`<h2>Sign In</h2><input type="email" id="guestLoginEmail" class="auth-input" placeholder="Email"><input type="password" id="guestLoginPassword" class="auth-input" placeholder="Password"><div id="guestLoginError" class="error-msg"></div><button class="btn" onclick="handleGuestLogin()">Sign In</button><button class="btn btn-outline" onclick="closeModal('guestLoginModal')">Cancel</button>`;document.getElementById('guestLoginModal').classList.add('open')}
-async function handleGuestLogin(){let e=document.getElementById('guestLoginEmail').value.trim(),p=document.getElementById('guestLoginPassword').value,err=document.getElementById('guestLoginError');if(!e||!p){err.innerText='Required';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});let d=await r.json();if(d.token){state.token=d.token;state.user=d.user;state.tier=d.user.tier;state.tokenBalance=d.user.token_balance||0;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));closeModal('guestLoginModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();updateTokenDisplay();loadChats();renderMessages();fetchNotifications()}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
+async function handleGuestLogin(){let e=document.getElementById('guestLoginEmail').value.trim(),p=document.getElementById('guestLoginPassword').value,err=document.getElementById('guestLoginError');if(!e||!p){err.innerText='Required';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});let d=await r.json();if(d.token){state.token=d.token;state.user=d.user;state.tier=d.user.tier;state.tokenBalance=d.user.token_balance||0;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));closeModal('guestLoginModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();updateTokenDisplay();loadChats();renderMessages();fetchNotifications();await fetchTokenBalance();}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
 function openGuestSignupModal(){let modal=document.getElementById('guestSignupModalContent');modal.innerHTML=`<h2>Create Free Account</h2><input type="text" id="guestSignupName" class="auth-input" placeholder="Name"><input type="email" id="guestSignupEmail" class="auth-input" placeholder="Email"><input type="password" id="guestSignupPassword" class="auth-input" placeholder="Password (min 6)"><div id="guestSignupError" class="error-msg"></div><div id="guestSignupSuccess" class="success-msg"></div><button class="btn" onclick="handleGuestSignup()">Create Account</button><button class="btn btn-outline" onclick="closeModal('guestSignupModal')">Cancel</button>`;document.getElementById('guestSignupModal').classList.add('open')}
-async function handleGuestSignup(){let n=document.getElementById('guestSignupName').value.trim(),e=document.getElementById('guestSignupEmail').value.trim(),p=document.getElementById('guestSignupPassword').value,err=document.getElementById('guestSignupError'),suc=document.getElementById('guestSignupSuccess');if(!e||!p){err.innerText='Required';err.style.display='block';return}if(p.length<6){err.innerText='Min 6 chars';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p,name:n})});let d=await r.json();if(d.token){suc.innerText='Created! Redirecting...';suc.style.display='block';state.token=d.token;state.user=d.user;state.tier='free';state.tokenBalance=d.user.token_balance||0;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));setTimeout(()=>{closeModal('guestSignupModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();updateTokenDisplay();loadChats();renderMessages();fetchNotifications()},1200)}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
+async function handleGuestSignup(){let n=document.getElementById('guestSignupName').value.trim(),e=document.getElementById('guestSignupEmail').value.trim(),p=document.getElementById('guestSignupPassword').value,err=document.getElementById('guestSignupError'),suc=document.getElementById('guestSignupSuccess');if(!e||!p){err.innerText='Required';err.style.display='block';return}if(p.length<6){err.innerText='Min 6 chars';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p,name:n})});let d=await r.json();if(d.token){suc.innerText='Created! Redirecting...';suc.style.display='block';state.token=d.token;state.user=d.user;state.tier='free';state.tokenBalance=d.user.token_balance||0;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));await fetchTokenBalance();setTimeout(()=>{closeModal('guestSignupModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();updateTokenDisplay();loadChats();renderMessages();fetchNotifications()},1200)}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
 
 // Init
 async function init(){
