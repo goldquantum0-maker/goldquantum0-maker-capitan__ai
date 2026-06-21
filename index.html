@@ -71,8 +71,8 @@
         .sidebar { width:290px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; transition:transform 0.3s; flex-shrink:0; z-index:30; overflow-y:auto; }
         @media (min-width:769px){ .sidebar.collapsed { transform:translateX(-290px); position:fixed; height:100%; } }
         @media (max-width:768px){ .sidebar { position:fixed; left:0; top:0; height:100%; width:100%; max-width:320px; transform:translateX(-100%); z-index:40; box-shadow:20px 0 40px rgba(0,0,0,0.3); } .sidebar.open { transform:translateX(0); } .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:35; display:none; } .overlay.open { display:block; } }
-        .sidebar-brand { padding:16px 16px 12px; display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; position:relative; }
-        .sidebar-brand .logo-icon { width:26px; height:15px; }
+        .sidebar-brand { padding:16px 16px 12px; display:flex; align-items:center; gap:8px; user-select:none; }
+        .sidebar-brand .logo-icon { width:26px; height:15px; cursor:pointer; }
         .sidebar-brand .logo-text { font-weight:800; font-size:18px; letter-spacing:2px; background:linear-gradient(135deg, #d1d5db, #9ca3af, #6b7280, #4b5563); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-size:200% 200%; animation:logoShift 4s ease infinite; }
         @keyframes logoShift { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
         .top-bar { position:fixed; top:12px; right:12px; z-index:45; display:flex; justify-content:flex-end; pointer-events:none; }
@@ -86,8 +86,11 @@
         .messages-area::-webkit-scrollbar-thumb { background:var(--accent); border-radius:10px; }
         .greeting-container { text-align:center; margin-bottom:24px; animation:fadeSlideUp 0.5s ease; }
         @keyframes fadeSlideUp { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
-        .greeting-text { font-size:26px; font-weight:700; background:linear-gradient(135deg,var(--accent-light),var(--accent-dark)); background-size:200% 200%; -webkit-background-clip:text; color:transparent; animation:gradientShift 6s ease infinite; }
-        @keyframes gradientShift { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+        .greeting-text { font-size:26px; font-weight:700; transition:color 0.5s; }
+        .greeting-text.morning { color:#f59e0b; background:linear-gradient(135deg,#fbbf24,#d97706); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .greeting-text.afternoon { color:#3b82f6; background:linear-gradient(135deg,#60a5fa,#2563eb); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .greeting-text.evening { color:#8b5cf6; background:linear-gradient(135deg,#a78bfa,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .greeting-text.night { color:#06b6d4; background:linear-gradient(135deg,#22d3ee,#0891b2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         .suggestion-pills { display:flex; gap:10px; justify-content:center; margin:20px 0 30px; flex-wrap:wrap; animation:fadeSlideUp 0.5s ease; }
         .suggestion-pill { display:flex; align-items:center; gap:6px; padding:10px 18px; border-radius:24px; border:1px solid var(--border); background:var(--bg-secondary); cursor:pointer; transition:0.2s; font-size:13px; color:var(--text-secondary); white-space:nowrap; }
         .suggestion-pill:hover { border-color:var(--accent-blue); background:var(--accent-blue-glow); transform:translateY(-1px); box-shadow:var(--shadow-md); }
@@ -135,12 +138,13 @@
         .theme-option { display:flex; justify-content:space-between; padding:8px 16px 8px 42px; cursor:pointer; border-radius:10px; font-size:12px; transition:0.2s; }
         .theme-option:hover { background:var(--bg-tertiary); }
         .about-content { padding:8px 16px 16px 42px; font-size:12px; color:var(--text-secondary); line-height:1.5; }
-        .profile-section { padding:12px 16px; border-top:1px solid var(--border); margin-top:auto; cursor:pointer; transition:0.2s; }
+        .profile-section { padding:12px 16px; border-top:1px solid var(--border); margin-top:auto; cursor:pointer; transition:0.2s; display:flex; align-items:center; justify-content:space-between; }
         .profile-section:hover { background:var(--bg-tertiary); }
         .profile-info { display:flex; align-items:center; gap:10px; }
         .profile-avatar-img { width:36px; height:36px; border-radius:50%; object-fit:cover; background:var(--accent-glow); border:2px solid var(--accent); }
         .profile-name { font-weight:600; font-size:13px; }
         .profile-tier { font-size:10px; color:var(--accent); }
+        .profile-tokens { font-size:11px; color:var(--text-secondary); margin-top:2px; }
         .sidebar-footer { padding:10px; text-align:center; font-size:9px; color:var(--text-tertiary); border-top:1px solid var(--border); }
         .guest-action-btn { display:block; margin:4px 14px; padding:8px 12px; background:transparent; border:1.5px solid var(--accent-blue); border-radius:18px; color:var(--accent-blue); font-size:12px; font-weight:600; cursor:pointer; text-align:center; }
         .guest-action-btn:hover { background:var(--accent-blue-glow); }
@@ -185,6 +189,8 @@
         .notif-icon { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; background:var(--bg-tertiary); }
         .notif-message { flex:1; line-height:1.4; }
         .notif-time { font-size:9px; color:var(--text-tertiary); margin-top:2px; }
+        .notif-delete { background:none; border:none; color:var(--text-tertiary); cursor:pointer; font-size:13px; padding:0 4px; }
+        .notif-delete:hover { color:var(--danger); }
         .notif-empty { text-align:center; color:var(--text-tertiary); margin-top:30px; font-size:13px; }
         .notif-badge { position:absolute; top:6px; right:6px; background:var(--danger); color:white; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; display:none; }
         .pulse-ring { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:44px; height:44px; border-radius:50%; border:2px solid var(--accent-blue); animation:pulseRing 1.8s ease-out infinite; pointer-events:none; display:none; }
@@ -229,6 +235,8 @@
         .sidebar-divider { border-bottom:1px solid var(--border); margin:8px 0; }
         .reasoning-slider { width:100%; margin:10px 0; }
         .token-info { font-size:11px; color:var(--text-tertiary); margin-top:4px; }
+        .signout-icon { background:none; border:none; color:var(--text-tertiary); cursor:pointer; padding:4px; border-radius:6px; }
+        .signout-icon:hover { color:var(--danger); background:rgba(239,68,68,0.1); }
     </style>
 </head>
 <body>
@@ -284,11 +292,10 @@
 <!-- Main App -->
 <div id="app" class="app" style="display:none;">
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand" id="notificationTrigger" style="position:relative;">
-            <svg class="logo-icon" viewBox="0 0 640 360"><rect width="640" height="360" fill="#0e6e8e"/><circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/><text x="320" y="205" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text></svg>
+        <div class="sidebar-brand">
+            <svg class="logo-icon" id="logoIcon" viewBox="0 0 640 360"><rect width="640" height="360" fill="#0e6e8e"/><circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/><text x="320" y="205" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text></svg>
             <span class="logo-text">CAPITAN AI</span>
-            <span class="notif-badge" id="notifBadge">0</span>
-            <div class="pulse-ring" id="pulseRing"></div>
+            <span class="notif-badge" id="notifBadge" style="position:relative; top:-8px; right:-4px;">0</span>
         </div>
         <div class="new-chat-btn" onclick="newChat()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -357,9 +364,12 @@
                 <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%239ca3af'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%239ca3af'/%3E%3C/svg%3E">
                 <div class="profile-details">
                     <div class="profile-name" id="profileName">Guest</div>
-                    <div class="profile-tier" id="profileTier">0 tokens</div>
+                    <div class="profile-tokens" id="profileTokens">0 tokens</div>
                 </div>
             </div>
+            <button class="signout-icon" id="signoutIcon" onclick="event.stopPropagation(); logout()" title="Sign Out" style="display:none;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            </button>
         </div>
         <div class="sidebar-footer">CAPITAN AI &copy; 2026</div>
     </aside>
@@ -402,9 +412,6 @@
                     <button class="send-btn" onclick="sendMessage()">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
-                </div>
-                <div style="text-align:right;font-size:10px;color:var(--text-tertiary);margin-top:4px;" id="tokenDisplay">
-                    Tokens: <span id="tokenCount">0</span>
                 </div>
             </div>
         </div>
@@ -487,7 +494,7 @@
 <script>
 // ==================== CONFIGURATION ====================
 const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
-const WALLETS = { BTC: 'bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2', ETH: '0x28c18922072f904f91499A603d7AF8F9C57aDD8b' }; // token wallets only
+const WALLETS = { BTC: 'bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2', ETH: '0x28c18922072f904f91499A603d7AF8F9C57aDD8b' };
 const TOKEN_PACKAGES = [
     { amount: 5, tokens: 5000 },
     { amount: 10, tokens: 10000 },
@@ -500,14 +507,14 @@ const ENTERPRISE_TOKEN_PACKAGES = [
     { amount: 500, tokens: 850000 },
     { amount: 1000, tokens: 2000000 }
 ];
-const DEPTH_MULTIPLIERS = [1, 1.5, 2, 3, 4]; // index 0 = depth 1, index 1 = depth 2, ...
+const DEPTH_MULTIPLIERS = [1, 1.5, 2, 3, 4];
 const DEFAULT_GUEST_TOKENS = 600;
 
 // ==================== GLOBAL STATE ====================
 let state = {
     token: localStorage.getItem('ct') || null,
     user: null,
-    is_admin: false,
+    is_admin: localStorage.getItem('is_admin') === 'true',
     activeChatId: null,
     messages: [],
     loading: false,
@@ -527,7 +534,7 @@ let state = {
     developerTab: 'keys',
     tokenBalance: 0,
     researchTab: 'topics',
-    reasoningDepth: 1
+    reasoningDepth: parseInt(localStorage.getItem('reasoningDepth')) || 1
 };
 
 // ==================== UTILITIES ====================
@@ -544,9 +551,28 @@ function escapeHtml(s){return s?.replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&l
 function toast(msg,icon=''){let t=document.createElement('div');t.className='toast';t.innerHTML=icon+msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500)}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function scrollBottom(){let a=document.getElementById('messagesArea');if(a)a.scrollTo({top:a.scrollHeight,behavior:'smooth'});updateScrollButton()}
-function getDynamicGreeting(){let h=new Date().getHours();if(h>=5&&h<12)return"Good morning";if(h>=12&&h<17)return"Good afternoon";if(h>=17&&h<21)return"Good evening";return"Welcome"}
-function updateGreeting(){let e=document.getElementById('greetingText');if(e)e.textContent=getDynamicGreeting()}
-setInterval(updateGreeting,60000);updateGreeting();
+function getGreetingClass(hour){
+    if(hour>=5&&hour<12) return 'morning';
+    if(hour>=12&&hour<17) return 'afternoon';
+    if(hour>=17&&hour<21) return 'evening';
+    return 'night';
+}
+function getDynamicGreeting(){
+    let h=new Date().getHours();
+    if(h>=5&&h<12) return 'Good morning';
+    if(h>=12&&h<17) return 'Good afternoon';
+    if(h>=17&&h<21) return 'Good evening';
+    return 'Welcome';
+}
+function updateGreeting(){
+    let e=document.getElementById('greetingText');
+    if(e){
+        e.textContent=getDynamicGreeting();
+        e.className = 'greeting-text ' + getGreetingClass(new Date().getHours());
+    }
+}
+setInterval(updateGreeting,60000);
+updateGreeting();
 
 class SmoothStreamer{constructor(c,container,onDone){this.content=c;this.container=container;this.onDone=onDone;this.idx=0;this.running=true;this.lastT=0;this.accum=0;this.speed=7;this.container.innerHTML='';this.streamDiv=document.createElement('div');this.streamDiv.className='streaming-text';this.container.appendChild(this.streamDiv);this.cursor=document.createElement('span');this.cursor.className='stream-cursor';this.container.appendChild(this.cursor);this.anim=this.anim.bind(this);if(state.currentStreamer&&state.currentStreamer!==this)state.currentStreamer.stop();state.currentStreamer=this;requestAnimationFrame(this.anim)}
 anim(ts){if(!this.running||this.idx>=this.content.length){this.finish();return}if(this.lastT===0)this.lastT=ts;let dt=ts-this.lastT;this.lastT=ts;this.accum+=dt;while(this.accum>=this.speed&&this.idx<this.content.length){let span=document.createElement('span');span.className='token-char';span.textContent=this.content[this.idx];this.streamDiv.appendChild(span);this.idx++;this.accum-=this.speed}scrollBottom();requestAnimationFrame(this.anim)}
@@ -562,8 +588,16 @@ setTheme(state.theme);
 function toggleSidebar(){let s=document.getElementById('sidebar'),o=document.getElementById('overlay');if(window.innerWidth<=768){s.classList.toggle('open');o.classList.toggle('open')}else{s.classList.toggle('collapsed')}}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
 
-// Founder Easter Egg
-function handleFounderClick(){state.founderClickCount++;if(state.founderClickCount>=13){state.founderClickCount=0;promptFounderLogin()}}
+// Founder Easter Egg via keyboard
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        promptFounderLogin();
+    }
+});
+
+function handleFounderClick(){state.founderClickCount++;if(state.founderClickCount>=13){state.founderClickCount=0;promptFounderLogin();}}
+
 function promptFounderLogin(){
     const code = prompt('Enter Founder Key:');
     if(!code)return;
@@ -575,6 +609,7 @@ function promptFounderLogin(){
             state.tokenBalance=999999999; state.reasoningDepth=5;
             localStorage.setItem('ct',data.token); setCookie('ct',data.token,365);
             localStorage.setItem('cu',JSON.stringify(data.user));
+            localStorage.setItem('is_admin','true');
             document.getElementById('authContainer').style.display='none';
             document.getElementById('app').style.display='flex';
             updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay();
@@ -589,8 +624,15 @@ async function apiCall(endpoint,opts={}){
     let headers={'Content-Type':'application/json'};
     if(state.token)headers['Authorization']='Bearer '+state.token;
     let res=await fetch(CFG.API+endpoint,{...opts,headers});
-    if(res.status===402){toast('Insufficient tokens. Please purchase more.');throw new Error('Insufficient tokens')}
-    if(res.status===401){logout();throw new Error('Session expired')}
+    if(res.status===402){toast('Insufficient tokens.');throw new Error('Insufficient tokens')}
+    if(res.status===401){
+        document.getElementById('sessionExpiredMsg').style.display='block';
+        state.token=null; state.user=null; state.is_admin=false;
+        localStorage.removeItem('ct'); localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
+        document.getElementById('app').style.display='none';
+        document.getElementById('authContainer').style.display='flex';
+        throw new Error('Session expired');
+    }
     if(!res.ok){let err=await res.text();try{err=JSON.parse(err).detail||err}catch(e){}throw new Error(err)}
     return res.json()
 }
@@ -598,10 +640,11 @@ async function apiCall(endpoint,opts={}){
 function updateProfileUI(){
     let n=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
     document.getElementById('profileName').innerText=n;
-    document.getElementById('profileTier').innerHTML=(state.tokenBalance||0).toLocaleString()+' tokens';
+    document.getElementById('profileTokens').innerHTML=(state.tokenBalance||0).toLocaleString()+' tokens';
     if(state.profilePhoto)document.getElementById('profileAvatar').src=state.profilePhoto;
+    document.getElementById('signoutIcon').style.display = state.user ? 'block' : 'none';
 }
-function updateTokenDisplay(){document.getElementById('tokenCount').innerText=(state.tokenBalance||0).toLocaleString()}
+function updateTokenDisplay(){} // no longer used
 function updateUIBasedOnTier(){
     let logged=!!state.user;
     document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';
@@ -628,6 +671,8 @@ async function handleLogin(){
             state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=d.user.reasoning_depth||1;
             localStorage.setItem('ct',d.token); setCookie('ct',d.token,30);
             localStorage.setItem('cu',JSON.stringify(d.user));
+            localStorage.setItem('is_admin',state.is_admin.toString());
+            localStorage.setItem('reasoningDepth',state.reasoningDepth.toString());
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
             updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay();
             renderMessages(); fetchNotifications();
@@ -652,6 +697,8 @@ async function handleSignup(){
             state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=1;
             localStorage.setItem('ct',d.token); setCookie('ct',d.token,30);
             localStorage.setItem('cu',JSON.stringify(d.user));
+            localStorage.setItem('is_admin','false');
+            localStorage.setItem('reasoningDepth','1');
             setTimeout(()=>{
                 document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
                 updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay(); renderMessages(); fetchNotifications();
@@ -679,6 +726,7 @@ async function startGuestSession(){
             state.token=d.token; state.user=null; state.is_admin=false;
             state.tokenBalance=d.token_balance||DEFAULT_GUEST_TOKENS; state.reasoningDepth=1;
             localStorage.setItem('ct',d.token); setCookie('ct',d.token,365);
+            localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
             updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay(); renderMessages(); fetchNotifications();
             toast('Guest session started!');
@@ -686,7 +734,13 @@ async function startGuestSession(){
     }catch(e){toast('Could not start session')}
 }
 
-function logout(){localStorage.removeItem('ct');localStorage.removeItem('cu');document.cookie='ct=; Max-Age=0; path=/;';state.token=null;state.user=null;state.is_admin=false;state.activeChatId=null;state.messages=[];location.reload()}
+function logout(){
+    localStorage.removeItem('ct'); localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
+    document.cookie='ct=; Max-Age=0; path=/;';
+    state.token=null; state.user=null; state.is_admin=false; state.activeChatId=null; state.messages=[];
+    document.getElementById('app').style.display='none';
+    document.getElementById('authContainer').style.display='flex';
+}
 
 // Chat
 function newChat(){if(state.currentStreamer)state.currentStreamer.stop();state.activeChatId=null;state.messages=[];renderMessages();document.getElementById('messageInput').focus()}
@@ -702,7 +756,7 @@ async function sendMessage(){
         const content=res.content||'No response';
         state.messages[aiIdx]={role:'assistant',content:content,message_id:res.message_id};
         state.tokenBalance=res.new_balance||state.tokenBalance;
-        renderMessages(); updateTokenDisplay(); updateProfileUI();
+        renderMessages(); updateProfileUI();
         let streamTarget=document.getElementById('msg-'+aiIdx);
         if(streamTarget)new SmoothStreamer(content,streamTarget,()=>{state.loading=false});
         else state.loading=false;
@@ -735,7 +789,6 @@ function renderMessages(){
     scrollBottom();
 }
 
-// Message actions
 function copyMessage(idx){let m=state.messages[idx];if(m){navigator.clipboard.writeText(m.content);toast('Copied!')}}
 async function likeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:5})});toast('Thanks! 👍')}catch(e){}}else toast('Thanks!')}
 async function dislikeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:1,reason:'Not helpful'})});toast('Feedback noted.')}catch(e){}}else toast('Noted.')}
@@ -890,6 +943,7 @@ function openProfileModal(){
     ${logged?`<button class="btn btn-outline" onclick="openTokenPurchaseModal();closeModal('profileModal')">Buy Tokens</button>`:''}
     ${!logged?`<div class="modal-setting" onclick="openGuestLoginModal();closeModal('profileModal')"><span>Sign in</span></div>`:''}
     ${!logged?`<div class="modal-setting" onclick="openGuestSignupModal();closeModal('profileModal')"><span>Create account</span></div>`:''}
+    ${logged?`<button class="btn btn-outline" style="color:var(--danger);" onclick="logout();closeModal('profileModal')">Sign Out</button>`:''}
     <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
     document.getElementById('profileModal').classList.add('open');
 }
@@ -909,7 +963,7 @@ async function saveReasoningDepth(){
 }
 async function fetchTokenBalance(){
     if(!state.user)return;
-    try{let d=await apiCall('/api/tokens/balance');state.tokenBalance=d.balance;updateProfileUI();updateTokenDisplay()}catch(e){}
+    try{let d=await apiCall('/api/tokens/balance');state.tokenBalance=d.balance;updateProfileUI()}catch(e){}
 }
 function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
 
@@ -931,7 +985,7 @@ async function loadDashSafety(){try{let dash=await apiCall('/api/admin/safety/da
 async function reviewFlag(id,action){try{await apiCall('/api/admin/safety/flags/'+id+'/review',{method:'POST',body:JSON.stringify({action})});toast('Flag reviewed');loadDashSafety()}catch(e){}}
 async function unblockIP(ip){try{await apiCall('/api/admin/safety/unblock-ip/'+ip,{method:'DELETE'});toast('IP unblocked');loadDashSafety()}catch(e){}}
 
-// Guest modals (kept for completeness)
+// Guest modals
 function openGuestLoginModal(){let modal=document.getElementById('guestLoginModalContent');modal.innerHTML=`<h2>Sign In</h2><input type="email" id="guestLoginEmail" class="auth-input" placeholder="Email"><input type="password" id="guestLoginPassword" class="auth-input" placeholder="Password"><div id="guestLoginError" class="error-msg"></div><button class="btn" onclick="handleGuestLogin()">Sign In</button><button class="btn btn-outline" onclick="closeModal('guestLoginModal')">Cancel</button>`;document.getElementById('guestLoginModal').classList.add('open')}
 async function handleGuestLogin(){
     let e=document.getElementById('guestLoginEmail').value.trim(),p=document.getElementById('guestLoginPassword').value,err=document.getElementById('guestLoginError');
@@ -976,7 +1030,7 @@ async function triggerFileUpload(){
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
     inp.onchange=async e=>{
         let file=e.target.files[0];if(!file)return;
-        let maxSize=60; // MB
+        let maxSize=60;
         if(file.size/(1024*1024)>maxSize){toast('Max 60MB');return}
         let fd=new FormData();fd.append('file',file);
         try{
@@ -1008,6 +1062,7 @@ async function init(){
     document.getElementById('toggleSidebarBtn').addEventListener('click',toggleSidebar);
     document.addEventListener('click',e=>{if(window.innerWidth<=768&&document.getElementById('sidebar').classList.contains('open')&&!document.getElementById('sidebar').contains(e.target)&&!document.getElementById('toggleSidebarBtn').contains(e.target))closeSidebar()});
     document.getElementById('messageInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'});
+    document.getElementById('logoIcon').addEventListener('click', handleFounderClick);
     setupScrollButton();
     setTimeout(()=>{document.getElementById('splashScreen')?.classList.add('hide')},1600);
     if(localStorage.getItem('session_expired')&&!state.token){document.getElementById('sessionExpiredMsg').style.display='block';localStorage.removeItem('session_expired')}
@@ -1019,22 +1074,35 @@ async function init(){
         updateUIBasedOnTier();
         loadWorkspaces();
         fetchNotifications();
-        updateTokenDisplay();
     }
 }
 async function initSession(){
-    try{
-        if(state.user){
-            let me=await apiCall('/api/auth/me');
-            state.user=me; state.is_admin=me.is_admin||false; state.tokenBalance=me.token_balance||0; state.reasoningDepth=me.reasoning_depth||1;
-        }else if(state.token){
-            let sess=await apiCall('/api/session');
-            state.tokenBalance=sess.token_balance||DEFAULT_GUEST_TOKENS;
+    try {
+        let resp = await fetch(CFG.API+'/api/auth/validate', {
+            headers: {'Authorization': 'Bearer ' + state.token}
+        });
+        if (resp.ok) {
+            let data = await resp.json();
+            state.user = data.user;
+            state.is_admin = data.is_admin;
+            state.tokenBalance = data.token_balance;
+            state.reasoningDepth = data.reasoning_depth;
+            localStorage.setItem('cu', JSON.stringify(data.user));
+            localStorage.setItem('is_admin', data.is_admin.toString());
+            localStorage.setItem('reasoningDepth', data.reasoning_depth.toString());
+        } else if (resp.status === 401) {
+            let guestResp = await fetch(CFG.API+'/api/session');
+            let guestData = await guestResp.json();
+            state.token = guestData.token;
+            state.user = null;
+            state.is_admin = false;
+            state.tokenBalance = guestData.token_balance;
+            localStorage.setItem('ct', guestData.token);
+            setCookie('ct', guestData.token, 365);
         }
-        updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay();
-    }catch(e){
-        if(state.user){updateProfileUI();updateUIBasedOnTier();}
-    }
+    } catch(e) {}
+    updateProfileUI();
+    updateUIBasedOnTier();
 }
 init();
 </script>
