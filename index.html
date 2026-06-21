@@ -1157,23 +1157,23 @@ async function initSession(){
             state.user = data.user;
             state.is_admin = data.is_admin;
             state.tokenBalance = data.token_balance;
-            state.reasoningDepth = data.reasoning_depth;
-            localStorage.setItem('cu', JSON.stringify(data.user));
-            localStorage.setItem('is_admin', data.is_admin.toString());
-            localStorage.setItem('reasoningDepth', data.reasoning_depth.toString());
+            localStorage.setItem('tokenBalance', data.token_balance);
+            // ...
         } else if (resp.status === 401) {
-            let guestResp = await fetch(CFG.API+'/api/session');
-            let guestData = await guestResp.json();
-            state.token = guestData.token;
-            state.user = null;
-            state.is_admin = false;
-            state.tokenBalance = guestData.token_balance;
-            localStorage.setItem('ct', guestData.token);
-            setCookie('ct', guestData.token, 365);
+            // token invalid, try guest session
+            // ...
+        } else {
+            // server error → use stored balance
+            let storedBal = localStorage.getItem('tokenBalance');
+            if (storedBal) state.tokenBalance = parseInt(storedBal);
         }
-    } catch(e) {}
+    } catch(e) {
+        let storedBal = localStorage.getItem('tokenBalance');
+        if (storedBal) state.tokenBalance = parseInt(storedBal);
+    }
     updateProfileUI();
     updateUIBasedOnTier();
+}
 }
 init();
 </script>
