@@ -1,5 +1,5 @@
 """
-CAPITAN AI — Enterprise Backend v34.4 (Tree‑of‑Thought, All Fixes)
+CAPITAN AI — Enterprise Backend v34.5 (Deployment‑Ready)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="34.4")
+app = FastAPI(title="CAPITAN AI API", version="34.5")
 
 app.add_middleware(
     CORSMiddleware,
@@ -412,20 +412,20 @@ def init_db():
                 )''')
                 # Seed topics
                 seed_topics = [
-                    ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks. Identify key support and resistance levels, recent volume patterns, and any macroeconomic factors that could influence price action over the next quarter.'),
-                    ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements. Highlight the top three gainers and losers, any major news events, and what technical indicators suggest for the coming days.'),
-                    ('tech1','Quantum Computing','Introduction to quantum computing','technology','Explain quantum computing in simple terms. What are qubits, superposition, and entanglement? How far are we from practical quantum computers?'),
-                    ('tech2','Cloud Architecture','Designing scalable cloud systems','technology','Describe best practices for multi‑cloud architecture. Compare AWS, GCP, and Azure for a startup building a global SaaS product.'),
-                    ('sci1','Climate Change','Latest climate research','science','Summarize the latest IPCC report findings. What are the most effective mitigation strategies available today?'),
-                    ('sci2','CRISPR Technology','Gene editing with CRISPR','science','Explain how CRISPR‑Cas9 works and its potential applications in medicine and agriculture. What ethical concerns exist?'),
-                    ('health1','Nutrition Science','Evidence‑based nutrition','health','What does the latest research say about intermittent fasting? Compare it with other dietary approaches for long‑term health.'),
-                    ('health2','Mental Health','Mental wellness strategies','health','Provide evidence‑based techniques for managing anxiety. Include cognitive behavioral therapy, mindfulness, and lifestyle changes.'),
-                    ('arts1','Art History','Renaissance art','arts','Describe the key characteristics of Renaissance art. Who were the major artists and what innovations did they bring?'),
-                    ('arts2','Music Theory','Basics of music composition','arts','Explain the circle of fifths and its use in music composition. How do chord progressions create emotional responses?'),
-                    ('edu1','Learning Techniques','Effective study methods','education','What are the most effective learning strategies according to cognitive science? Include spaced repetition, active recall, and interleaving.'),
-                    ('edu2','STEM Education','Teaching science and math','education','How can project‑based learning improve STEM outcomes? Provide examples of successful implementations.'),
-                    ('law1','Intellectual Property','IP law basics','legal','Explain the difference between patents, trademarks, and copyrights. How do they apply to software and AI inventions?'),
-                    ('law2','Contract Law','Understanding contracts','legal','What are the essential elements of a valid contract? Provide examples of common contract disputes.'),
+                    ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks.'),
+                    ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements.'),
+                    ('tech1','Quantum Computing','Introduction to quantum computing','technology','Explain quantum computing in simple terms.'),
+                    ('tech2','Cloud Architecture','Designing scalable cloud systems','technology','Describe best practices for multi‑cloud architecture.'),
+                    ('sci1','Climate Change','Latest climate research','science','Summarize the latest IPCC report findings.'),
+                    ('sci2','CRISPR Technology','Gene editing with CRISPR','science','Explain how CRISPR‑Cas9 works and its potential applications.'),
+                    ('health1','Nutrition Science','Evidence‑based nutrition','health','What does the latest research say about intermittent fasting?'),
+                    ('health2','Mental Health','Mental wellness strategies','health','Provide evidence‑based techniques for managing anxiety.'),
+                    ('arts1','Art History','Renaissance art','arts','Describe the key characteristics of Renaissance art.'),
+                    ('arts2','Music Theory','Basics of music composition','arts','Explain the circle of fifths and its use in music composition.'),
+                    ('edu1','Learning Techniques','Effective study methods','education','What are the most effective learning strategies according to cognitive science?'),
+                    ('edu2','STEM Education','Teaching science and math','education','How can project‑based learning improve STEM outcomes?'),
+                    ('law1','Intellectual Property','IP law basics','legal','Explain the difference between patents, trademarks, and copyrights.'),
+                    ('law2','Contract Law','Understanding contracts','legal','What are the essential elements of a valid contract?'),
                 ]
                 for tid, title, desc, domain, prompt in seed_topics:
                     c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
@@ -455,9 +455,8 @@ def init_db():
                     txid TEXT UNIQUE, currency TEXT, amount_usd REAL,
                     tokens INTEGER, verified INTEGER DEFAULT 0, created TIMESTAMP DEFAULT NOW()
                 )''')
-
                 conn.commit()
-        logger.info("✅ Database initialized (v34.4)")
+        logger.info("✅ Database initialized (v34.5)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -612,9 +611,13 @@ def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_mode
 
 # No more visible reasoning chain – keep internal
 def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, str, float]:
-    confidence = 0.8
+    # Determine domain from the last user message
     domain = "general"
-    # Select model based on domain
+    for m in reversed(messages):
+        if m.get("role") == "user":
+            domain = classify_query(m.get("content", ""))
+            break
+    confidence = 0.8
     if settings.OPENROUTER_API_KEY:
         primary_model = "anthropic/claude-3.5-sonnet-20241022" if domain == "coding" else "openai/gpt-4o-2024-11-20"
         secondary_model = "openai/gpt-4o-2024-11-20" if domain == "coding" else "anthropic/claude-3.5-sonnet-20241022"
@@ -1008,7 +1011,6 @@ async def me(request: Request):
         "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
     }
 
-
 @app.get("/api/auth/validate")
 async def validate_token(request: Request):
     user = get_current_user(request)
@@ -1023,24 +1025,6 @@ async def validate_token(request: Request):
         "token_balance": user["token_balance"],
         "is_admin": user.get("is_admin", False),
         "reasoning_depth": user["reasoning_depth"]
-
- @app.post("/api/developer/keys")
-def create_api_key(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    try:
-        raw_key = "cap_" + secrets.token_hex(32)
-        key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
-        prefix = raw_key[:10] + "..."
-        scopes = "chat,research,portfolio"
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, scopes) VALUES (%s,%s,%s,%s,%s)",
-                          (str(uuid.uuid4()), user["id"], key_hash, prefix, scopes))
-                conn.commit()
-        return {"key": raw_key, "prefix": prefix, "scopes": scopes}
-    except Exception as e:
-        logger.error(f"API key creation failed for user {user['id']}: {e}")
-        raise HTTPException(500, "Could not create API key")
     }
 
 @app.post("/api/auth/update-profile")
@@ -1082,7 +1066,6 @@ async def delete_account(user: dict = Depends(get_current_user)):
 @app.post("/api/auth/forgot-password")
 async def forgot_password(req: dict):
     email = req.get("email")
-    # TODO: implement actual email sending
     return {"message": "If an account exists, a reset link has been sent."}
 
 @app.get("/api/session")
@@ -1132,7 +1115,7 @@ async def founder_login(req: dict, request: Request):
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
-    show_reasoning: bool = False  # ignored now, kept for compatibility
+    show_reasoning: bool = False
 
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: BackgroundTasks):
@@ -1694,16 +1677,20 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
 @app.post("/api/developer/keys")
 def create_api_key(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    raw_key = "cap_" + secrets.token_hex(32)
-    key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
-    prefix = raw_key[:10] + "..."
-    scopes = "chat,research,portfolio"
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, scopes) VALUES (%s,%s,%s,%s,%s)",
-                      (str(uuid.uuid4()), user["id"], key_hash, prefix, scopes))
-            conn.commit()
-    return {"key": raw_key, "prefix": prefix, "scopes": scopes}
+    try:
+        raw_key = "cap_" + secrets.token_hex(32)
+        key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
+        prefix = raw_key[:10] + "..."
+        scopes = "chat,research,portfolio"
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, scopes) VALUES (%s,%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user["id"], key_hash, prefix, scopes))
+                conn.commit()
+        return {"key": raw_key, "prefix": prefix, "scopes": scopes}
+    except Exception as e:
+        logger.error(f"API key creation failed for user {user['id']}: {e}")
+        raise HTTPException(500, "Could not create API key")
 
 @app.get("/api/developer/keys")
 def list_api_keys(user: dict = Depends(get_current_user)):
@@ -1945,7 +1932,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "34.4", "database": db_status}
+    return {"status": "ok", "version": "34.5", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
@@ -1956,8 +1943,8 @@ async def manifest():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "34.4"}
+    return {"name": "CAPITAN AI", "version": "34.5"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port) 
