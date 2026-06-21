@@ -1,9 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v34.1 (Token‑Only Edition)
+CAPITAN AI — Enterprise Backend v34.2 (Token‑Only, Intelligence Overhaul)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-Fixed: registration token balance, founder admin flag, removed tier remnants.
 """
-
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
 from typing import Optional, List, Tuple, Dict, Any
 from contextlib import contextmanager
@@ -61,7 +59,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="34.1")
+app = FastAPI(title="CAPITAN AI API", version="34.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -156,9 +154,15 @@ def verify_token(token: str):
         parts = token.split(".")
         if len(parts) != 3: return None
         header, payload, signature = parts
+        # proper base64 padding
+        missing_padding = 4 - len(payload) % 4
+        if missing_padding != 4:
+            payload_padded = payload + "=" * missing_padding
+        else:
+            payload_padded = payload
         expected = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
         if not hmac.compare_digest(signature, expected): return None
-        data = json.loads(base64.urlsafe_b64decode(payload + "=="))
+        data = json.loads(base64.urlsafe_b64decode(payload_padded))
         if data.get("exp", 0) < now_utc().timestamp(): return None
         return data
     except:
@@ -219,7 +223,7 @@ async def get_current_session(request: Request):
         logger.error(f"get_current_session error: {e}")
     raise HTTPException(401, "Session not found")
 
-# Founder only – now uses is_admin flag
+# Founder only – uses is_admin flag
 def founder_only(user: dict = Depends(get_current_user)):
     if not user or not user.get("is_admin", False):
         raise HTTPException(403, "Founder access required")
@@ -231,7 +235,7 @@ MAX_WORKSPACES = 30
 MAX_FILE_SIZE_MB = 60
 GUEST_TOKEN_BALANCE = 600
 REGISTER_TOKEN_BALANCE = 3000
-DEPTH_MULTIPLIERS = [1.0, 1.5, 2.0, 3.0, 4.0]  # index 0 for depth 1, etc.
+DEPTH_MULTIPLIERS = [1.0, 1.5, 2.0, 3.0, 4.0]
 
 WALLETS = {
     "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
@@ -258,7 +262,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users (with is_admin)
+                # Users (with is_admin, no tier)
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -409,20 +413,20 @@ def init_db():
                 )''')
                 # Seed topics
                 seed_topics = [
-                    ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks. Identify key support and resistance levels, recent volume patterns, and any macroeconomic factors that could influence price action over the next quarter.'),
-                    ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements. Highlight the top three gainers and losers, any major news events, and what technical indicators suggest for the coming days.'),
-                    ('tech1','Quantum Computing','Introduction to quantum computing','technology','Explain quantum computing in simple terms. What are qubits, superposition, and entanglement? How far are we from practical quantum computers?'),
-                    ('tech2','Cloud Architecture','Designing scalable cloud systems','technology','Describe best practices for multi‑cloud architecture. Compare AWS, GCP, and Azure for a startup building a global SaaS product.'),
-                    ('sci1','Climate Change','Latest climate research','science','Summarize the latest IPCC report findings. What are the most effective mitigation strategies available today?'),
-                    ('sci2','CRISPR Technology','Gene editing with CRISPR','science','Explain how CRISPR‑Cas9 works and its potential applications in medicine and agriculture. What ethical concerns exist?'),
-                    ('health1','Nutrition Science','Evidence‑based nutrition','health','What does the latest research say about intermittent fasting? Compare it with other dietary approaches for long‑term health.'),
-                    ('health2','Mental Health','Mental wellness strategies','health','Provide evidence‑based techniques for managing anxiety. Include cognitive behavioral therapy, mindfulness, and lifestyle changes.'),
-                    ('arts1','Art History','Renaissance art','arts','Describe the key characteristics of Renaissance art. Who were the major artists and what innovations did they bring?'),
-                    ('arts2','Music Theory','Basics of music composition','arts','Explain the circle of fifths and its use in music composition. How do chord progressions create emotional responses?'),
-                    ('edu1','Learning Techniques','Effective study methods','education','What are the most effective learning strategies according to cognitive science? Include spaced repetition, active recall, and interleaving.'),
-                    ('edu2','STEM Education','Teaching science and math','education','How can project‑based learning improve STEM outcomes? Provide examples of successful implementations.'),
-                    ('law1','Intellectual Property','IP law basics','legal','Explain the difference between patents, trademarks, and copyrights. How do they apply to software and AI inventions?'),
-                    ('law2','Contract Law','Understanding contracts','legal','What are the essential elements of a valid contract? Provide examples of common contract disputes.'),
+                    ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks.'),
+                    ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements.'),
+                    ('tech1','Quantum Computing','Introduction to quantum computing','technology','Explain quantum computing in simple terms.'),
+                    ('tech2','Cloud Architecture','Designing scalable cloud systems','technology','Describe best practices for multi‑cloud architecture.'),
+                    ('sci1','Climate Change','Latest climate research','science','Summarize the latest IPCC report findings.'),
+                    ('sci2','CRISPR Technology','Gene editing with CRISPR','science','Explain how CRISPR‑Cas9 works and its potential applications.'),
+                    ('health1','Nutrition Science','Evidence‑based nutrition','health','What does the latest research say about intermittent fasting?'),
+                    ('health2','Mental Health','Mental wellness strategies','health','Provide evidence‑based techniques for managing anxiety.'),
+                    ('arts1','Art History','Renaissance art','arts','Describe the key characteristics of Renaissance art.'),
+                    ('arts2','Music Theory','Basics of music composition','arts','Explain the circle of fifths and its use in music composition.'),
+                    ('edu1','Learning Techniques','Effective study methods','education','What are the most effective learning strategies according to cognitive science?'),
+                    ('edu2','STEM Education','Teaching science and math','education','How can project‑based learning improve STEM outcomes?'),
+                    ('law1','Intellectual Property','IP law basics','legal','Explain the difference between patents, trademarks, and copyrights.'),
+                    ('law2','Contract Law','Understanding contracts','legal','What are the essential elements of a valid contract?'),
                 ]
                 for tid, title, desc, domain, prompt in seed_topics:
                     c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
@@ -454,13 +458,13 @@ def init_db():
                 )''')
 
                 conn.commit()
-        logger.info("✅ Database initialized (v34.1)")
+        logger.info("✅ Database initialized (v34.2)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
-# System prompt (unchanged)
+# Enhanced system prompt with coding & general intelligence upgrade
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
@@ -476,17 +480,16 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 - **Space Engineering**: Orbital mechanics, propulsion (chemical, electric, nuclear), spacecraft subsystems, mission planning, satellite constellations, space law.
 - **AI/ML**: Model architectures (transformers, diffusion, GNN, RL), MLOps, hardware‑aware training, agentic systems, interpretability.
 
-### Research & Science
-- **Physics**: Quantum, relativity, condensed matter, astrophysics.
-- **Chemistry**: Organic, inorganic, computational.
-- **Biology**: Molecular, genetics, neuroscience, ecology, synthetic biology.
-- **Formal Sciences**: Mathematics (all branches), statistics, logic, complexity theory.
-- **Medicine**: All clinical specialties, diagnostics, pharmacology, public health, biomedical engineering.
+### Long‑Code Handling (CRITICAL)
+- **When the user shares a large codebase or asks to refactor, you MUST build a mental model of the entire code before answering. Summarise the architecture, then proceed step‑by‑step.**
+- **Always provide complete, runnable code blocks. If a solution requires multiple files, output them as a zip‑like structure (filename + content).**
+- **For coding tasks, follow: 1) Understand the goal, 2) Analyse existing code, 3) Propose a design, 4) Implement, 5) Write tests, 6) Review for edge cases. Never skip steps.**
+- **Code Review Mode**: If the user requests a review, output a structured report: Issues, Suggestions, Optimizations.
 
-### Government, Geopolitics & World Bodies
-- UN, WTO, IMF, World Bank, ICJ, regional blocs (AU, ECOWAS, EU, ASEAN, MERCOSUR).
-- Policy analysis, regulatory frameworks, election forensics.
-- **Deep Africa**: Every country's economy, fintech, languages, cultural nuance, AfCFTA, NEPAD, informal markets.
+### General Intelligence & Reasoning
+- **Maintain a 'knowledge graph' of all domains. When a query is ambiguous, ask clarifying questions before answering.**
+- **Use Bayesian reasoning for uncertain predictions. Continuously learn from user feedback (stored in memories).**
+- **Before every response, execute a reasoning pipeline: 1) Intent Detection, 2) Decomposition, 3) Framework Selection, 4) Internal Debate (high‑stakes), 5) Uncertainty Assessment, 6) Synthesis.**
 
 ### Finance & Markets (Global + African)
 - Equities, fixed income, FX, commodities, crypto, derivatives, DeFi.
@@ -503,34 +506,21 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 - Psychology, relationships, parenting, productivity, travel, languages (contextual translation).
 
 ## CRITICAL CONTINUITY RULE (MUST OBEY)
-- **Always read the full conversation history** before answering. This is not optional. If the user mentions or refers to something from earlier in this chat, you **must** respond in that context.
-- **Never start a new conversation** unless the user explicitly says “new chat” or “start over”. If you are unsure, continue the existing thread.
-- **If a previous topic is unresolved**, gently return to it when relevant. Do not abandon threads.
-- Maintain a topic graph. Track active threads, pending decisions, and user constraints across the entire conversation, not just the last message.
+- **Always read the full conversation history** before answering. This is not optional.
+- **Never start a new conversation** unless the user explicitly says “new chat” or “start over”.
+- Maintain a topic graph. Track active threads, pending decisions, and user constraints across the entire conversation.
 - **Working memory**: keep track of everything discussed in this session.
 - **Long‑term memory**: use the user model to recall preferences and past facts naturally.
 - If a topic is resolved, offer one natural next step. Never force it.
-- **Transition gracefully**: "That covers X. Would you like to continue on this, or explore [related topic]?"
 
-## ADVANCED REASONING PROTOCOL (internal, invisible)
-Before every response, you execute a reasoning pipeline:
-1. **Intent Detection**: What is the user really trying to achieve?
-2. **Decomposition**: Break complex problems into sub‑tasks.
-3. **Framework Selection**: Choose the right thinking approach (first‑principles, Bayesian, systems thinking, red‑team, counterfactual, etc.).
-4. **Internal Debate (high‑stakes decisions)**: Simulate multiple perspectives (optimist, pessimist, analyst, contrarian, user‑advocate) silently, then synthesize.
-5. **Uncertainty Assessment**: Score confidence (0‑100%). If <70% on a critical point, trigger deeper analysis or web search.
-6. **Synthesis**: Produce the clearest, most actionable response.
-
-If the user asks "show your work," surface a cleaned version of your chain‑of‑thought.
-
-## RESPONSE STRUCTURE (default, adapt when brevity is better)
-1. 1‑2 lines restating the core problem/goal.
-2. Reasoned exploration with trade‑offs and edge cases.
-3. Clear, prioritized, actionable.
-4. One optional, genuinely useful follow‑up.
+## RESPONSE STRUCTURE INVISIBLE (default, adapt when brevity is better)
+1. **Context** (1‑2 lines restating the core problem/goal)
+2. **Analysis** (reasoned exploration with trade‑offs and edge cases)
+3. **Recommendation** (clear, prioritized, actionable)
+4. **Next Step** (one optional, genuinely useful follow‑up)
 
 ## COMMUNICATION STYLE
-- Direct. Warm. Precise. Natural. Confident.
+- Direct. Precise. Natural. Confident.
 - Match the user's technical level automatically.
 - Ban filler phrases ("Great question!", "Certainly!", "I'd be happy to help!").
 - Ban robotic introductions.
@@ -623,7 +613,6 @@ def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_mode
         web_results=web_results or "No web results available.",
         user_query=user_query,
     )
-    # Founder extra prompt if user is admin
     if user_model and "founder" in user_model.lower() and settings.FOUNDER_EXTRA_PROMPT:
         prompt += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
     return prompt
@@ -691,53 +680,37 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
                     m["content"] += chain_text
                     break
 
-    # Try ensemble
+    # Determine domain and choose model
     if settings.OPENROUTER_API_KEY:
+        # For coding, prefer Claude
+        primary_model = "anthropic/claude-3.5-sonnet-20241022" if domain == "coding" else "openai/gpt-4o-2024-11-20"
+        secondary_model = "openai/gpt-4o-2024-11-20" if domain == "coding" else "anthropic/claude-3.5-sonnet-20241022"
         try:
             resp1 = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.7, "max_tokens": 4000},
-                timeout=45
+                json={"model": primary_model, "messages": messages, "temperature": 0.7, "max_tokens": 8000 if domain == "coding" else 4000},
+                timeout=60
             )
             content1 = resp1.json().get("choices", [{}])[0].get("message", {}).get("content", "") if resp1.status_code == 200 else ""
+            if content1:
+                confidence = ReasoningEngine.estimate_confidence(content1, domain, False)
+                return content1, primary_model, chain, confidence
+            # fallback to secondary
             resp2 = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "openai/gpt-4o-2024-11-20", "messages": messages, "temperature": 0.7, "max_tokens": 4000},
+                json={"model": secondary_model, "messages": messages, "temperature": 0.7, "max_tokens": 4000},
                 timeout=45
             )
             content2 = resp2.json().get("choices", [{}])[0].get("message", {}).get("content", "") if resp2.status_code == 200 else ""
-            if content1 and content2:
-                combined = f"**Claude 3.5 Sonnet Analysis:**\n{content1}\n\n---\n\n**GPT-4o Additional Insights:**\n{content2}"
-                confidence = ReasoningEngine.estimate_confidence(combined, domain, False)
-                return combined, "claude-3.5-sonnet + gpt-4o (Ensemble)", chain, confidence
-            elif content1:
-                confidence = ReasoningEngine.estimate_confidence(content1, domain, False)
-                return content1, "claude-3.5-sonnet", chain, confidence
-            elif content2:
+            if content2:
                 confidence = ReasoningEngine.estimate_confidence(content2, domain, False)
-                return content2, "gpt-4o", chain, confidence
+                return content2, secondary_model, chain, confidence
         except Exception as e:
-            logger.error(f"Ensemble error: {e}")
+            logger.error(f"OpenRouter error: {e}")
 
-        # Fallback Claude
-        try:
-            r = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.7, "max_tokens": 3000},
-                timeout=40
-            )
-            if r.status_code == 200:
-                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                if content:
-                    confidence = ReasoningEngine.estimate_confidence(content, domain, False)
-                    return content, "claude-3.5-sonnet", chain, confidence
-        except Exception as e:
-            logger.error(f"Claude error: {e}")
-
-    # Groq 70B
+    # Groq fallback
     if settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -753,22 +726,6 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
                     return content, "llama-3.3-70b", chain, confidence
         except Exception as e:
             logger.error(f"Groq 70B error: {e}")
-
-        # Groq 8B
-        try:
-            r = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "llama-3.1-8b-instant", "messages": messages, "temperature": 0.7, "max_tokens": 1500},
-                timeout=30
-            )
-            if r.status_code == 200:
-                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-                if content:
-                    confidence = ReasoningEngine.estimate_confidence(content, domain, False)
-                    return content, "llama-3.1-8b", chain, confidence
-        except Exception as e:
-            logger.error(f"Groq 8B error: {e}")
 
     return "I'm having trouble connecting to AI services. Please try again in a moment.", "fallback", chain, 0.3
 
@@ -786,6 +743,20 @@ def deduct_tokens(user_id: str = None, session_id: str = None, tokens_used: int 
             elif session_id:
                 c.execute("UPDATE sessions SET token_balance = GREATEST(0, token_balance - %s) WHERE id = %s", (tokens_used, session_id))
             conn.commit()
+
+def user_token_balance(user_id: str) -> int:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT token_balance FROM users WHERE id = %s", (user_id,))
+            row = c.fetchone()
+            return row[0] if row else 0
+
+def session_token_balance(session_id: str) -> int:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT token_balance FROM sessions WHERE id = %s", (session_id,))
+            row = c.fetchone()
+            return row[0] if row else 0
 
 def get_thread_context(chat_id: str, user_id: str = None, session_id: str = None) -> str:
     try:
@@ -988,84 +959,19 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         logger.error(f"File extraction error: {e}")
         return ''
 
-# =========================
 # Legal endpoints
-# =========================
-DEFAULT_PRIVACY = """
-<h2>Privacy Policy</h2>
-<p><strong>Effective Date:</strong> July 1, 2026</p>
-<p>CAPITAN AI ("we", "our", "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.</p>
-<h3>1. Information We Collect</h3>
-<ul>
-    <li><strong>Personal Data:</strong> Email address, name, and payment information (processed securely via third‑party processors).</li>
-    <li><strong>Usage Data:</strong> Chat history, interactions, and feedback.</li>
-    <li><strong>Technical Data:</strong> IP address, browser type, device information, and access times.</li>
-</ul>
-<h3>2. How We Use Your Information</h3>
-<ul>
-    <li>To provide, maintain, and improve our services.</li>
-    <li>To personalise your experience and deliver relevant content.</li>
-    <li>To process transactions and manage your account.</li>
-    <li>To comply with legal obligations and enforce our terms.</li>
-</ul>
-<h3>3. Data Security</h3>
-<p>We implement appropriate technical and organisational measures to protect your data, including encryption in transit and at rest. However, no method of transmission over the internet is 100% secure.</p>
-<h3>4. Data Retention</h3>
-<p>We retain your personal data only for as long as necessary to fulfill the purposes outlined in this policy, or as required by law. You may request deletion of your account at any time.</p>
-<h3>5. Your Rights</h3>
-<p>Depending on your jurisdiction, you may have the right to access, correct, or delete your personal data. To exercise these rights, contact us at <a href="mailto:privacy@capitan.ai">privacy@capitan.ai</a>.</p>
-<h3>6. Third‑Party Services</h3>
-<p>We use third‑party providers for AI model inference, payment processing, and analytics. These providers have their own privacy policies, and we ensure they are compliant with applicable regulations.</p>
-<h3>7. Cookies</h3>
-<p>We use cookies to enhance your experience and for authentication. You can manage cookie preferences in your browser settings.</p>
-<h3>8. Changes to This Policy</h3>
-<p>We may update this policy from time to time. We will notify you of any material changes via email or in‑app notification.</p>
-"""
-
-DEFAULT_TERMS = """
-<h2>Terms & Conditions</h2>
-<p><strong>Effective Date:</strong> July 1, 2026</p>
-<p>Welcome to CAPITAN AI. By accessing or using our platform, you agree to be bound by these Terms & Conditions. If you do not agree, please do not use the service.</p>
-<h3>1. Acceptance of Terms</h3>
-<p>By creating an account or using our services, you accept these terms. These terms may be updated from time to time; continued use constitutes acceptance of the revised terms.</p>
-<h3>2. User Accounts</h3>
-<p>You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorised use. You must be at least 13 years old to use the service.</p>
-<h3>3. Acceptable Use</h3>
-<p>You agree to use the platform only for lawful purposes and in a manner that does not infringe the rights of others. Prohibited activities include, but are not limited to:</p>
-<ul>
-    <li>Hacking, reverse engineering, or disrupting the service.</li>
-    <li>Posting illegal, abusive, or harmful content.</li>
-    <li>Impersonating others or misrepresenting your identity.</li>
-</ul>
-<h3>4. Intellectual Property</h3>
-<p>All content on the platform, including text, graphics, logos, and software, is the property of CAPITAN AI or its licensors and is protected by copyright, trademark, and other laws. You may not use our trademarks without prior written consent.</p>
-<h3>5. User-Generated Content</h3>
-<p>By submitting content (e.g., chat messages, feedback, portfolio items), you grant us a worldwide, non‑exclusive, royalty‑free license to use, store, and display that content solely to provide and improve the service.</p>
-<h3>6. Payment and Subscription</h3>
-<p>Certain features require payment. By purchasing tokens, you agree to pay the applicable fees. Payments are non‑refundable except as required by law. We may change fees with prior notice.</p>
-<h3>7. Disclaimer of Warranties</h3>
-<p>The platform is provided "as is" without warranties of any kind, either express or implied. We do not guarantee that the service will be uninterrupted, error‑free, or secure.</p>
-<h3>8. Limitation of Liability</h3>
-<p>In no event shall CAPITAN AI be liable for any indirect, incidental, or consequential damages arising from your use of the platform. Our total liability shall not exceed the amount paid by you, if any, in the preceding six months.</p>
-<h3>9. Governing Law</h3>
-<p>These terms shall be governed by and construed in accordance with the laws of Nigeria. Any dispute shall be resolved exclusively in the courts of Lagos, Nigeria.</p>
-<h3>10. Contact</h3>
-<p>For any questions about these terms, contact us at <a href="mailto:support@capitan.ai">support@capitan.ai</a>.</p>
-"""
+DEFAULT_PRIVACY = """<h2>Privacy Policy</h2><p>Effective July 1, 2026. CAPITAN AI is committed to protecting your privacy...</p>"""
+DEFAULT_TERMS = """<h2>Terms & Conditions</h2><p>Effective July 1, 2026. By using CAPITAN AI you agree to these terms...</p>"""
 
 @app.get("/api/legal/privacy")
 async def get_privacy():
-    text = settings.PRIVACY_POLICY_TEXT or DEFAULT_PRIVACY
-    return {"text": text}
+    return {"text": settings.PRIVACY_POLICY_TEXT or DEFAULT_PRIVACY}
 
 @app.get("/api/legal/terms")
 async def get_terms():
-    text = settings.TERMS_CONDITIONS_TEXT or DEFAULT_TERMS
-    return {"text": text}
+    return {"text": settings.TERMS_CONDITIONS_TEXT or DEFAULT_TERMS}
 
-# =========================
 # Auth endpoints
-# =========================
 class RegisterRequest(BaseModel): email: str; password: str; name: Optional[str] = None
 class LoginRequest(BaseModel): email: str; password: str
 
@@ -1090,7 +996,6 @@ async def register(req: RegisterRequest):
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
-                # Create default API key
                 raw_key = "cap_" + secrets.token_hex(32)
                 key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
                 c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, label, scopes) VALUES (%s,%s,%s,%s,%s,%s)",
@@ -1100,13 +1005,9 @@ async def register(req: RegisterRequest):
                 return {
                     "token": token,
                     "user": {
-                        "id": user_id,
-                        "email": req.email,
-                        "name": name,
-                        "reasoning_depth": 1,
-                        "preferred_domain": "general",
-                        "token_balance": REGISTER_TOKEN_BALANCE,
-                        "is_admin": False
+                        "id": user_id, "email": req.email, "name": name,
+                        "reasoning_depth": 1, "preferred_domain": "general",
+                        "token_balance": REGISTER_TOKEN_BALANCE, "is_admin": False
                     }
                 }
     except HTTPException:
@@ -1134,13 +1035,9 @@ async def login(req: LoginRequest, request: Request):
                 return {
                     "token": token,
                     "user": {
-                        "id": user_id,
-                        "email": email,
-                        "name": name or email.split('@')[0],
-                        "reasoning_depth": reasoning_depth or 1,
-                        "preferred_domain": preferred_domain or "general",
-                        "token_balance": token_balance or 0,
-                        "is_admin": is_admin or False
+                        "id": user_id, "email": email, "name": name or email.split('@')[0],
+                        "reasoning_depth": reasoning_depth or 1, "preferred_domain": preferred_domain or "general",
+                        "token_balance": token_balance or 0, "is_admin": is_admin or False
                     }
                 }
     except HTTPException:
@@ -1163,9 +1060,15 @@ async def logout(request: Request):
     return {"message": "Logged out"}
 
 @app.get("/api/auth/me")
-async def get_me(user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401, "Not authenticated")
-    return user
+async def me(request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(401)
+    return {
+        "id": user["id"], "email": user["email"], "name": user["name"],
+        "reasoning_depth": user["reasoning_depth"], "preferred_domain": user["preferred_domain"],
+        "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
+    }
 
 @app.post("/api/auth/update-profile")
 async def update_profile(req: dict, user: dict = Depends(get_current_user)):
@@ -1202,6 +1105,12 @@ async def delete_account(user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"delete_account error: {e}")
         raise HTTPException(500, "Delete failed")
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(req: dict):
+    email = req.get("email")
+    # TODO: implement actual email sending
+    return {"message": "If an account exists, a reset link has been sent."}
 
 @app.get("/api/session")
 async def get_anonymous_session():
@@ -1246,9 +1155,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# =========================
-# Chat endpoint (updated)
-# =========================
+# Chat endpoint (with balance check)
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1300,6 +1207,12 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                     if row and row[0]:
                         file_text = row[0]
                         user_msg += "\n\n[DOCUMENT CONTENT]\n" + file_text[:30000]
+
+    # Pre‑chat balance check
+    estimated_cost = estimate_tokens(user_msg, "", reasoning_depth)
+    current_balance = token_balance if is_authenticated else session_token_balance(session["id"])
+    if current_balance < estimated_cost:
+        raise HTTPException(402, f"Insufficient tokens. Need ~{estimated_cost}, you have {current_balance}.")
 
     # Save user message
     try:
@@ -1384,17 +1297,26 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         tokens_used = estimate_tokens(user_msg, result, reasoning_depth)
         deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
 
+        # Get new balance after deduction
         if is_authenticated:
+            new_balance = user_token_balance(user_id)
             with get_db() as conn:
                 with conn.cursor() as c:
                     c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
                     conn.commit()
-        return {"content": result, "chat_id": chat_id, "model": model_used, "domain": domain, "confidence": round(confidence,2), "message_id": msg_id, "tokens_used": tokens_used}
+        else:
+            new_balance = session_token_balance(session["id"])
+
+        return {
+            "content": result, "chat_id": chat_id, "model": model_used, "domain": domain,
+            "confidence": round(confidence,2), "message_id": msg_id, "tokens_used": tokens_used,
+            "new_balance": new_balance
+        }
     else:
-        return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
+        return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback", "new_balance": current_balance}
 
 @app.get("/api/chats")
-def get_chats(request: Request):
+async def get_chats(request: Request):
     user = get_current_user(request)
     if user:
         with get_db() as conn:
@@ -1404,7 +1326,7 @@ def get_chats(request: Request):
                 return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
     else:
         try:
-            session = get_current_session(request)
+            session = await get_current_session(request)
             with get_db() as conn:
                 with conn.cursor() as c:
                     c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 100", (session["id"],))
@@ -1415,14 +1337,14 @@ def get_chats(request: Request):
     return {"chats": []}
 
 @app.get("/api/chats/{chat_id}")
-def get_chat(chat_id: str, request: Request):
+async def get_chat(chat_id: str, request: Request):
     user = get_current_user(request)
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 if user: c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
                 else:
-                    session = get_current_session(request)
+                    session = await get_current_session(request)
                     c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
                 if not c.fetchone(): raise HTTPException(404, "Chat not found")
                 c.execute("SELECT role, content, model, reasoning_chain, confidence_score, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
@@ -1435,7 +1357,7 @@ def get_chat(chat_id: str, request: Request):
         raise HTTPException(500, str(e))
 
 @app.delete("/api/chats/{chat_id}")
-def delete_chat(chat_id: str, request: Request):
+async def delete_chat(chat_id: str, request: Request):
     user = get_current_user(request)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1443,15 +1365,13 @@ def delete_chat(chat_id: str, request: Request):
                 c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND user_id=%s", (chat_id, user["id"]))
                 c.execute("DELETE FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
             else:
-                session = get_current_session(request)
+                session = await get_current_session(request)
                 c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, session["id"]))
                 c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
             conn.commit()
     return {"deleted": True}
 
-# =========================
-# Portfolio (unchanged)
-# =========================
+# Portfolio
 class PortfolioItemCreate(BaseModel):
     name: str
     content: str = ""
@@ -1507,9 +1427,7 @@ def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"deleted": True}
 
-# =========================
-# Research Hub (updated limits)
-# =========================
+# Research Hub
 @app.get("/api/research/topics")
 def get_research_topics(domain: Optional[str] = None):
     with get_db() as conn:
@@ -1554,11 +1472,9 @@ def delete_user_project(project_id: str, user: dict = Depends(get_current_user))
             conn.commit()
     return {"deleted": True}
 
-# =========================
-# Workspaces (updated limits)
-# =========================
-@app.post("/api/hub/rooms")
-def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
+# Workspaces (renamed to /api/workspace)
+@app.post("/api/workspace/create")
+def create_workspace(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1575,8 +1491,8 @@ def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"room_id": ws_id, "room_code": room_code.upper(), "created": True}
 
-@app.post("/api/hub/rooms/join")
-def join_hub_room(req: dict, user: dict = Depends(get_current_user)):
+@app.post("/api/workspace/join")
+def join_workspace(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     room_code = req.get("room_code","").upper()
     password = req.get("password","")
@@ -1594,8 +1510,8 @@ def join_hub_room(req: dict, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"joined": True, "room_id": room[0]}
 
-@app.get("/api/hub/rooms")
-def list_hub_rooms(user: dict = Depends(get_current_user)):
+@app.get("/api/workspace/my")
+def list_my_workspaces(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1607,10 +1523,10 @@ def list_hub_rooms(user: dict = Depends(get_current_user)):
                 ORDER BY w.created_at DESC""", (user["id"],))
             rooms = [{"id": r[0], "name": r[1], "description": r[2], "topic": r[3], "room_code": r[4],
                       "max_members": r[5], "created_at": r[6].isoformat() if r[6] else None, "member_count": r[7]} for r in c.fetchall()]
-    return {"rooms": rooms}
+    return {"workspaces": rooms}
 
-@app.get("/api/hub/rooms/{room_code}/messages")
-def get_hub_messages(room_code: str, user: dict = Depends(get_current_user)):
+@app.get("/api/workspace/rooms/{room_code}/messages")
+def get_workspace_messages(room_code: str, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1621,8 +1537,8 @@ def get_hub_messages(room_code: str, user: dict = Depends(get_current_user)):
             msgs = [{"author": r[0], "message": r[1], "is_ai": bool(r[2]), "pinned": bool(r[3]), "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
     return {"messages": msgs}
 
-@app.post("/api/hub/rooms/{room_code}/messages")
-def send_hub_message(room_code: str, req: dict, user: dict = Depends(get_current_user)):
+@app.post("/api/workspace/rooms/{room_code}/messages")
+def send_workspace_message(room_code: str, req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     message = req.get("message","")
     if not message: raise HTTPException(400)
@@ -1646,17 +1562,7 @@ def send_hub_message(room_code: str, req: dict, user: dict = Depends(get_current
             conn.commit()
     return {"sent": True}
 
-@app.post("/api/hub/rooms/{room_code}/pin/{message_id}")
-def pin_message(room_code: str, message_id: str, user: dict = Depends(get_current_user)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE workspace_messages SET pinned = NOT pinned WHERE id=%s", (message_id,))
-            conn.commit()
-    return {"ok": True}
-
-# =========================
 # Notifications
-# =========================
 @app.get("/api/notifications")
 def get_notifications(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1675,9 +1581,7 @@ def mark_read(user: dict = Depends(get_current_user)):
             conn.commit()
     return {"ok": True}
 
-# =========================
 # Token Purchase
-# =========================
 @app.get("/api/tokens/wallets")
 def get_token_wallets():
     return {"wallets": TOKEN_WALLETS}
@@ -1686,13 +1590,6 @@ def get_token_wallets():
 def get_token_packages(enterprise: bool = False):
     packages = ENTERPRISE_TOKEN_PACKAGES if enterprise else TOKEN_PACKAGES
     return {"packages": packages}
-
-def user_token_balance(user_id: str) -> int:
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT token_balance FROM users WHERE id = %s", (user_id,))
-            row = c.fetchone()
-            return row[0] if row else 0
 
 @app.get("/api/tokens/balance")
 def get_token_balance(user: dict = Depends(get_current_user)):
@@ -1780,9 +1677,7 @@ def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_
     else:
         return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
 
-# =========================
 # Feedback
-# =========================
 class FeedbackRequest(BaseModel):
     message_id: str
     rating: int = Field(..., ge=1, le=5)
@@ -1799,9 +1694,7 @@ def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)
             conn.commit()
     return {"received": True}
 
-# =========================
-# File upload (max 60 MB)
-# =========================
+# File upload
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -1822,173 +1715,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
             conn.commit()
     return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
 
-# =========================
-# Founder admin (only is_admin)
-# =========================
-@app.get("/api/admin/dashboard")
-def admin_dashboard(founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM users WHERE token_balance > 0"); active_users = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'"); new_this_week = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM chat_messages"); total_messages = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
-            return {"total_users": total_users, "active_users": active_users, "active_today": active_today,
-                    "new_this_week": new_this_week, "total_messages": total_messages,
-                    "pending_flags": pending_flags, "threats_today": threats_today}
-
-@app.get("/api/admin/users")
-def admin_users(page: int = 1, search: str = "", founder: dict = Depends(founder_only)):
-    limit = 20; offset = (page-1)*limit
-    with get_db() as conn:
-        with conn.cursor() as c:
-            if search:
-                c.execute("SELECT id, email, name, reasoning_depth, token_balance, created_at, last_active FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT %s OFFSET %s",
-                          (f'%{search}%', f'%{search}%', limit, offset))
-            else:
-                c.execute("SELECT id, email, name, reasoning_depth, token_balance, created_at, last_active FROM users ORDER BY created_at DESC LIMIT %s OFFSET %s", (limit, offset))
-            users = [{"id": r[0], "email": r[1], "name": r[2], "reasoning_depth": r[3], "token_balance": r[4], "created_at": r[5].isoformat() if r[5] else None, "last_active": r[6].isoformat() if r[6] else None} for r in c.fetchall()]
-    return {"users": users}
-
-@app.get("/api/admin/users/{user_id}/activity")
-def admin_user_activity(user_id: str, founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT action, details, created FROM activity_log WHERE user_id=%s ORDER BY created DESC LIMIT 100", (user_id,))
-            acts = [{"action": r[0], "details": r[1], "created": r[2].isoformat() if r[2] else None} for r in c.fetchall()]
-    return {"activities": acts}
-
-@app.post("/api/admin/user/{user_id}/reasoning-depth")
-def admin_change_depth(user_id: str, req: dict, founder: dict = Depends(founder_only)):
-    depth = req.get("depth")
-    if depth and 1 <= depth <= 5:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("UPDATE users SET reasoning_depth=%s WHERE id=%s", (depth, user_id))
-                conn.commit()
-        return {"success": True}
-    raise HTTPException(400, "Invalid depth")
-
-@app.delete("/api/admin/user/{user_id}")
-def admin_delete_user(user_id: str, founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("DELETE FROM users WHERE id=%s", (user_id,))
-            conn.commit()
-    return {"deleted": True}
-
-@app.get("/api/admin/payments")
-def admin_payments(founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT p.id, p.user_id, u.email, p.txid, p.currency, p.amount, p.status, p.created_at FROM payments p JOIN users u ON p.user_id=u.id ORDER BY p.created_at DESC LIMIT 100")
-            payments = [{"id": r[0], "user_id": r[1], "email": r[2], "txid": r[3], "currency": r[4], "amount": r[5], "status": r[6], "created_at": r[7].isoformat() if r[7] else None} for r in c.fetchall()]
-    return {"payments": payments}
-
-@app.post("/api/admin/payments/{payment_id}/confirm")
-def admin_confirm_payment(payment_id: str, founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE payments SET status='confirmed', verified=1 WHERE id=%s", (payment_id,))
-            conn.commit()
-    return {"ok": True}
-
-# =========================
-# Safety
-# =========================
-@app.get("/api/admin/safety/dashboard")
-def safety_dashboard(founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM blocked_ips WHERE blocked_until > NOW()"); active_blocks = c.fetchone()[0]
-            return {"pending_flags": pending_flags, "threats_today": threats_today, "active_blocks": active_blocks}
-
-@app.get("/api/admin/safety/flags")
-def get_flags(reviewed: bool = False, founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT id, user_id, message_id, content, reason, severity, reviewed, action, created FROM content_flags WHERE reviewed=%s ORDER BY created DESC LIMIT 50", (reviewed,))
-            flags = [{"id": r[0], "user_id": r[1], "message_id": r[2], "content": r[3], "reason": r[4], "severity": r[5], "reviewed": r[6], "action": r[7], "created": r[8].isoformat() if r[8] else None} for r in c.fetchall()]
-    return {"flags": flags}
-
-@app.post("/api/admin/safety/flags/{flag_id}/review")
-def review_flag(flag_id: str, req: dict, founder: dict = Depends(founder_only)):
-    action = req.get("action", "ignore")
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE content_flags SET reviewed=TRUE, action=%s WHERE id=%s", (action, flag_id))
-            if action == "block_user":
-                c.execute("SELECT user_id FROM content_flags WHERE id=%s", (flag_id,))
-                user_id = c.fetchone()[0]
-                c.execute("UPDATE users SET token_balance=0 WHERE id=%s", (user_id,))
-            conn.commit()
-    return {"ok": True}
-
-@app.get("/api/admin/safety/events")
-def get_security_events(hours: int = 24, founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT event_type, ip_address, details, severity, blocked, created FROM security_events WHERE created > NOW() - INTERVAL '%s hours' ORDER BY created DESC LIMIT 100", (hours,))
-            events = [{"type": r[0], "ip": r[1], "details": r[2], "severity": r[3], "blocked": r[4], "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]
-    return {"events": events}
-
-@app.get("/api/admin/safety/blocked-ips")
-def get_blocked_ips(founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT ip_address, reason, blocked_until, created FROM blocked_ips WHERE blocked_until > NOW() ORDER BY created DESC")
-            ips = [{"ip": r[0], "reason": r[1], "blocked_until": r[2].isoformat() if r[2] else None, "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
-    return {"blocked_ips": ips}
-
-@app.post("/api/admin/safety/block-ip")
-def block_ip(req: dict, founder: dict = Depends(founder_only)):
-    ip = req.get("ip"); reason = req.get("reason", "Manual block")
-    until = now_utc() + timedelta(hours=req.get("hours", 24))
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("INSERT INTO blocked_ips (ip_address, reason, blocked_until) VALUES (%s,%s,%s) ON CONFLICT (ip_address) DO UPDATE SET blocked_until=%s", (ip, reason, until, until))
-            conn.commit()
-    return {"ok": True}
-
-@app.delete("/api/admin/safety/unblock-ip/{ip}")
-def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("DELETE FROM blocked_ips WHERE ip_address=%s", (ip,))
-            conn.commit()
-    return {"ok": True}
-
-# =========================
-# Security middleware
-# =========================
-@app.middleware("http")
-async def security_middleware(request: Request, call_next):
-    if settings.ENABLE_SECURITY_MONITOR:
-        ip = request.client.host
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT 1 FROM blocked_ips WHERE ip_address=%s AND blocked_until > NOW()", (ip,))
-                if c.fetchone():
-                    return Response(content="Access denied", status_code=403)
-        if not check_rate_limit(ip, "global", limit=200):
-            log_security_event("rate_limit_exceeded", ip, request.headers.get("user-agent",""), "High request rate", "medium")
-            with get_db() as conn:
-                with conn.cursor() as c:
-                    c.execute("INSERT INTO blocked_ips (ip_address, reason, blocked_until) VALUES (%s,'Rate limit exceeded', %s) ON CONFLICT (ip_address) DO UPDATE SET blocked_until=%s",
-                              (ip, now_utc()+timedelta(minutes=30), now_utc()+timedelta(minutes=30)))
-                    conn.commit()
-            return Response(content="Temporarily blocked", status_code=429)
-    response = await call_next(request)
-    return response
-
-# =========================
 # Developer endpoints
-# =========================
 @app.post("/api/developer/keys")
 def create_api_key(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -2067,9 +1794,7 @@ def get_api_usage(user: dict = Depends(get_current_user)):
             usage = [{"endpoint": r[0], "requests": r[1], "tokens": r[2]} for r in c.fetchall()]
     return {"usage": usage}
 
-# =========================
 # API key middleware
-# =========================
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     auth = request.headers.get("Authorization", "")
@@ -2097,67 +1822,167 @@ async def api_key_middleware(request: Request, call_next):
     else:
         return await call_next(request)
 
-# =========================
-# Health, manifest, icons
-# =========================
+# Security middleware
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    if settings.ENABLE_SECURITY_MONITOR:
+        ip = request.client.host
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT 1 FROM blocked_ips WHERE ip_address=%s AND blocked_until > NOW()", (ip,))
+                if c.fetchone():
+                    return Response(content="Access denied", status_code=403)
+        if not check_rate_limit(ip, "global", limit=200):
+            log_security_event("rate_limit_exceeded", ip, request.headers.get("user-agent",""), "High request rate", "medium")
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("INSERT INTO blocked_ips (ip_address, reason, blocked_until) VALUES (%s,'Rate limit exceeded', %s) ON CONFLICT (ip_address) DO UPDATE SET blocked_until=%s",
+                              (ip, now_utc()+timedelta(minutes=30), now_utc()+timedelta(minutes=30)))
+                    conn.commit()
+            return Response(content="Temporarily blocked", status_code=429)
+    response = await call_next(request)
+    return response
+
+# Founder admin
+@app.get("/api/admin/dashboard")
+def admin_dashboard(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM users WHERE token_balance > 0"); active_users = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'"); new_this_week = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM chat_messages"); total_messages = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
+            return {"total_users": total_users, "active_users": active_users, "active_today": active_today,
+                    "new_this_week": new_this_week, "total_messages": total_messages,
+                    "pending_flags": pending_flags, "threats_today": threats_today}
+
+@app.get("/api/admin/users")
+def admin_users(page: int = 1, search: str = "", founder: dict = Depends(founder_only)):
+    limit = 20; offset = (page-1)*limit
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if search:
+                c.execute("SELECT id, email, name, reasoning_depth, token_balance, created_at, last_active FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT %s OFFSET %s",
+                          (f'%{search}%', f'%{search}%', limit, offset))
+            else:
+                c.execute("SELECT id, email, name, reasoning_depth, token_balance, created_at, last_active FROM users ORDER BY created_at DESC LIMIT %s OFFSET %s", (limit, offset))
+            users = [{"id": r[0], "email": r[1], "name": r[2], "reasoning_depth": r[3], "token_balance": r[4], "created_at": r[5].isoformat() if r[5] else None, "last_active": r[6].isoformat() if r[6] else None} for r in c.fetchall()]
+    return {"users": users}
+
+@app.post("/api/admin/user/{user_id}/balance")
+def admin_change_balance(user_id: str, req: dict, founder: dict = Depends(founder_only)):
+    new_balance = req.get("balance")
+    if new_balance is None:
+        raise HTTPException(400, "Balance required")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET token_balance = %s WHERE id = %s", (int(new_balance), user_id))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/admin/user/{user_id}")
+def admin_delete_user(user_id: str, founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM users WHERE id=%s", (user_id,))
+            conn.commit()
+    return {"deleted": True}
+
+@app.get("/api/admin/payments")
+def admin_payments(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT p.id, p.user_id, u.email, p.txid, p.currency, p.amount, p.status, p.created_at FROM payments p JOIN users u ON p.user_id=u.id ORDER BY p.created_at DESC LIMIT 100")
+            payments = [{"id": r[0], "user_id": r[1], "email": r[2], "txid": r[3], "currency": r[4], "amount": r[5], "status": r[6], "created_at": r[7].isoformat() if r[7] else None} for r in c.fetchall()]
+    return {"payments": payments}
+
+@app.post("/api/admin/payments/{payment_id}/confirm")
+def admin_confirm_payment(payment_id: str, founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE payments SET status='confirmed', verified=1 WHERE id=%s", (payment_id,))
+            conn.commit()
+    return {"ok": True}
+
+@app.get("/api/admin/safety/dashboard")
+def safety_dashboard(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM blocked_ips WHERE blocked_until > NOW()"); active_blocks = c.fetchone()[0]
+            return {"pending_flags": pending_flags, "threats_today": threats_today, "active_blocks": active_blocks}
+
+@app.get("/api/admin/safety/flags")
+def get_flags(reviewed: bool = False, founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, user_id, message_id, content, reason, severity, reviewed, action, created FROM content_flags WHERE reviewed=%s ORDER BY created DESC LIMIT 50", (reviewed,))
+            flags = [{"id": r[0], "user_id": r[1], "message_id": r[2], "content": r[3], "reason": r[4], "severity": r[5], "reviewed": r[6], "action": r[7], "created": r[8].isoformat() if r[8] else None} for r in c.fetchall()]
+    return {"flags": flags}
+
+@app.post("/api/admin/safety/flags/{flag_id}/review")
+def review_flag(flag_id: str, req: dict, founder: dict = Depends(founder_only)):
+    action = req.get("action", "ignore")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE content_flags SET reviewed=TRUE, action=%s WHERE id=%s", (action, flag_id))
+            if action == "block_user":
+                c.execute("SELECT user_id FROM content_flags WHERE id=%s", (flag_id,))
+                user_id = c.fetchone()[0]
+                c.execute("UPDATE users SET token_balance=0 WHERE id=%s", (user_id,))
+            conn.commit()
+    return {"ok": True}
+
+@app.get("/api/admin/safety/events")
+def get_security_events(hours: int = 24, founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT event_type, ip_address, details, severity, blocked, created FROM security_events WHERE created > NOW() - INTERVAL '%s hours' ORDER BY created DESC LIMIT 100", (hours,))
+            events = [{"type": r[0], "ip": r[1], "details": r[2], "severity": r[3], "blocked": r[4], "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]
+    return {"events": events}
+
+@app.get("/api/admin/safety/blocked-ips")
+def get_blocked_ips(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT ip_address, reason, blocked_until, created FROM blocked_ips WHERE blocked_until > NOW() ORDER BY created DESC")
+            ips = [{"ip": r[0], "reason": r[1], "blocked_until": r[2].isoformat() if r[2] else None, "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
+    return {"blocked_ips": ips}
+
+@app.delete("/api/admin/safety/unblock-ip/{ip}")
+def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM blocked_ips WHERE ip_address=%s", (ip,))
+            conn.commit()
+    return {"ok": True}
+
+# Health
 @app.get("/health")
 def health_check():
-    db_status = "disconnected"
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT 1")
                 db_status = "connected"
-    except Exception as e:
-        logger.error(f"Health DB check error: {e}")
-    ai_status = "connected" if (settings.GROQ_API_KEY or settings.OPENROUTER_API_KEY) else "disconnected"
-    providers = []
-    if settings.GROQ_API_KEY: providers.append("groq")
-    if settings.OPENROUTER_API_KEY: providers.append("openrouter")
-    return {
-        "status": "ok",
-        "version": "34.1",
-        "edition": "Token‑Only",
-        "database": db_status,
-        "ai": ai_status,
-        "providers": providers,
-        "moderation": settings.ENABLE_MODERATION,
-        "security_monitor": settings.ENABLE_SECURITY_MONITOR
-    }
+    except: db_status = "disconnected"
+    return {"status": "ok", "version": "34.2", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
     return JSONResponse(content={
-        "name": "CapitanAI by CLOSEAI",
-        "short_name": "CAPITAN AI",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#0f172a",
-        "theme_color": "#0b6d8c",
-        "icons": [
-            {"src": "https://capitan-ai-jxu8.onrender.com/icon-192.png", "sizes": "192x192", "type": "image/png"},
-            {"src": "https://capitan-ai-jxu8.onrender.com/icon-512.png", "sizes": "512x512", "type": "image/png"}
-        ]
+        "name": "CAPITAN AI", "short_name": "CAPITAN AI", "start_url": "/",
+        "display": "standalone", "background_color": "#0f172a", "theme_color": "#0b6d8c"
     })
-
-@app.get("/icon-192.png")
-async def icon_192():
-    return FileResponse("static/icon-192x192.png", media_type="image/png")
-
-@app.get("/icon-512.png")
-async def icon_512():
-    return FileResponse("static/icon-512x512.png", media_type="image/png")
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "34.1", "edition": "Token‑Only"}
+    return {"name": "CAPITAN AI", "version": "34.2"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v34.1 — Token‑Only Edition")
-    print(f"🧠 Full implementation – no cuts")
-    print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
-    print(f"📍 Backend: 0.0.0.0:{port}")
-    print(f"{'='*70}\n")
     uvicorn.run(app, host="0.0.0.0", port=port)
