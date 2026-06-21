@@ -1008,6 +1008,7 @@ async def me(request: Request):
         "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
     }
 
+
 @app.get("/api/auth/validate")
 async def validate_token(request: Request):
     user = get_current_user(request)
@@ -1022,6 +1023,24 @@ async def validate_token(request: Request):
         "token_balance": user["token_balance"],
         "is_admin": user.get("is_admin", False),
         "reasoning_depth": user["reasoning_depth"]
+
+ @app.post("/api/developer/keys")
+def create_api_key(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    try:
+        raw_key = "cap_" + secrets.token_hex(32)
+        key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
+        prefix = raw_key[:10] + "..."
+        scopes = "chat,research,portfolio"
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, scopes) VALUES (%s,%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user["id"], key_hash, prefix, scopes))
+                conn.commit()
+        return {"key": raw_key, "prefix": prefix, "scopes": scopes}
+    except Exception as e:
+        logger.error(f"API key creation failed for user {user['id']}: {e}")
+        raise HTTPException(500, "Could not create API key")
     }
 
 @app.post("/api/auth/update-profile")
