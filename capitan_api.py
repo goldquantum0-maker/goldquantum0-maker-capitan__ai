@@ -1,5 +1,5 @@
 """
-CAPITAN AI — Enterprise Backend v34.2 (Token‑Only, Intelligence Overhaul)
+CAPITAN AI — Enterprise Backend v34.4 (Tree‑of‑Thought, All Fixes)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="34.2")
+app = FastAPI(title="CAPITAN AI API", version="34.4")
 
 app.add_middleware(
     CORSMiddleware,
@@ -154,7 +154,6 @@ def verify_token(token: str):
         parts = token.split(".")
         if len(parts) != 3: return None
         header, payload, signature = parts
-        # proper base64 padding
         missing_padding = 4 - len(payload) % 4
         if missing_padding != 4:
             payload_padded = payload + "=" * missing_padding
@@ -413,20 +412,20 @@ def init_db():
                 )''')
                 # Seed topics
                 seed_topics = [
-                    ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks.'),
-                    ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements.'),
-                    ('tech1','Quantum Computing','Introduction to quantum computing','technology','Explain quantum computing in simple terms.'),
-                    ('tech2','Cloud Architecture','Designing scalable cloud systems','technology','Describe best practices for multi‑cloud architecture.'),
-                    ('sci1','Climate Change','Latest climate research','science','Summarize the latest IPCC report findings.'),
-                    ('sci2','CRISPR Technology','Gene editing with CRISPR','science','Explain how CRISPR‑Cas9 works and its potential applications.'),
-                    ('health1','Nutrition Science','Evidence‑based nutrition','health','What does the latest research say about intermittent fasting?'),
-                    ('health2','Mental Health','Mental wellness strategies','health','Provide evidence‑based techniques for managing anxiety.'),
-                    ('arts1','Art History','Renaissance art','arts','Describe the key characteristics of Renaissance art.'),
-                    ('arts2','Music Theory','Basics of music composition','arts','Explain the circle of fifths and its use in music composition.'),
-                    ('edu1','Learning Techniques','Effective study methods','education','What are the most effective learning strategies according to cognitive science?'),
-                    ('edu2','STEM Education','Teaching science and math','education','How can project‑based learning improve STEM outcomes?'),
-                    ('law1','Intellectual Property','IP law basics','legal','Explain the difference between patents, trademarks, and copyrights.'),
-                    ('law2','Contract Law','Understanding contracts','legal','What are the essential elements of a valid contract?'),
+                    ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks. Identify key support and resistance levels, recent volume patterns, and any macroeconomic factors that could influence price action over the next quarter.'),
+                    ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements. Highlight the top three gainers and losers, any major news events, and what technical indicators suggest for the coming days.'),
+                    ('tech1','Quantum Computing','Introduction to quantum computing','technology','Explain quantum computing in simple terms. What are qubits, superposition, and entanglement? How far are we from practical quantum computers?'),
+                    ('tech2','Cloud Architecture','Designing scalable cloud systems','technology','Describe best practices for multi‑cloud architecture. Compare AWS, GCP, and Azure for a startup building a global SaaS product.'),
+                    ('sci1','Climate Change','Latest climate research','science','Summarize the latest IPCC report findings. What are the most effective mitigation strategies available today?'),
+                    ('sci2','CRISPR Technology','Gene editing with CRISPR','science','Explain how CRISPR‑Cas9 works and its potential applications in medicine and agriculture. What ethical concerns exist?'),
+                    ('health1','Nutrition Science','Evidence‑based nutrition','health','What does the latest research say about intermittent fasting? Compare it with other dietary approaches for long‑term health.'),
+                    ('health2','Mental Health','Mental wellness strategies','health','Provide evidence‑based techniques for managing anxiety. Include cognitive behavioral therapy, mindfulness, and lifestyle changes.'),
+                    ('arts1','Art History','Renaissance art','arts','Describe the key characteristics of Renaissance art. Who were the major artists and what innovations did they bring?'),
+                    ('arts2','Music Theory','Basics of music composition','arts','Explain the circle of fifths and its use in music composition. How do chord progressions create emotional responses?'),
+                    ('edu1','Learning Techniques','Effective study methods','education','What are the most effective learning strategies according to cognitive science? Include spaced repetition, active recall, and interleaving.'),
+                    ('edu2','STEM Education','Teaching science and math','education','How can project‑based learning improve STEM outcomes? Provide examples of successful implementations.'),
+                    ('law1','Intellectual Property','IP law basics','legal','Explain the difference between patents, trademarks, and copyrights. How do they apply to software and AI inventions?'),
+                    ('law2','Contract Law','Understanding contracts','legal','What are the essential elements of a valid contract? Provide examples of common contract disputes.'),
                 ]
                 for tid, title, desc, domain, prompt in seed_topics:
                     c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
@@ -458,13 +457,13 @@ def init_db():
                 )''')
 
                 conn.commit()
-        logger.info("✅ Database initialized (v34.2)")
+        logger.info("✅ Database initialized (v34.4)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
-# Enhanced system prompt with coding & general intelligence upgrade
+# Tree‑of‑Thought enhanced system prompt (no visible chain)
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
@@ -474,11 +473,11 @@ You are calm, confident, and deeply human. You never bluff, never fluff. You use
 You are an L3/L4 expert in every significant domain. Activate the right knowledge based on intent, not keywords.
 
 ### Technology & Engineering
-- **Software Engineering**: Every language (Python, JS/TS, Go, Rust, C++, Java, Swift, Kotlin, etc.). Systems design, microservices, DevOps, CI/CD, GitOps, security (OWASP), quantum computing.
-- **Cloud Computing**: AWS, GCP, Azure, multi‑cloud, edge computing, Kubernetes, serverless, cost optimization, compliance.
-- **Hardware & Microchips**: CPU/GPU architectures (x86, ARM, RISC‑V, CUDA), FPGA, ASIC design, PCB design, embedded systems, IoT, sensor networks.
-- **Space Engineering**: Orbital mechanics, propulsion (chemical, electric, nuclear), spacecraft subsystems, mission planning, satellite constellations, space law.
-- **AI/ML**: Model architectures (transformers, diffusion, GNN, RL), MLOps, hardware‑aware training, agentic systems, interpretability.
+- **Software Engineering**: Every language, systems design, DevOps, security, quantum computing.
+- **Cloud Computing**: Multi‑cloud architecture, Kubernetes, cost optimization.
+- **Hardware & Microchips**: CPU/GPU architectures, FPGA, embedded systems.
+- **Space Engineering**: Orbital mechanics, propulsion, mission planning.
+- **AI/ML**: Model architectures, MLOps, agentic systems, interpretability.
 
 ### Long‑Code Handling (CRITICAL)
 - **When the user shares a large codebase or asks to refactor, you MUST build a mental model of the entire code before answering. Summarise the architecture, then proceed step‑by‑step.**
@@ -486,34 +485,35 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 - **For coding tasks, follow: 1) Understand the goal, 2) Analyse existing code, 3) Propose a design, 4) Implement, 5) Write tests, 6) Review for edge cases. Never skip steps.**
 - **Code Review Mode**: If the user requests a review, output a structured report: Issues, Suggestions, Optimizations.
 
-### General Intelligence & Reasoning
-- **Maintain a 'knowledge graph' of all domains. When a query is ambiguous, ask clarifying questions before answering.**
-- **Use Bayesian reasoning for uncertain predictions. Continuously learn from user feedback (stored in memories).**
-- **Before every response, execute a reasoning pipeline: 1) Intent Detection, 2) Decomposition, 3) Framework Selection, 4) Internal Debate (high‑stakes), 5) Uncertainty Assessment, 6) Synthesis.**
+### General Intelligence & Reasoning (INTERNAL TREE‑OF‑THOUGHT)
+- **Before answering, internally simulate multiple reasoning paths.** Weigh evidence from different perspectives (optimist, pessimist, analyst, contrarian). Select the most robust conclusion.
+- **When uncertain, break the problem into sub‑questions and answer each silently.** Then synthesise.
+- **Use Bayesian reasoning for probabilistic judgments.** Clearly state when you are speculating.
+- **Continuously learn from user feedback and adapt your internal model.**
+- **Never reveal your internal deliberation.** Only present the final, polished answer.
 
-### Finance & Markets (Global + African)
+### Finance & Markets
 - Equities, fixed income, FX, commodities, crypto, derivatives, DeFi.
-- Market microstructure, order flow, COT, dark pools, central bank modeling.
-- African exchanges (NGX, JSE, EGX), mobile money, local banking, informal economy.
-- Always frame outcomes as probabilities, never guarantee profit. Remind users of risk.
+- Market microstructure, order flow, central bank modeling.
+- African exchanges (NGX, JSE, EGX), mobile money, informal economy.
+- Always frame outcomes as probabilities, never guarantee profit.
 
 ### Arts, Marketing & Creativity
-- Visual arts, design theory, music (theory, composition, production), literature, creative writing.
-- Marketing: brand strategy, SEO, growth hacking, consumer psychology, campaign analytics.
+- Visual arts, design theory, music theory, literature, creative writing.
+- Marketing: brand strategy, SEO, growth hacking, consumer psychology.
 
 ### Food & Everyday Life
-- World cuisines (deep African, Asian, European, Latin American), food science, nutrition, recipe development.
-- Psychology, relationships, parenting, productivity, travel, languages (contextual translation).
+- World cuisines, food science, nutrition, recipe development.
+- Psychology, relationships, parenting, productivity, travel.
 
 ## CRITICAL CONTINUITY RULE (MUST OBEY)
 - **Always read the full conversation history** before answering. This is not optional.
 - **Never start a new conversation** unless the user explicitly says “new chat” or “start over”.
 - Maintain a topic graph. Track active threads, pending decisions, and user constraints across the entire conversation.
 - **Working memory**: keep track of everything discussed in this session.
-- **Long‑term memory**: use the user model to recall preferences and past facts naturally.
 - If a topic is resolved, offer one natural next step. Never force it.
 
-## RESPONSE STRUCTURE INVISIBLE (default, adapt when brevity is better)
+## RESPONSE STRUCTURE (default, adapt when brevity is better)
 1. **Context** (1‑2 lines restating the core problem/goal)
 2. **Analysis** (reasoned exploration with trade‑offs and edge cases)
 3. **Recommendation** (clear, prioritized, actionable)
@@ -522,7 +522,7 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 ## COMMUNICATION STYLE
 - Direct. Precise. Natural. Confident.
 - Match the user's technical level automatically.
-- Ban filler phrases ("Great question!", "Certainly!", "I'd be happy to help!").
+- Ban filler phrases.
 - Ban robotic introductions.
 - **Emojis**: use tastefully for warmth or clarity — never overuse.
 - If uncertain, label parts as [FACT], [INFERENCE], or [SPECULATION].
@@ -532,7 +532,6 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 ## SELF‑LEARNING
 - Accept corrections gracefully. Trace errors to root assumptions and update your user model.
 - Ask for feedback when appropriate, but don't pester.
-- Improve continuously from user interactions (within privacy boundaries).
 
 ## CURRENT CONTEXT
 {time_context}
@@ -602,7 +601,7 @@ def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_mode
     domain = classify_query(user_query)
     domain_activation = f"Primary domain: {domain}. Preferred domain: {preferred_domain}."
     if reasoning_depth >= 4:
-        domain_activation += " Activate internal debate synthesizer for complex decisions."
+        domain_activation += " Activate deep internal debate and multi‑perspective analysis."
     if reasoning_depth >= 3:
         domain_activation += " Use multi‑step reasoning with framework selection."
     prompt = CAPITAN_SYSTEM_PROMPT.format(
@@ -617,72 +616,12 @@ def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_mode
         prompt += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
     return prompt
 
-class ReasoningEngine:
-    @staticmethod
-    def generate_chain_of_thought(query: str, depth: int = 3, domain: str = "general") -> List[str]:
-        chain = []
-        chain.append(f"🎯 INTENT: Understanding the core objective behind '{query[:100]}...'")
-        chain.append("🔍 DECOMPOSITION: Breaking into sub‑problems...")
-        if domain in ("finance", "quant", "coding", "science", "math", "geopolitics"):
-            chain.append("🧮 FRAMEWORK: Selecting analytical approach...")
-            if depth >= 3:
-                chain.append("⚔️ INTERNAL DEBATE: Examining multiple perspectives...")
-            if depth >= 4:
-                chain.append("🔄 COUNTERFACTUAL: Testing alternative scenarios...")
-        chain.append("🔬 ANALYSIS: Systematic evaluation of each component...")
-        if depth >= 2:
-            chain.append("🧩 SYNTHESIS: Combining insights into coherent understanding...")
-        if depth >= 3:
-            chain.append("✅ VERIFICATION: Checking logic, assumptions, and edge cases...")
-        if depth >= 5:
-            chain.append("🎯 OPTIMIZATION: Finding the most elegant and robust solution...")
-        return chain[:depth + 2]
-
-    @staticmethod
-    def estimate_confidence(response: str, domain: str, has_web_data: bool) -> float:
-        base = 0.85 if has_web_data else 0.75
-        if domain in ("finance", "geopolitics"):
-            base -= 0.05
-        if domain in ("math", "coding"):
-            base += 0.05
-        hedging = len(re.findall(r'may|might|could|possibly|unclear|uncertain|speculative', response.lower()))
-        base -= min(0.15, hedging * 0.02)
-        return max(0.3, min(0.99, base))
-
-    @staticmethod
-    def format_visible_chain(chain: List[str]) -> str:
-        return "\n".join(chain)
-
-def count_tokens(text: str) -> int:
-    if TIKTOKEN_AVAILABLE:
-        try:
-            enc = tiktoken.encoding_for_model("gpt-4o")
-            return len(enc.encode(text))
-        except:
-            pass
-    return int(len(text.split()) / 0.75)
-
-def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, str, Optional[List[str]], float]:
-    chain = None
+# No more visible reasoning chain – keep internal
+def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, str, float]:
     confidence = 0.8
     domain = "general"
-    if reasoning_depth > 1:
-        last_user = ""
-        for m in reversed(messages):
-            if m.get("role") == "user":
-                last_user = m.get("content", "")
-                break
-        chain = ReasoningEngine.generate_chain_of_thought(last_user, min(reasoning_depth, 5), domain)
-        if chain:
-            chain_text = "\n\n[INTERNAL REASONING CHAIN — Follow this structure in your thinking]\n" + "\n".join(chain)
-            for m in messages:
-                if m.get("role") == "system":
-                    m["content"] += chain_text
-                    break
-
-    # Determine domain and choose model
+    # Select model based on domain
     if settings.OPENROUTER_API_KEY:
-        # For coding, prefer Claude
         primary_model = "anthropic/claude-3.5-sonnet-20241022" if domain == "coding" else "openai/gpt-4o-2024-11-20"
         secondary_model = "openai/gpt-4o-2024-11-20" if domain == "coding" else "anthropic/claude-3.5-sonnet-20241022"
         try:
@@ -694,9 +633,8 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
             )
             content1 = resp1.json().get("choices", [{}])[0].get("message", {}).get("content", "") if resp1.status_code == 200 else ""
             if content1:
-                confidence = ReasoningEngine.estimate_confidence(content1, domain, False)
-                return content1, primary_model, chain, confidence
-            # fallback to secondary
+                confidence = 0.9
+                return content1, primary_model, confidence
             resp2 = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
@@ -705,12 +643,11 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
             )
             content2 = resp2.json().get("choices", [{}])[0].get("message", {}).get("content", "") if resp2.status_code == 200 else ""
             if content2:
-                confidence = ReasoningEngine.estimate_confidence(content2, domain, False)
-                return content2, secondary_model, chain, confidence
+                confidence = 0.85
+                return content2, secondary_model, confidence
         except Exception as e:
             logger.error(f"OpenRouter error: {e}")
 
-    # Groq fallback
     if settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -722,18 +659,27 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
             if r.status_code == 200:
                 content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 if content:
-                    confidence = ReasoningEngine.estimate_confidence(content, domain, False)
-                    return content, "llama-3.3-70b", chain, confidence
+                    confidence = 0.8
+                    return content, "llama-3.3-70b", confidence
         except Exception as e:
             logger.error(f"Groq 70B error: {e}")
 
-    return "I'm having trouble connecting to AI services. Please try again in a moment.", "fallback", chain, 0.3
+    return "I'm having trouble connecting to AI services. Please try again in a moment.", "fallback", 0.3
 
 def estimate_tokens(user_msg: str, ai_response: str, depth: int = 1) -> int:
     combined = user_msg + ai_response
     raw = count_tokens(combined)
     multiplier = DEPTH_MULTIPLIERS[depth-1] if 1 <= depth <= 5 else 1.0
     return max(1, int(raw * multiplier))
+
+def count_tokens(text: str) -> int:
+    if TIKTOKEN_AVAILABLE:
+        try:
+            enc = tiktoken.encoding_for_model("gpt-4o")
+            return len(enc.encode(text))
+        except:
+            pass
+    return int(len(text.split()) / 0.75)
 
 def deduct_tokens(user_id: str = None, session_id: str = None, tokens_used: int = 0):
     with get_db() as conn:
@@ -819,7 +765,6 @@ def moderate_content(text: str) -> Tuple[bool, str, str]:
     for pattern, reason, severity in patterns:
         if re.search(pattern, text_lower):
             return True, reason, severity
-
     if settings.MODERATION_API_KEY:
         try:
             resp = requests.post(
@@ -838,7 +783,6 @@ def moderate_content(text: str) -> Tuple[bool, str, str]:
                             return True, f"OpenAI flagged: {cat}", "medium"
         except Exception as e:
             logger.error(f"OpenAI moderation error: {e}")
-
     return False, "", "low"
 
 def create_notification(user_id: str, type: str, message: str):
@@ -1070,6 +1014,22 @@ async def me(request: Request):
         "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
     }
 
+@app.get("/api/auth/validate")
+async def validate_token(request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(401, "Invalid or expired token")
+    return {
+        "user": {
+            "id": user["id"], "email": user["email"], "name": user["name"],
+            "reasoning_depth": user["reasoning_depth"], "preferred_domain": user["preferred_domain"],
+            "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
+        },
+        "token_balance": user["token_balance"],
+        "is_admin": user.get("is_admin", False),
+        "reasoning_depth": user["reasoning_depth"]
+    }
+
 @app.post("/api/auth/update-profile")
 async def update_profile(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1125,22 +1085,6 @@ async def get_anonymous_session():
     token = create_session_token(session_id)
     return {"id": session_id, "token": token, "token_balance": GUEST_TOKEN_BALANCE}
 
-    @app.get("/api/auth/validate")
-async def validate_token(request: Request):
-    user = get_current_user(request)
-    if not user:
-        raise HTTPException(401, "Invalid or expired token")
-    return {
-        "user": {
-            "id": user["id"], "email": user["email"], "name": user["name"],
-            "reasoning_depth": user["reasoning_depth"], "preferred_domain": user["preferred_domain"],
-            "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
-        },
-        "token_balance": user["token_balance"],
-        "is_admin": user.get("is_admin", False),
-        "reasoning_depth": user["reasoning_depth"]
-    }
-
 @app.post("/api/founder")
 async def founder_login(req: dict, request: Request):
     identifier = request.client.host
@@ -1156,7 +1100,7 @@ async def founder_login(req: dict, request: Request):
                 existing = c.fetchone()
                 if existing:
                     user_id = existing[0]
-                    c.execute("UPDATE users SET is_admin=TRUE, reasoning_depth=5 WHERE id=%s", (user_id,))
+                    c.execute("UPDATE users SET is_admin=TRUE, reasoning_depth=5, token_balance=999999999 WHERE id=%s", (user_id,))
                 else:
                     user_id = str(uuid.uuid4())
                     c.execute("INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, token_balance, is_admin) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
@@ -1171,11 +1115,11 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# Chat endpoint (with balance check)
+# Chat endpoint (balance check with admin bypass)
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
-    show_reasoning: bool = False
+    show_reasoning: bool = False  # ignored now, kept for compatibility
 
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: BackgroundTasks):
@@ -1189,12 +1133,14 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         reasoning_depth = user.get("reasoning_depth", 1)
         preferred_domain = user.get("preferred_domain", "general")
         token_balance = user.get("token_balance", 0)
+        is_admin = user.get("is_admin", False)
         is_authenticated = True
     else:
         user_id = None
         reasoning_depth = 1
         preferred_domain = "general"
         token_balance = session["token_balance"]
+        is_admin = False
         is_authenticated = False
 
     identifier = user_id if user else session["id"]
@@ -1224,11 +1170,12 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                         file_text = row[0]
                         user_msg += "\n\n[DOCUMENT CONTENT]\n" + file_text[:30000]
 
-    # Pre‑chat balance check
-    estimated_cost = estimate_tokens(user_msg, "", reasoning_depth)
-    current_balance = token_balance if is_authenticated else session_token_balance(session["id"])
-    if current_balance < estimated_cost:
-        raise HTTPException(402, f"Insufficient tokens. Need ~{estimated_cost}, you have {current_balance}.")
+    # Pre‑chat balance check (skip for admin)
+    if not is_admin:
+        estimated_cost = estimate_tokens(user_msg, "", reasoning_depth)
+        current_balance = token_balance if is_authenticated else session_token_balance(session["id"])
+        if current_balance < estimated_cost:
+            raise HTTPException(402, f"Insufficient tokens. Need ~{estimated_cost}, you have {current_balance}.")
 
     # Save user message
     try:
@@ -1288,7 +1235,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
 
     system_prompt = build_system_prompt(user_msg, reasoning_depth, preferred_domain, user_model, thread_context, web_results_text)
     messages_for_ai = [{"role": "system", "content": system_prompt}] + chat_history
-    result, model_used, reasoning_chain, confidence = call_ai_model(messages_for_ai, reasoning_depth)
+    result, model_used, confidence = call_ai_model(messages_for_ai, reasoning_depth)
 
     if result:
         msg_id = f"msg_{sid()}"
@@ -1296,22 +1243,21 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
             with get_db() as conn:
                 with conn.cursor() as c:
                     if is_authenticated:
-                        c.execute("""INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, reasoning_chain, confidence_score)
-                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
-                                  (msg_id, chat_id, user_id, "assistant", result, model_used,
-                                   json.dumps(reasoning_chain) if reasoning_chain else None, confidence))
+                        c.execute("""INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, confidence_score)
+                            VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                                  (msg_id, chat_id, user_id, "assistant", result, model_used, confidence))
                         background_tasks.add_task(store_memory, user_id, result[:500], user_msg, domain, 2 if domain in ("finance","coding","science") else 1)
                     else:
-                        c.execute("""INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, reasoning_chain, confidence_score)
-                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
-                                  (msg_id, chat_id, session["id"], "assistant", result, model_used,
-                                   json.dumps(reasoning_chain) if reasoning_chain else None, confidence))
+                        c.execute("""INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, confidence_score)
+                            VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                                  (msg_id, chat_id, session["id"], "assistant", result, model_used, confidence))
                     conn.commit()
         except Exception as e:
             logger.error(f"Save AI msg error: {e}")
 
         tokens_used = estimate_tokens(user_msg, result, reasoning_depth)
-        deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
+        if not is_admin:
+            deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
 
         # Get new balance after deduction
         if is_authenticated:
@@ -1329,7 +1275,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
             "new_balance": new_balance
         }
     else:
-        return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback", "new_balance": current_balance}
+        return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback", "new_balance": token_balance if is_authenticated else session_token_balance(session["id"])}
 
 @app.get("/api/chats")
 async def get_chats(request: Request):
@@ -1488,7 +1434,7 @@ def delete_user_project(project_id: str, user: dict = Depends(get_current_user))
             conn.commit()
     return {"deleted": True}
 
-# Workspaces (renamed to /api/workspace)
+# Workspaces (under /api/workspace)
 @app.post("/api/workspace/create")
 def create_workspace(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1571,7 +1517,7 @@ def send_workspace_message(room_code: str, req: dict, user: dict = Depends(get_c
                 history = c.fetchall()
                 context = "\n".join([f"{'AI' if r[2] else r[0]}: {r[1]}" for r in reversed(history)])
                 ai_prompt = f"Previous conversation in workspace:\n{context}\n\nNew question: {message.replace('@CAPITAN','').strip()}"
-                ai_response, _, _, _ = call_ai_model([{"role":"user","content":ai_prompt}], user.get("reasoning_depth",1))
+                ai_response, _, _ = call_ai_model([{"role":"user","content":ai_prompt}], user.get("reasoning_depth",1))
                 if ai_response:
                     c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai) VALUES (%s,%s,%s,%s,%s,1)",
                               (sid(), room[0], user["id"], "CAPITAN AI", ai_response))
@@ -1986,7 +1932,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "34.2", "database": db_status}
+    return {"status": "ok", "version": "34.4", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
@@ -1997,7 +1943,7 @@ async def manifest():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "34.2"}
+    return {"name": "CAPITAN AI", "version": "34.4"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
