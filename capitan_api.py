@@ -1125,6 +1125,22 @@ async def get_anonymous_session():
     token = create_session_token(session_id)
     return {"id": session_id, "token": token, "token_balance": GUEST_TOKEN_BALANCE}
 
+    @app.get("/api/auth/validate")
+async def validate_token(request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(401, "Invalid or expired token")
+    return {
+        "user": {
+            "id": user["id"], "email": user["email"], "name": user["name"],
+            "reasoning_depth": user["reasoning_depth"], "preferred_domain": user["preferred_domain"],
+            "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
+        },
+        "token_balance": user["token_balance"],
+        "is_admin": user.get("is_admin", False),
+        "reasoning_depth": user["reasoning_depth"]
+    }
+
 @app.post("/api/founder")
 async def founder_login(req: dict, request: Request):
     identifier = request.client.host
