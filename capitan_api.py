@@ -1,8 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v34.0 (Token‑Only Edition)
+CAPITAN AI — Enterprise Backend v34.1 (Token‑Only Edition)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-No tiers, one plan, pay‑as‑you‑go tokens, depth multiplier.
-Complete implementation – no cuts, no missing components.
+Fixed: registration token balance, founder admin flag, removed tier remnants.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -20,7 +19,7 @@ from fastapi.responses import JSONResponse, Response, FileResponse
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
-# Optional tiktoken for accurate token counting
+# Optional tiktoken
 try:
     import tiktoken
     TIKTOKEN_AVAILABLE = True
@@ -50,11 +49,11 @@ class Settings(BaseSettings):
     FINNHUB_API_KEY: str = ""
     ETHERSCAN_API_KEY: str = ""
     FOUNDER_EXTRA_PROMPT: str = ""
-    MODERATION_API_KEY: str = ""          # OpenAI API key for moderation (optional)
+    MODERATION_API_KEY: str = ""
     ENABLE_MODERATION: bool = True
     ENABLE_SECURITY_MONITOR: bool = True
-    PRIVACY_POLICY_TEXT: str = ""         # Override default privacy
-    TERMS_CONDITIONS_TEXT: str = ""       # Override default terms
+    PRIVACY_POLICY_TEXT: str = ""
+    TERMS_CONDITIONS_TEXT: str = ""
 
     class Config:
         env_file = ".env"
@@ -62,7 +61,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="34.0")
+app = FastAPI(title="CAPITAN AI API", version="34.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -178,13 +177,13 @@ def get_current_user(request: Request):
             with conn.cursor() as c:
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
                 if not c.fetchone(): return None
-                c.execute("SELECT id, email, name, reasoning_depth, preferred_domain, token_balance FROM users WHERE id = %s", (user_id,))
+                c.execute("SELECT id, email, name, reasoning_depth, preferred_domain, token_balance, is_admin FROM users WHERE id = %s", (user_id,))
                 row = c.fetchone()
                 if row:
                     return {
                         "id": row[0], "email": row[1], "name": row[2] or row[1].split('@')[0],
                         "reasoning_depth": row[3] or 1, "preferred_domain": row[4] or "general",
-                        "token_balance": row[5] or 0
+                        "token_balance": row[5] or 0, "is_admin": row[6] or False
                     }
     except Exception as e:
         logger.error(f"get_current_user error: {e}")
@@ -220,13 +219,9 @@ async def get_current_session(request: Request):
         logger.error(f"get_current_session error: {e}")
     raise HTTPException(401, "Session not found")
 
-# Founder only (keep for admin)
+# Founder only – now uses is_admin flag
 def founder_only(user: dict = Depends(get_current_user)):
-    # Since we no longer have tier, we still have a founder key mechanism.
-    # We'll use the founder key to promote a user to admin status.
-    # We'll keep a special email 'founder@capitan.ai' or a flag in DB.
-    # For simplicity, we check if email is 'founder@capitan.ai'
-    if not user or user.get("email") != "founder@capitan.ai":
+    if not user or not user.get("is_admin", False):
         raise HTTPException(403, "Founder access required")
     return user
 
@@ -242,12 +237,10 @@ WALLETS = {
     "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
     "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
 }
-
 TOKEN_WALLETS = {
     "BTC": "bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2",
     "ETH": "0x28c18922072f904f91499A603d7AF8F9C57aDD8b"
 }
-
 TOKEN_PACKAGES = [
     {"amount": 5,   "tokens": 5000},
     {"amount": 10,  "tokens": 10000},
@@ -255,7 +248,6 @@ TOKEN_PACKAGES = [
     {"amount": 50,  "tokens": 70000},
     {"amount": 100, "tokens": 150000}
 ]
-
 ENTERPRISE_TOKEN_PACKAGES = [
     {"amount": 200, "tokens": 320000},
     {"amount": 500, "tokens": 850000},
@@ -266,7 +258,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users (no tier column)
+                # Users (with is_admin)
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -299,12 +291,12 @@ def init_db():
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS msg_reset_date")
 
-                # User sessions (JWT mapping)
+                # User sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     token TEXT UNIQUE NOT NULL, expires_at TIMESTAMP, created_at TIMESTAMP DEFAULT NOW()
                 )''')
-                # Chats & messages (unchanged)
+                # Chats
                 c.execute('''CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, title TEXT, topic_thread TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
@@ -317,7 +309,7 @@ def init_db():
                 )''')
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS confidence_score REAL")
-                # Memories (unchanged)
+                # Memories
                 c.execute('''CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY, memory_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     content TEXT, query TEXT, domain TEXT, importance INTEGER DEFAULT 1,
@@ -327,7 +319,7 @@ def init_db():
                     c.execute("CREATE EXTENSION IF NOT EXISTS vector")
                     c.execute("ALTER TABLE memories ADD COLUMN IF NOT EXISTS embedding vector(1536)")
                 except: pass
-                # Portfolio (unchanged)
+                # Portfolio
                 c.execute('''CREATE TABLE IF NOT EXISTS library_items (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT, content TEXT, folder TEXT DEFAULT 'General', tags JSONB DEFAULT '[]',
@@ -338,14 +330,14 @@ def init_db():
                                    ("attachments", "JSONB DEFAULT '[]'"), ("pinned", "BOOLEAN DEFAULT FALSE"),
                                    ("updated", "TIMESTAMP DEFAULT NOW()"), ("chat_id", "TEXT")]:
                     c.execute(f"ALTER TABLE library_items ADD COLUMN IF NOT EXISTS {col} {dtype}")
-                # Uploaded files (unchanged)
+                # Uploaded files
                 c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     workspace_id TEXT, filename TEXT, original_name TEXT, size INTEGER,
                     storage_path TEXT, extracted_text TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS workspace_id TEXT")
-                # Workspaces (unchanged but max_members no longer used)
+                # Workspaces
                 c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
                     id TEXT PRIMARY KEY, name TEXT, description TEXT DEFAULT '', topic TEXT DEFAULT '',
                     owner_id UUID REFERENCES users(id) ON DELETE CASCADE, room_code TEXT UNIQUE,
@@ -366,7 +358,7 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE workspace_messages ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
-                # Payments (unchanged)
+                # Payments
                 c.execute('''CREATE TABLE IF NOT EXISTS payments (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     txid TEXT UNIQUE, currency TEXT, amount REAL, status TEXT DEFAULT 'pending',
@@ -374,18 +366,18 @@ def init_db():
                 )''')
                 c.execute("ALTER TABLE payments DROP COLUMN IF EXISTS tier")
                 c.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'")
-                # Notifications (unchanged)
+                # Notifications
                 c.execute('''CREATE TABLE IF NOT EXISTS notifications (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     type TEXT, message TEXT, read BOOLEAN DEFAULT FALSE, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Content moderation (unchanged)
+                # Content moderation
                 c.execute('''CREATE TABLE IF NOT EXISTS content_flags (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, content TEXT, reason TEXT, severity TEXT DEFAULT 'low',
                     reviewed BOOLEAN DEFAULT FALSE, action TEXT DEFAULT 'none', created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Security events (unchanged)
+                # Security events
                 c.execute('''CREATE TABLE IF NOT EXISTS security_events (
                     id UUID PRIMARY KEY, event_type TEXT, ip_address TEXT, user_agent TEXT,
                     details TEXT, severity TEXT DEFAULT 'low', blocked BOOLEAN DEFAULT FALSE,
@@ -394,28 +386,28 @@ def init_db():
                 c.execute('''CREATE TABLE IF NOT EXISTS blocked_ips (
                     ip_address TEXT PRIMARY KEY, reason TEXT, blocked_until TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Feedback (unchanged)
+                # Feedback
                 c.execute('''CREATE TABLE IF NOT EXISTS feedback (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, rating INTEGER, correction TEXT, reason TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Activity log (unchanged)
+                # Activity log
                 c.execute('''CREATE TABLE IF NOT EXISTS activity_log (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     action TEXT, details TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Research topics (unchanged)
+                # Research topics
                 c.execute('''CREATE TABLE IF NOT EXISTS research_topics (
                     id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT,
                     domain TEXT, prompt TEXT, is_builtin BOOLEAN DEFAULT TRUE,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Research projects (unchanged)
+                # Research projects
                 c.execute('''CREATE TABLE IF NOT EXISTS research_projects (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT NOT NULL, description TEXT, chat_id TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Seed research topics (same)
+                # Seed topics
                 seed_topics = [
                     ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks. Identify key support and resistance levels, recent volume patterns, and any macroeconomic factors that could influence price action over the next quarter.'),
                     ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements. Highlight the top three gainers and losers, any major news events, and what technical indicators suggest for the coming days.'),
@@ -436,7 +428,7 @@ def init_db():
                     c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
                               (tid, title, desc, domain, prompt))
 
-                # Developer platform (unchanged)
+                # Developer platform
                 c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     key_hash TEXT UNIQUE NOT NULL, prefix TEXT NOT NULL,
@@ -462,13 +454,13 @@ def init_db():
                 )''')
 
                 conn.commit()
-        logger.info("✅ Database initialized (v34.0)")
+        logger.info("✅ Database initialized (v34.1)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
-# System prompt (unchanged – but we may adjust if needed)
+# System prompt (unchanged)
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
@@ -532,13 +524,13 @@ Before every response, you execute a reasoning pipeline:
 If the user asks "show your work," surface a cleaned version of your chain‑of‑thought.
 
 ## RESPONSE STRUCTURE (default, adapt when brevity is better)
-1. **Context** (1‑2 lines restating the core problem/goal)
-2. **Analysis** (reasoned exploration with trade‑offs and edge cases)
-3. **Recommendation** (clear, prioritized, actionable)
-4. **Next Step** (one optional, genuinely useful follow‑up)
+1. 1‑2 lines restating the core problem/goal.
+2. Reasoned exploration with trade‑offs and edge cases.
+3. Clear, prioritized, actionable.
+4. One optional, genuinely useful follow‑up.
 
 ## COMMUNICATION STYLE
-- Direct. Precise. Natural. Confident.
+- Direct. Warm. Precise. Natural. Confident.
 - Match the user's technical level automatically.
 - Ban filler phrases ("Great question!", "Certainly!", "I'd be happy to help!").
 - Ban robotic introductions.
@@ -673,25 +665,19 @@ class ReasoningEngine:
         return "\n".join(chain)
 
 def count_tokens(text: str) -> int:
-    """Accurate token counting using tiktoken if available, else fallback."""
     if TIKTOKEN_AVAILABLE:
         try:
             enc = tiktoken.encoding_for_model("gpt-4o")
             return len(enc.encode(text))
         except:
             pass
-    # fallback: approximate (words/0.75)
     return int(len(text.split()) / 0.75)
 
 def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, str, Optional[List[str]], float]:
-    """Always use best available model. Depth used for chain but not model selection."""
     chain = None
     confidence = 0.8
     domain = "general"
-    # Extract domain from messages? We'll just pass it as general for now.
-    # We'll generate chain if depth > 1
     if reasoning_depth > 1:
-        # try to get last user message for chain
         last_user = ""
         for m in reversed(messages):
             if m.get("role") == "user":
@@ -705,10 +691,9 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
                     m["content"] += chain_text
                     break
 
-    # Try ensemble (Pro Max equivalent) – if both keys available
+    # Try ensemble
     if settings.OPENROUTER_API_KEY:
         try:
-            # Claude 3.5
             resp1 = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
@@ -716,8 +701,6 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
                 timeout=45
             )
             content1 = resp1.json().get("choices", [{}])[0].get("message", {}).get("content", "") if resp1.status_code == 200 else ""
-
-            # GPT-4o
             resp2 = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
@@ -725,7 +708,6 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
                 timeout=45
             )
             content2 = resp2.json().get("choices", [{}])[0].get("message", {}).get("content", "") if resp2.status_code == 200 else ""
-
             if content1 and content2:
                 combined = f"**Claude 3.5 Sonnet Analysis:**\n{content1}\n\n---\n\n**GPT-4o Additional Insights:**\n{content2}"
                 confidence = ReasoningEngine.estimate_confidence(combined, domain, False)
@@ -739,7 +721,7 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
         except Exception as e:
             logger.error(f"Ensemble error: {e}")
 
-        # Fallback to Claude only if ensemble failed
+        # Fallback Claude
         try:
             r = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -755,7 +737,7 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
         except Exception as e:
             logger.error(f"Claude error: {e}")
 
-    # Fallback to Groq 70B if available
+    # Groq 70B
     if settings.GROQ_API_KEY:
         try:
             r = requests.post(
@@ -772,7 +754,7 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
         except Exception as e:
             logger.error(f"Groq 70B error: {e}")
 
-        # Last resort: Groq 8B
+        # Groq 8B
         try:
             r = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -791,7 +773,6 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
     return "I'm having trouble connecting to AI services. Please try again in a moment.", "fallback", chain, 0.3
 
 def estimate_tokens(user_msg: str, ai_response: str, depth: int = 1) -> int:
-    """Accurate token count multiplied by depth multiplier."""
     combined = user_msg + ai_response
     raw = count_tokens(combined)
     multiplier = DEPTH_MULTIPLIERS[depth-1] if 1 <= depth <= 5 else 1.0
@@ -857,7 +838,6 @@ def store_memory(user_id: str, content: str, query: str, domain: str, importance
         logger.error(f"store_memory error: {e}")
 
 def moderate_content(text: str) -> Tuple[bool, str, str]:
-    # First pass: regex patterns
     text_lower = text.lower()
     patterns = [
         (r'(hack|exploit|ddos|malware|ransomware|phish|keylog|botnet|crack)', 'Potential cyberattack', 'high'),
@@ -869,7 +849,6 @@ def moderate_content(text: str) -> Tuple[bool, str, str]:
         if re.search(pattern, text_lower):
             return True, reason, severity
 
-    # Optional second pass: OpenAI Moderation API
     if settings.MODERATION_API_KEY:
         try:
             resp = requests.post(
@@ -1009,9 +988,9 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         logger.error(f"File extraction error: {e}")
         return ''
 
-# ========================
+# =========================
 # Legal endpoints
-# ========================
+# =========================
 DEFAULT_PRIVACY = """
 <h2>Privacy Policy</h2>
 <p><strong>Effective Date:</strong> July 1, 2026</p>
@@ -1084,9 +1063,9 @@ async def get_terms():
     text = settings.TERMS_CONDITIONS_TEXT or DEFAULT_TERMS
     return {"text": text}
 
-# ========================
-# Auth endpoints (updated)
-# ========================
+# =========================
+# Auth endpoints
+# =========================
 class RegisterRequest(BaseModel): email: str; password: str; name: Optional[str] = None
 class LoginRequest(BaseModel): email: str; password: str
 
@@ -1126,7 +1105,8 @@ async def register(req: RegisterRequest):
                         "name": name,
                         "reasoning_depth": 1,
                         "preferred_domain": "general",
-                        "token_balance": REGISTER_TOKEN_BALANCE
+                        "token_balance": REGISTER_TOKEN_BALANCE,
+                        "is_admin": False
                     }
                 }
     except HTTPException:
@@ -1140,11 +1120,11 @@ async def login(req: LoginRequest, request: Request):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT id, email, password_hash, name, reasoning_depth, preferred_domain, token_balance FROM users WHERE email = %s", (req.email,))
+                c.execute("SELECT id, email, password_hash, name, reasoning_depth, preferred_domain, token_balance, is_admin FROM users WHERE email = %s", (req.email,))
                 user = c.fetchone()
                 if not user or not verify_password(req.password, user[2]):
                     raise HTTPException(401, "Invalid email or password")
-                user_id, email, _, name, reasoning_depth, preferred_domain, token_balance = user
+                user_id, email, _, name, reasoning_depth, preferred_domain, token_balance, is_admin = user
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
@@ -1159,7 +1139,8 @@ async def login(req: LoginRequest, request: Request):
                         "name": name or email.split('@')[0],
                         "reasoning_depth": reasoning_depth or 1,
                         "preferred_domain": preferred_domain or "general",
-                        "token_balance": token_balance or 0
+                        "token_balance": token_balance or 0,
+                        "is_admin": is_admin or False
                     }
                 }
     except HTTPException:
@@ -1260,14 +1241,14 @@ async def founder_login(req: dict, request: Request):
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=365)))
                 conn.commit()
                 log_activity(user_id, "founder_login", f"IP: {identifier}")
-                return {"verified": True, "token": token, "user": {"id": user_id, "name": "CAPITAN Founder", "email": "founder@capitan.ai", "reasoning_depth": 5, "preferred_domain": "general", "token_balance": 999999999}}
+                return {"verified": True, "token": token, "user": {"id": user_id, "name": "CAPITAN Founder", "email": "founder@capitan.ai", "reasoning_depth": 5, "preferred_domain": "general", "token_balance": 999999999, "is_admin": True}}
     except Exception as e:
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ========================
+# =========================
 # Chat endpoint (updated)
-# ========================
+# =========================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1288,7 +1269,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         is_authenticated = True
     else:
         user_id = None
-        reasoning_depth = 1  # guests default depth 1
+        reasoning_depth = 1
         preferred_domain = "general"
         token_balance = session["token_balance"]
         is_authenticated = False
@@ -1306,7 +1287,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     domain = classify_query(user_msg)
     web_search_needed = needs_web_search(user_msg)
 
-    # Check file upload reference
+    # File content extraction
     file_text = ""
     if "[Uploaded document:" in user_msg:
         fname_match = re.search(r'\[Uploaded document:\s*(.*?)\]', user_msg)
@@ -1367,7 +1348,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     thread_context = get_thread_context(chat_id, user_id if is_authenticated else None, session["id"] if not is_authenticated else None)
     user_model = get_user_model(user_id) if is_authenticated else "Anonymous user."
 
-    # Web search (always enabled)
+    # Web search
     web_results_text = ""
     if web_search_needed and settings.SERPAPI_KEY:
         try:
@@ -1468,9 +1449,9 @@ def delete_chat(chat_id: str, request: Request):
             conn.commit()
     return {"deleted": True}
 
-# ========================
+# =========================
 # Portfolio (unchanged)
-# ========================
+# =========================
 class PortfolioItemCreate(BaseModel):
     name: str
     content: str = ""
@@ -1526,9 +1507,9 @@ def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"deleted": True}
 
-# ========================
+# =========================
 # Research Hub (updated limits)
-# ========================
+# =========================
 @app.get("/api/research/topics")
 def get_research_topics(domain: Optional[str] = None):
     with get_db() as conn:
@@ -1573,9 +1554,9 @@ def delete_user_project(project_id: str, user: dict = Depends(get_current_user))
             conn.commit()
     return {"deleted": True}
 
-# ========================
+# =========================
 # Workspaces (updated limits)
-# ========================
+# =========================
 @app.post("/api/hub/rooms")
 def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1673,9 +1654,9 @@ def pin_message(room_code: str, message_id: str, user: dict = Depends(get_curren
             conn.commit()
     return {"ok": True}
 
-# ========================
-# Notifications (unchanged)
-# ========================
+# =========================
+# Notifications
+# =========================
 @app.get("/api/notifications")
 def get_notifications(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1694,9 +1675,9 @@ def mark_read(user: dict = Depends(get_current_user)):
             conn.commit()
     return {"ok": True}
 
-# ========================
-# Token Purchase (no upgrade)
-# ========================
+# =========================
+# Token Purchase
+# =========================
 @app.get("/api/tokens/wallets")
 def get_token_wallets():
     return {"wallets": TOKEN_WALLETS}
@@ -1799,9 +1780,9 @@ def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_
     else:
         return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
 
-# ========================
-# Feedback (unchanged)
-# ========================
+# =========================
+# Feedback
+# =========================
 class FeedbackRequest(BaseModel):
     message_id: str
     rating: int = Field(..., ge=1, le=5)
@@ -1818,9 +1799,9 @@ def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)
             conn.commit()
     return {"received": True}
 
-# ========================
-# File upload (updated max size)
-# ========================
+# =========================
+# File upload (max 60 MB)
+# =========================
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -1841,9 +1822,9 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
             conn.commit()
     return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
 
-# ========================
-# Founder admin (unchanged except no tier)
-# ========================
+# =========================
+# Founder admin (only is_admin)
+# =========================
 @app.get("/api/admin/dashboard")
 def admin_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -1915,9 +1896,9 @@ def admin_confirm_payment(payment_id: str, founder: dict = Depends(founder_only)
             conn.commit()
     return {"ok": True}
 
-# ========================
-# Safety (unchanged)
-# ========================
+# =========================
+# Safety
+# =========================
 @app.get("/api/admin/safety/dashboard")
 def safety_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -1944,7 +1925,6 @@ def review_flag(flag_id: str, req: dict, founder: dict = Depends(founder_only)):
             if action == "block_user":
                 c.execute("SELECT user_id FROM content_flags WHERE id=%s", (flag_id,))
                 user_id = c.fetchone()[0]
-                # Instead of tier, we can revoke tokens or deactivate
                 c.execute("UPDATE users SET token_balance=0 WHERE id=%s", (user_id,))
             conn.commit()
     return {"ok": True}
@@ -1983,9 +1963,9 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
-# ========================
+# =========================
 # Security middleware
-# ========================
+# =========================
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     if settings.ENABLE_SECURITY_MONITOR:
@@ -2006,9 +1986,9 @@ async def security_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# ========================
-# Developer endpoints (unchanged)
-# ========================
+# =========================
+# Developer endpoints
+# =========================
 @app.post("/api/developer/keys")
 def create_api_key(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -2087,9 +2067,9 @@ def get_api_usage(user: dict = Depends(get_current_user)):
             usage = [{"endpoint": r[0], "requests": r[1], "tokens": r[2]} for r in c.fetchall()]
     return {"usage": usage}
 
-# ========================
-# API key middleware (unchanged)
-# ========================
+# =========================
+# API key middleware
+# =========================
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     auth = request.headers.get("Authorization", "")
@@ -2117,9 +2097,9 @@ async def api_key_middleware(request: Request, call_next):
     else:
         return await call_next(request)
 
-# ========================
-# Health, manifest, icons (unchanged)
-# ========================
+# =========================
+# Health, manifest, icons
+# =========================
 @app.get("/health")
 def health_check():
     db_status = "disconnected"
@@ -2136,7 +2116,7 @@ def health_check():
     if settings.OPENROUTER_API_KEY: providers.append("openrouter")
     return {
         "status": "ok",
-        "version": "34.0",
+        "version": "34.1",
         "edition": "Token‑Only",
         "database": db_status,
         "ai": ai_status,
@@ -2170,12 +2150,12 @@ async def icon_512():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "34.0", "edition": "Token‑Only"}
+    return {"name": "CAPITAN AI", "version": "34.1", "edition": "Token‑Only"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v34.0 — Token‑Only Edition")
+    print(f"🚀 CAPITAN AI v34.1 — Token‑Only Edition")
     print(f"🧠 Full implementation – no cuts")
     print(f"🔐 JWT_SECRET & FOUNDER_KEY required from env")
     print(f"📍 Backend: 0.0.0.0:{port}")
