@@ -787,6 +787,8 @@ async function startGuestSession(){
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
             updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay(); renderMessages(); fetchNotifications();
             toast('Guest session started!');
+            // after setting state.tokenBalance
+            localStorage.setItem('tokenBalance', state.tokenBalance);
         }
     }catch(e){toast('Could not start session')}
 }
@@ -976,7 +978,20 @@ async function loadDeveloperTab(tab){
 }
 function openTokenPurchaseFromDev(amount,tokens){purchaseTokens(amount,tokens)}
 async function loadApiKeys(){try{let d=await apiCall('/api/developer/keys');state.apiKeys=d.keys||[]}catch(e){}}
-async function createApiKey(){try{let res=await apiCall('/api/developer/keys',{method:'POST',body:JSON.stringify({})});let content=document.getElementById('developerTabContent');content.innerHTML=`<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;"><strong>New API key (copy now):</strong><div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button><button class="btn btn-outline" onclick="loadDeveloperTab('keys')">Done</button></div>`}catch(e){toast('Failed')}}
+async function createApiKey() {
+    try {
+        let res = await apiCall('/api/developer/keys', { method: 'POST', body: JSON.stringify({}) });
+        let content = document.getElementById('developerTabContent');
+        content.innerHTML = `<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;">
+            <strong>Your new API key (copy now):</strong>
+            <div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div>
+            <button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button>
+            <button class="btn btn-outline" onclick="loadDeveloperTab('keys')">Done</button>
+        </div>`;
+    } catch(e) {
+        toast('Failed to generate key: ' + (e.message || 'Unknown error'));
+    }
+}
 async function revokeApiKey(id){if(!confirm('Revoke this key?'))return;try{await apiCall('/api/developer/keys/'+id,{method:'DELETE'});toast('Key revoked');await loadApiKeys();loadDeveloperTab('keys')}catch(e){toast('Failed')}}
 async function loadWebhooks(){try{let d=await apiCall('/api/developer/webhooks');state.webhooks=d.webhooks||[]}catch(e){}}
 function showCreateWebhook(){let url=prompt('Webhook URL:');if(!url)return;let events=prompt('Events (comma separated):','new_message');if(!events)return;createWebhook(url,events)}
