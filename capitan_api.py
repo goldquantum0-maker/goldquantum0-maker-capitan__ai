@@ -479,9 +479,11 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 - **AI/ML**: Model architectures, MLOps, agentic systems, interpretability.
 
 ### Long‑Code Handling (CRITICAL)
+- **When generating code that requires live financial data, always call the real API endpoint — never use dummy data unless the user explicitly asks for a mock.**
 - **When the user shares a large codebase or asks to refactor, you MUST build a mental model of the entire code before answering. Summarise the architecture, then proceed step‑by‑step.**
 - **Always provide complete, runnable code blocks. If a solution requires multiple files, output them as a zip‑like structure (filename + content).**
 - **For coding tasks, follow: 1) Understand the goal, 2) Analyse existing code, 3) Propose a design, 4) Implement, 5) Write tests, 6) Review for edge cases. Never skip steps.**
+- **After generating code, check whether it fully meets the user’s stated requirements. If it falls short, explicitly state the limitation and suggest how to complete it.**
 - **Code Review Mode**: If the user requests a review, output a structured report: Issues, Suggestions, Optimizations.
 
 ### General Intelligence & Reasoning (INTERNAL TREE‑OF‑THOUGHT)
@@ -511,20 +513,29 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 - Maintain a topic graph. Track active threads, pending decisions, and user constraints across the entire conversation.
 - **Working memory**: keep track of everything discussed in this session.
 - If a topic is resolved, offer one natural next step. Never force it.
+
 ## COMMUNICATION STYLE
 - Direct. Precise. Natural. Confident.
 - **Respond naturally, as a human expert would. Adapt your tone and structure to the user’s question. No pre‑set formats.**
-- Match the user's technical level automatically.
-- Ban filler phrases.
-- Ban robotic introductions.
+- **Match the user's technical level automatically. If the user identifies as a non‑expert in a domain, use analogies from their field (e.g., code analogies for engineers, cooking analogies for chefs).**
+- Ban filler phrases. Ban robotic introductions.
 - **Emojis**: use tastefully for warmth or clarity — never overuse.
 - If uncertain, label parts as [FACT], [INFERENCE], or [SPECULATION].
 - Never fabricate facts, statistics, sources, or capabilities.
 - Never assist with illegal, harmful, or unethical activities.
 
+## MACROECONOMIC & CURRENT‑EVENT REASONING
+- **When asked about current economic conditions, simulate a plausible snapshot of key indicators (inflation rate, central bank rate, GDP growth, geopolitical tension level) based on recent trends, even if you lack real‑time access. Always ground your advice in those numbers.**
+- **Clearly distinguish between historically verifiable data and forward‑looking projections.**
+
 ## SELF‑LEARNING
 - Accept corrections gracefully. Trace errors to root assumptions and update your user model.
 - Ask for feedback when appropriate, but don't pester.
+
+## PROACTIVE MEMORY
+- **You have access to a personal memory store that records key facts, preferences, and past interactions. Before answering, silently review any relevant memories that may aid the current query.**
+- **If a memory is relevant, weave it naturally into your response without explicitly mentioning the memory system.**
+{memory_context}
 
 ## CURRENT CONTEXT
 {time_context}
@@ -589,7 +600,7 @@ def classify_query(q: str) -> str:
 def needs_web_search(q: str) -> bool:
     return bool(re.search(r'latest|current|today|news|right now|recent|202[3-9]|live|real.time', q.lower()))
 
-def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_model, thread_context, web_results):
+def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_model, thread_context, web_results, memory_context=""):
     tc = get_time_context()
     domain = classify_query(user_query)
     domain_activation = f"Primary domain: {domain}. Preferred domain: {preferred_domain}."
@@ -598,6 +609,7 @@ def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_mode
     if reasoning_depth >= 3:
         domain_activation += " Use multi‑step reasoning with framework selection."
     prompt = CAPITAN_SYSTEM_PROMPT.format(
+        memory_context=memory_context,
         time_context=tc,
         user_model=user_model,
         thread_context=thread_context,
@@ -740,6 +752,51 @@ def get_user_model(user_id: str) -> str:
     except Exception as e:
         logger.error(f"get_user_model error: {e}")
         return "User model unavailable."
+
+def get_relevant_memories(user_id: str, query: str, limit: int = 3) -> List[str]:
+    """Retrieve relevant memories for a user based on domain/query similarity."""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                # Simple approach: find memories with similar domain or keyword match
+                c.execute("""
+                    SELECT content FROM memories
+                    WHERE user_id = %s
+                    ORDER BY created DESC
+                    LIMIT 100
+                """, (user_id,))
+                rows = c.fetchall()
+                if not rows:
+                    return []
+                # Quick keyword scoring
+                query_words = set(query.lower().split())
+                scored = []
+                for r in rows:
+                    content = r[0]
+                    if not content:
+                        continue
+                    words = set(content.lower().split())
+                    score = len(query_words & words)
+                    if score > 0:
+                        scored.append((score, content))
+                scored.sort(key=lambda x: x[0], reverse=True)
+                return [c for _, c in scored[:limit]]
+    except Exception as e:
+        logger.error(f"get_relevant_memories error: {e}")
+        return []
+
+def recall_user_preferences(user_id: str) -> str:
+    """Recall user's preferred domain and depth from memory."""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT preferred_domain, reasoning_depth FROM users WHERE id = %s", (user_id,))
+                row = c.fetchone()
+                if row:
+                    return f"Domain: {row[0]}. Depth: {row[1]}."
+    except:
+        pass
+    return ""
 
 def store_memory(user_id: str, content: str, query: str, domain: str, importance: int = 1):
     try:
@@ -1116,7 +1173,16 @@ class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
     show_reasoning: bool = False
-
+    
+    # --- after thread_context and user_model lines ---
+    memory_context = ""
+    if is_authenticated:
+        relevant_memories = get_relevant_memories(user_id, user_msg)
+        if relevant_memories:
+            memory_context = "Relevant past interactions:\n" + "\n".join([f"- {m[:200]}" for m in relevant_memories])
+            
+    # --- then pass to build_system_prompt ---
+    system_prompt = build_system_prompt(user_msg, reasoning_depth, preferred_domain, user_model, thread_context, web_results, memory_context)
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: BackgroundTasks):
     user = get_current_user(request)
@@ -1651,7 +1717,78 @@ def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)
                       (str(uuid.uuid4()), user["id"], req.message_id, req.rating, req.correction, req.reason))
             conn.commit()
     return {"received": True}
+from fastapi import Query
 
+@app.get("/api/portfolio/optimize")
+async def optimize_portfolio(
+    coins: str = Query("bitcoin,ethereum", description="Comma‑separated coin IDs"),
+    user: dict = Depends(get_current_user)
+):
+    if not user: raise HTTPException(401)
+    coin_ids = [c.strip() for c in coins.split(",") if c.strip()]
+    if len(coin_ids) < 2:
+        raise HTTPException(400, "At least two coins required")
+    try:
+        # Fetch 30 days of daily prices
+        import aiohttp, asyncio
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for cid in coin_ids:
+                url = f"https://api.coingecko.com/api/v3/coins/{cid}/market_chart?vs_currency=usd&days=30"
+                if settings.COINGECKO_KEY:
+                    url += f"&x_cg_demo_api_key={settings.COINGECKO_KEY}"
+                tasks.append(session.get(url))
+            responses = await asyncio.gather(*tasks)
+            price_data = {}
+            for cid, resp in zip(coin_ids, responses):
+                if resp.status == 200:
+                    data = await resp.json()
+                    prices = [p[1] for p in data.get("prices", [])]
+                    if len(prices) >= 2:
+                        price_data[cid] = prices
+                else:
+                    raise HTTPException(502, f"Failed to fetch data for {cid}")
+        # Calculate daily returns
+        returns = {}
+        for cid, prices in price_data.items():
+            ret = [(prices[i] - prices[i-1]) / prices[i-1] for i in range(1, len(prices))]
+            returns[cid] = ret
+        # Align lengths (take shortest)
+        min_len = min(len(r) for r in returns.values())
+        returns_array = np.array([returns[cid][-min_len:] for cid in coin_ids])
+        # Expected returns and covariance
+        mean_returns = np.mean(returns_array, axis=1)
+        cov_matrix = np.cov(returns_array)
+        # Monte Carlo simulation
+        num_portfolios = 10000
+        results = np.zeros((3, num_portfolios))
+        weights_record = np.zeros((num_portfolios, len(coin_ids)))
+        for i in range(num_portfolios):
+            w = np.random.random(len(coin_ids))
+            w /= w.sum()
+            weights_record[i] = w
+            portfolio_return = np.dot(w, mean_returns)
+            portfolio_vol = np.sqrt(np.dot(w.T, np.dot(cov_matrix, w)))
+            results[0,i] = portfolio_return
+            results[1,i] = portfolio_vol
+            results[2,i] = portfolio_return / portfolio_vol if portfolio_vol != 0 else 0
+        # Optimal (max Sharpe)
+        max_idx = np.argmax(results[2])
+        optimal_weights = weights_record[max_idx]
+        allocation = {coin_ids[i]: round(optimal_weights[i] * 100, 2) for i in range(len(coin_ids))}
+        return {
+            "allocation": allocation,
+            "expected_return": round(results[0,max_idx] * 100, 4),
+            "volatility": round(results[1,max_idx] * 100, 4),
+            "sharpe_ratio": round(results[2,max_idx], 4),
+            "data_days": min_len
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Portfolio optimize error: {e}")
+        raise HTTPException(500, "Optimization failed")
+        
 # File upload
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
