@@ -1,5 +1,5 @@
 """
-CAPITAN AI — Enterprise Backend v34.5 (Deployment‑Ready)
+CAPITAN AI — Enterprise Backend v35.0 (Final Unabridged: $CAP + DEX + Treasury + Full Supply)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -31,7 +31,7 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
 
-# Numpy and aiohttp are only required for the portfolio optimizer
+# Numpy and aiohttp for portfolio optimizer
 NUMPY_AVAILABLE = False
 AIOHTTP_AVAILABLE = False
 try:
@@ -45,6 +45,9 @@ try:
     AIOHTTP_AVAILABLE = True
 except ImportError:
     pass
+
+# Web3 for Polygon on‑chain verification and DEX
+from web3 import Web3
 
 import concurrent.futures
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
@@ -68,13 +71,22 @@ class Settings(BaseSettings):
     PRIVACY_POLICY_TEXT: str = ""
     TERMS_CONDITIONS_TEXT: str = ""
 
+    # $CAP on‑chain settings
+    CAP_CONTRACT_ADDRESS: str = ""          # fill after token deployment
+    CAP_HOT_WALLET: str = "0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F"
+    CAP_DEX_PAIR_ADDRESS: str = ""          # fill after creating liquidity pool
+    CLOSEAI_TREASURY_ADDRESS: str = ""      # fill with separate treasury wallet address
+    POLYGON_RPC_URL: str = "https://polygon-rpc.com"
+    CAP_DECIMALS: int = 18
+    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000  # 75 trillion CAP
+
     class Config:
         env_file = ".env"
         extra = "ignore"
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="34.5")
+app = FastAPI(title="CAPITAN AI API", version="35.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -237,7 +249,6 @@ async def get_current_session(request: Request):
         logger.error(f"get_current_session error: {e}")
     raise HTTPException(401, "Session not found")
 
-# Founder only – uses is_admin flag
 def founder_only(user: dict = Depends(get_current_user)):
     if not user or not user.get("is_admin", False):
         raise HTTPException(403, "Founder access required")
@@ -272,11 +283,14 @@ ENTERPRISE_TOKEN_PACKAGES = [
     {"amount": 1000,"tokens": 2000000}
 ]
 
+CAP_BUILDER_THRESHOLD = 10_000
+CAP_PRO_THRESHOLD = 100_000
+CAP_ENTERPRISE_THRESHOLD = 1_000_000
+
 def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users (with is_admin, no tier)
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -299,7 +313,6 @@ def init_db():
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS msg_reset_date")
 
-                # Sessions (guest)
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
                     token_balance INTEGER DEFAULT 600,
@@ -309,12 +322,10 @@ def init_db():
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS msg_reset_date")
 
-                # User sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     token TEXT UNIQUE NOT NULL, expires_at TIMESTAMP, created_at TIMESTAMP DEFAULT NOW()
                 )''')
-                # Chats
                 c.execute('''CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, title TEXT, topic_thread TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
@@ -327,7 +338,6 @@ def init_db():
                 )''')
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS confidence_score REAL")
-                # Memories
                 c.execute('''CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY, memory_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     content TEXT, query TEXT, domain TEXT, importance INTEGER DEFAULT 1,
@@ -337,7 +347,6 @@ def init_db():
                     c.execute("CREATE EXTENSION IF NOT EXISTS vector")
                     c.execute("ALTER TABLE memories ADD COLUMN IF NOT EXISTS embedding vector(1536)")
                 except: pass
-                # Portfolio
                 c.execute('''CREATE TABLE IF NOT EXISTS library_items (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT, content TEXT, folder TEXT DEFAULT 'General', tags JSONB DEFAULT '[]',
@@ -348,14 +357,12 @@ def init_db():
                                    ("attachments", "JSONB DEFAULT '[]'"), ("pinned", "BOOLEAN DEFAULT FALSE"),
                                    ("updated", "TIMESTAMP DEFAULT NOW()"), ("chat_id", "TEXT")]:
                     c.execute(f"ALTER TABLE library_items ADD COLUMN IF NOT EXISTS {col} {dtype}")
-                # Uploaded files
                 c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     workspace_id TEXT, filename TEXT, original_name TEXT, size INTEGER,
                     storage_path TEXT, extracted_text TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS workspace_id TEXT")
-                # Workspaces
                 c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
                     id TEXT PRIMARY KEY, name TEXT, description TEXT DEFAULT '', topic TEXT DEFAULT '',
                     owner_id UUID REFERENCES users(id) ON DELETE CASCADE, room_code TEXT UNIQUE,
@@ -376,7 +383,6 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE workspace_messages ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
-                # Payments
                 c.execute('''CREATE TABLE IF NOT EXISTS payments (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     txid TEXT UNIQUE, currency TEXT, amount REAL, status TEXT DEFAULT 'pending',
@@ -384,18 +390,15 @@ def init_db():
                 )''')
                 c.execute("ALTER TABLE payments DROP COLUMN IF EXISTS tier")
                 c.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'")
-                # Notifications
                 c.execute('''CREATE TABLE IF NOT EXISTS notifications (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     type TEXT, message TEXT, read BOOLEAN DEFAULT FALSE, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Content moderation
                 c.execute('''CREATE TABLE IF NOT EXISTS content_flags (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, content TEXT, reason TEXT, severity TEXT DEFAULT 'low',
                     reviewed BOOLEAN DEFAULT FALSE, action TEXT DEFAULT 'none', created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Security events
                 c.execute('''CREATE TABLE IF NOT EXISTS security_events (
                     id UUID PRIMARY KEY, event_type TEXT, ip_address TEXT, user_agent TEXT,
                     details TEXT, severity TEXT DEFAULT 'low', blocked BOOLEAN DEFAULT FALSE,
@@ -404,28 +407,23 @@ def init_db():
                 c.execute('''CREATE TABLE IF NOT EXISTS blocked_ips (
                     ip_address TEXT PRIMARY KEY, reason TEXT, blocked_until TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Feedback
                 c.execute('''CREATE TABLE IF NOT EXISTS feedback (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, rating INTEGER, correction TEXT, reason TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Activity log
                 c.execute('''CREATE TABLE IF NOT EXISTS activity_log (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     action TEXT, details TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Research topics
                 c.execute('''CREATE TABLE IF NOT EXISTS research_topics (
                     id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT,
                     domain TEXT, prompt TEXT, is_builtin BOOLEAN DEFAULT TRUE,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Research projects
                 c.execute('''CREATE TABLE IF NOT EXISTS research_projects (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT NOT NULL, description TEXT, chat_id TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Seed topics
                 seed_topics = [
                     ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks.'),
                     ('fin2','Crypto Trends','Latest cryptocurrency trends','finance','Summarize this week\'s crypto market movements.'),
@@ -446,7 +444,6 @@ def init_db():
                     c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
                               (tid, title, desc, domain, prompt))
 
-                # Developer platform
                 c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     key_hash TEXT UNIQUE NOT NULL, prefix TEXT NOT NULL,
@@ -470,8 +467,29 @@ def init_db():
                     txid TEXT UNIQUE, currency TEXT, amount_usd REAL,
                     tokens INTEGER, verified INTEGER DEFAULT 0, created TIMESTAMP DEFAULT NOW()
                 )''')
+
+                # $CAP Tables
+                c.execute('''CREATE TABLE IF NOT EXISTS cap_stakes (
+                    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    staked_amount BIGINT DEFAULT 0,
+                    tier TEXT DEFAULT 'free',
+                    staked_at TIMESTAMP DEFAULT NOW(),
+                    lock_until TIMESTAMP
+                )''')
+                c.execute("ALTER TABLE cap_stakes ADD COLUMN IF NOT EXISTS lock_until TIMESTAMP")
+                c.execute('''CREATE TABLE IF NOT EXISTS cap_transactions (
+                    id UUID PRIMARY KEY,
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    type TEXT,
+                    amount BIGINT,
+                    tx_hash TEXT,
+                    destination TEXT,
+                    status TEXT DEFAULT 'pending',
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+
                 conn.commit()
-        logger.info("✅ Database initialized (v34.5)")
+        logger.info("✅ Database initialized (v35.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -639,7 +657,6 @@ def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_mode
     return prompt
 
 def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, str, float]:
-    # Determine domain from the last user message
     domain = "general"
     for m in reversed(messages):
         if m.get("role") == "user":
@@ -1180,7 +1197,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# Chat endpoint – with proactive memory
+# Chat endpoint with tiered rate limits
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1209,8 +1226,22 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         is_authenticated = False
 
     identifier = user_id if user else session["id"]
-    if not check_rate_limit(identifier, "chat", 30):
+
+    # --- Tiered rate limits ---
+    tier = "free"
+    if is_authenticated:
+        tier = get_user_tier(user_id)
+    if tier == "enterprise":
+        chat_rate_limit = 500
+    elif tier == "pro":
+        chat_rate_limit = 100
+    elif tier == "builder":
+        chat_rate_limit = 50
+    else:
+        chat_rate_limit = 30
+    if not check_rate_limit(identifier, "chat", chat_rate_limit):
         raise HTTPException(429, "Rate limit exceeded.")
+    # --------------------------
 
     user_msg = None
     for m in reversed(req.messages):
@@ -1221,7 +1252,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     domain = classify_query(user_msg)
     web_search_needed = needs_web_search(user_msg)
 
-    # File content extraction
     file_text = ""
     if "[Uploaded document:" in user_msg:
         fname_match = re.search(r'\[Uploaded document:\s*(.*?)\]', user_msg)
@@ -1235,14 +1265,12 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                         file_text = row[0]
                         user_msg += "\n\n[DOCUMENT CONTENT]\n" + file_text[:30000]
 
-    # Pre‑chat balance check (skip for admin)
     if not is_admin:
         estimated_cost = estimate_tokens(user_msg, "", reasoning_depth)
         current_balance = token_balance if is_authenticated else session_token_balance(session["id"])
         if current_balance < estimated_cost:
             raise HTTPException(402, f"Insufficient tokens. Need ~{estimated_cost}, you have {current_balance}.")
 
-    # Save user message
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1262,7 +1290,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     except Exception as e:
         logger.error(f"Save user msg error: {e}")
 
-    # Moderation
     if settings.ENABLE_MODERATION and is_authenticated:
         flagged, reason, severity = moderate_content(user_msg)
         if flagged:
@@ -1273,7 +1300,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                     conn.commit()
             if severity == "high": create_notification(user_id, "moderation", f"Your message was flagged: {reason}")
 
-    # Fetch chat history
     chat_history = []
     try:
         with get_db() as conn:
@@ -1296,7 +1322,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         if relevant_memories:
             memory_context = "Relevant past interactions:\n" + "\n".join([f"- {m[:200]}" for m in relevant_memories])
 
-    # Web search
     web_results_text = ""
     if web_search_needed and settings.SERPAPI_KEY:
         try:
@@ -1351,9 +1376,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         }
     else:
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback", "new_balance": token_balance if is_authenticated else session_token_balance(session["id"])}
-
-# (All other endpoints remain exactly as before – fully intact)
-# ... [chats, portfolio, research, workspaces, notifications, tokens, developer, admin, etc.]
 
 @app.get("/api/chats")
 async def get_chats(request: Request):
@@ -2071,6 +2093,219 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
+# ---------------- $CAP Helpers & Endpoints (NEW) ----------------
+
+ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
+
+DEX_PAIR_ABI = json.loads('[{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}]')
+
+def get_web3():
+    return Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
+
+def get_cap_contract():
+    w3 = get_web3()
+    return w3.eth.contract(
+        address=Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS),
+        abi=ERC20_ABI
+    )
+
+def verify_cap_deposit(tx_hash: str) -> Optional[Dict]:
+    try:
+        w3 = get_web3()
+        receipt = w3.eth.get_transaction_receipt(tx_hash)
+        if not receipt or receipt['status'] != 1:
+            return None
+        contract = get_cap_contract()
+        transfer_event = None
+        for log in receipt['logs']:
+            try:
+                parsed = contract.events.Transfer().process_log(log)
+                if parsed['args']['to'].lower() == settings.CAP_HOT_WALLET.lower():
+                    transfer_event = parsed
+                    break
+            except:
+                continue
+        if not transfer_event:
+            return None
+        return {
+            "from": transfer_event['args']['from'],
+            "to": transfer_event['args']['to'],
+            "amount": float(w3.from_wei(transfer_event['args']['value'], 'ether'))
+        }
+    except Exception as e:
+        logger.error(f"verify_cap_deposit error: {e}")
+        return None
+
+def user_cap_balance(user_id: str) -> int:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT staked_amount FROM cap_stakes WHERE user_id = %s", (user_id,))
+            row = c.fetchone()
+            return row[0] if row else 0
+
+def update_user_tier(user_id: str):
+    balance = user_cap_balance(user_id)
+    if balance >= CAP_ENTERPRISE_THRESHOLD:
+        tier = "enterprise"
+    elif balance >= CAP_PRO_THRESHOLD:
+        tier = "pro"
+    elif balance >= CAP_BUILDER_THRESHOLD:
+        tier = "builder"
+    else:
+        tier = "free"
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE cap_stakes SET tier = %s WHERE user_id = %s", (tier, user_id))
+            conn.commit()
+    return tier
+
+def get_user_tier(user_id: str) -> str:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT tier FROM cap_stakes WHERE user_id = %s", (user_id,))
+            row = c.fetchone()
+            return row[0] if row else "free"
+
+def get_cap_price_from_dex() -> Optional[float]:
+    if not settings.CAP_DEX_PAIR_ADDRESS:
+        return None
+    try:
+        w3 = get_web3()
+        pair_contract = w3.eth.contract(
+            address=Web3.to_checksum_address(settings.CAP_DEX_PAIR_ADDRESS),
+            abi=DEX_PAIR_ABI
+        )
+        reserves = pair_contract.functions.getReserves().call()
+        token0 = pair_contract.functions.token0().call()
+        cap_address = Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS)
+        if token0.lower() == cap_address.lower():
+            cap_reserve = reserves[0]
+            matic_reserve = reserves[1]
+        else:
+            cap_reserve = reserves[1]
+            matic_reserve = reserves[0]
+        price = float(w3.from_wei(matic_reserve, 'ether')) / float(w3.from_wei(cap_reserve, 'ether'))
+        return price
+    except Exception as e:
+        logger.error(f"get_cap_price_from_dex error: {e}")
+        return None
+
+def get_treasury_balance() -> Optional[float]:
+    if not settings.CLOSEAI_TREASURY_ADDRESS:
+        return None
+    try:
+        contract = get_cap_contract()
+        balance = contract.functions.balanceOf(
+            Web3.to_checksum_address(settings.CLOSEAI_TREASURY_ADDRESS)
+        ).call()
+        return float(Web3.from_wei(balance, 'ether'))
+    except Exception as e:
+        logger.error(f"get_treasury_balance error: {e}")
+        return None
+
+def get_cap_total_supply() -> Optional[float]:
+    """Fetch the real on‑chain total supply of $CAP."""
+    if not settings.CAP_CONTRACT_ADDRESS:
+        return None
+    try:
+        contract = get_cap_contract()
+        supply = contract.functions.totalSupply().call()
+        return float(Web3.from_wei(supply, 'ether'))
+    except Exception as e:
+        logger.error(f"get_cap_total_supply error: {e}")
+        return None
+
+@app.post("/api/cap/deposit")
+def deposit_cap(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    tx_hash = req.get("tx_hash")
+    if not tx_hash:
+        raise HTTPException(400, "tx_hash required")
+    deposit = verify_cap_deposit(tx_hash)
+    if not deposit:
+        raise HTTPException(400, "Could not verify deposit. Check transaction hash and recipient.")
+    amount = int(deposit["amount"])
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                VALUES (%s, %s, 'free')
+                ON CONFLICT (user_id)
+                DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+            """, (user["id"], amount))
+            c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, status) VALUES (%s,%s,%s,%s,%s,'completed')",
+                      (str(uuid.uuid4()), user["id"], "deposit", amount, tx_hash))
+            conn.commit()
+    tier = update_user_tier(user["id"])
+    new_balance = user_cap_balance(user["id"])
+    return {"staked": new_balance, "tier": tier, "deposited": amount}
+
+@app.post("/api/cap/withdraw")
+def withdraw_cap(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    amount = req.get("amount")
+    destination = req.get("address")
+    if not amount or not destination:
+        raise HTTPException(400, "amount and address required")
+    bal = user_cap_balance(user["id"])
+    if amount > bal:
+        raise HTTPException(400, "Insufficient staked balance")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE cap_stakes SET staked_amount = staked_amount - %s WHERE user_id = %s", (amount, user["id"]))
+            c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, destination, status) VALUES (%s,%s,%s,%s,%s,'pending')",
+                      (str(uuid.uuid4()), user["id"], "withdraw", amount, destination))
+            conn.commit()
+    update_user_tier(user["id"])
+    log_activity(user["id"], "cap_withdraw", f"Amount: {amount}, To: {destination}")
+    return {"withdrawn": amount, "pending": True}
+
+@app.get("/api/cap/balance")
+def get_cap_balance_endpoint(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    staked = user_cap_balance(user["id"])
+    tier = get_user_tier(user["id"])
+    return {"staked": staked, "tier": tier}
+
+# Founder Dashboard (FULL – with Treasury, DEX, Total Supply)
+@app.get("/api/admin/cap/dashboard")
+def cap_dashboard(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT SUM(staked_amount) FROM cap_stakes")
+            total_staked = c.fetchone()[0] or 0
+            c.execute("SELECT COUNT(*) FROM cap_stakes WHERE staked_amount > 0")
+            stakers_count = c.fetchone()[0]
+            c.execute("SELECT staked_amount FROM cap_stakes JOIN users ON cap_stakes.user_id = users.id WHERE users.is_admin = TRUE LIMIT 1")
+            row = c.fetchone()
+            closeai_stake = row[0] if row else 0
+            c.execute("SELECT type, amount, tx_hash, destination, status, created FROM cap_transactions ORDER BY created DESC LIMIT 20")
+            recent_tx = [{"type": r[0], "amount": r[1], "tx_hash": r[2], "destination": r[3], "status": r[4], "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]
+            c.execute("SELECT COUNT(*) FROM activity_log WHERE action = 'cap_burn'")
+            total_burns = c.fetchone()[0]
+            c.execute("SELECT SUM(amount) FROM cap_transactions WHERE type = 'deposit'")
+            total_deposits = c.fetchone()[0] or 0
+            revenue_estimate = total_deposits * 0.01  # 1% protocol fee
+
+    dex_price = get_cap_price_from_dex()
+    treasury_balance = get_treasury_balance()
+    total_supply = get_cap_total_supply()
+
+    return {
+        "total_staked": total_staked,
+        "stakers_count": stakers_count,
+        "closeai_stake": closeai_stake,
+        "recent_transactions": recent_tx,
+        "total_burns": total_burns,
+        "revenue_estimate": revenue_estimate,
+        "dex_price": dex_price,
+        "treasury_address": settings.CLOSEAI_TREASURY_ADDRESS,
+        "treasury_balance": treasury_balance,
+        "treasury_total_allocation": settings.CLOSEAI_TOTAL_ALLOCATION,
+        "total_supply_onchain": total_supply,
+        "contract_address": settings.CAP_CONTRACT_ADDRESS
+    }
+
 # Health
 @app.get("/health")
 def health_check():
@@ -2080,7 +2315,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "34.5", "database": db_status}
+    return {"status": "ok", "version": "35.0", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
@@ -2091,7 +2326,7 @@ async def manifest():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "34.5"}
+    return {"name": "CAPITAN AI", "version": "35.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
