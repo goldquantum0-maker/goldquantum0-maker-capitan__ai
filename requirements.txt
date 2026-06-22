@@ -10,3 +10,5 @@ bcrypt
 PyPDF2
 python-docx
 openpyxl
+numpy
+aiohttp
