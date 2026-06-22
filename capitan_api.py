@@ -11,7 +11,6 @@ import PyPDF2, docx, openpyxl
 import psycopg2
 import psycopg2.pool
 import uvicorn
-import numpy as np
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, FileResponse
@@ -31,6 +30,21 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
+
+# Numpy and aiohttp are only required for the portfolio optimizer
+NUMPY_AVAILABLE = False
+AIOHTTP_AVAILABLE = False
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    pass
+try:
+    import aiohttp
+    import asyncio
+    AIOHTTP_AVAILABLE = True
+except ImportError:
+    pass
 
 import concurrent.futures
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
@@ -624,7 +638,6 @@ def build_system_prompt(user_query, reasoning_depth, preferred_domain, user_mode
         prompt += "\n\n[FOUNDER DIRECTIVES]\n" + settings.FOUNDER_EXTRA_PROMPT
     return prompt
 
-# No more visible reasoning chain – keep internal
 def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, str, float]:
     # Determine domain from the last user message
     domain = "general"
@@ -757,7 +770,6 @@ def get_user_model(user_id: str) -> str:
         return "User model unavailable."
 
 def get_relevant_memories(user_id: str, query: str, limit: int = 3) -> List[str]:
-    """Retrieve relevant memories for a user based on domain/query similarity."""
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -787,7 +799,6 @@ def get_relevant_memories(user_id: str, query: str, limit: int = 3) -> List[str]
         return []
 
 def recall_user_preferences(user_id: str) -> str:
-    """Recall user's preferred domain and depth from memory."""
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1169,7 +1180,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# Chat endpoint (balance check with admin bypass) – UPDATED with proactive memory
+# Chat endpoint – with proactive memory
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1278,13 +1289,12 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     thread_context = get_thread_context(chat_id, user_id if is_authenticated else None, session["id"] if not is_authenticated else None)
     user_model = get_user_model(user_id) if is_authenticated else "Anonymous user."
 
-    # ---- PROACTIVE MEMORY INJECTION ----
+    # ---- PROACTIVE MEMORY ----
     memory_context = ""
     if is_authenticated:
         relevant_memories = get_relevant_memories(user_id, user_msg)
         if relevant_memories:
             memory_context = "Relevant past interactions:\n" + "\n".join([f"- {m[:200]}" for m in relevant_memories])
-    # ------------------------------------
 
     # Web search
     web_results_text = ""
@@ -1325,7 +1335,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         if not is_admin:
             deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
 
-        # Get new balance after deduction
         if is_authenticated:
             new_balance = user_token_balance(user_id)
             with get_db() as conn:
@@ -1343,23 +1352,401 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     else:
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback", "new_balance": token_balance if is_authenticated else session_token_balance(session["id"])}
 
-# (All other endpoints remain exactly as they were – chats, portfolio, research, workspaces, notifications, tokens, developer, admin, etc.)
-# They are fully intact and unchanged.
+# (All other endpoints remain exactly as before – fully intact)
+# ... [chats, portfolio, research, workspaces, notifications, tokens, developer, admin, etc.]
 
-# ... [rest of the endpoints identical to previous full version] ...
+@app.get("/api/chats")
+async def get_chats(request: Request):
+    user = get_current_user(request)
+    if user:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE user_id=%s ORDER BY updated DESC LIMIT 100", (user["id"],))
+                rows = c.fetchall()
+                return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
+    else:
+        try:
+            session = await get_current_session(request)
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 100", (session["id"],))
+                    rows = c.fetchall()
+                    return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
+        except Exception as e:
+            logger.error(f"get_chats error: {e}")
+    return {"chats": []}
 
-# Portfolio optimizer (NEW)
+@app.get("/api/chats/{chat_id}")
+async def get_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user: c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = await get_current_session(request)
+                    c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                if not c.fetchone(): raise HTTPException(404, "Chat not found")
+                c.execute("SELECT role, content, model, reasoning_chain, confidence_score, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
+                rows = c.fetchall()
+                return {"messages": [{"id": i, "role": r[0], "content": r[1], "model": r[2] or "AI", "reasoning_chain": json.loads(r[3]) if r[3] else None, "confidence": r[4], "created": r[5].isoformat() if r[5] else None} for i, r in enumerate(rows)]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"get_chat error: {e}")
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/chats/{chat_id}")
+async def delete_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if user:
+                c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND user_id=%s", (chat_id, user["id"]))
+                c.execute("DELETE FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+            else:
+                session = await get_current_session(request)
+                c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, session["id"]))
+                c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+            conn.commit()
+    return {"deleted": True}
+
+# Portfolio
+class PortfolioItemCreate(BaseModel):
+    name: str
+    content: str = ""
+    folder: str = "General"
+    tags: List[str] = []
+    attachments: List[str] = []
+    chat_id: str = None
+
+@app.get("/api/portfolio")
+def get_portfolio(request: Request, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, name, content, folder, tags, attachments, pinned, chat_id, created, updated FROM library_items WHERE user_id=%s ORDER BY pinned DESC, updated DESC", (user["id"],))
+            items = []
+            for row in c.fetchall():
+                items.append({
+                    "id": row[0], "name": row[1], "content": row[2], "folder": row[3] or "General",
+                    "tags": row[4] if row[4] else [], "attachments": row[5] if row[5] else [],
+                    "pinned": row[6], "chat_id": row[7],
+                    "created": row[8].isoformat() if row[8] else None,
+                    "updated": row[9].isoformat() if row[9] else None
+                })
+            return {"items": items}
+
+@app.post("/api/portfolio")
+def create_portfolio_item(req: PortfolioItemCreate, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    item_id = f"lib_{sid()}"
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO library_items (id, user_id, name, content, folder, tags, attachments, chat_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (item_id, user["id"], req.name, req.content, req.folder, json.dumps(req.tags), json.dumps(req.attachments), req.chat_id))
+            conn.commit()
+    return {"id": item_id, "created": True}
+
+@app.put("/api/portfolio/{item_id}")
+def update_portfolio_item(item_id: str, req: PortfolioItemCreate, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE library_items SET name=%s, content=%s, folder=%s, tags=%s, attachments=%s, chat_id=%s, updated=NOW() WHERE id=%s AND user_id=%s",
+                      (req.name, req.content, req.folder, json.dumps(req.tags), json.dumps(req.attachments), req.chat_id, item_id, user["id"]))
+            conn.commit()
+    return {"updated": True}
+
+@app.delete("/api/portfolio/{item_id}")
+def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM library_items WHERE id=%s AND user_id=%s", (item_id, user["id"]))
+            conn.commit()
+    return {"deleted": True}
+
+# Research Hub
+@app.get("/api/research/topics")
+def get_research_topics(domain: Optional[str] = None):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if domain:
+                c.execute("SELECT id, title, description, domain, prompt FROM research_topics WHERE is_builtin=TRUE AND domain=%s ORDER BY title", (domain,))
+            else:
+                c.execute("SELECT id, title, description, domain, prompt FROM research_topics WHERE is_builtin=TRUE ORDER BY title")
+            topics = [{"id": r[0], "title": r[1], "description": r[2], "domain": r[3], "prompt": r[4]} for r in c.fetchall()]
+    return {"topics": topics}
+
+@app.get("/api/research/projects")
+def get_user_projects(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, name, description, chat_id, created FROM research_projects WHERE user_id=%s ORDER BY created DESC", (user["id"],))
+            projects = [{"id": r[0], "name": r[1], "description": r[2], "chat_id": r[3], "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+    return {"projects": projects, "limit": MAX_PROJECTS}
+
+@app.post("/api/research/projects")
+def create_user_project(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM research_projects WHERE user_id=%s", (user["id"],))
+            count = c.fetchone()[0]
+            if count >= MAX_PROJECTS:
+                raise HTTPException(429, f"Project limit reached ({MAX_PROJECTS}).")
+            pid = sid()
+            c.execute("INSERT INTO research_projects (id, user_id, name, description) VALUES (%s,%s,%s,%s)",
+                      (pid, user["id"], req["name"], req.get("description","")))
+            conn.commit()
+    return {"id": pid, "created": True}
+
+@app.delete("/api/research/projects/{project_id}")
+def delete_user_project(project_id: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM research_projects WHERE id=%s AND user_id=%s", (project_id, user["id"]))
+            conn.commit()
+    return {"deleted": True}
+
+# Workspaces
+@app.post("/api/workspace/create")
+def create_workspace(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM workspaces WHERE owner_id=%s", (user["id"],))
+            if c.fetchone()[0] >= MAX_WORKSPACES:
+                raise HTTPException(429, f"Workspace limit reached ({MAX_WORKSPACES}).")
+            room_code = req.get("room_code", f"HUB-{sid()}")
+            password = req.get("password")
+            password_hash = hash_password(password) if password else None
+            ws_id = sid()
+            c.execute("INSERT INTO workspaces (id, name, description, topic, owner_id, room_code, password_hash, max_members) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (ws_id, req.get("name","Research Room"), req.get("description",""), req.get("topic",""), user["id"], room_code.upper(), password_hash, 30))
+            c.execute("INSERT INTO workspace_members (workspace_id, user_id, role) VALUES (%s,%s,'admin')", (ws_id, user["id"]))
+            conn.commit()
+    return {"room_id": ws_id, "room_code": room_code.upper(), "created": True}
+
+@app.post("/api/workspace/join")
+def join_workspace(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    room_code = req.get("room_code","").upper()
+    password = req.get("password","")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, password_hash, max_members FROM workspaces WHERE room_code=%s", (room_code,))
+            room = c.fetchone()
+            if not room: raise HTTPException(404, "Room not found")
+            if room[1] and (not password or not verify_password(password, room[1])):
+                raise HTTPException(403, "Invalid room password")
+            c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=%s", (room[0],))
+            if c.fetchone()[0] >= room[2]:
+                raise HTTPException(400, "Room is full")
+            c.execute("INSERT INTO workspace_members (workspace_id, user_id, role) VALUES (%s,%s,'member') ON CONFLICT DO NOTHING", (room[0], user["id"]))
+            conn.commit()
+    return {"joined": True, "room_id": room[0]}
+
+@app.get("/api/workspace/my")
+def list_my_workspaces(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("""SELECT w.id, w.name, w.description, w.topic, w.room_code, w.max_members, w.created_at,
+                (SELECT COUNT(*) FROM workspace_members WHERE workspace_id=w.id) as member_count
+                FROM workspaces w
+                JOIN workspace_members m ON w.id = m.workspace_id
+                WHERE m.user_id = %s AND w.is_active = TRUE
+                ORDER BY w.created_at DESC""", (user["id"],))
+            rooms = [{"id": r[0], "name": r[1], "description": r[2], "topic": r[3], "room_code": r[4],
+                      "max_members": r[5], "created_at": r[6].isoformat() if r[6] else None, "member_count": r[7]} for r in c.fetchall()]
+    return {"workspaces": rooms}
+
+@app.get("/api/workspace/rooms/{room_code}/messages")
+def get_workspace_messages(room_code: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
+            room = c.fetchone()
+            if not room: raise HTTPException(404)
+            c.execute("SELECT author_name, message, is_ai, pinned, created FROM workspace_messages WHERE workspace_id=%s ORDER BY pinned DESC, created ASC LIMIT 100", (room[0],))
+            msgs = [{"author": r[0], "message": r[1], "is_ai": bool(r[2]), "pinned": bool(r[3]), "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+    return {"messages": msgs}
+
+@app.post("/api/workspace/rooms/{room_code}/messages")
+def send_workspace_message(room_code: str, req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    message = req.get("message","")
+    if not message: raise HTTPException(400)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
+            room = c.fetchone()
+            if not room: raise HTTPException(404)
+            is_ai = message.strip().startswith("@CAPITAN")
+            c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message) VALUES (%s,%s,%s,%s,%s)",
+                      (sid(), room[0], user["id"], user["name"], message))
+            if is_ai:
+                c.execute("SELECT author_name, message, is_ai FROM workspace_messages WHERE workspace_id=%s ORDER BY created DESC LIMIT 5", (room[0],))
+                history = c.fetchall()
+                context = "\n".join([f"{'AI' if r[2] else r[0]}: {r[1]}" for r in reversed(history)])
+                ai_prompt = f"Previous conversation in workspace:\n{context}\n\nNew question: {message.replace('@CAPITAN','').strip()}"
+                ai_response, _, _ = call_ai_model([{"role":"user","content":ai_prompt}], user.get("reasoning_depth",1))
+                if ai_response:
+                    c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai) VALUES (%s,%s,%s,%s,%s,1)",
+                              (sid(), room[0], user["id"], "CAPITAN AI", ai_response))
+            conn.commit()
+    return {"sent": True}
+
+# Notifications
+@app.get("/api/notifications")
+def get_notifications(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, type, message, read, created FROM notifications WHERE user_id=%s ORDER BY created DESC LIMIT 30", (user["id"],))
+            notifs = [{"id": r[0], "type": r[1], "message": r[2], "read": r[3], "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+    return {"notifications": notifs}
+
+@app.post("/api/notifications/read")
+def mark_read(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE notifications SET read=TRUE WHERE user_id=%s", (user["id"],))
+            conn.commit()
+    return {"ok": True}
+
+# Token Purchase
+@app.get("/api/tokens/wallets")
+def get_token_wallets():
+    return {"wallets": TOKEN_WALLETS}
+
+@app.get("/api/tokens/packages")
+def get_token_packages(enterprise: bool = False):
+    packages = ENTERPRISE_TOKEN_PACKAGES if enterprise else TOKEN_PACKAGES
+    return {"packages": packages}
+
+@app.get("/api/tokens/balance")
+def get_token_balance(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    return {"balance": user_token_balance(user["id"])}
+
+class TokenPurchaseRequest(BaseModel):
+    package_amount: float
+    txid: str
+    currency: str = "BTC"
+
+def verify_transaction(txid: str, currency: str, expected_usd: float, use_token_wallet: bool = True) -> Tuple[bool, float]:
+    wallets = TOKEN_WALLETS if use_token_wallet else WALLETS
+    if currency == "BTC":
+        try:
+            r = requests.get(f"https://blockchain.info/rawtx/{txid}", timeout=15)
+            if r.status_code == 200:
+                btc_price = 0
+                if settings.COINGECKO_KEY:
+                    try:
+                        resp = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+                                            headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=5)
+                        if resp.status_code == 200:
+                            btc_price = resp.json()["bitcoin"]["usd"]
+                    except Exception as e:
+                        logger.error(f"BTC price error: {e}")
+                for out in r.json().get("out", []):
+                    if out.get("addr") == wallets["BTC"]:
+                        received = out.get("value", 0) / 1e8
+                        if btc_price > 0:
+                            received_usd = received * btc_price
+                            if received_usd >= expected_usd * 0.95:
+                                return True, received_usd
+                        else:
+                            return True, received * 40000
+        except Exception as e:
+            logger.error(f"BTC verification error: {e}")
+    elif currency == "ETH" and settings.ETHERSCAN_API_KEY:
+        try:
+            r = requests.get(f"https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash={txid}&apikey={settings.ETHERSCAN_API_KEY}", timeout=15)
+            if r.status_code == 200:
+                tx = r.json().get("result", {})
+                if tx and tx.get("to","").lower() == wallets["ETH"].lower():
+                    value = int(tx.get("value","0"), 16) / 1e18
+                    eth_price = 0
+                    if settings.COINGECKO_KEY:
+                        try:
+                            resp = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+                                                headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=5)
+                            if resp.status_code == 200:
+                                eth_price = resp.json()["ethereum"]["usd"]
+                        except Exception as e:
+                            logger.error(f"ETH price error: {e}")
+                    if eth_price > 0:
+                        received_usd = value * eth_price
+                        if received_usd >= expected_usd * 0.95:
+                            return True, received_usd
+                    else:
+                        return True, value * 2000
+        except Exception as e:
+            logger.error(f"ETH verification error: {e}")
+    return False, 0.0
+
+@app.post("/api/tokens/purchase")
+def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    pkg = None
+    for p in TOKEN_PACKAGES + ENTERPRISE_TOKEN_PACKAGES:
+        if p["amount"] == req.package_amount:
+            pkg = p
+            break
+    if not pkg:
+        raise HTTPException(400, "Invalid package amount")
+    verified, usd_received = verify_transaction(req.txid.strip(), req.currency.upper(), req.package_amount, use_token_wallet=True)
+    purchase_id = str(uuid.uuid4())
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO token_purchases (id, user_id, txid, currency, amount_usd, tokens, verified) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                      (purchase_id, user["id"], req.txid.strip(), req.currency.upper(), req.package_amount, pkg["tokens"], 1 if verified else 0))
+            if verified:
+                c.execute("UPDATE users SET token_balance = token_balance + %s WHERE id = %s", (pkg["tokens"], user["id"]))
+            conn.commit()
+    if verified:
+        return {"verified": True, "tokens_added": pkg["tokens"], "new_balance": user_token_balance(user["id"])}
+    else:
+        return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
+
+# Feedback
+class FeedbackRequest(BaseModel):
+    message_id: str
+    rating: int = Field(..., ge=1, le=5)
+    correction: Optional[str] = None
+    reason: Optional[str] = None
+
+@app.post("/api/feedback")
+def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO feedback (id, user_id, message_id, rating, correction, reason) VALUES (%s,%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], req.message_id, req.rating, req.correction, req.reason))
+            conn.commit()
+    return {"received": True}
+
+# Portfolio optimizer (optional deps)
 @app.get("/api/portfolio/optimize")
 async def optimize_portfolio(
     coins: str = Query("bitcoin,ethereum", description="Comma‑separated coin IDs"),
     user: dict = Depends(get_current_user)
 ):
     if not user: raise HTTPException(401)
+    if not NUMPY_AVAILABLE or not AIOHTTP_AVAILABLE:
+        raise HTTPException(501, "Portfolio optimizer requires numpy and aiohttp. Add them to requirements.txt and redeploy.")
     coin_ids = [c.strip() for c in coins.split(",") if c.strip()]
     if len(coin_ids) < 2:
         raise HTTPException(400, "At least two coins required")
     try:
-        import aiohttp, asyncio
         async with aiohttp.ClientSession() as session:
             tasks = []
             for cid in coin_ids:
@@ -1377,18 +1764,14 @@ async def optimize_portfolio(
                         price_data[cid] = prices
                 else:
                     raise HTTPException(502, f"Failed to fetch data for {cid}")
-        # Calculate daily returns
         returns = {}
         for cid, prices in price_data.items():
             ret = [(prices[i] - prices[i-1]) / prices[i-1] for i in range(1, len(prices))]
             returns[cid] = ret
-        # Align lengths (take shortest)
         min_len = min(len(r) for r in returns.values())
         returns_array = np.array([returns[cid][-min_len:] for cid in coin_ids])
-        # Expected returns and covariance
         mean_returns = np.mean(returns_array, axis=1)
         cov_matrix = np.cov(returns_array)
-        # Monte Carlo simulation
         num_portfolios = 10000
         results = np.zeros((3, num_portfolios))
         weights_record = np.zeros((num_portfolios, len(coin_ids)))
@@ -1401,7 +1784,6 @@ async def optimize_portfolio(
             results[0,i] = portfolio_return
             results[1,i] = portfolio_vol
             results[2,i] = portfolio_return / portfolio_vol if portfolio_vol != 0 else 0
-        # Optimal (max Sharpe)
         max_idx = np.argmax(results[2])
         optimal_weights = weights_record[max_idx]
         allocation = {coin_ids[i]: round(optimal_weights[i] * 100, 2) for i in range(len(coin_ids))}
@@ -1417,9 +1799,6 @@ async def optimize_portfolio(
     except Exception as e:
         logger.error(f"Portfolio optimize error: {e}")
         raise HTTPException(500, "Optimization failed")
-
-# ... remaining endpoints (file upload, developer, admin, health, etc.) – all present from original v34.5 ...
-# (I'm including the rest of the file below to make it absolutely complete.)
 
 # File upload
 UPLOAD_DIR = "uploads"
