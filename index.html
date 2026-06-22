@@ -9,6 +9,7 @@
     <title>CAPITAN AI — Enterprise Intelligence</title>
     <link rel="manifest" href="https://capitan-ai-jxu8.onrender.com/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7/dist/ethers.umd.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root {
@@ -238,10 +239,14 @@
         .token-info { font-size:11px; color:var(--text-tertiary); margin-top:4px; }
         .signout-icon { background:none; border:none; color:var(--text-tertiary); cursor:pointer; padding:4px; border-radius:6px; }
         .signout-icon:hover { color:var(--danger); background:rgba(239,68,68,0.1); }
+        .dashboard-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px; }
+        .dashboard-card h3 { font-size:14px; margin-bottom:8px; }
+        .dashboard-card .big-number { font-size:2rem; font-weight:700; color:var(--accent-blue); }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        @media (max-width:600px){ .grid-2 { grid-template-columns:1fr; } }
     </style>
 </head>
 <body>
-<!-- Splash screen -->
 <div class="splash" id="splashScreen">
     <svg class="splash-logo" viewBox="0 0 640 360">
         <rect width="640" height="360" fill="#0e6e8e"/>
@@ -256,14 +261,10 @@
         <h1>CAPITAN AI</h1>
         <p style="margin-bottom:20px;font-size:14px;">Enterprise Intelligence</p>
         <div id="sessionExpiredMsg" class="session-expired-msg">Your session has expired. Please sign in again.</div>
-
-        <!-- TAB SWITCHER -->
         <div style="display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid var(--border);">
             <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
             <button id="tabSignup" class="auth-tab" onclick="switchAuthTab('signup')">Create Account</button>
         </div>
-
-        <!-- LOGIN FORM -->
         <div id="loginForm">
             <input type="email" id="loginEmail" class="auth-input" placeholder="Email">
             <input type="password" id="loginPassword" class="auth-input" placeholder="Password">
@@ -271,8 +272,6 @@
             <button class="auth-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
             <div class="auth-switch"><a onclick="switchAuthTab('forgot')">Forgot Password?</a></div>
         </div>
-
-        <!-- SIGNUP FORM -->
         <div id="signupForm" style="display:none;">
             <input type="text" id="signupName" class="auth-input" placeholder="Full Name (optional)">
             <input type="email" id="signupEmail" class="auth-input" placeholder="Email">
@@ -282,8 +281,6 @@
             <button class="auth-btn" id="signupBtn" onclick="handleSignup()">Create Account</button>
             <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Sign In</a></div>
         </div>
-
-        <!-- FORGOT PASSWORD FORM (hidden) -->
         <div id="forgotForm" style="display:none;">
             <input type="email" id="forgotEmail" class="auth-input" placeholder="Email">
             <div id="forgotError" class="error-msg"></div>
@@ -291,16 +288,12 @@
             <button class="auth-btn" onclick="handleForgotPassword()">Send Reset Link</button>
             <div class="auth-switch"><a onclick="switchAuthTab('login')">Back to Sign In</a></div>
         </div>
-
-        <!-- Guest session -->
         <div style="text-align:center; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
             <button class="auth-btn ghost" onclick="startGuestSession()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Try CAPITAN for Free
             </button>
         </div>
-
-        <!-- LEGAL LINKS -->
         <div style="text-align:center; margin-top:16px; font-size:10px; color:var(--text-tertiary);">
             <a onclick="openPrivacyModal()" style="cursor:pointer; margin:0 8px;">Privacy Policy</a>
             <a onclick="openTermsModal()" style="cursor:pointer; margin:0 8px;">Terms of Service</a>
@@ -331,6 +324,10 @@
         <div class="menu-item" onclick="openDeveloperPage()" id="developerMenuItem" style="display:none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
             <span>Developer</span>
+        </div>
+        <div class="menu-item" onclick="openFounderDashboard()" id="dashboardMenuItem" style="display:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            <span>Dashboard</span>
         </div>
         <div id="workspaceSection" style="display:none;">
             <div class="sidebar-divider"></div>
@@ -393,13 +390,11 @@
         <div class="sidebar-footer">CAPITAN AI &copy; 2026</div>
     </aside>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-    
     <div class="top-bar">
         <button class="toggle-sidebar" id="toggleSidebarBtn">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
         </button>
     </div>
-
     <main class="main" id="chatView">
         <div class="chat-container">
             <div class="messages-area" id="messagesArea">
@@ -407,16 +402,13 @@
                     <div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div>
                     <div id="suggestionPills" class="suggestion-pills">
                         <button class="suggestion-pill" onclick="useSuggestion('Give me today\'s top business headlines')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg>
-                            Business
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg> Business
                         </button>
                         <button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg>
-                            Tech
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg> Tech
                         </button>
                         <button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
-                            Everyday Life
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg> Everyday Life
                         </button>
                     </div>
                     <p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything...</p>
@@ -438,29 +430,20 @@
     <button class="scroll-to-bottom" id="scrollToBottomBtn" onclick="document.getElementById('messagesArea').scrollTo({top: document.getElementById('messagesArea').scrollHeight, behavior:'smooth'})">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
-
     <!-- Notification Panel -->
     <div class="notif-panel" id="notifPanel">
-        <h3>
-            Notifications
-            <button onclick="markAllRead()" style="font-size:10px; background:var(--accent-blue); border:none; color:white; padding:4px 10px; border-radius:20px; cursor:pointer;">Mark all read</button>
-        </h3>
+        <h3>Notifications <button onclick="markAllRead()" style="font-size:10px; background:var(--accent-blue); border:none; color:white; padding:4px 10px; border-radius:20px; cursor:pointer;">Mark all read</button></h3>
         <div id="notifList" style="max-height:40vh; overflow-y:auto;"></div>
-        <div class="notif-actions" style="margin-top:12px;">
-            <button class="btn btn-outline" onclick="closeNotifPanel()">Close</button>
-        </div>
+        <div class="notif-actions" style="margin-top:12px;"><button class="btn btn-outline" onclick="closeNotifPanel()">Close</button></div>
     </div>
-
     <!-- Full-page Portfolio view -->
     <div class="full-page-view" id="portfolioFullPage">
         <button class="close-btn" onclick="closePortfolioFullPage()" style="position:absolute;top:20px;right:20px;">&times;</button>
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px; max-width:800px; margin-left:auto; margin-right:auto; width:100%;">
-            <h2 style="margin:0;">Portfolio</h2>
-            <button class="btn" style="width:auto; margin:0;" onclick="toggleReadingMode()">Reading Mode</button>
+            <h2 style="margin:0;">Portfolio</h2><button class="btn" style="width:auto; margin:0;" onclick="toggleReadingMode()">Reading Mode</button>
         </div>
         <div id="portfolioFullContent" class="portfolio-content"></div>
     </div>
-
     <!-- Research Hub full-page view -->
     <div class="full-page-view" id="researchHubFullPage">
         <button class="close-btn" onclick="closeResearchHub()" style="position:absolute;top:20px;right:20px;">&times;</button>
@@ -474,7 +457,6 @@
             <div id="researchTabContent"></div>
         </div>
     </div>
-
     <!-- Developer full-page view -->
     <div class="full-page-view" id="developerFullPage">
         <button class="close-btn" onclick="closeDeveloperPage()" style="position:absolute;top:20px;right:20px;">&times;</button>
@@ -491,11 +473,16 @@
             <div id="developerTabContent"></div>
         </div>
     </div>
-
-    <!-- Workspace Messages Modal -->
-    <div id="workspaceMessagesModal" class="modal-overlay">
-        <div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div>
+    <!-- Founder Dashboard full-page view -->
+    <div class="full-page-view" id="founderDashboardPage">
+        <button class="close-btn" onclick="closeFounderDashboard()" style="position:absolute;top:20px;right:20px;">&times;</button>
+        <div style="max-width:1100px; width:100%; margin:0 auto;">
+            <h2 style="margin-bottom:16px;">$CAP Dashboard</h2>
+            <div id="founderDashboardContent"></div>
+        </div>
     </div>
+    <!-- Workspace Messages Modal -->
+    <div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div></div>
 </div>
 
 <!-- Modals -->
@@ -511,24 +498,22 @@
 
 <script>
 // ==================== CONFIGURATION ====================
-const CFG = { API: 'https://capitan-ai-jxu8.onrender.com' };
+const CFG = {
+    API: 'https://capitan-ai-jxu8.onrender.com',
+    CAP_ADDRESS: '', // Filled after token deployment
+    HOT_WALLET: '0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F'
+};
 const WALLETS = { BTC: 'bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2', ETH: '0x28c18922072f904f91499A603d7AF8F9C57aDD8b' };
 const TOKEN_PACKAGES = [
-    { amount: 5, tokens: 5000 },
-    { amount: 10, tokens: 10000 },
-    { amount: 20, tokens: 24000 },
-    { amount: 50, tokens: 70000 },
-    { amount: 100, tokens: 150000 }
+    { amount: 5, tokens: 5000 }, { amount: 10, tokens: 10000 }, { amount: 20, tokens: 24000 },
+    { amount: 50, tokens: 70000 }, { amount: 100, tokens: 150000 }
 ];
 const ENTERPRISE_TOKEN_PACKAGES = [
-    { amount: 200, tokens: 320000 },
-    { amount: 500, tokens: 850000 },
-    { amount: 1000, tokens: 2000000 }
+    { amount: 200, tokens: 320000 }, { amount: 500, tokens: 850000 }, { amount: 1000, tokens: 2000000 }
 ];
 const DEPTH_MULTIPLIERS = [1, 1.5, 2, 3, 4];
 const DEFAULT_GUEST_TOKENS = 600;
 
-// ==================== GLOBAL STATE ====================
 let state = {
     token: localStorage.getItem('ct') || null,
     user: null,
@@ -552,45 +537,30 @@ let state = {
     developerTab: 'keys',
     tokenBalance: 0,
     researchTab: 'topics',
-    reasoningDepth: parseInt(localStorage.getItem('reasoningDepth')) || 1
+    reasoningDepth: parseInt(localStorage.getItem('reasoningDepth')) || 1,
+    capStaked: 0,
+    capTier: 'free'
 };
+
+// MetaMask wallet
+let capWallet = { provider: null, signer: null, account: null, balance: 0 };
 
 // ==================== UTILITIES ====================
 function setCookie(n,v,d){let e="";if(d){let t=new Date();t.setTime(t.getTime()+d*864e5);e="; expires="+t.toUTCString()}document.cookie=n+"="+(v||"")+e+"; path=/; SameSite=Lax"}
 function getCookie(n){let e=n+"=",a=document.cookie.split(';');for(let i=0;i<a.length;i++){let c=a[i].trim();if(c.indexOf(e)===0)return c.substring(e.length)}return null}
 if(!state.token){let ct=getCookie('ct');if(ct){state.token=ct;localStorage.setItem('ct',ct)}}
 let storedUser=localStorage.getItem('cu');if(storedUser)try{state.user=JSON.parse(storedUser)}catch(e){}
-
 (function(){if(new URLSearchParams(window.location.search).get('founder')==='true')setTimeout(openFounderDashboard,500)})();
-
 let collapsibleState={appearance:false,about:false,workspace:false};
 function toggleCollapsible(k){collapsibleState[k]=!collapsibleState[k];document.getElementById(k+'Content').classList.toggle('open',collapsibleState[k]);document.getElementById(k+'Arrow').style.transform=collapsibleState[k]?'rotate(180deg)':'rotate(0deg)'}
 function escapeHtml(s){return s?.replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m)||''}
 function toast(msg,icon=''){let t=document.createElement('div');t.className='toast';t.innerHTML=icon+msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500)}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function scrollBottom(){let a=document.getElementById('messagesArea');if(a)a.scrollTo({top:a.scrollHeight,behavior:'smooth'});updateScrollButton()}
-function getGreetingClass(hour){
-    if(hour>=5&&hour<12) return 'morning';
-    if(hour>=12&&hour<17) return 'afternoon';
-    if(hour>=17&&hour<21) return 'evening';
-    return 'night';
-}
-function getDynamicGreeting(){
-    let h=new Date().getHours();
-    if(h>=5&&h<12) return 'Good morning';
-    if(h>=12&&h<17) return 'Good afternoon';
-    if(h>=17&&h<21) return 'Good evening';
-    return 'Welcome';
-}
-function updateGreeting(){
-    let e=document.getElementById('greetingText');
-    if(e){
-        e.textContent=getDynamicGreeting();
-        e.className = 'greeting-text ' + getGreetingClass(new Date().getHours());
-    }
-}
-setInterval(updateGreeting,60000);
-updateGreeting();
+function getGreetingClass(h){if(h>=5&&h<12)return'morning';if(h>=12&&h<17)return'afternoon';if(h>=17&&h<21)return'evening';return'night'}
+function getDynamicGreeting(){let h=new Date().getHours();if(h>=5&&h<12)return'Good morning';if(h>=12&&h<17)return'Good afternoon';if(h>=17&&h<21)return'Good evening';return'Welcome'}
+function updateGreeting(){let e=document.getElementById('greetingText');if(e){e.textContent=getDynamicGreeting();e.className='greeting-text '+getGreetingClass(new Date().getHours())}}
+setInterval(updateGreeting,60000);updateGreeting();
 
 class SmoothStreamer{constructor(c,container,onDone){this.content=c;this.container=container;this.onDone=onDone;this.idx=0;this.running=true;this.lastT=0;this.accum=0;this.speed=7;this.container.innerHTML='';this.streamDiv=document.createElement('div');this.streamDiv.className='streaming-text';this.container.appendChild(this.streamDiv);this.cursor=document.createElement('span');this.cursor.className='stream-cursor';this.container.appendChild(this.cursor);this.anim=this.anim.bind(this);if(state.currentStreamer&&state.currentStreamer!==this)state.currentStreamer.stop();state.currentStreamer=this;requestAnimationFrame(this.anim)}
 anim(ts){if(!this.running||this.idx>=this.content.length){this.finish();return}if(this.lastT===0)this.lastT=ts;let dt=ts-this.lastT;this.lastT=ts;this.accum+=dt;while(this.accum>=this.speed&&this.idx<this.content.length){let span=document.createElement('span');span.className='token-char';span.textContent=this.content[this.idx];this.streamDiv.appendChild(span);this.idx++;this.accum-=this.speed}scrollBottom();requestAnimationFrame(this.anim)}
@@ -602,37 +572,23 @@ function formatMarkdown(t){if(!t)return'';return t.replace(/\*\*(.*?)\*\*/g,'<st
 // Theme
 function setTheme(theme){state.theme=theme;document.body.className=theme;localStorage.setItem('theme',theme);document.getElementById('themeLightCheck').style.display=theme==='light'?'inline':'none';document.getElementById('themeDarkCheck').style.display=theme==='dark'?'inline':'none';document.getElementById('themeSystemCheck').style.display=theme==='system'?'inline':'none';document.getElementById('themeOLEDCheck').style.display=theme==='oled'?'inline':'none'}
 setTheme(state.theme);
-
 function toggleSidebar(){let s=document.getElementById('sidebar'),o=document.getElementById('overlay');if(window.innerWidth<=768){s.classList.toggle('open');o.classList.toggle('open')}else{s.classList.toggle('collapsed')}}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
 
-// Founder Easter Egg via keyboard
-document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-        e.preventDefault();
-        promptFounderLogin();
-    }
-});
-
+// Founder
+document.addEventListener('keydown', function(e) { if (e.ctrlKey && e.shiftKey && e.key === 'F') { e.preventDefault(); promptFounderLogin(); } });
 function handleFounderClick(){state.founderClickCount++;if(state.founderClickCount>=13){state.founderClickCount=0;promptFounderLogin();}}
-
 function promptFounderLogin(){
-    const code = prompt('Enter Founder Key:');
-    if(!code)return;
+    const code = prompt('Enter Founder Key:'); if(!code)return;
     fetch(CFG.API+'/api/founder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})})
-    .then(r=>r.json())
-    .then(data=>{
+    .then(r=>r.json()).then(data=>{
         if(data.verified){
             state.token=data.token; state.user=data.user; state.is_admin=true;
             state.tokenBalance=999999999; state.reasoningDepth=5;
             localStorage.setItem('ct',data.token); setCookie('ct',data.token,365);
-            localStorage.setItem('cu',JSON.stringify(data.user));
-            localStorage.setItem('is_admin','true');
-            localStorage.setItem('tokenBalance','999999999');
-            document.getElementById('authContainer').style.display='none';
-            document.getElementById('app').style.display='flex';
-            updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay();
-            renderMessages(); fetchNotifications();
+            localStorage.setItem('cu',JSON.stringify(data.user)); localStorage.setItem('is_admin','true');
+            document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
+            updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications(); fetchCapBalance();
             toast('Welcome Founder 🚀');
         }else toast('Invalid Founder Key ❌');
     }).catch(e=>toast('Error: '+e.message));
@@ -648,8 +604,7 @@ async function apiCall(endpoint,opts={}){
         document.getElementById('sessionExpiredMsg').style.display='block';
         state.token=null; state.user=null; state.is_admin=false;
         localStorage.removeItem('ct'); localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
-        document.getElementById('app').style.display='none';
-        document.getElementById('authContainer').style.display='flex';
+        document.getElementById('app').style.display='none'; document.getElementById('authContainer').style.display='flex';
         throw new Error('Session expired');
     }
     if(!res.ok){let err=await res.text();try{err=JSON.parse(err).detail||err}catch(e){}throw new Error(err)}
@@ -663,58 +618,36 @@ function updateProfileUI(){
     if(state.profilePhoto)document.getElementById('profileAvatar').src=state.profilePhoto;
     document.getElementById('signoutIcon').style.display = state.user ? 'block' : 'none';
 }
-function updateTokenDisplay(){} // no longer used
 function updateUIBasedOnTier(){
     let logged=!!state.user;
     document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';
     document.getElementById('hubMenuItem').style.display=logged?'flex':'none';
     document.getElementById('developerMenuItem').style.display=(logged&&(state.tokenBalance>=10000||state.is_admin))?'flex':'none';
+    document.getElementById('dashboardMenuItem').style.display = (logged && state.is_admin) ? 'flex' : 'none';
     document.getElementById('guestButtons').style.display=logged?'none':'block';
     document.getElementById('workspaceSection').style.display=logged?'block':'none';
 }
 
 // ==================== AUTH ====================
 function switchAuthTab(tab) {
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('signupForm').style.display = 'none';
-    document.getElementById('forgotForm').style.display = 'none';
-    document.getElementById('tabLogin').classList.remove('active');
+    document.getElementById('loginForm').style.display = 'none'; document.getElementById('signupForm').style.display = 'none';
+    document.getElementById('forgotForm').style.display = 'none'; document.getElementById('tabLogin').classList.remove('active');
     document.getElementById('tabSignup').classList.remove('active');
-    if (tab === 'login') {
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('tabLogin').classList.add('active');
-    } else if (tab === 'signup') {
-        document.getElementById('signupForm').style.display = 'block';
-        document.getElementById('tabSignup').classList.add('active');
-    } else if (tab === 'forgot') {
-        document.getElementById('forgotForm').style.display = 'block';
-    }
+    if (tab === 'login') { document.getElementById('loginForm').style.display = 'block'; document.getElementById('tabLogin').classList.add('active'); }
+    else if (tab === 'signup') { document.getElementById('signupForm').style.display = 'block'; document.getElementById('tabSignup').classList.add('active'); }
+    else if (tab === 'forgot') { document.getElementById('forgotForm').style.display = 'block'; }
 }
-
 function openPrivacyModal() {
-    fetch(CFG.API+'/api/legal/privacy')
-        .then(r=>r.json())
-        .then(data=>{
-            document.getElementById('privacyModalContent').innerHTML = `
-                <h2>Privacy Policy</h2>
-                <div style="font-size:13px;line-height:1.5;">${data.text}</div>
-                <button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
-            document.getElementById('privacyModal').classList.add('open');
-        })
-        .catch(()=>toast('Could not load privacy policy'));
+    fetch(CFG.API+'/api/legal/privacy').then(r=>r.json()).then(data=>{
+        document.getElementById('privacyModalContent').innerHTML = `<h2>Privacy Policy</h2><div style="font-size:13px;line-height:1.5;">${data.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
+        document.getElementById('privacyModal').classList.add('open');
+    }).catch(()=>toast('Could not load privacy policy'));
 }
-
 function openTermsModal() {
-    fetch(CFG.API+'/api/legal/terms')
-        .then(r=>r.json())
-        .then(data=>{
-            document.getElementById('termsModalContent').innerHTML = `
-                <h2>Terms & Conditions</h2>
-                <div style="font-size:13px;line-height:1.5;">${data.text}</div>
-                <button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
-            document.getElementById('termsModal').classList.add('open');
-        })
-        .catch(()=>toast('Could not load terms'));
+    fetch(CFG.API+'/api/legal/terms').then(r=>r.json()).then(data=>{
+        document.getElementById('termsModalContent').innerHTML = `<h2>Terms & Conditions</h2><div style="font-size:13px;line-height:1.5;">${data.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
+        document.getElementById('termsModal').classList.add('open');
+    }).catch(()=>toast('Could not load terms'));
 }
 
 async function handleLogin(){
@@ -727,14 +660,10 @@ async function handleLogin(){
         if(d.token){
             state.token=d.token; state.user=d.user; state.is_admin=d.user.is_admin||false;
             state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=d.user.reasoning_depth||1;
-            localStorage.setItem('ct',d.token); setCookie('ct',d.token,30);
-            localStorage.setItem('cu',JSON.stringify(d.user));
-            localStorage.setItem('is_admin',state.is_admin.toString());
-            localStorage.setItem('reasoningDepth',state.reasoningDepth.toString());
-            localStorage.setItem('tokenBalance',state.tokenBalance.toString());
+            localStorage.setItem('ct',d.token); setCookie('ct',d.token,30); localStorage.setItem('cu',JSON.stringify(d.user));
+            localStorage.setItem('is_admin',state.is_admin.toString()); localStorage.setItem('reasoningDepth',state.reasoningDepth.toString());
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
-            updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay();
-            renderMessages(); fetchNotifications();
+            updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications(); fetchCapBalance();
             toast('Welcome back, '+(state.user.name||e.split('@')[0]));
         }else{err.innerText=d.detail||'Login failed';err.style.display='block'}
     }catch(e){err.innerText='Login failed: '+e.message;err.style.display='block'}
@@ -754,16 +683,9 @@ async function handleSignup(){
             suc.innerText='Account created! Redirecting...';suc.style.display='block';
             state.token=d.token; state.user=d.user; state.is_admin=false;
             state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=1;
-            localStorage.setItem('ct',d.token); setCookie('ct',d.token,30);
-            localStorage.setItem('cu',JSON.stringify(d.user));
-            localStorage.setItem('is_admin','false');
-            localStorage.setItem('reasoningDepth','1');
-            localStorage.setItem('tokenBalance',state.tokenBalance.toString());
-            setTimeout(()=>{
-                document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
-                updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay(); renderMessages(); fetchNotifications();
-                toast('Welcome to CAPITAN AI!');
-            },1200);
+            localStorage.setItem('ct',d.token); setCookie('ct',d.token,30); localStorage.setItem('cu',JSON.stringify(d.user));
+            localStorage.setItem('is_admin','false'); localStorage.setItem('reasoningDepth','1');
+            setTimeout(()=>{document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex'; updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications(); fetchCapBalance(); toast('Welcome to CAPITAN AI!');},1200);
         }else{err.innerText=d.detail||'Signup failed';err.style.display='block'}
     }catch(e){err.innerText='Signup failed: '+e.message;err.style.display='block'}
     btn.disabled=false;btn.innerText='Create Account';
@@ -773,10 +695,7 @@ async function handleForgotPassword(){
     let e=document.getElementById('forgotEmail').value.trim(),err=document.getElementById('forgotError'),suc=document.getElementById('forgotSuccess');
     if(!e){err.innerText='Email required';err.style.display='block';return}
     err.style.display='none';
-    try{
-        await fetch(CFG.API+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})});
-        suc.innerText='If an account exists, a reset link has been sent.';suc.style.display='block';
-    }catch(e){err.innerText='Request failed';err.style.display='block'}
+    try{await fetch(CFG.API+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})});suc.innerText='If an account exists, a reset link has been sent.';suc.style.display='block';}catch(e){err.innerText='Request failed';err.style.display='block'}
 }
 
 async function startGuestSession(){
@@ -785,11 +704,9 @@ async function startGuestSession(){
         if(d.token){
             state.token=d.token; state.user=null; state.is_admin=false;
             state.tokenBalance=d.token_balance||DEFAULT_GUEST_TOKENS; state.reasoningDepth=1;
-            localStorage.setItem('ct',d.token); setCookie('ct',d.token,365);
-            localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
-            localStorage.setItem('tokenBalance',state.tokenBalance.toString());
+            localStorage.setItem('ct',d.token); setCookie('ct',d.token,365); localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
-            updateProfileUI(); updateUIBasedOnTier(); updateTokenDisplay(); renderMessages(); fetchNotifications();
+            updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications();
             toast('Guest session started!');
         }
     }catch(e){toast('Could not start session')}
@@ -797,16 +714,13 @@ async function startGuestSession(){
 
 function logout(){
     localStorage.removeItem('ct'); localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
-    localStorage.removeItem('tokenBalance');
     document.cookie='ct=; Max-Age=0; path=/;';
     state.token=null; state.user=null; state.is_admin=false; state.activeChatId=null; state.messages=[];
-    document.getElementById('app').style.display='none';
-    document.getElementById('authContainer').style.display='flex';
+    document.getElementById('app').style.display='none'; document.getElementById('authContainer').style.display='flex';
 }
 
 // ==================== CHAT ====================
 function newChat(){if(state.currentStreamer)state.currentStreamer.stop();state.activeChatId=null;state.messages=[];renderMessages();document.getElementById('messageInput').focus()}
-
 async function sendMessage(){
     let input=document.getElementById('messageInput'),text=input.value.trim();
     if(!text||state.loading)return;
@@ -817,39 +731,29 @@ async function sendMessage(){
         let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify({messages:state.messages.slice(0,-1),chat_id:state.activeChatId,show_reasoning:false})});
         const content=res.content||'No response';
         state.messages[aiIdx]={role:'assistant',content:content,message_id:res.message_id};
-        state.tokenBalance=res.new_balance||state.tokenBalance;
-        localStorage.setItem('tokenBalance',state.tokenBalance);
-        renderMessages(); updateProfileUI();
+        state.tokenBalance=res.new_balance||state.tokenBalance; renderMessages(); updateProfileUI();
         let streamTarget=document.getElementById('msg-'+aiIdx);
         if(streamTarget)new SmoothStreamer(content,streamTarget,()=>{state.loading=false});
         else state.loading=false;
         state.activeChatId=res.chat_id;
         if(state.tokenBalance<500)toast('Low tokens! Consider purchasing more.');
-    }catch(err){
-        state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();state.loading=false;
-    }
+    }catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();state.loading=false;}
 }
 
 function renderMessages(){
-    let c=document.getElementById('messagesArea');
-    if(!c)return;
+    let c=document.getElementById('messagesArea'); if(!c)return;
     if(!state.messages.length){
         c.innerHTML=`<div style="text-align:center;padding:50px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><div id="suggestionPills" class="suggestion-pills"><button class="suggestion-pill" onclick="useSuggestion('Give me today\\'s top business headlines')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg>Business</button><button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg>Tech</button><button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>Everyday Life</button></div><p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything...</p></div>`;
-        updateGreeting();
-        updateScrollButton();
-        return;
+        updateGreeting(); updateScrollButton(); return;
     }
     c.innerHTML=state.messages.map((m,i)=>{
         if(m.isTyping)return'<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>';
         let html=m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content);
         let actions='';
-        if(m.role==='assistant'&&!m.isTyping){
-            actions='<div class="action-icons"><button onclick="copyMessage('+i+')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button onclick="likeMessage('+i+')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button><button onclick="dislikeMessage('+i+')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button><button onclick="saveToPortfolio('+i+')" title="Save to Portfolio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button></div>';
-        }
+        if(m.role==='assistant'&&!m.isTyping){actions='<div class="action-icons"><button onclick="copyMessage('+i+')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button onclick="likeMessage('+i+')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button><button onclick="dislikeMessage('+i+')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button><button onclick="saveToPortfolio('+i+')" title="Save to Portfolio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button></div>';}
         return'<div class="message '+m.role+'"><div class="message-content" id="msg-'+i+'">'+html+'</div>'+actions+'</div>';
     }).join('');
-    updateScrollButton();
-    scrollBottom();
+    updateScrollButton(); scrollBottom();
 }
 
 function copyMessage(idx){let m=state.messages[idx];if(m){navigator.clipboard.writeText(m.content);toast('Copied!')}}
@@ -869,8 +773,7 @@ function renderPortfolioFullPage(){
     chatIds.forEach(cid=>{tabsHtml+=`<div class="research-hub-tab${portfolioActiveChat===cid?' active':''}" onclick="switchPortfolioTab('${cid}')">Chat</div>`});
     tabsHtml+='</div>';
     let filtered=portfolioActiveChat==='General'?state.portfolio.filter(i=>!i.chat_id):state.portfolio.filter(i=>i.chat_id===portfolioActiveChat);
-    let itemsHtml=filtered.length===0?'<p style="text-align:center;margin:40px 0;color:var(--text-tertiary);">No items in this tab.</p>':
-        filtered.map(i=>`<div class="saved-card" onclick="openPortfolioItem('${i.id}')"><div class="saved-card-title">${escapeHtml(i.name||'Untitled')}</div><div class="saved-card-preview">${escapeHtml((i.content||'').substring(0,120))}</div></div>`).join('');
+    let itemsHtml=filtered.length===0?'<p style="text-align:center;margin:40px 0;color:var(--text-tertiary);">No items in this tab.</p>': filtered.map(i=>`<div class="saved-card" onclick="openPortfolioItem('${i.id}')"><div class="saved-card-title">${escapeHtml(i.name||'Untitled')}</div><div class="saved-card-preview">${escapeHtml((i.content||'').substring(0,120))}</div></div>`).join('');
     let content=document.getElementById('portfolioFullContent');
     content.innerHTML=`${tabsHtml}<div style="margin-top:16px;">${itemsHtml}</div><div style="display:flex;gap:10px;margin-top:16px;"><button class="btn" onclick="showPortfolioCreate()">+ New Note</button><button class="btn btn-outline" onclick="deleteAllInView('${portfolioActiveChat}')">Delete all in this tab</button></div>`;
     document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.add('open');
@@ -892,13 +795,11 @@ async function loadResearchHub(tab){
     document.querySelector(`#researchHubTabs .research-hub-tab[onclick="switchResearchTab('${tab}')"]`).classList.add('active');
     let content=document.getElementById('researchTabContent');
     if(tab==='topics'){
-        let topics=await apiCall('/api/research/topics');
-        state.researchTopics=topics.topics||[];
+        let topics=await apiCall('/api/research/topics'); state.researchTopics=topics.topics||[];
         let domains=[...new Set(state.researchTopics.map(t=>t.domain))];
         content.innerHTML=`<div style="margin-bottom:12px;"><select id="topicDomainFilter" onchange="filterTopicsByDomain()" style="padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);"><option value="">All Domains</option>`+domains.map(d=>`<option value="${d}">${d}</option>`).join('')+`</select></div><div id="topicList">`+renderTopics(state.researchTopics)+`</div>`;
     }else if(tab==='projects'){
-        let proj=await apiCall('/api/research/projects');
-        state.researchProjects=proj.projects||[];
+        let proj=await apiCall('/api/research/projects'); state.researchProjects=proj.projects||[];
         content.innerHTML=`<div style="margin-bottom:12px;"><button class="btn" onclick="createResearchProject()">+ New Project</button></div><div id="projectList">`+state.researchProjects.map(p=>`<div class="saved-card" onclick="newChat();closeResearchHub();state.messages=[{role:'user',content:'Let\\'s explore ${p.name}'}];sendMessage()"><div class="saved-card-title">${escapeHtml(p.name)}</div></div>`).join('')||'<p>No projects yet.</p>'+`</div>`;
     }else if(tab==='rooms'){
         await loadWorkspaces();
@@ -931,30 +832,10 @@ function renderNotifList(){let list=document.getElementById('notifList');if(stat
 async function markAllRead(){try{await apiCall('/api/notifications/read',{method:'POST'});state.notifications.forEach(n=>n.read=true);state.unreadCount=0;updateNotifBadge();renderNotifList()}catch(e){}}
 
 // ==================== TOKEN PURCHASE ====================
-function openTokenPurchaseModal(){
-    let modal=document.getElementById('tokenPurchaseModalContent');
-    modal.innerHTML=`<h2>Buy Tokens</h2>`+TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="purchaseTokens(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('')+`<button class="btn btn-outline" onclick="closeModal('tokenPurchaseModal')">Cancel</button>`;
-    document.getElementById('tokenPurchaseModal').classList.add('open');
-}
-function purchaseTokens(amount,tokens){
-    let modal=document.getElementById('tokenPurchaseModalContent');
-    modal.innerHTML=`<h2>Buy ${tokens} Tokens</h2><p>Amount: $${amount}</p>
-    <div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn" onclick="setTokenCoin('BTC')">BTC</button><button class="btn" onclick="setTokenCoin('ETH')">ETH</button></div>
-    <div id="tokenWalletAddr" style="font-size:11px;background:var(--bg-tertiary);padding:10px;border-radius:8px;word-break:break-all;margin-bottom:10px;">${WALLETS[state.selectedCoin]}</div>
-    <input type="text" id="tokenTxidInput" class="auth-input" placeholder="Transaction ID">
-    <button class="btn" onclick="verifyTokenPurchase(${amount})">Verify Payment</button>
-    <button class="btn btn-outline" onclick="openTokenPurchaseModal()">Back</button>`;
-}
+function openTokenPurchaseModal(){let modal=document.getElementById('tokenPurchaseModalContent');modal.innerHTML=`<h2>Buy Tokens</h2>`+TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="purchaseTokens(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('')+`<button class="btn btn-outline" onclick="closeModal('tokenPurchaseModal')">Cancel</button>`;document.getElementById('tokenPurchaseModal').classList.add('open');}
+function purchaseTokens(amount,tokens){let modal=document.getElementById('tokenPurchaseModalContent');modal.innerHTML=`<h2>Buy ${tokens} Tokens</h2><p>Amount: $${amount}</p><div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn" onclick="setTokenCoin('BTC')">BTC</button><button class="btn" onclick="setTokenCoin('ETH')">ETH</button></div><div id="tokenWalletAddr" style="font-size:11px;background:var(--bg-tertiary);padding:10px;border-radius:8px;word-break:break-all;margin-bottom:10px;">${WALLETS[state.selectedCoin]}</div><input type="text" id="tokenTxidInput" class="auth-input" placeholder="Transaction ID"><button class="btn" onclick="verifyTokenPurchase(${amount})">Verify Payment</button><button class="btn btn-outline" onclick="openTokenPurchaseModal()">Back</button>`;}
 function setTokenCoin(c){state.selectedCoin=c;document.getElementById('tokenWalletAddr').innerText=WALLETS[c];}
-async function verifyTokenPurchase(amount){
-    let txid=document.getElementById('tokenTxidInput').value.trim();
-    if(!txid){toast('Enter TXID');return}
-    try{
-        let res=await apiCall('/api/tokens/purchase',{method:'POST',body:JSON.stringify({package_amount:amount,txid,currency:state.selectedCoin})});
-        if(res.verified){state.tokenBalance=res.new_balance;closeModal('tokenPurchaseModal');toast(`Added ${res.tokens_added} tokens!`);updateProfileUI();}
-        else toast('Verification pending: '+res.message)
-    }catch(e){toast('Verification failed')}
-}
+async function verifyTokenPurchase(amount){let txid=document.getElementById('tokenTxidInput').value.trim();if(!txid){toast('Enter TXID');return}try{let res=await apiCall('/api/tokens/purchase',{method:'POST',body:JSON.stringify({package_amount:amount,txid,currency:state.selectedCoin})});if(res.verified){state.tokenBalance=res.new_balance;closeModal('tokenPurchaseModal');toast(`Added ${res.tokens_added} tokens!`);updateProfileUI();}else toast('Verification pending: '+res.message)}catch(e){toast('Verification failed')}}
 
 // ==================== DEVELOPER PAGE ====================
 function openDeveloperPage(){if(!state.user||(!state.is_admin&&state.tokenBalance<10000)){toast('Developer access requires more tokens or Founder status');return}document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.add('open');loadDeveloperTab('keys')}
@@ -962,55 +843,48 @@ function closeDeveloperPage(){document.getElementById('developerFullPage').class
 function switchDeveloperTab(tab){state.developerTab=tab;document.querySelectorAll('#developerTabs .research-hub-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#developerTabs .research-hub-tab[onclick="switchDeveloperTab('${tab}')"]`).classList.add('active');loadDeveloperTab(tab)}
 async function loadDeveloperTab(tab){
     let content=document.getElementById('developerTabContent');
-    if(tab==='keys'){
-        await loadApiKeys();
-        content.innerHTML=`<h3>API Keys</h3><button class="btn" onclick="createApiKey()">+ Generate New Key</button><div id="apiKeyList" style="margin-top:12px;">${state.apiKeys.map(k=>`<div class="developer-key-card"><span class="key-prefix">${escapeHtml(k.prefix)}</span><div class="key-actions"><button onclick="revokeApiKey('${k.id}')">Revoke</button></div></div>`).join('')||'<p>No API keys yet.</p>'}</div>`;
-    }else if(tab==='webhooks'){
-        await loadWebhooks();
-        content.innerHTML=`<h3>Webhooks</h3><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div id="webhookList" style="margin-top:12px;">${state.webhooks.map(w=>`<div class="developer-key-card"><span>${escapeHtml(w.url)}</span><span style="font-size:10px;">${w.events}</span><div class="key-actions"><button onclick="deleteWebhook('${w.id}')">Delete</button></div></div>`).join('')||'<p>No webhooks configured.</p>'}</div>`;
-    }else if(tab==='embed'){
-        let embedRes;try{embedRes=await apiCall('/api/developer/embed')}catch(e){embedRes=null;}
-        content.innerHTML=`<h3>Embed Widget</h3>${embedRes?`<p>Script tag:</p><pre style="background:var(--bg-tertiary);padding:10px;border-radius:8px;overflow-x:auto;">&lt;script src="${embedRes.script_url}" data-token="${embedRes.embed_token}"&gt;&lt;/script&gt;</pre>`:'<p>Embed available for Pro/Founder tiers.</p>'}`;
-    }else if(tab==='tokens'){
-        content.innerHTML=`<h3>Buy Tokens (Pay‑as‑you‑go)</h3><p style="margin-bottom:12px;">Current balance: <strong>${state.tokenBalance} tokens</strong></p>`+TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="openTokenPurchaseFromDev(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('');
-    }else if(tab==='enterprise'){
-        content.innerHTML=`<h3>Enterprise Token Packages</h3><p style="margin-bottom:12px;">Current balance: <strong>${state.tokenBalance} tokens</strong></p>`+ENTERPRISE_TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="openTokenPurchaseFromDev(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('');
-    }else if(tab==='usage'){
-        let usage;try{let d=await apiCall('/api/developer/usage');usage=d.usage||[]}catch(e){usage=[]}
-        content.innerHTML=`<h3>API Usage (30 days)</h3>`+usage.map(u=>`<div class="developer-key-card"><span>${u.endpoint}</span><span>${u.requests} requests, ${u.tokens} tokens</span></div>`).join('')||'<p>No usage data.</p>';
-    }
+    if(tab==='keys'){await loadApiKeys();content.innerHTML=`<h3>API Keys</h3><button class="btn" onclick="createApiKey()">+ Generate New Key</button><div id="apiKeyList" style="margin-top:12px;">${state.apiKeys.map(k=>`<div class="developer-key-card"><span class="key-prefix">${escapeHtml(k.prefix)}</span><div class="key-actions"><button onclick="revokeApiKey('${k.id}')">Revoke</button></div></div>`).join('')||'<p>No API keys yet.</p>'}</div>`;}
+    else if(tab==='webhooks'){await loadWebhooks();content.innerHTML=`<h3>Webhooks</h3><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div id="webhookList" style="margin-top:12px;">${state.webhooks.map(w=>`<div class="developer-key-card"><span>${escapeHtml(w.url)}</span><span style="font-size:10px;">${w.events}</span><div class="key-actions"><button onclick="deleteWebhook('${w.id}')">Delete</button></div></div>`).join('')||'<p>No webhooks configured.</p>'}</div>`;}
+    else if(tab==='embed'){let embedRes;try{embedRes=await apiCall('/api/developer/embed')}catch(e){embedRes=null;}content.innerHTML=`<h3>Embed Widget</h3>${embedRes?`<p>Script tag:</p><pre style="background:var(--bg-tertiary);padding:10px;border-radius:8px;overflow-x:auto;">&lt;script src="${embedRes.script_url}" data-token="${embedRes.embed_token}"&gt;&lt;/script&gt;</pre>`:'<p>Embed available for Pro/Founder tiers.</p>'}`;}
+    else if(tab==='tokens'){content.innerHTML=`<h3>Buy Tokens (Pay‑as‑you‑go)</h3><p style="margin-bottom:12px;">Current balance: <strong>${state.tokenBalance} tokens</strong></p>`+TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="openTokenPurchaseFromDev(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('');}
+    else if(tab==='enterprise'){content.innerHTML=`<h3>Enterprise Token Packages</h3><p style="margin-bottom:12px;">Current balance: <strong>${state.tokenBalance} tokens</strong></p>`+ENTERPRISE_TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="openTokenPurchaseFromDev(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('');}
+    else if(tab==='usage'){let usage;try{let d=await apiCall('/api/developer/usage');usage=d.usage||[]}catch(e){usage=[]}content.innerHTML=`<h3>API Usage (30 days)</h3>`+usage.map(u=>`<div class="developer-key-card"><span>${u.endpoint}</span><span>${u.requests} requests, ${u.tokens} tokens</span></div>`).join('')||'<p>No usage data.</p>';}
 }
 function openTokenPurchaseFromDev(amount,tokens){purchaseTokens(amount,tokens)}
 async function loadApiKeys(){try{let d=await apiCall('/api/developer/keys');state.apiKeys=d.keys||[]}catch(e){}}
-async function createApiKey() {
-    try {
-        let res = await apiCall('/api/developer/keys', { method: 'POST', body: JSON.stringify({}) });
-        let content = document.getElementById('developerTabContent');
-        content.innerHTML = `<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;">
-            <strong>Your new API key (copy now):</strong>
-            <div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div>
-            <button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button>
-            <button class="btn btn-outline" onclick="loadDeveloperTab('keys')">Done</button>
-        </div>`;
-    } catch(e) {
-        toast('Failed to generate key: ' + (e.message || 'Unknown error'));
-    }
-}
+async function createApiKey(){try{let res=await apiCall('/api/developer/keys',{method:'POST',body:JSON.stringify({})});let content=document.getElementById('developerTabContent');content.innerHTML=`<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;"><strong>Your new API key (copy now):</strong><div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button><button class="btn btn-outline" onclick="loadDeveloperTab('keys')">Done</button></div>`;}catch(e){toast('Failed to generate key: '+(e.message||'Unknown error'));}}
 async function revokeApiKey(id){if(!confirm('Revoke this key?'))return;try{await apiCall('/api/developer/keys/'+id,{method:'DELETE'});toast('Key revoked');await loadApiKeys();loadDeveloperTab('keys')}catch(e){toast('Failed')}}
 async function loadWebhooks(){try{let d=await apiCall('/api/developer/webhooks');state.webhooks=d.webhooks||[]}catch(e){}}
 function showCreateWebhook(){let url=prompt('Webhook URL:');if(!url)return;let events=prompt('Events (comma separated):','new_message');if(!events)return;createWebhook(url,events)}
 async function createWebhook(url,events){try{await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});toast('Webhook created');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
 async function deleteWebhook(id){if(!confirm('Delete this webhook?'))return;try{await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});toast('Webhook deleted');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
 
-// ==================== PROFILE ====================
-function openProfileModal(){
+// ==================== PROFILE MODAL (includes $CAP) ====================
+async function openProfileModal(){
     let modal=document.getElementById('profileModalContent');
     let logged=!!state.user;
+    if(logged) await fetchCapBalance();
     modal.innerHTML=`<h2>Account Settings</h2>
-    <div style="text-align:center;"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22 fill=%22%239ca3af%22/%3E%3Cpath d=%22M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'}">
+    <div style="text-align:center;"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto||'data:image/svg+xml,...'}">
     ${logged?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}</div>
     <div style="font-weight:600;margin-top:8px;">${logged?state.user.name||state.user.email:'Guest'}</div>
     <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Balance: ${state.tokenBalance||0} tokens <button class="btn" style="width:auto;padding:4px 8px;font-size:10px;" onclick="fetchTokenBalance();closeModal('profileModal')">Refresh</button></div>
+    ${logged?`<div style="background:var(--bg-secondary);border-radius:var(--radius);padding:12px;margin:10px 0;">
+        <strong>$CAP Staking</strong><br>
+        Staked: <span id="modalCapStaked">${state.capStaked||0}</span> CAP<br>
+        Tier: <span id="modalCapTier">${state.capTier||'free'}</span><br>
+        <button class="btn btn-outline" style="margin-top:8px;" onclick="connectWallet();return false;">Connect MetaMask</button>
+        <span id="walletInfo" style="font-size:10px; margin-left:8px;"></span>
+        <div id="stakeArea" style="margin-top:8px; display:none;">
+            <input type="number" id="stakeAmount" class="auth-input" placeholder="Amount to stake" style="width:120px; display:inline;">
+            <button class="btn" style="width:auto; display:inline; margin-left:5px;" onclick="stakeCap()">Stake</button>
+        </div>
+        <div id="unstakeArea" style="margin-top:8px;">
+            <input type="text" id="unstakeAddress" class="auth-input" placeholder="Your Polygon address" style="width:180px; display:inline;">
+            <input type="number" id="unstakeAmount" class="auth-input" placeholder="Amount" style="width:100px; display:inline; margin-left:5px;">
+            <button class="btn" style="width:auto; display:inline; margin-left:5px;" onclick="unstakeCap()">Unstake</button>
+        </div>
+    </div>`:''}
     ${logged?`<label>Reasoning Depth <span style="font-size:10px;">(token cost)</span></label>
     <input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()">
     <div class="token-info" id="depthCostInfo">~${Math.round(50*DEPTH_MULTIPLIERS[state.reasoningDepth-1])} tokens / message</div>
@@ -1021,117 +895,142 @@ function openProfileModal(){
     ${logged?`<button class="btn btn-outline" style="color:var(--danger);" onclick="logout();closeModal('profileModal')">Sign Out</button>`:''}
     <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
     document.getElementById('profileModal').classList.add('open');
+    if(logged && capWallet.account) document.getElementById('stakeArea').style.display='block';
 }
-function updateDepthCost(){
-    let depth=parseInt(document.getElementById('depthSlider').value);
-    let cost=Math.round(50*DEPTH_MULTIPLIERS[depth-1]);
-    document.getElementById('depthCostInfo').innerText=`~${cost} tokens / message`;
-}
-async function saveReasoningDepth(){
-    let depth=parseInt(document.getElementById('depthSlider').value);
-    state.reasoningDepth=depth;
-    if(state.user){
-        await apiCall('/api/auth/update-profile',{method:'POST',body:JSON.stringify({reasoning_depth:depth})});
-        toast('Reasoning depth saved');
-        closeModal('profileModal');
-    }
-}
-async function fetchTokenBalance(){
-    if(!state.user)return;
-    try{let d=await apiCall('/api/tokens/balance');state.tokenBalance=d.balance;updateProfileUI();localStorage.setItem('tokenBalance',d.balance);}catch(e){}
-}
+function updateDepthCost(){let depth=parseInt(document.getElementById('depthSlider').value);let cost=Math.round(50*DEPTH_MULTIPLIERS[depth-1]);document.getElementById('depthCostInfo').innerText=`~${cost} tokens / message`;}
+async function saveReasoningDepth(){let depth=parseInt(document.getElementById('depthSlider').value);state.reasoningDepth=depth;if(state.user){await apiCall('/api/auth/update-profile',{method:'POST',body:JSON.stringify({reasoning_depth:depth})});toast('Reasoning depth saved');closeModal('profileModal');}}
+async function fetchTokenBalance(){if(!state.user)return;try{let d=await apiCall('/api/tokens/balance');state.tokenBalance=d.balance;updateProfileUI();}catch(e){}}
 function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
+
+// ==================== $CAP INTEGRATION ====================
+async function connectWallet(){
+    if (window.ethereum) {
+        try {
+            capWallet.provider = new ethers.providers.Web3Provider(window.ethereum);
+            await capWallet.provider.send("eth_requestAccounts", []);
+            capWallet.signer = capWallet.provider.getSigner();
+            capWallet.account = await capWallet.signer.getAddress();
+            await updateCapBalance();
+            document.getElementById('walletInfo').innerText = 'Connected: '+capWallet.account.substring(0,6)+'...';
+            document.getElementById('stakeArea').style.display='block';
+            toast('Wallet connected');
+        } catch(e) { toast('Failed to connect wallet'); }
+    } else { toast('Please install MetaMask'); }
+}
+
+async function updateCapBalance(){
+    if(!capWallet.account || !CFG.CAP_ADDRESS) return;
+    try{
+        const contract = new ethers.Contract(CFG.CAP_ADDRESS, ['function balanceOf(address) view returns (uint256)'], capWallet.provider);
+        const bal = await contract.balanceOf(capWallet.account);
+        capWallet.balance = parseFloat(ethers.utils.formatUnits(bal, 18));
+    }catch(e){}
+}
+
+async function fetchCapBalance(){
+    if(!state.user) return;
+    try{
+        let res = await apiCall('/api/cap/balance');
+        state.capStaked = res.staked;
+        state.capTier = res.tier;
+        document.getElementById('modalCapStaked') && (document.getElementById('modalCapStaked').innerText = state.capStaked);
+        document.getElementById('modalCapTier') && (document.getElementById('modalCapTier').innerText = state.capTier);
+    }catch(e){}
+}
+
+async function stakeCap(){
+    const amount = document.getElementById('stakeAmount').value;
+    if(!amount || !capWallet.signer) return toast('Enter amount and connect wallet');
+    try{
+        const contract = new ethers.Contract(CFG.CAP_ADDRESS, ['function transfer(address to, uint256 amount) returns (bool)'], capWallet.signer);
+        const tx = await contract.transfer(CFG.HOT_WALLET, ethers.utils.parseUnits(amount, 18));
+        await tx.wait();
+        // Verify with backend
+        const res = await apiCall('/api/cap/deposit', {method:'POST', body:JSON.stringify({tx_hash: tx.hash})});
+        state.capStaked = res.staked; state.capTier = res.tier;
+        document.getElementById('modalCapStaked').innerText = state.capStaked;
+        document.getElementById('modalCapTier').innerText = state.capTier;
+        toast(`Staked ${res.deposited} CAP! Tier: ${res.tier}`);
+    }catch(e){ toast('Staking failed: '+(e.message||e)); }
+}
+
+async function unstakeCap(){
+    const amount = document.getElementById('unstakeAmount').value;
+    const address = document.getElementById('unstakeAddress').value.trim();
+    if(!amount || !address) return toast('Enter amount and destination address');
+    try{
+        const res = await apiCall('/api/cap/withdraw', {method:'POST', body:JSON.stringify({amount: parseInt(amount), address})});
+        state.capStaked = state.capStaked - amount;
+        document.getElementById('modalCapStaked').innerText = state.capStaked;
+        toast(`Withdrawal of ${res.withdrawn} CAP requested. It will be processed shortly.`);
+    }catch(e){ toast('Withdrawal failed: '+(e.message||e)); }
+}
 
 // ==================== FOUNDER DASHBOARD ====================
 function openFounderDashboard(){
-    if(!state.user?.is_admin){toast('Founder access required');return}
-    let modal=document.getElementById('founderModalContent');
-    modal.innerHTML=`<div class="dashboard-tabs"><div class="dashboard-tab active" onclick="switchDashTab('overview')">Overview</div><div class="dashboard-tab" onclick="switchDashTab('users')">Users</div><div class="dashboard-tab" onclick="switchDashTab('payments')">Payments</div><div class="dashboard-tab" onclick="switchDashTab('safety')">Safety</div></div><div id="dashContent"></div><button class="btn btn-outline" onclick="closeModal('founderModal')">Close</button>`;
-    document.getElementById('founderModal').classList.add('open');loadDashOverview();
+    if(!state.user?.is_admin){ toast('Founder access required'); return }
+    document.getElementById('chatView').style.display='none';
+    document.getElementById('portfolioFullPage').classList.remove('open');
+    document.getElementById('researchHubFullPage').classList.remove('open');
+    document.getElementById('developerFullPage').classList.remove('open');
+    document.getElementById('founderDashboardPage').classList.add('open');
+    loadFounderDashboard();
 }
-function switchDashTab(tab){document.querySelectorAll('.dashboard-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`.dashboard-tab[onclick="switchDashTab('${tab}')"]`).classList.add('active');if(tab==='overview')loadDashOverview();else if(tab==='users')loadDashUsers();else if(tab==='payments')loadDashPayments();else if(tab==='safety')loadDashSafety()}
-async function loadDashOverview(){try{let d=await apiCall('/api/admin/dashboard');document.getElementById('dashContent').innerHTML=`<p>Total users: ${d.total_users} (Paid: ${d.paid_users})</p><p>Active today: ${d.active_today}</p><p>New this week: ${d.new_this_week}</p><p>Total messages: ${d.total_messages}</p><p>Pending flags: ${d.pending_flags}</p><p>Threats today: ${d.threats_today}</p>`}catch(e){}}
-async function loadDashUsers(){try{let d=await apiCall('/api/admin/users?page=1&search=');let rows=d.users.map(u=>`<tr><td>${u.id}</td><td>${u.email}</td><td>${u.name||''}</td><td>${u.token_balance}</td><td>${u.last_active?new Date(u.last_active).toLocaleDateString():''}</td><td><button onclick="changeUserBalance('${u.id}')">Balance</button><button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('');document.getElementById('dashContent').innerHTML=`<table class="admin-table"><thead><tr><th>ID</th><th>Email</th><th>Name</th><th>Tokens</th><th>Last Active</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`}catch(e){}}
-async function changeUserBalance(userId){let newBal=prompt('Enter new token balance:');if(!newBal)return;try{await apiCall('/api/admin/user/'+userId+'/balance',{method:'POST',body:JSON.stringify({balance:parseInt(newBal)})});toast('Balance updated');loadDashUsers()}catch(e){toast('Failed')}}
-async function deleteUser(userId){if(!confirm('Delete user '+userId+'?'))return;try{await apiCall('/api/admin/user/'+userId,{method:'DELETE'});toast('Deleted');loadDashUsers()}catch(e){toast('Failed')}}
-async function loadDashPayments(){try{let d=await apiCall('/api/admin/payments');let rows=d.payments.map(p=>`<tr><td>${p.user_id}</td><td>${p.email}</td><td>${p.amount} ${p.currency}</td><td>${p.status}</td><td>${p.txid}</td><td>${p.created_at?new Date(p.created_at).toLocaleString():''}</td><td><button onclick="confirmPayment('${p.id}')">Confirm</button></td></tr>`).join('');document.getElementById('dashContent').innerHTML=`<table class="admin-table"><thead><tr><th>User</th><th>Email</th><th>Amount</th><th>Status</th><th>TXID</th><th>Date</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`}catch(e){}}
-async function confirmPayment(id){try{await apiCall('/api/admin/payments/'+id+'/confirm',{method:'POST'});toast('Payment confirmed');loadDashPayments()}catch(e){toast('Failed')}}
-async function loadDashSafety(){try{let dash=await apiCall('/api/admin/safety/dashboard');let flags=await apiCall('/api/admin/safety/flags?reviewed=false');let events=await apiCall('/api/admin/safety/events?hours=24');let blocks=await apiCall('/api/admin/safety/blocked-ips');let html=`<p>Pending flags: ${dash.pending_flags}</p><p>Threats today: ${dash.threats_today}</p><p>Active blocks: ${dash.active_blocks}</p><h3>Flagged Content</h3>${flags.flags.map(f=>`<div class="saved-card"><strong>${f.reason}</strong> (${f.severity}) - ${escapeHtml(f.content)}<br><button onclick="reviewFlag('${f.id}','ignore')">Ignore</button><button onclick="reviewFlag('${f.id}','delete_message')">Delete</button><button onclick="reviewFlag('${f.id}','block_user')">Block User</button></div>`).join('')||'None'}<h3>Security Events</h3>${events.events.map(e=>`<div>${e.type} from ${e.ip}: ${e.details} (${e.severity})</div>`).join('')||'None'}<h3>Blocked IPs</h3>${blocks.blocked_ips.map(b=>`<div>${b.ip} — ${b.reason} until ${new Date(b.blocked_until).toLocaleString()} <button onclick="unblockIP('${b.ip}')">Unblock</button></div>`).join('')||'None'}`;document.getElementById('dashContent').innerHTML=html}catch(e){}}
-async function reviewFlag(id,action){try{await apiCall('/api/admin/safety/flags/'+id+'/review',{method:'POST',body:JSON.stringify({action})});toast('Flag reviewed');loadDashSafety()}catch(e){}}
-async function unblockIP(ip){try{await apiCall('/api/admin/safety/unblock-ip/'+ip,{method:'DELETE'});toast('IP unblocked');loadDashSafety()}catch(e){}}
+function closeFounderDashboard(){
+    document.getElementById('founderDashboardPage').classList.remove('open');
+    document.getElementById('chatView').style.display='flex';
+}
+async function loadFounderDashboard(){
+    let content = document.getElementById('founderDashboardContent');
+    content.innerHTML = '<p>Loading...</p>';
+    try {
+        let data = await apiCall('/api/admin/cap/dashboard');
+        let html = '<div class="grid-2">';
+        html += `<div class="dashboard-card"><h3>Total Staked</h3><div class="big-number">${data.total_staked.toLocaleString()}</div></div>`;
+        html += `<div class="dashboard-card"><h3>Stakers</h3><div class="big-number">${data.stakers_count}</div></div>`;
+        html += `<div class="dashboard-card"><h3>CLOSEAI Stake</h3><div class="big-number">${data.closeai_stake.toLocaleString()}</div></div>`;
+        html += `<div class="dashboard-card"><h3>Revenue (est.)</h3><div class="big-number">${data.revenue_estimate.toLocaleString()} CAP</div></div>`;
+        html += `<div class="dashboard-card"><h3>Total Burns</h3><div class="big-number">${data.total_burns}</div></div>`;
+        html += `<div class="dashboard-card"><h3>DEX Price</h3><div class="big-number">${data.dex_price ? data.dex_price.toFixed(6) + ' MATIC' : 'N/A'}</div></div>`;
+        if(data.treasury_address) {
+            html += `<div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance ? data.treasury_balance.toLocaleString() : 'N/A'} CAP</div><small>Address: ${data.treasury_address}</small></div>`;
+            html += `<div class="dashboard-card"><h3>Total Allocation</h3><div class="big-number">${data.treasury_total_allocation.toLocaleString()} CAP</div></div>`;
+        }
+        if(data.total_supply_onchain) {
+            html += `<div class="dashboard-card"><h3>On‑Chain Supply</h3><div class="big-number">${data.total_supply_onchain.toLocaleString()} CAP</div></div>`;
+        }
+        html += '</div>';
+        html += '<h3 style="margin-top:20px;">Recent Transactions</h3>';
+        if(data.recent_transactions && data.recent_transactions.length){
+            html += '<table class="admin-table"><thead><tr><th>Type</th><th>Amount</th><th>TX Hash</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+            data.recent_transactions.forEach(tx => {
+                html += `<tr><td>${tx.type}</td><td>${tx.amount}</td><td>${tx.tx_hash ? tx.tx_hash.substring(0,10)+'...' : ''}</td><td>${tx.status}</td><td>${tx.created ? new Date(tx.created).toLocaleString() : ''}</td></tr>`;
+            });
+            html += '</tbody></table>';
+        } else { html += '<p>No recent transactions.</p>'; }
+        content.innerHTML = html;
+    } catch(e) { content.innerHTML = '<p>Failed to load dashboard.</p>'; }
+}
 
 // ==================== GUEST MODALS ====================
 function openGuestLoginModal(){let modal=document.getElementById('guestLoginModalContent');modal.innerHTML=`<h2>Sign In</h2><input type="email" id="guestLoginEmail" class="auth-input" placeholder="Email"><input type="password" id="guestLoginPassword" class="auth-input" placeholder="Password"><div id="guestLoginError" class="error-msg"></div><button class="btn" onclick="handleGuestLogin()">Sign In</button><button class="btn btn-outline" onclick="closeModal('guestLoginModal')">Cancel</button>`;document.getElementById('guestLoginModal').classList.add('open')}
-async function handleGuestLogin(){
-    let e=document.getElementById('guestLoginEmail').value.trim(),p=document.getElementById('guestLoginPassword').value,err=document.getElementById('guestLoginError');
-    if(!e||!p){err.innerText='Required';err.style.display='block';return}
-    err.style.display='none';
-    try{
-        let r=await fetch(CFG.API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
-        let d=await r.json();
-        if(d.token){
-            state.token=d.token; state.user=d.user; state.is_admin=d.user.is_admin||false;
-            state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=d.user.reasoning_depth||1;
-            localStorage.setItem('ct',d.token); setCookie('ct',d.token,30);
-            localStorage.setItem('cu',JSON.stringify(d.user));
-            localStorage.setItem('tokenBalance',state.tokenBalance.toString());
-            closeModal('guestLoginModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';
-            updateProfileUI();updateUIBasedOnTier();updateTokenDisplay();renderMessages();fetchNotifications();
-        }else{err.innerText=d.detail||'Failed';err.style.display='block'}
-    }catch(e){err.innerText='Failed';err.style.display='block'}
-}
+async function handleGuestLogin(){let e=document.getElementById('guestLoginEmail').value.trim(),p=document.getElementById('guestLoginPassword').value,err=document.getElementById('guestLoginError');if(!e||!p){err.innerText='Required';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});let d=await r.json();if(d.token){state.token=d.token;state.user=d.user;state.is_admin=d.user.is_admin||false;state.tokenBalance=d.user.token_balance||0;state.reasoningDepth=d.user.reasoning_depth||1;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));closeModal('guestLoginModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();renderMessages();fetchNotifications();fetchCapBalance();}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
 function openGuestSignupModal(){let modal=document.getElementById('guestSignupModalContent');modal.innerHTML=`<h2>Create Free Account</h2><input type="text" id="guestSignupName" class="auth-input" placeholder="Name"><input type="email" id="guestSignupEmail" class="auth-input" placeholder="Email"><input type="password" id="guestSignupPassword" class="auth-input" placeholder="Password (min 6)"><div id="guestSignupError" class="error-msg"></div><div id="guestSignupSuccess" class="success-msg"></div><button class="btn" onclick="handleGuestSignup()">Create Account</button><button class="btn btn-outline" onclick="closeModal('guestSignupModal')">Cancel</button>`;document.getElementById('guestSignupModal').classList.add('open')}
-async function handleGuestSignup(){
-    let n=document.getElementById('guestSignupName').value.trim(),e=document.getElementById('guestSignupEmail').value.trim(),p=document.getElementById('guestSignupPassword').value,err=document.getElementById('guestSignupError'),suc=document.getElementById('guestSignupSuccess');
-    if(!e||!p){err.innerText='Required';err.style.display='block';return}
-    if(p.length<6){err.innerText='Min 6 chars';err.style.display='block';return}
-    err.style.display='none';
-    try{
-        let r=await fetch(CFG.API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p,name:n})});
-        let d=await r.json();
-        if(d.token){
-            suc.innerText='Created! Redirecting...';suc.style.display='block';
-            state.token=d.token; state.user=d.user; state.is_admin=false;
-            state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=1;
-            localStorage.setItem('ct',d.token); setCookie('ct',d.token,30);
-            localStorage.setItem('cu',JSON.stringify(d.user));
-            localStorage.setItem('tokenBalance',state.tokenBalance.toString());
-            setTimeout(()=>{closeModal('guestSignupModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();updateTokenDisplay();renderMessages();fetchNotifications()},1200)
-        }else{err.innerText=d.detail||'Failed';err.style.display='block'}
-    }catch(e){err.innerText='Failed';err.style.display='block'}
-}
+async function handleGuestSignup(){let n=document.getElementById('guestSignupName').value.trim(),e=document.getElementById('guestSignupEmail').value.trim(),p=document.getElementById('guestSignupPassword').value,err=document.getElementById('guestSignupError'),suc=document.getElementById('guestSignupSuccess');if(!e||!p){err.innerText='Required';err.style.display='block';return}if(p.length<6){err.innerText='Min 6 chars';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p,name:n})});let d=await r.json();if(d.token){suc.innerText='Created! Redirecting...';suc.style.display='block';state.token=d.token;state.user=d.user;state.is_admin=false;state.tokenBalance=d.user.token_balance||0;state.reasoningDepth=1;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));setTimeout(()=>{closeModal('guestSignupModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();renderMessages();fetchNotifications();fetchCapBalance()},1200)}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
 
 // File upload trigger
 async function triggerFileUpload(){
     if(!state.user){toast('Sign in to upload files');return}
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
-    inp.onchange=async e=>{
-        let file=e.target.files[0];if(!file)return;
-        let maxSize=60;
-        if(file.size/(1024*1024)>maxSize){toast('Max 60MB');return}
+    inp.onchange=async e=>{let file=e.target.files[0];if(!file)return;let maxSize=60;if(file.size/(1024*1024)>maxSize){toast('Max 60MB');return}
         let fd=new FormData();fd.append('file',file);
-        try{
-            let res=await fetch(CFG.API+'/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+state.token},body:fd});
-            let data=await res.json();
-            toast('Uploaded: '+file.name+(data.extracted?' (text extracted)':''));
-            state.messages.push({role:'user',content:`[Uploaded document: ${file.name}]\n\nPlease analyze this document.`});
-            renderMessages();sendMessage();
-        }catch(e){toast('Upload failed')}
-    };
+        try{let res=await fetch(CFG.API+'/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+state.token},body:fd});let data=await res.json();toast('Uploaded: '+file.name+(data.extracted?' (text extracted)':''));state.messages.push({role:'user',content:`[Uploaded document: ${file.name}]\n\nPlease analyze this document.`});renderMessages();sendMessage();}catch(e){toast('Upload failed')}};
     inp.click();
 }
 
 // Scroll button
-function setupScrollButton(){
-    let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');
-    area.addEventListener('scroll',updateScrollButton);
-    updateScrollButton();
-}
-function updateScrollButton(){
-    let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');
-    let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;
-    btn.style.display=atBottom?'none':'flex';
-}
+function setupScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
+function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex';}
 
 // ==================== INIT ====================
 async function init(){
@@ -1144,61 +1043,32 @@ async function init(){
     setTimeout(()=>{document.getElementById('splashScreen')?.classList.add('hide')},1600);
     if(localStorage.getItem('session_expired')&&!state.token){document.getElementById('sessionExpiredMsg').style.display='block';localStorage.removeItem('session_expired')}
     if(state.token){
-        document.getElementById('authContainer').style.display='none';
-        document.getElementById('app').style.display='flex';
-        await initSession();
-        renderMessages();
-        updateUIBasedOnTier();
-        loadWorkspaces();
-        fetchNotifications();
+        document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
+        await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchCapBalance();
     }
 }
-
 async function initSession(){
-    // Load stored balance as fallback
-    let storedBal = localStorage.getItem('tokenBalance');
-    if (storedBal) state.tokenBalance = parseInt(storedBal);
-
+    let storedBal = localStorage.getItem('tokenBalance'); if(storedBal) state.tokenBalance = parseInt(storedBal);
     try {
-        let resp = await fetch(CFG.API+'/api/auth/validate', {
-            headers: {'Authorization': 'Bearer ' + state.token}
-        });
-        if (resp.ok) {
+        let resp = await fetch(CFG.API+'/api/auth/validate', {headers:{'Authorization':'Bearer '+state.token}});
+        if(resp.ok){
             let data = await resp.json();
-            state.user = data.user;
-            state.is_admin = data.is_admin;
-            state.tokenBalance = data.token_balance;
-            state.reasoningDepth = data.reasoning_depth;
-            localStorage.setItem('cu', JSON.stringify(data.user));
-            localStorage.setItem('is_admin', data.is_admin.toString());
+            state.user = data.user; state.is_admin = data.is_admin; state.tokenBalance = data.token_balance; state.reasoningDepth = data.reasoning_depth;
+            localStorage.setItem('cu', JSON.stringify(data.user)); localStorage.setItem('is_admin', data.is_admin.toString());
             localStorage.setItem('reasoningDepth', data.reasoning_depth.toString());
             localStorage.setItem('tokenBalance', data.token_balance.toString());
-        } else if (resp.status === 401) {
-            // Token invalid – start a fresh guest session
-            let guestResp = await fetch(CFG.API+'/api/session');
-            let guestData = await guestResp.json();
-            state.token = guestData.token;
-            state.user = null;
-            state.is_admin = false;
-            state.tokenBalance = guestData.token_balance || DEFAULT_GUEST_TOKENS;
-            state.reasoningDepth = 1;
-            localStorage.setItem('ct', guestData.token);
-            setCookie('ct', guestData.token, 365);
-            localStorage.removeItem('cu');
-            localStorage.removeItem('is_admin');
+        } else if(resp.status === 401){
+            let guestResp = await fetch(CFG.API+'/api/session'); let guestData = await guestResp.json();
+            state.token = guestData.token; state.user = null; state.is_admin = false;
+            state.tokenBalance = guestData.token_balance || DEFAULT_GUEST_TOKENS; state.reasoningDepth = 1;
+            localStorage.setItem('ct', guestData.token); setCookie('ct', guestData.token, 365);
+            localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
             localStorage.setItem('tokenBalance', state.tokenBalance.toString());
-        } else {
-            // Server error – use stored balance
-            if (storedBal) state.tokenBalance = parseInt(storedBal);
-        }
-    } catch(e) {
-        if (storedBal) state.tokenBalance = parseInt(storedBal);
-    }
-    updateProfileUI();
-    updateUIBasedOnTier();
+        } else { if(storedBal) state.tokenBalance = parseInt(storedBal); }
+    } catch(e) { if(storedBal) state.tokenBalance = parseInt(storedBal); }
+    updateProfileUI(); updateUIBasedOnTier();
 }
-
 init();
 </script>
 </body>
-</html> 
+</html>
