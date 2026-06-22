@@ -12,3 +12,4 @@ python-docx
 openpyxl
 numpy
 aiohttp
+web3==6.16.0
