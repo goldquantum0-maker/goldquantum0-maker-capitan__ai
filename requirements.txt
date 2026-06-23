@@ -3,13 +3,15 @@ uvicorn
 psycopg2-binary
 pydantic-settings
 bcrypt
-python-jose
 requests
 PyPDF2
 python-docx
 openpyxl
+python-multipart
 web3
 pyotp
 qrcode
 cryptography
 eth_account
+numpy
+aiohttp
