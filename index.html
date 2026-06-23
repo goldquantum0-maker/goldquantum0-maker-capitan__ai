@@ -244,13 +244,22 @@
         .dashboard-card .big-number { font-size:2rem; font-weight:700; color:var(--accent-blue); }
         .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
         @media (max-width:600px){ .grid-2 { grid-template-columns:1fr; } }
-        .wallet-create-area { background:var(--bg-secondary); border-radius:var(--radius); padding:16px; margin-top:10px; }
-        .wallet-create-area h4 { font-size:13px; margin-bottom:8px; }
-        .wallet-create-area .btn { margin-top:4px; }
-        .phrase-display { background:var(--bg-tertiary); padding:12px; border-radius:8px; font-family:monospace; font-size:11px; word-break:break-word; margin:8px 0; border:1px solid var(--border); }
-        .wallet-info { font-size:11px; color:var(--text-secondary); margin:4px 0; }
-        .tx-confirm { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin:8px 0; }
-        .tx-confirm pre { font-size:11px; white-space:pre-wrap; }
+        .wallet-fullscreen { position:fixed; inset:0; background:var(--bg-primary); z-index:110; display:none; flex-direction:column; overflow-y:auto; padding:20px; }
+        .wallet-fullscreen.open { display:flex; }
+        .wallet-fullscreen .close-btn { align-self:flex-end; background:var(--accent-blue); color:white; border:none; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+        .wallet-fullscreen .wallet-container { max-width:900px; width:100%; margin:0 auto; }
+        .wallet-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
+        .wallet-card h3 { font-size:16px; margin-bottom:12px; }
+        .wallet-balance { font-size:2rem; font-weight:700; color:var(--accent-blue); }
+        .wallet-address { font-family:monospace; font-size:14px; color:var(--text-secondary); word-break:break-all; }
+        .wallet-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:12px; margin-top:12px; }
+        .wallet-actions button { padding:14px; border-radius:var(--radius); font-weight:600; font-size:14px; cursor:pointer; transition:0.2s; border:1px solid var(--border); background:var(--surface); color:var(--text-primary); }
+        .wallet-actions button:hover { border-color:var(--accent-blue); background:var(--accent-blue-glow); }
+        .swap-panel { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-top:12px; }
+        .swap-panel select, .swap-panel input { width:100%; padding:10px; margin:6px 0; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text-primary); }
+        .swap-panel .swap-btn { margin-top:8px; }
+        .tx-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+        .tx-table th, .tx-table td { padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; }
     </style>
 </head>
 <body>
@@ -319,6 +328,10 @@
         <div class="new-chat-btn" onclick="newChat()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>New chat</span>
+        </div>
+        <div class="menu-item" onclick="openWallet()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+            <span>Wallet</span>
         </div>
         <div class="menu-item" onclick="openPortfolio()" id="portfolioMenuItem" style="display:none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -484,13 +497,18 @@
     <div class="full-page-view" id="founderDashboardPage">
         <button class="close-btn" onclick="closeFounderDashboard()" style="position:absolute;top:20px;right:20px;">&times;</button>
         <div style="max-width:1100px; width:100%; margin:0 auto;">
-            <h2 style="margin-bottom:16px;">$CAP Dashboard</h2>
+            <h2 style="margin-bottom:16px;">Founder Dashboard</h2>
             <div class="dashboard-tabs">
-                <div class="dashboard-tab active" onclick="switchDashTab('overview')">Overview</div>
-                <div class="dashboard-tab" onclick="switchDashTab('treasury')">Treasury</div>
+                <div class="dashboard-tab active" onclick="switchDashTab('cap')">$CAP</div>
+                <div class="dashboard-tab" onclick="switchDashTab('ai')">AI Metrics</div>
             </div>
             <div id="founderDashboardContent"></div>
         </div>
+    </div>
+    <!-- Wallet full-screen view -->
+    <div class="wallet-fullscreen" id="walletFullPage">
+        <button class="close-btn" onclick="closeWallet()" style="position:absolute;top:20px;right:20px;">&times;</button>
+        <div class="wallet-container" id="walletContainer"></div>
     </div>
     <!-- Workspace Messages Modal -->
     <div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div></div>
@@ -511,7 +529,7 @@
 const CFG = {
     API: 'https://capitan-ai-jxu8.onrender.com',
     RPC_URL: 'https://polygon-rpc.com',
-    CAP_ADDRESS: '',
+    CAP_ADDRESS: '', // fill after token deployment
     HOT_WALLET: '0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F'
 };
 const WALLETS = { BTC: 'bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2', ETH: '0x28c18922072f904f91499A603d7AF8F9C57aDD8b' };
@@ -554,7 +572,8 @@ let state = {
     walletExists: false,
     totpEnabled: false,
     totpSecret: null,
-    walletSigner: null
+    walletSigner: null,
+    walletAddress: null
 };
 
 // ==================== UTILITIES ====================
@@ -894,98 +913,137 @@ function hideSuggestions(){let pills=document.getElementById('suggestionPills');
 function setupScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
 function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex';}
 
-// ==================== WALLET & 2FA ====================
-async function fetchWalletStatus(){if(!state.user)return;try{let d=await apiCall('/api/wallet/status');state.walletExists=d.exists;state.totpEnabled=d.totp_enabled;}catch(e){}}
-
-async function setup2FA(){
-    if(!state.user) return toast('Sign in first');
+// ==================== WALLET SYSTEM ====================
+async function fetchWalletStatus(){
+    if(!state.user) return;
     try{
-        let d = await apiCall('/api/2fa/setup', {method:'POST'});
-        state.totpSecret = d.secret;
-        let modal = document.getElementById('profileModalContent');
-        modal.innerHTML = `
-            <h2>Set Up 2FA</h2>
-            <p>Scan this QR code with Google Authenticator:</p>
-            ${d.qr_code ? `<img src="${d.qr_code}" style="width:200px;height:200px;"/>` : ''}
-            <p>Or enter this secret manually: <strong>${d.secret}</strong></p>
-            <input type="text" id="totpVerifyCode" class="auth-input" placeholder="Enter 6-digit code">
-            <button class="btn" onclick="verify2FA()">Verify & Activate</button>
-            <button class="btn btn-outline" onclick="openProfileModal()">Back</button>
-        `;
-    }catch(e){ toast('Failed to setup 2FA'); }
+        let d = await apiCall('/api/wallet/status');
+        state.walletExists = d.exists;
+        state.totpEnabled = d.totp_enabled;
+        state.walletAddress = d.address || null;
+    }catch(e){}
 }
 
-async function verify2FA(){
-    let code = document.getElementById('totpVerifyCode').value;
-    if(!code) return toast('Enter code');
-    try{
-        await apiCall('/api/2fa/verify', {method:'POST', body:JSON.stringify({code, secret: state.totpSecret})});
-        state.totpEnabled = true;
-        toast('2FA activated');
-        openProfileModal();
-    }catch(e){ toast('Invalid code'); }
+function openWallet(){
+    if(!state.user){ toast('Sign in to access wallet'); return; }
+    document.getElementById('chatView').style.display='none';
+    document.getElementById('portfolioFullPage').classList.remove('open');
+    document.getElementById('researchHubFullPage').classList.remove('open');
+    document.getElementById('developerFullPage').classList.remove('open');
+    document.getElementById('founderDashboardPage').classList.remove('open');
+    document.getElementById('walletFullPage').classList.add('open');
+    renderWallet();
 }
 
-async function createWallet(){
-    if(!state.totpEnabled) return toast('Set up 2FA first');
-    let password = prompt('Create wallet password (min 10 characters):');
-    if(!password || password.length<10) return toast('Min 10 characters');
-    let totpCode = prompt('Enter your 2FA code:');
-    if(!totpCode) return;
+function closeWallet(){
+    document.getElementById('walletFullPage').classList.remove('open');
+    document.getElementById('chatView').style.display='flex';
+}
+
+async function renderWallet(){
+    let container = document.getElementById('walletContainer');
+    await fetchWalletStatus();
+    let html = '<h2>💳 Wallet Centre</h2>';
+    if(!state.walletExists){
+        html += `
+        <div class="wallet-card">
+            <h3>Create your CAPITAN Wallet</h3>
+            <p>One password is all you need. 2FA can be added later for extra security.</p>
+            <input type="password" id="walletPassword" class="auth-input" placeholder="Choose a strong password (min 10 chars)">
+            <button class="btn" onclick="createWalletSimple()">Create Wallet</button>
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">Already have a seed? <a onclick="importWallet()">Import wallet</a></p>
+        </div>`;
+    } else {
+        html += `
+        <div class="wallet-card">
+            <div class="wallet-address">${state.walletAddress || 'Address unavailable'}</div>
+            <div class="wallet-balance" id="walletCapBalance">Loading...</div>
+            <div class="wallet-actions">
+                <button onclick="walletSend()">Send</button>
+                <button onclick="walletReceive()">Receive</button>
+                <button onclick="walletStake()">Stake</button>
+                <button onclick="walletUnstake()">Unstake</button>
+                <button onclick="toggleSwapPanel()">Swap</button>
+            </div>
+            <div class="swap-panel" id="swapPanel" style="display:none;">
+                <h4>Swap $CAP</h4>
+                <select id="swapFromToken"><option value="CAP">$CAP</option></select>
+                <select id="swapToToken"><option value="MATIC">MATIC</option><option value="USDT">USDT</option><option value="WETH">WETH</option><option value="WBTC">WBTC</option></select>
+                <input type="number" id="swapAmount" placeholder="Amount">
+                <button class="btn swap-btn" onclick="executeSwap()">Get Quote</button>
+                <div id="swapQuote" style="margin-top:8px;font-size:12px;"></div>
+            </div>
+        </div>
+        <div class="wallet-card">
+            <h3>Security</h3>
+            ${!state.totpEnabled ? '<button class="btn" onclick="setup2FA()">Enable 2FA</button>' : '<p>2FA is active ✅</p>'}
+            <button class="btn btn-outline" onclick="walletChangePassword()">Change Password</button>
+        </div>
+        <div class="wallet-card">
+            <h3>Recent Transactions</h3>
+            <div id="walletTxList">Loading...</div>
+        </div>`;
+    }
+    container.innerHTML = html;
+    if(state.walletExists){
+        fetchCapBalance();
+        fetchWalletTransactions();
+    }
+}
+
+async function createWalletSimple(){
+    let password = document.getElementById('walletPassword').value;
+    if(!password || password.length<10) return toast('Password min 10 characters');
     try{
-        let d = await apiCall('/api/wallet/create', {method:'POST', body:JSON.stringify({
-            password, totp_code: totpCode, totp_secret: state.totpSecret
-        })});
+        let d = await apiCall('/api/wallet/create', {method:'POST', body:JSON.stringify({password, totp_code: ''})});
         state.walletExists = true;
-        toast('Wallet created! Address: '+d.address);
-        openProfileModal();
+        state.walletAddress = d.address;
+        toast('Wallet created!');
+        renderWallet();
     }catch(e){ toast('Failed: '+e.message); }
 }
 
 async function unlockWallet(){
     let password = prompt('Wallet password:');
     if(!password) return;
-    let totpCode = prompt('2FA code:');
-    if(!totpCode) return;
+    let totpCode = state.totpEnabled ? prompt('2FA code:') : '';
     try{
         let d = await apiCall('/api/wallet/unlock', {method:'POST', body:JSON.stringify({password, totp_code: totpCode})});
         state.walletSigner = new ethers.Wallet(d.private_key, new ethers.providers.JsonRpcProvider(CFG.RPC_URL));
         toast('Wallet unlocked');
-        openProfileModal();
     }catch(e){ toast('Unlock failed: '+e.message); }
 }
 
-async function recoverWallet(){
-    let totpCode = prompt('Enter 2FA code for recovery:');
-    if(!totpCode) return;
-    let newPassword = prompt('New wallet password (min 10 chars):');
-    if(!newPassword || newPassword.length<10) return toast('Min 10 characters');
+async function setup2FA(){
     try{
-        await apiCall('/api/wallet/recover', {method:'POST', body:JSON.stringify({totp_code: totpCode, new_password: newPassword})});
-        toast('Wallet recovered! Use new password to unlock.');
-        openProfileModal();
-    }catch(e){ toast('Recovery failed: '+e.message); }
+        let d = await apiCall('/api/2fa/setup', {method:'POST'});
+        state.totpSecret = d.secret;
+        let code = prompt('Enter the QR code secret into your authenticator app, then enter the 6-digit code:');
+        if(!code) return;
+        await apiCall('/api/2fa/verify', {method:'POST', body:JSON.stringify({code, secret: d.secret})});
+        state.totpEnabled = true;
+        toast('2FA enabled');
+        renderWallet();
+    }catch(e){ toast('2FA setup failed'); }
 }
 
-async function stakeCap(){
-    if(!state.walletSigner) return toast('Unlock wallet first');
+async function walletStake(){
+    if(!state.walletSigner) await unlockWallet();
+    if(!state.walletSigner) return;
     let amount = prompt('Amount to stake (CAP):');
     if(!amount) return;
     try{
-        let signer = state.walletSigner;
-        let contract = new ethers.Contract(CFG.CAP_ADDRESS, ['function transfer(address,uint256)'], signer);
+        let contract = new ethers.Contract(CFG.CAP_ADDRESS, ['function transfer(address,uint256)'], state.walletSigner);
         let txRequest = await contract.populateTransaction.transfer(CFG.HOT_WALLET, ethers.utils.parseUnits(amount, 18));
-        let signedTx = await signer.signTransaction(txRequest);
+        let signedTx = await state.walletSigner.signTransaction(txRequest);
         await apiCall('/api/wallet/relay', {method:'POST', body:JSON.stringify({signed_tx: signedTx})});
-        // For simplicity, immediately call deposit endpoint (backend will verify on‑chain)
-        let depositResp = await apiCall('/api/cap/deposit', {method:'POST', body:JSON.stringify({tx_hash: signedTx})});
-        state.capStaked = depositResp.staked; state.capTier = depositResp.tier;
-        toast(`Staked! Tier: ${state.capTier}`);
-        updateProfileUI();
+        await apiCall('/api/cap/deposit', {method:'POST', body:JSON.stringify({tx_hash: signedTx})});
+        fetchCapBalance();
+        toast('Staked!');
     }catch(e){ toast('Staking failed: '+e.message); }
 }
 
-async function unstakeCap(){
+async function walletUnstake(){
     let amount = prompt('Amount to unstake:');
     if(!amount) return;
     let dest = prompt('Your Polygon address to receive CAP:');
@@ -996,11 +1054,46 @@ async function unstakeCap(){
     }catch(e){ toast('Withdrawal failed: '+e.message); }
 }
 
-// ==================== PROFILE MODAL ====================
+async function toggleSwapPanel(){
+    document.getElementById('swapPanel').style.display = document.getElementById('swapPanel').style.display === 'none' ? 'block' : 'none';
+}
+
+async function executeSwap(){
+    let fromToken = document.getElementById('swapFromToken').value;
+    let toToken = document.getElementById('swapToToken').value;
+    let amount = document.getElementById('swapAmount').value;
+    if(!amount) return;
+    try{
+        let quote = await apiCall('/api/wallet/swap/quote', {method:'POST', body:JSON.stringify({fromToken, toToken, amount})});
+        document.getElementById('swapQuote').innerHTML = `Best price: ${quote.estimatedAmount} ${toToken} (slippage: ${quote.slippage}%)<br><button class="btn" onclick="confirmSwap('${quote.txData}')">Confirm Swap</button>`;
+    }catch(e){ toast('Quote failed'); }
+}
+
+async function confirmSwap(txData){
+    if(!state.walletSigner) await unlockWallet();
+    toast('Swap executed (simulation)');
+}
+
+async function fetchCapBalance(){
+    if(!state.user) return;
+    try{
+        let res = await apiCall('/api/cap/balance');
+        state.capStaked = res.staked;
+        state.capTier = res.tier;
+        document.getElementById('walletCapBalance') && (document.getElementById('walletCapBalance').innerText = `${state.capStaked || 0} CAP`);
+    }catch(e){}
+}
+
+async function fetchWalletTransactions(){
+    let el = document.getElementById('walletTxList');
+    if(!el) return;
+    el.innerHTML = '<p>No recent transactions.</p>';
+}
+
+// ==================== PROFILE MODAL (cleaned) ====================
 async function openProfileModal(){
     let modal = document.getElementById('profileModalContent');
     let logged = !!state.user;
-    if(logged) await fetchWalletStatus();
     let defaultAvatar = document.getElementById('profileAvatar').src;
     modal.innerHTML = `
     <h2>Account Settings</h2>
@@ -1009,35 +1102,14 @@ async function openProfileModal(){
         ${logged?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}
     </div>
     <div style="font-weight:600;margin-top:8px;">${logged?state.user.name||state.user.email:'Guest'}</div>
-    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Balance: ${state.tokenBalance||0} tokens <button class="btn" style="width:auto;padding:4px 8px;font-size:10px;" onclick="fetchTokenBalance();closeModal('profileModal')">Refresh</button></div>
-    <div class="wallet-create-area">
-        <h4>💳 Wallet Centre</h4>
-        ${state.walletExists ? `
-            <div class="wallet-info">Status: Wallet exists ${state.totpEnabled?'(2FA enabled)':''}</div>
-            <button class="btn" onclick="unlockWallet()">Unlock Wallet</button>
-            <button class="btn btn-outline" onclick="recoverWallet()">Recover via 2FA</button>
-            <div style="margin-top:8px;">
-                <button class="btn" onclick="stakeCap()">Stake</button>
-                <button class="btn btn-outline" onclick="unstakeCap()">Unstake</button>
-            </div>
-        ` : `
-            <p>No wallet yet.</p>
-            ${!state.totpEnabled ? '<button class="btn" onclick="setup2FA()">Set Up 2FA</button>' : ''}
-            <button class="btn" onclick="createWallet()" ${!state.totpEnabled?'disabled':''}>Create Wallet</button>
-        `}
-    </div>
-    <div style="background:var(--bg-secondary);border-radius:var(--radius);padding:12px;margin:10px 0;">
-        <strong>$CAP Staking</strong><br>
-        Staked: <span id="modalCapStaked">${state.capStaked||0}</span> CAP<br>
-        Tier: <span id="modalCapTier">${state.capTier||'free'}</span>
-    </div>
-    ${logged?`<label>Reasoning Depth <span style="font-size:10px;">(token cost)</span></label>
+    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Balance: ${state.tokenBalance||0} tokens</div>
+    ${logged?`<label>Reasoning Depth</label>
     <input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()">
     <div class="token-info" id="depthCostInfo">~${Math.round(50*DEPTH_MULTIPLIERS[state.reasoningDepth-1])} tokens / message</div>
     <button class="btn" onclick="saveReasoningDepth()">Save Depth</button>`:''}
     ${logged?`<button class="btn btn-outline" onclick="openTokenPurchaseModal();closeModal('profileModal')">Buy Tokens</button>`:''}
-    ${!logged?`<div class="modal-setting" onclick="openGuestLoginModal();closeModal('profileModal')"><span>Sign in</span></div>`:''}
-    ${!logged?`<div class="modal-setting" onclick="openGuestSignupModal();closeModal('profileModal')"><span>Create account</span></div>`:''}
+    <div class="modal-setting" onclick="openPrivacyModal();closeModal('profileModal')">Privacy Policy</div>
+    <div class="modal-setting" onclick="openTermsModal();closeModal('profileModal')">Terms of Service</div>
     ${logged?`<button class="btn btn-outline" style="color:var(--danger);" onclick="logout();closeModal('profileModal')">Sign Out</button>`:''}
     <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>
     `;
@@ -1048,15 +1120,16 @@ async function saveReasoningDepth(){let depth=parseInt(document.getElementById('
 async function fetchTokenBalance(){if(!state.user)return;try{let d=await apiCall('/api/tokens/balance');state.tokenBalance=d.balance;updateProfileUI();}catch(e){}}
 function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
 
-// ==================== FOUNDER DASHBOARD ====================
+// ==================== FOUNDER DASHBOARD (split tabs) ====================
 function openFounderDashboard(){
     if(!state.user?.is_admin){ toast('Founder access required'); return }
     document.getElementById('chatView').style.display='none';
     document.getElementById('portfolioFullPage').classList.remove('open');
     document.getElementById('researchHubFullPage').classList.remove('open');
     document.getElementById('developerFullPage').classList.remove('open');
+    document.getElementById('walletFullPage').classList.remove('open');
     document.getElementById('founderDashboardPage').classList.add('open');
-    loadFounderDashboard('overview');
+    loadFounderDashboard('cap');
 }
 function closeFounderDashboard(){
     document.getElementById('founderDashboardPage').classList.remove('open');
@@ -1067,11 +1140,11 @@ function switchDashTab(tab){
     document.querySelector(`#founderDashboardPage .dashboard-tab[onclick="switchDashTab('${tab}')"]`).classList.add('active');
     loadFounderDashboard(tab);
 }
-async function loadFounderDashboard(tab='overview'){
+async function loadFounderDashboard(tab='cap'){
     let content = document.getElementById('founderDashboardContent');
     content.innerHTML = '<p>Loading...</p>';
-    try {
-        if(tab === 'overview'){
+    if(tab === 'cap'){
+        try {
             let data = await apiCall('/api/admin/cap/dashboard');
             let html = '<div class="grid-2">';
             html += `<div class="dashboard-card"><h3>Total Staked</h3><div class="big-number">${data.total_staked.toLocaleString()}</div></div>`;
@@ -1097,44 +1170,20 @@ async function loadFounderDashboard(tab='overview'){
                 html += '</tbody></table>';
             } else { html += '<p>No recent transactions.</p>'; }
             content.innerHTML = html;
-        } else if(tab === 'treasury'){
-            let safeData = await apiCall('/api/safe/transactions');
-            let html = '<h3>Pending Safe Transactions</h3>';
-            if(safeData.transactions.length){
-                html += '<table class="admin-table"><thead><tr><th>To</th><th>Value</th><th>Nonce</th><th>Signatures</th><th>Executed</th><th>Action</th></tr></thead><tbody>';
-                safeData.transactions.forEach(tx => {
-                    let sigCount = Object.keys(tx.signatures).length;
-                    html += `<tr><td>${tx.to}</td><td>${tx.value}</td><td>${tx.nonce}</td><td>${sigCount}/2</td><td>${tx.executed?'✅':'⏳'}</td><td>${!tx.executed ? `<button onclick="signSafeTx('${tx.id}')">Sign</button>` : ''}</td></tr>`;
-                });
-                html += '</tbody></table>';
-            } else { html += '<p>No pending transactions.</p>'; }
-            html += `<button class="btn" onclick="proposeSafeTx()">Propose Transaction</button>`;
+        } catch(e) { content.innerHTML = '<p>Failed to load $CAP dashboard.</p>'; }
+    } else if(tab === 'ai'){
+        try {
+            let data = await apiCall('/api/admin/ai/dashboard');
+            let html = '<div class="grid-2">';
+            html += `<div class="dashboard-card"><h3>Total Users</h3><div class="big-number">${data.total_users}</div></div>`;
+            html += `<div class="dashboard-card"><h3>Active Today</h3><div class="big-number">${data.active_today}</div></div>`;
+            html += `<div class="dashboard-card"><h3>Total Messages</h3><div class="big-number">${data.total_messages}</div></div>`;
+            html += `<div class="dashboard-card"><h3>Pending Flags</h3><div class="big-number">${data.pending_flags}</div></div>`;
+            html += `<div class="dashboard-card"><h3>Threats Today</h3><div class="big-number">${data.threats_today}</div></div>`;
+            html += '</div>';
             content.innerHTML = html;
-        }
-    } catch(e) { content.innerHTML = '<p>Failed to load dashboard.</p>'; }
-}
-
-async function proposeSafeTx(){
-    let to = prompt('Recipient address:');
-    if(!to) return;
-    let value = prompt('Amount in wei:');
-    if(!value) return;
-    try{
-        await apiCall('/api/safe/propose', {method:'POST', body:JSON.stringify({to, value})});
-        toast('Transaction proposed');
-        loadFounderDashboard('treasury');
-    }catch(e){ toast('Failed'); }
-}
-
-async function signSafeTx(txId){
-    if(!state.walletSigner) return toast('Unlock wallet first');
-    let msg = `Signing safe tx ${txId}`;
-    let signature = await state.walletSigner.signMessage(msg);
-    try{
-        await apiCall('/api/safe/sign', {method:'POST', body:JSON.stringify({tx_id: txId, signature})});
-        toast('Signed');
-        loadFounderDashboard('treasury');
-    }catch(e){ toast('Signing failed'); }
+        } catch(e) { content.innerHTML = '<p>Failed to load AI dashboard.</p>'; }
+    }
 }
 
 // ==================== INIT ====================
