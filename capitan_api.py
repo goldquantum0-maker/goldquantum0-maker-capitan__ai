@@ -2540,22 +2540,32 @@ async def relay_transaction(req: dict, user: dict = Depends(get_current_user)):
 @app.post("/api/2fa/setup")
 async def setup_2fa(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    secret = generate_totp_secret()
+    try:
+        secret = generate_totp_secret()
+    except:
+        raise HTTPException(501, "pyotp not installed")
     uri = get_totp_uri(secret, user["email"])
-    qr_base64 = ""
-    if QRCODE_AVAILABLE:
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(uri)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+    qr_base64 = None
+    try:
+        if QRCODE_AVAILABLE:
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(uri)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+    except Exception as e:
+        logger.error(f"QR generation failed: {e}")
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("UPDATE cap_wallets SET totp_secret=%s WHERE user_id=%s", (secret, user["id"]))
             conn.commit()
-    return {"secret": secret, "uri": uri, "qr_code": f"data:image/png;base64,{qr_base64}" if qr_base64 else None}
+    return {
+        "secret": secret,
+        "uri": uri,
+        "qr_code": f"data:image/png;base64,{qr_base64}" if qr_base64 else None
+    }
 
 @app.post("/api/2fa/verify")
 async def verify_2fa(req: dict, user: dict = Depends(get_current_user)):
