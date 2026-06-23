@@ -1,5 +1,5 @@
 """
-CAPITAN AI — Enterprise Backend v35.0 (Final Unabridged: $CAP + DEX + Treasury + Full Supply)
+CAPITAN AI — Enterprise Backend v36.0 (Full Unabridged — Wallet, 2FA, Safe, Relayer)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -46,8 +46,45 @@ try:
 except ImportError:
     pass
 
-# Web3 for Polygon on‑chain verification and DEX
-from web3 import Web3
+# Web3 for Polygon on‑chain verification and DEX – optional
+WEB3_AVAILABLE = False
+try:
+    from web3 import Web3
+    WEB3_AVAILABLE = True
+except ImportError:
+    pass
+
+# 2FA
+TOTP_AVAILABLE = False
+try:
+    import pyotp
+    TOTP_AVAILABLE = True
+except ImportError:
+    pass
+
+QRCODE_AVAILABLE = False
+try:
+    import qrcode
+    from io import BytesIO
+    QRCODE_AVAILABLE = True
+except ImportError:
+    pass
+
+# Cryptography for wallet encryption
+CRYPTO_AVAILABLE = False
+try:
+    from cryptography.fernet import Fernet
+    CRYPTO_AVAILABLE = True
+except ImportError:
+    pass
+
+# eth_account for wallet generation (optional, fallback to ethers on frontend)
+ETH_ACCOUNT_AVAILABLE = False
+try:
+    from eth_account import Account
+    ETH_ACCOUNT_AVAILABLE = True
+except ImportError:
+    pass
 
 import concurrent.futures
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
@@ -75,10 +112,22 @@ class Settings(BaseSettings):
     CAP_CONTRACT_ADDRESS: str = ""          # fill after token deployment
     CAP_HOT_WALLET: str = "0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F"
     CAP_DEX_PAIR_ADDRESS: str = ""          # fill after creating liquidity pool
-    CLOSEAI_TREASURY_ADDRESS: str = ""      # fill with separate treasury wallet address
+    CLOSEAI_TREASURY_ADDRESS: str = ""      # Gnosis Safe address
     POLYGON_RPC_URL: str = "https://polygon-rpc.com"
     CAP_DECIMALS: int = 18
     CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000  # 75 trillion CAP
+
+    # Relayer
+    RELAYER_PRIVATE_KEY: str = ""
+
+    # 2FA
+    TOTP_ISSUER: str = "CAPITAN AI"
+
+    # Gnosis Safe
+    SAFE_OWNER_1: str = ""
+    SAFE_OWNER_2: str = ""
+    SAFE_OWNER_3: str = ""
+    SAFE_THRESHOLD: int = 2
 
     class Config:
         env_file = ".env"
@@ -86,7 +135,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="35.0")
+app = FastAPI(title="CAPITAN AI API", version="36.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -291,6 +340,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
+                # Users (with is_admin, no tier)
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -313,6 +363,7 @@ def init_db():
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS msg_reset_date")
 
+                # Sessions (guest)
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
                     token_balance INTEGER DEFAULT 600,
@@ -322,10 +373,12 @@ def init_db():
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS msg_reset_date")
 
+                # User sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     token TEXT UNIQUE NOT NULL, expires_at TIMESTAMP, created_at TIMESTAMP DEFAULT NOW()
                 )''')
+                # Chats
                 c.execute('''CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, title TEXT, topic_thread TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
@@ -338,6 +391,7 @@ def init_db():
                 )''')
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
                 c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS confidence_score REAL")
+                # Memories
                 c.execute('''CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY, memory_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     content TEXT, query TEXT, domain TEXT, importance INTEGER DEFAULT 1,
@@ -347,6 +401,7 @@ def init_db():
                     c.execute("CREATE EXTENSION IF NOT EXISTS vector")
                     c.execute("ALTER TABLE memories ADD COLUMN IF NOT EXISTS embedding vector(1536)")
                 except: pass
+                # Portfolio
                 c.execute('''CREATE TABLE IF NOT EXISTS library_items (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT, content TEXT, folder TEXT DEFAULT 'General', tags JSONB DEFAULT '[]',
@@ -357,12 +412,14 @@ def init_db():
                                    ("attachments", "JSONB DEFAULT '[]'"), ("pinned", "BOOLEAN DEFAULT FALSE"),
                                    ("updated", "TIMESTAMP DEFAULT NOW()"), ("chat_id", "TEXT")]:
                     c.execute(f"ALTER TABLE library_items ADD COLUMN IF NOT EXISTS {col} {dtype}")
+                # Uploaded files
                 c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     workspace_id TEXT, filename TEXT, original_name TEXT, size INTEGER,
                     storage_path TEXT, extracted_text TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS workspace_id TEXT")
+                # Workspaces
                 c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
                     id TEXT PRIMARY KEY, name TEXT, description TEXT DEFAULT '', topic TEXT DEFAULT '',
                     owner_id UUID REFERENCES users(id) ON DELETE CASCADE, room_code TEXT UNIQUE,
@@ -383,6 +440,7 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE workspace_messages ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
+                # Payments
                 c.execute('''CREATE TABLE IF NOT EXISTS payments (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     txid TEXT UNIQUE, currency TEXT, amount REAL, status TEXT DEFAULT 'pending',
@@ -390,15 +448,18 @@ def init_db():
                 )''')
                 c.execute("ALTER TABLE payments DROP COLUMN IF EXISTS tier")
                 c.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'")
+                # Notifications
                 c.execute('''CREATE TABLE IF NOT EXISTS notifications (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     type TEXT, message TEXT, read BOOLEAN DEFAULT FALSE, created TIMESTAMP DEFAULT NOW()
                 )''')
+                # Content moderation
                 c.execute('''CREATE TABLE IF NOT EXISTS content_flags (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, content TEXT, reason TEXT, severity TEXT DEFAULT 'low',
                     reviewed BOOLEAN DEFAULT FALSE, action TEXT DEFAULT 'none', created TIMESTAMP DEFAULT NOW()
                 )''')
+                # Security events
                 c.execute('''CREATE TABLE IF NOT EXISTS security_events (
                     id UUID PRIMARY KEY, event_type TEXT, ip_address TEXT, user_agent TEXT,
                     details TEXT, severity TEXT DEFAULT 'low', blocked BOOLEAN DEFAULT FALSE,
@@ -407,19 +468,23 @@ def init_db():
                 c.execute('''CREATE TABLE IF NOT EXISTS blocked_ips (
                     ip_address TEXT PRIMARY KEY, reason TEXT, blocked_until TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
+                # Feedback
                 c.execute('''CREATE TABLE IF NOT EXISTS feedback (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, rating INTEGER, correction TEXT, reason TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
+                # Activity log
                 c.execute('''CREATE TABLE IF NOT EXISTS activity_log (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     action TEXT, details TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
+                # Research topics
                 c.execute('''CREATE TABLE IF NOT EXISTS research_topics (
                     id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT,
                     domain TEXT, prompt TEXT, is_builtin BOOLEAN DEFAULT TRUE,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
+                # Research projects
                 c.execute('''CREATE TABLE IF NOT EXISTS research_projects (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT NOT NULL, description TEXT, chat_id TEXT, created TIMESTAMP DEFAULT NOW()
@@ -444,6 +509,7 @@ def init_db():
                     c.execute("INSERT INTO research_topics (id, title, description, domain, prompt, is_builtin) VALUES (%s,%s,%s,%s,%s,TRUE) ON CONFLICT (id) DO NOTHING",
                               (tid, title, desc, domain, prompt))
 
+                # Developer platform
                 c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     key_hash TEXT UNIQUE NOT NULL, prefix TEXT NOT NULL,
@@ -488,15 +554,41 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # NEW: wallet, 2FA, safe transactions
+                c.execute('''CREATE TABLE IF NOT EXISTS cap_wallets (
+                    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    encrypted_blob TEXT NOT NULL,
+                    password_salt TEXT NOT NULL,
+                    recovery_blob TEXT,
+                    recovery_salt TEXT,
+                    totp_secret TEXT,
+                    totp_enabled BOOLEAN DEFAULT FALSE,
+                    is_founder_wallet BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )''')
+                c.execute('''CREATE TABLE IF NOT EXISTS safe_transactions (
+                    id UUID PRIMARY KEY,
+                    proposer_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    to_address TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    data TEXT DEFAULT '0x',
+                    nonce INTEGER NOT NULL,
+                    safe_tx_hash TEXT,
+                    signatures TEXT DEFAULT '{}',
+                    executed BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )''')
+
                 conn.commit()
-        logger.info("✅ Database initialized (v35.0)")
+        logger.info("✅ Database initialized (v36.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
 # -----------------------------------------------------------------------------------
-# IMPROVED SYSTEM PROMPT (v34.5 – Proactive Memory, Live‑Data, Self‑Critique, Macro Specificity)
+# IMPROVED SYSTEM PROMPT (v35.1 – Proactive Memory, Live‑Data, Self‑Critique, Macro Specificity)
 # -----------------------------------------------------------------------------------
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
@@ -1197,7 +1289,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# Chat endpoint with tiered rate limits
+# Chat endpoint with tiered rate limits and proactive memory
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1227,7 +1319,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
 
     identifier = user_id if user else session["id"]
 
-    # --- Tiered rate limits ---
+    # Tiered rate limits
     tier = "free"
     if is_authenticated:
         tier = get_user_tier(user_id)
@@ -1241,7 +1333,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         chat_rate_limit = 30
     if not check_rate_limit(identifier, "chat", chat_rate_limit):
         raise HTTPException(429, "Rate limit exceeded.")
-    # --------------------------
 
     user_msg = None
     for m in reversed(req.messages):
@@ -1315,7 +1406,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     thread_context = get_thread_context(chat_id, user_id if is_authenticated else None, session["id"] if not is_authenticated else None)
     user_model = get_user_model(user_id) if is_authenticated else "Anonymous user."
 
-    # ---- PROACTIVE MEMORY ----
     memory_context = ""
     if is_authenticated:
         relevant_memories = get_relevant_memories(user_id, user_msg)
@@ -2093,13 +2183,14 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
-# ---------------- $CAP Helpers & Endpoints (NEW) ----------------
-
+# ---------------- $CAP Helpers & Endpoints ----------------
 ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
 
 DEX_PAIR_ABI = json.loads('[{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}]')
 
 def get_web3():
+    if not WEB3_AVAILABLE:
+        raise HTTPException(501, "web3 not installed")
     return Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
 
 def get_cap_contract():
@@ -2110,6 +2201,8 @@ def get_cap_contract():
     )
 
 def verify_cap_deposit(tx_hash: str) -> Optional[Dict]:
+    if not WEB3_AVAILABLE:
+        return None
     try:
         w3 = get_web3()
         receipt = w3.eth.get_transaction_receipt(tx_hash)
@@ -2167,7 +2260,7 @@ def get_user_tier(user_id: str) -> str:
             return row[0] if row else "free"
 
 def get_cap_price_from_dex() -> Optional[float]:
-    if not settings.CAP_DEX_PAIR_ADDRESS:
+    if not WEB3_AVAILABLE or not settings.CAP_DEX_PAIR_ADDRESS:
         return None
     try:
         w3 = get_web3()
@@ -2191,7 +2284,7 @@ def get_cap_price_from_dex() -> Optional[float]:
         return None
 
 def get_treasury_balance() -> Optional[float]:
-    if not settings.CLOSEAI_TREASURY_ADDRESS:
+    if not WEB3_AVAILABLE or not settings.CLOSEAI_TREASURY_ADDRESS:
         return None
     try:
         contract = get_cap_contract()
@@ -2204,8 +2297,7 @@ def get_treasury_balance() -> Optional[float]:
         return None
 
 def get_cap_total_supply() -> Optional[float]:
-    """Fetch the real on‑chain total supply of $CAP."""
-    if not settings.CAP_CONTRACT_ADDRESS:
+    if not WEB3_AVAILABLE or not settings.CAP_CONTRACT_ADDRESS:
         return None
     try:
         contract = get_cap_contract()
@@ -2218,6 +2310,8 @@ def get_cap_total_supply() -> Optional[float]:
 @app.post("/api/cap/deposit")
 def deposit_cap(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
+    if not WEB3_AVAILABLE:
+        raise HTTPException(501, "web3 not installed")
     tx_hash = req.get("tx_hash")
     if not tx_hash:
         raise HTTPException(400, "tx_hash required")
@@ -2267,7 +2361,7 @@ def get_cap_balance_endpoint(user: dict = Depends(get_current_user)):
     tier = get_user_tier(user["id"])
     return {"staked": staked, "tier": tier}
 
-# Founder Dashboard (FULL – with Treasury, DEX, Total Supply)
+# Founder Dashboard (with treasury info)
 @app.get("/api/admin/cap/dashboard")
 def cap_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -2285,11 +2379,11 @@ def cap_dashboard(founder: dict = Depends(founder_only)):
             total_burns = c.fetchone()[0]
             c.execute("SELECT SUM(amount) FROM cap_transactions WHERE type = 'deposit'")
             total_deposits = c.fetchone()[0] or 0
-            revenue_estimate = total_deposits * 0.01  # 1% protocol fee
+            revenue_estimate = total_deposits * 0.01
 
-    dex_price = get_cap_price_from_dex()
-    treasury_balance = get_treasury_balance()
-    total_supply = get_cap_total_supply()
+    dex_price = get_cap_price_from_dex() if WEB3_AVAILABLE else None
+    treasury_balance = get_treasury_balance() if WEB3_AVAILABLE else None
+    total_supply = get_cap_total_supply() if WEB3_AVAILABLE else None
 
     return {
         "total_staked": total_staked,
@@ -2306,7 +2400,237 @@ def cap_dashboard(founder: dict = Depends(founder_only)):
         "contract_address": settings.CAP_CONTRACT_ADDRESS
     }
 
-# Health
+# ==================== NEW: 2FA & Wallet System ====================
+def generate_totp_secret() -> str:
+    if not TOTP_AVAILABLE:
+        raise HTTPException(501, "pyotp not installed")
+    return pyotp.random_base32()
+
+def get_totp_uri(secret: str, user_email: str) -> str:
+    if not TOTP_AVAILABLE:
+        raise HTTPException(501, "pyotp not installed")
+    return pyotp.totp.TOTP(secret).provisioning_uri(user_email, issuer_name=settings.TOTP_ISSUER)
+
+def verify_totp(secret: str, code: str) -> bool:
+    if not TOTP_AVAILABLE:
+        raise HTTPException(501, "pyotp not installed")
+    totp = pyotp.TOTP(secret)
+    return totp.verify(code)
+
+def encrypt_wallet(plaintext: str, password: str) -> str:
+    if not CRYPTO_AVAILABLE:
+        raise HTTPException(501, "cryptography module not installed")
+    key = hashlib.sha256(password.encode()).digest()
+    cipher = Fernet(base64.urlsafe_b64encode(key[:32]))
+    return cipher.encrypt(plaintext.encode()).decode()
+
+def decrypt_wallet(ciphertext: str, password: str) -> str:
+    if not CRYPTO_AVAILABLE:
+        raise HTTPException(501, "cryptography module not installed")
+    key = hashlib.sha256(password.encode()).digest()
+    cipher = Fernet(base64.urlsafe_b64encode(key[:32]))
+    return cipher.decrypt(ciphertext.encode()).decode()
+
+@app.post("/api/wallet/create")
+async def create_wallet(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    password = req.get("password")
+    totp_code = req.get("totp_code")
+    if not password or len(password) < 10:
+        raise HTTPException(400, "Password must be at least 10 characters")
+    secret = req.get("totp_secret")
+    if not secret or not verify_totp(secret, totp_code):
+        raise HTTPException(400, "Invalid 2FA code")
+    if not req.get("imported"):
+        if not ETH_ACCOUNT_AVAILABLE:
+            raise HTTPException(501, "eth_account not installed; use imported private key")
+        Account.enable_unaudited_hdwallet_features()
+        acct = Account.create()
+        private_key = acct.key.hex()
+        address = acct.address
+    else:
+        private_key = req.get("private_key")
+        address = req.get("address")
+    encrypted_blob = encrypt_wallet(private_key, password)
+    recovery_key = hashlib.sha256(secret.encode()).hexdigest()
+    recovery_blob = encrypt_wallet(private_key, recovery_key)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                INSERT INTO cap_wallets (user_id, encrypted_blob, password_salt, recovery_blob, recovery_salt, totp_secret, totp_enabled, is_founder_wallet)
+                VALUES (%s,%s,%s,%s,%s,%s,TRUE,%s)
+                ON CONFLICT (user_id) DO UPDATE SET encrypted_blob=EXCLUDED.encrypted_blob,
+                    recovery_blob=EXCLUDED.recovery_blob, totp_secret=EXCLUDED.totp_secret, totp_enabled=TRUE
+            """, (user["id"], encrypted_blob, "salt", recovery_blob, "salt", secret, user.get("is_admin", False)))
+            conn.commit()
+    return {"created": True, "address": address}
+
+@app.get("/api/wallet/status")
+async def wallet_status(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT encrypted_blob IS NOT NULL, totp_enabled FROM cap_wallets WHERE user_id=%s", (user["id"],))
+            row = c.fetchone()
+            exists = row[0] if row else False
+            totp = row[1] if row else False
+    return {"exists": exists, "totp_enabled": totp}
+
+@app.post("/api/wallet/unlock")
+async def unlock_wallet(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    password = req.get("password")
+    totp_code = req.get("totp_code")
+    if not password or not totp_code: raise HTTPException(400, "Missing credentials")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT encrypted_blob, totp_secret FROM cap_wallets WHERE user_id=%s", (user["id"],))
+            row = c.fetchone()
+            if not row: raise HTTPException(404, "Wallet not found")
+            encrypted_blob, totp_secret = row
+    if not verify_totp(totp_secret, totp_code):
+        raise HTTPException(400, "Invalid 2FA code")
+    try:
+        private_key = decrypt_wallet(encrypted_blob, password)
+        return {"private_key": private_key}
+    except:
+        raise HTTPException(400, "Wrong password")
+
+@app.post("/api/wallet/recover")
+async def recover_wallet(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    totp_code = req.get("totp_code")
+    new_password = req.get("new_password")
+    if not totp_code or not new_password: raise HTTPException(400, "Missing fields")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT recovery_blob, totp_secret FROM cap_wallets WHERE user_id=%s", (user["id"],))
+            row = c.fetchone()
+            if not row: raise HTTPException(404, "Wallet not found")
+            recovery_blob, totp_secret = row
+    if not verify_totp(totp_secret, totp_code):
+        raise HTTPException(400, "Invalid 2FA code")
+    recovery_key = hashlib.sha256(totp_secret.encode()).hexdigest()
+    try:
+        private_key = decrypt_wallet(recovery_blob, recovery_key)
+    except:
+        raise HTTPException(400, "Recovery failed")
+    new_encrypted = encrypt_wallet(private_key, new_password)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE cap_wallets SET encrypted_blob=%s WHERE user_id=%s", (new_encrypted, user["id"]))
+            conn.commit()
+    return {"recovered": True}
+
+@app.post("/api/wallet/relay")
+async def relay_transaction(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
+    signed_tx = req.get("signed_tx")
+    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
+    try:
+        w3 = Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
+        tx_hash = w3.eth.send_raw_transaction(signed_tx)
+        return {"tx_hash": tx_hash.hex()}
+    except Exception as e:
+        logger.error(f"Relay error: {e}")
+        raise HTTPException(500, "Relay failed")
+
+# ==================== TOTP Setup ====================
+@app.post("/api/2fa/setup")
+async def setup_2fa(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    secret = generate_totp_secret()
+    uri = get_totp_uri(secret, user["email"])
+    qr_base64 = ""
+    if QRCODE_AVAILABLE:
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(uri)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE cap_wallets SET totp_secret=%s WHERE user_id=%s", (secret, user["id"]))
+            conn.commit()
+    return {"secret": secret, "uri": uri, "qr_code": f"data:image/png;base64,{qr_base64}" if qr_base64 else None}
+
+@app.post("/api/2fa/verify")
+async def verify_2fa(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    code = req.get("code")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT totp_secret FROM cap_wallets WHERE user_id=%s", (user["id"],))
+            row = c.fetchone()
+            if not row: raise HTTPException(404, "2FA not setup")
+            secret = row[0]
+    if verify_totp(secret, code):
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("UPDATE cap_wallets SET totp_enabled=TRUE WHERE user_id=%s", (user["id"],))
+                conn.commit()
+        return {"verified": True}
+    raise HTTPException(400, "Invalid code")
+
+# ==================== Gnosis Safe Treasury ====================
+SAFE_ABI = json.loads('[{"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"},{"name":"data","type":"bytes"},{"name":"operation","type":"uint8"},{"name":"safeTxGas","type":"uint256"},{"name":"baseGas","type":"uint256"},{"name":"gasPrice","type":"uint256"},{"name":"gasToken","type":"address"},{"name":"refundReceiver","type":"address"},{"name":"signatures","type":"bytes"}],"name":"execTransaction","outputs":[{"name":"success","type":"bool"}],"type":"function"}]')
+
+def get_safe_nonce() -> int:
+    return 0
+
+@app.post("/api/safe/propose")
+async def propose_safe_transaction(req: dict, user: dict = Depends(get_current_user)):
+    if not user or not user.get("is_admin"):
+        raise HTTPException(403, "Only founder")
+    to_address = req.get("to")
+    value = req.get("value")
+    data = req.get("data", "0x")
+    nonce = get_safe_nonce()
+    safe_tx_hash = f"0x{secrets.token_hex(32)}"
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO safe_transactions (id, proposer_id, to_address, value, data, nonce, safe_tx_hash) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], to_address, value, data, nonce, safe_tx_hash))
+            conn.commit()
+    return {"safe_tx_hash": safe_tx_hash, "nonce": nonce}
+
+@app.get("/api/safe/transactions")
+async def list_safe_transactions(user: dict = Depends(get_current_user)):
+    if not user or not user.get("is_admin"):
+        raise HTTPException(403)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, safe_tx_hash, to_address, value, nonce, signatures, executed FROM safe_transactions ORDER BY created_at DESC")
+            rows = c.fetchall()
+            txs = [{"id": r[0], "safe_tx_hash": r[1], "to": r[2], "value": r[3], "nonce": r[4], "signatures": json.loads(r[5]) if r[5] else {}, "executed": r[6]} for r in rows]
+    return {"transactions": txs}
+
+@app.post("/api/safe/sign")
+async def sign_safe_transaction(req: dict, user: dict = Depends(get_current_user)):
+    if not user or not user.get("is_admin"):
+        raise HTTPException(403)
+    tx_id = req.get("tx_id")
+    signature = req.get("signature")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT signatures, safe_tx_hash FROM safe_transactions WHERE id=%s", (tx_id,))
+            row = c.fetchone()
+            if not row: raise HTTPException(404)
+            sigs = json.loads(row[0]) if row[0] else {}
+            sigs[user["id"]] = signature
+            if len(sigs) >= settings.SAFE_THRESHOLD:
+                c.execute("UPDATE safe_transactions SET signatures=%s, executed=TRUE WHERE id=%s",
+                          (json.dumps(sigs), tx_id))
+            else:
+                c.execute("UPDATE safe_transactions SET signatures=%s WHERE id=%s",
+                          (json.dumps(sigs), tx_id))
+            conn.commit()
+    return {"signed": True, "threshold_met": len(sigs) >= settings.SAFE_THRESHOLD}
+
+# Health, manifest, root
 @app.get("/health")
 def health_check():
     try:
@@ -2315,7 +2639,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "35.0", "database": db_status}
+    return {"status": "ok", "version": "36.0", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
@@ -2326,8 +2650,8 @@ async def manifest():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "35.0"}
+    return {"name": "CAPITAN AI", "version": "36.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port) 
+    uvicorn.run(app, host="0.0.0.0", port=port)
