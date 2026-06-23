@@ -2557,10 +2557,17 @@ async def setup_2fa(user: dict = Depends(get_current_user)):
             qr_base64 = base64.b64encode(buffered.getvalue()).decode()
     except Exception as e:
         logger.error(f"QR generation failed: {e}")
+
+    # 🔥 Ensure a row exists before updating
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute("UPDATE cap_wallets SET totp_secret=%s WHERE user_id=%s", (secret, user["id"]))
+            c.execute("""
+                INSERT INTO cap_wallets (user_id, encrypted_blob, password_salt, totp_secret, totp_enabled)
+                VALUES (%s, '', '', %s, FALSE)
+                ON CONFLICT (user_id) DO UPDATE SET totp_secret = EXCLUDED.totp_secret
+            """, (user["id"], secret))
             conn.commit()
+
     return {
         "secret": secret,
         "uri": uri,
