@@ -2361,6 +2361,23 @@ def get_cap_balance_endpoint(user: dict = Depends(get_current_user)):
     tier = get_user_tier(user["id"])
     return {"staked": staked, "tier": tier}
 
+@app.get("/api/admin/ai/dashboard")
+def ai_dashboard(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM chat_messages"); total_messages = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
+            return {
+                "total_users": total_users,
+                "active_today": active_today,
+                "total_messages": total_messages,
+                "pending_flags": pending_flags,
+                "threats_today": threats_today
+            }
+
 # Founder Dashboard (with treasury info)
 @app.get("/api/admin/cap/dashboard")
 def cap_dashboard(founder: dict = Depends(founder_only)):
@@ -2430,20 +2447,30 @@ def decrypt_wallet(ciphertext: str, password: str) -> str:
     key = hashlib.sha256(password.encode()).digest()
     cipher = Fernet(base64.urlsafe_b64encode(key[:32]))
     return cipher.decrypt(ciphertext.encode()).decode()
-
+    
 @app.post("/api/wallet/create")
 async def create_wallet(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     password = req.get("password")
-    totp_code = req.get("totp_code")
     if not password or len(password) < 10:
         raise HTTPException(400, "Password must be at least 10 characters")
-    secret = req.get("totp_secret")
-    if not secret or not verify_totp(secret, totp_code):
-        raise HTTPException(400, "Invalid 2FA code")
+        
+    # 2FA code is optional
+    totp_code = req.get("totp_code")
+    totp_secret = None
+    if totp_code:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT totp_secret FROM cap_wallets WHERE user_id=%s", (user["id"],))
+                row = c.fetchone()
+                if row and row[0]:
+                    totp_secret = row[0]
+                    if not verify_totp(totp_secret, totp_code):
+                        raise HTTPException(400, "Invalid 2FA code")
+    # Generate wallet
     if not req.get("imported"):
         if not ETH_ACCOUNT_AVAILABLE:
-            raise HTTPException(501, "eth_account not installed; use imported private key")
+            raise HTTPException(501, "eth_account not installed")
         Account.enable_unaudited_hdwallet_features()
         acct = Account.create()
         private_key = acct.key.hex()
@@ -2452,16 +2479,19 @@ async def create_wallet(req: dict, user: dict = Depends(get_current_user)):
         private_key = req.get("private_key")
         address = req.get("address")
     encrypted_blob = encrypt_wallet(private_key, password)
-    recovery_key = hashlib.sha256(secret.encode()).hexdigest()
-    recovery_blob = encrypt_wallet(private_key, recovery_key)
+    recovery_key = hashlib.sha256((totp_secret or "").encode()).hexdigest()
+    recovery_blob = encrypt_wallet(private_key, recovery_key) if totp_secret else ""
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("""
                 INSERT INTO cap_wallets (user_id, encrypted_blob, password_salt, recovery_blob, recovery_salt, totp_secret, totp_enabled, is_founder_wallet)
-                VALUES (%s,%s,%s,%s,%s,%s,TRUE,%s)
-                ON CONFLICT (user_id) DO UPDATE SET encrypted_blob=EXCLUDED.encrypted_blob,
-                    recovery_blob=EXCLUDED.recovery_blob, totp_secret=EXCLUDED.totp_secret, totp_enabled=TRUE
-            """, (user["id"], encrypted_blob, "salt", recovery_blob, "salt", secret, user.get("is_admin", False)))
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    encrypted_blob = EXCLUDED.encrypted_blob,
+                    recovery_blob = EXCLUDED.recovery_blob,
+                    totp_secret = COALESCE(EXCLUDED.totp_secret, cap_wallets.totp_secret),
+                    totp_enabled = CASE WHEN cap_wallets.totp_secret IS NOT NULL THEN cap_wallets.totp_enabled ELSE FALSE END
+            """, (user["id"], encrypted_blob, "salt", recovery_blob, "salt", totp_secret, user.get("is_admin", False)))
             conn.commit()
     return {"created": True, "address": address}
 
@@ -2474,7 +2504,7 @@ async def wallet_status(user: dict = Depends(get_current_user)):
             row = c.fetchone()
             exists = row[0] if row else False
             totp = row[1] if row else False
-    return {"exists": exists, "totp_enabled": totp}
+    return {"exists": exists, "totp_enabled": totp, "address": user.get("wallet_address")}
 
 @app.post("/api/wallet/unlock")
 async def unlock_wallet(req: dict, user: dict = Depends(get_current_user)):
@@ -2535,6 +2565,44 @@ async def relay_transaction(req: dict, user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Relay error: {e}")
         raise HTTPException(500, "Relay failed")
+
+ONEINCH_API = "https://api.1inch.dev/swap/v6.0/137"
+
+@app.post("/api/wallet/swap/quote")
+async def swap_quote(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    from_token = req.get("fromToken")
+    to_token = req.get("toToken")
+    amount = req.get("amount")
+    params = {
+        "src": from_token,
+        "dst": to_token,
+        "amount": amount,
+        "from": user.get("wallet_address") or "",
+        "slippage": "1"
+    }
+    try:
+        r = requests.get(f"{ONEINCH_API}/quote", params=params, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            return {"estimatedAmount": data.get("toTokenAmount"), "slippage": data.get("estimatedGas")}
+    except Exception as e:
+        logger.error(f"1inch quote error: {e}")
+    raise HTTPException(502, "Could not fetch swap quote")
+
+@app.post("/api/wallet/swap/execute")
+async def swap_execute(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    signed_tx = req.get("signed_tx")
+    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
+    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
+    try:
+        w3 = Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
+        tx_hash = w3.eth.send_raw_transaction(signed_tx)
+        return {"tx_hash": tx_hash.hex()}
+    except Exception as e:
+        logger.error(f"Swap relay error: {e}")
+        raise HTTPException(500, "Swap failed")
 
 # ==================== TOTP Setup ====================
 @app.post("/api/2fa/setup")
