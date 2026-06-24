@@ -1,9 +1,10 @@
 """
-CAPITAN AI — Enterprise Backend v40.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v41.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-All wallet addresses integrated, deploy‑time distribution, $CAP as sole currency.
+All wallet addresses integrated, deploy‑time distribution, $CAP as sole currency,
+PWA support with auto‑generated icons and service worker.
 """
-import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading
+import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone, date
@@ -109,7 +110,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="40.0")
+app = FastAPI(title="CAPITAN AI API", version="41.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -299,7 +300,7 @@ def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users – token_balance column removed
+                # Users
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -323,7 +324,7 @@ def init_db():
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_streak_date DATE")
 
-                # Sessions – token_balance removed
+                # Sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
                     created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
@@ -400,7 +401,7 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE workspace_messages ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
-                # Payments – kept for fiat on‑ramp later (optional)
+                # Payments
                 c.execute('''CREATE TABLE IF NOT EXISTS payments (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     txid TEXT UNIQUE, currency TEXT, amount REAL, status TEXT DEFAULT 'pending',
@@ -550,7 +551,7 @@ def init_db():
                               (b[0], b[1], b[2], b[3], b[4]))
 
                 conn.commit()
-        logger.info("✅ Database initialized (v40.0)")
+        logger.info("✅ Database initialized (v41.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -2606,18 +2607,99 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "40.0", "database": db_status}
+    return {"status": "ok", "version": "41.0", "database": db_status}
+
+# PWA Icon
+def generate_png_icon(size: int) -> bytes:
+    """Generate a simple PNG icon with CAPITAN branding using pure Python."""
+    def create_png(width, height, pixels):
+        def chunk(chunk_type, data):
+            c = chunk_type + data
+            return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+        
+        header = b'\x89PNG\r\n\x1a\n'
+        ihdr = struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)
+        raw = b''
+        for y in range(height):
+            raw += b'\x00'
+            for x in range(width):
+                r, g, b, a = pixels[y*width + x]
+                raw += struct.pack('BBBB', r, g, b, a)
+        
+        compressed = zlib.compress(raw)
+        return header + chunk(b'IHDR', ihdr) + chunk(b'IDAT', compressed) + chunk(b'IEND', b'')
+    
+    pixels = []
+    bg_color = (14, 110, 142, 255)  # #0e6e8e
+    fg_color = (255, 255, 255, 255)
+    for y in range(size):
+        for x in range(size):
+            cx, cy = size//2, size//2
+            radius = size//2 - 4
+            dist = ((x - cx)**2 + (y - cy)**2)**0.5
+            if dist <= radius:
+                if abs(x - cx) < radius*0.3 and abs(y - cy) < radius*0.5:
+                    pixels.append(fg_color)
+                elif abs(y - cy) < radius*0.3 and (x < cx - radius*0.2 or x > cx + radius*0.2):
+                    pixels.append(fg_color)
+                else:
+                    pixels.append(bg_color)
+            else:
+                pixels.append((0,0,0,0))
+    return create_png(size, size, pixels)
+
+_icon_cache = {}
+
+@app.get("/icons/{size}")
+async def get_icon(size: int):
+    if size not in [192, 512]:
+        raise HTTPException(404, "Only 192 and 512 icons available")
+    if size not in _icon_cache:
+        _icon_cache[size] = generate_png_icon(size)
+    return Response(content=_icon_cache[size], media_type="image/png")
 
 @app.get("/manifest.json")
 async def manifest():
+    base_url = settings.FRONTEND_URL or "https://capitanai.goldquantum0.workers.dev"
     return JSONResponse(content={
-        "name": "CAPITAN AI", "short_name": "CAPITAN AI", "start_url": "/",
-        "display": "standalone", "background_color": "#0f172a", "theme_color": "#0b6d8c"
+        "name": "CAPITAN AI",
+        "short_name": "CAPITAN AI",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0f172a",
+        "theme_color": "#0b6d8c",
+        "icons": [
+            {
+                "src": f"{base_url}/icons/192",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": f"{base_url}/icons/512",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
     })
+
+@app.get("/sw.js")
+async def service_worker():
+    sw_code = """
+self.addEventListener('install', event => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', event => {
+  clients.claim();
+});
+self.addEventListener('fetch', event => {
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+});
+"""
+    return Response(content=sw_code, media_type="application/javascript")
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "40.0"}
+    return {"name": "CAPITAN AI", "version": "41.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
