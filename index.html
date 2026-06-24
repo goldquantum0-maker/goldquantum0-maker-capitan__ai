@@ -254,9 +254,10 @@
         .wallet-address { font-family:monospace; font-size:14px; color:var(--text-secondary); word-break:break-all; display:flex; align-items:center; gap:8px; }
         .wallet-address .copy-btn, .wallet-address .toggle-vis { background:none; border:none; color:var(--text-tertiary); cursor:pointer; }
         .wallet-address .copy-btn:hover, .wallet-address .toggle-vis:hover { color:var(--accent-blue); }
-        .ticker-marquee { width:100%; overflow:hidden; white-space:nowrap; background:var(--bg-tertiary); border-radius:var(--radius); padding:6px 0; margin:8px 0; }
-        .ticker-content { display:inline-block; animation:marquee 60s linear infinite; }
-        @keyframes marquee { 0% { transform:translateX(100%); } 100% { transform:translateX(-100%); } }
+        .ticker-marquee { width:100%; overflow:hidden; white-space:nowrap; background:var(--bg-tertiary); border-radius:var(--radius); padding:6px 0; margin:8px 0; position:relative; }
+        .ticker-track { display:inline-flex; animation:marquee 40s linear infinite; }
+        .ticker-track:hover { animation-play-state:paused; }
+        @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
         .ticker-item { display:inline-block; padding:0 20px; font-size:12px; color:var(--text-primary); }
         .ticker-price { font-weight:600; }
         .ticker-change.positive { color:var(--success); }
@@ -414,7 +415,7 @@
                 <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%239ca3af'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%239ca3af'/%3E%3C/svg%3E">
                 <div class="profile-details">
                     <div class="profile-name" id="profileName">Guest</div>
-                    <div class="profile-tokens" id="profileTokens">0 tokens</div>
+                    <div class="profile-tokens" id="profileStakedInfo">0 CAP staked</div>
                 </div>
             </div>
             <button class="signout-icon" id="signoutIcon" onclick="event.stopPropagation(); logout()" title="Sign Out" style="display:none;">
@@ -496,7 +497,7 @@
                 <div class="research-hub-tab active" onclick="switchDeveloperTab('keys')">API Keys</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('webhooks')">Webhooks</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('embed')">Embed</div>
-                <div class="research-hub-tab" onclick="switchDeveloperTab('tokens')">Buy Tokens</div>
+                <div class="research-hub-tab" onclick="switchDeveloperTab('tokens')">Stake $CAP</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('enterprise')">Enterprise</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('usage')">Usage</div>
             </div>
@@ -522,7 +523,6 @@
 </div>
 
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
-<div id="tokenPurchaseModal" class="modal-overlay"><div class="modal" id="tokenPurchaseModalContent"></div></div>
 <div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
 <div id="termsModal" class="modal-overlay"><div class="modal" id="termsModalContent"></div></div>
 <div id="guestSignupModal" class="modal-overlay"><div class="modal" id="guestSignupModalContent"></div></div>
@@ -530,6 +530,7 @@
 <div id="workspaceCreateModal" class="modal-overlay"><div class="modal" id="workspaceCreateModalContent"></div></div>
 <div id="workspaceJoinModal" class="modal-overlay"><div class="modal" id="workspaceJoinModalContent"></div></div>
 <div id="leaderboardModal" class="modal-overlay"><div class="modal" id="leaderboardModalContent"></div></div>
+<div id="apiKeyModal" class="modal-overlay"><div class="modal" id="apiKeyModalContent"></div></div>
 
 <script>
 // ==================== CONFIGURATION ====================
@@ -539,18 +540,6 @@ const CFG = {
     CAP_ADDRESS: '',
     HOT_WALLET: '0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F'
 };
-const WALLETS = { BTC: 'bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2', ETH: '0x28c18922072f904f91499A603d7AF8F9C57aDD8b' };
-const TOKEN_PACKAGES = [
-    { amount: 5, tokens: 5000 }, { amount: 10, tokens: 10000 }, { amount: 20, tokens: 24000 },
-    { amount: 50, tokens: 70000 }, { amount: 100, tokens: 150000 }
-];
-const ENTERPRISE_TOKEN_PACKAGES = [
-    { amount: 200, tokens: 320000 }, { amount: 500, tokens: 850000 }, { amount: 1000, tokens: 2000000 }
-];
-const DEPTH_MULTIPLIERS = [1, 1.5, 2, 3, 4];
-const DEFAULT_GUEST_TOKENS = 600;
-
-// Popular ERC‑20 tokens on Polygon for multi‑token wallet
 const POLYGON_TOKENS = [
     { symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', decimals: 6 },
     { symbol: 'USDC', address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', decimals: 6 },
@@ -562,6 +551,9 @@ const POLYGON_TOKENS = [
     { symbol: 'CRV', address: '0x172370d5Cd63279eFa6d502DAB29171933a610AF', decimals: 18 },
     { symbol: 'UNI', address: '0xb33EaAd8d922B1083446DC23f610c2567fB5180f', decimals: 18 },
 ];
+
+const DEPTH_MULTIPLIERS = [1, 1.5, 2, 3, 4];
+const DEFAULT_GUEST_TOKENS = 600; // legacy, not used now
 
 let state = {
     token: localStorage.getItem('ct') || null,
@@ -584,7 +576,6 @@ let state = {
     apiKeys: [],
     webhooks: [],
     developerTab: 'keys',
-    tokenBalance: 0,
     researchTab: 'topics',
     reasoningDepth: parseInt(localStorage.getItem('reasoningDepth')) || 1,
     capStaked: 0,
@@ -634,7 +625,7 @@ function promptFounderLogin(){
     .then(r=>r.json()).then(data=>{
         if(data.verified){
             state.token=data.token; state.user=data.user; state.is_admin=true;
-            state.tokenBalance=999999999; state.reasoningDepth=5;
+            state.reasoningDepth=5;
             localStorage.setItem('ct',data.token); setCookie('ct',data.token,365);
             localStorage.setItem('cu',JSON.stringify(data.user)); localStorage.setItem('is_admin','true');
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
@@ -649,7 +640,6 @@ async function apiCall(endpoint,opts={}){
     let headers={'Content-Type':'application/json'};
     if(state.token)headers['Authorization']='Bearer '+state.token;
     let res=await fetch(CFG.API+endpoint,{...opts,headers});
-    if(res.status===402){toast('Insufficient tokens.');throw new Error('Insufficient tokens')}
     if(res.status===401){
         document.getElementById('sessionExpiredMsg').style.display='block';
         state.token=null; state.user=null; state.is_admin=false;
@@ -664,7 +654,7 @@ async function apiCall(endpoint,opts={}){
 function updateProfileUI(){
     let n=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
     document.getElementById('profileName').innerText=n;
-    document.getElementById('profileTokens').innerHTML=(state.tokenBalance||0).toLocaleString()+' tokens';
+    document.getElementById('profileStakedInfo').innerHTML = `${state.capStaked||0} CAP staked`;
     if(state.profilePhoto)document.getElementById('profileAvatar').src=state.profilePhoto;
     document.getElementById('signoutIcon').style.display = state.user ? 'block' : 'none';
 }
@@ -672,7 +662,7 @@ function updateUIBasedOnTier(){
     let logged=!!state.user;
     document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';
     document.getElementById('hubMenuItem').style.display=logged?'flex':'none';
-    document.getElementById('developerMenuItem').style.display=(logged&&(state.tokenBalance>=10000||state.is_admin))?'flex':'none';
+    document.getElementById('developerMenuItem').style.display=(logged&&(state.capTier==='pro'||state.capTier==='enterprise'||state.is_admin))?'flex':'none';
     document.getElementById('dashboardMenuItem').style.display = (logged && state.is_admin) ? 'flex' : 'none';
     document.getElementById('leaderboardMenuItem').style.display = logged ? 'flex' : 'none';
     document.getElementById('guestButtons').style.display=logged?'none':'block';
@@ -708,7 +698,7 @@ async function handleLogin(){
         let d=await r.json();
         if(d.token){
             state.token=d.token; state.user=d.user; state.is_admin=d.user.is_admin||false;
-            state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=d.user.reasoning_depth||1;
+            state.reasoningDepth=d.user.reasoning_depth||1;
             localStorage.setItem('ct',d.token); setCookie('ct',d.token,30); localStorage.setItem('cu',JSON.stringify(d.user));
             localStorage.setItem('is_admin',state.is_admin.toString()); localStorage.setItem('reasoningDepth',state.reasoningDepth.toString());
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
@@ -731,7 +721,7 @@ async function handleSignup(){
         if(d.token){
             suc.innerText='Account created! Redirecting...';suc.style.display='block';
             state.token=d.token; state.user=d.user; state.is_admin=false;
-            state.tokenBalance=d.user.token_balance||0; state.reasoningDepth=1;
+            state.reasoningDepth=1;
             localStorage.setItem('ct',d.token); setCookie('ct',d.token,30); localStorage.setItem('cu',JSON.stringify(d.user));
             localStorage.setItem('is_admin','false'); localStorage.setItem('reasoningDepth','1');
             setTimeout(()=>{document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex'; updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications(); fetchWalletStatus(); toast('Welcome to CAPITAN AI!');},1200);
@@ -745,7 +735,7 @@ async function startGuestSession(){
         let r=await fetch(CFG.API+'/api/session');let d=await r.json();
         if(d.token){
             state.token=d.token; state.user=null; state.is_admin=false;
-            state.tokenBalance=d.token_balance||DEFAULT_GUEST_TOKENS; state.reasoningDepth=1;
+            state.reasoningDepth=1;
             localStorage.setItem('ct',d.token); setCookie('ct',d.token,365); localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
             document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
             updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications();
@@ -773,13 +763,11 @@ async function sendMessage(){
         let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify({messages:state.messages.slice(0,-1),chat_id:state.activeChatId,show_reasoning:false})});
         const content=res.content||'No response';
         state.messages[aiIdx]={role:'assistant',content:content,message_id:res.message_id};
-        state.tokenBalance=res.new_balance||state.tokenBalance; renderMessages(); updateProfileUI();
+        renderMessages(); updateProfileUI();
         let streamTarget=document.getElementById('msg-'+aiIdx);
         if(streamTarget)new SmoothStreamer(content,streamTarget,()=>{state.loading=false});
         else state.loading=false;
         state.activeChatId=res.chat_id;
-        if(state.tokenBalance<500)toast('Low tokens! Consider purchasing more.');
-        // Refresh streak after message
         fetchStreak();
     }catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();state.loading=false;}
 }
@@ -805,7 +793,7 @@ async function likeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){tr
 async function dislikeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:1,reason:'Not helpful'})});toast('Feedback noted.')}catch(e){}}else toast('Noted.')}
 async function saveToPortfolio(idx){let m=state.messages[idx];if(!m||!state.user){toast('Sign in to save');return}const title=m.content.split('\n')[0]?.trim().substring(0,80)||'Saved note';try{await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name:title||'Saved from chat',content:m.content,folder:'General',tags:[],attachments:[],chat_id:state.activeChatId})});toast('Saved to Portfolio 📌')}catch(e){toast('Could not save')}}
 
-// ==================== PORTFOLIO ====================
+// ==================== PORTFOLIO (same as before) ====================
 let portfolioActiveChat = null;
 function openPortfolio(){if(!state.user){toast('Sign in to access Portfolio');return}loadPortfolioFull()}
 async function loadPortfolioFull(){try{let d=await apiCall('/api/portfolio');state.portfolio=d.items||[];renderPortfolioFullPage()}catch(e){toast('Could not load Portfolio')}}
@@ -831,7 +819,7 @@ async function savePortfolioItemFull(){let name=document.getElementById('portNam
 function openPortfolioItem(id){let item=state.portfolio.find(i=>i.id===id);if(!item)return;document.getElementById('portfolioFullContent').innerHTML=`<h3>${escapeHtml(item.name||'Untitled')}</h3><p style="color:var(--text-secondary);font-size:12px;">Folder: ${escapeHtml(item.folder)}</p><div style="white-space:pre-wrap;margin:16px 0;">${escapeHtml(item.content||'')}</div><button class="btn btn-outline" onclick="renderPortfolioFullPage()">Back</button>`}
 async function deleteAllInView(tab){let idsToDelete=tab==='General'?state.portfolio.filter(i=>!i.chat_id).map(i=>i.id):state.portfolio.filter(i=>i.chat_id===tab).map(i=>i.id);if(!confirm('Delete all items in this tab?'))return;for(let id of idsToDelete){try{await apiCall('/api/portfolio/'+id,{method:'DELETE'})}catch(e){}}toast('Deleted');loadPortfolioFull()}
 
-// ==================== RESEARCH HUB ====================
+// ==================== RESEARCH HUB (unchanged) ====================
 function openResearchHub(){if(!state.user){toast('Sign in to access Research Hub');return}document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.add('open');loadResearchHub('topics')}
 function closeResearchHub(){document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 async function loadResearchHub(tab){
@@ -857,7 +845,7 @@ function renderTopics(topics){return topics.map(t=>`<div class="saved-card" oncl
 function startTopicChat(topicId){let topic=state.researchTopics.find(t=>t.id===topicId);if(!topic)return;closeResearchHub();newChat();state.messages.push({role:'user',content:topic.prompt});renderMessages();sendMessage()}
 async function createResearchProject(){let name=prompt('Project name:');if(!name)return;let desc=prompt('Description (optional):')||'';try{await apiCall('/api/research/projects',{method:'POST',body:JSON.stringify({name,description:desc})});toast('Project created');loadResearchHub('projects')}catch(e){toast('Could not create')}}
 
-// ==================== WORKSPACES ====================
+// ==================== WORKSPACES (unchanged) ====================
 async function loadWorkspaces(){if(!state.user)return;try{let d=await apiCall('/api/workspace/my');state.workspaces=d.workspaces||[];renderWorkspaceList()}catch(e){}}
 function renderWorkspaceList(){let list=document.getElementById('workspaceList');list.innerHTML=state.workspaces.map(w=>`<div class="workspace-item" onclick="openWorkspaceMessages('${w.room_code}')"><span>${w.name}</span><span style="font-size:9px;">${w.room_code}</span></div>`).join('')||'<div style="padding:6px 14px 6px 42px;font-size:10px;">No workspaces</div>'}
 function openWorkspaceCreateModal(){let modal=document.getElementById('workspaceCreateModalContent');modal.innerHTML=`<h2>Create Work Area</h2><input type="text" id="wsName" class="auth-input" placeholder="Name"><input type="text" id="wsCode" class="auth-input" placeholder="Room code"><button class="btn" onclick="createWorkspace()">Create</button><button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;document.getElementById('workspaceCreateModal').classList.add('open')}
@@ -868,7 +856,7 @@ function openWorkspaceMessages(roomCode){let modal=document.getElementById('work
 async function loadWorkspaceMessages(roomCode){try{let d=await apiCall('/api/workspace/rooms/'+roomCode+'/messages');let html=d.messages.map(m=>`<div style="margin-bottom:6px;"><strong>${escapeHtml(m.author)}</strong>${m.is_ai?' (AI)':''}: ${escapeHtml(m.message)}</div>`).join('');document.getElementById('workspaceMessageList').innerHTML=html||'No messages'}catch(e){document.getElementById('workspaceMessageList').innerHTML='Failed to load'}}
 async function sendWorkspaceMessage(roomCode){let input=document.getElementById('workspaceMessageInput'),msg=input.value.trim();if(!msg)return;await apiCall('/api/workspace/rooms/'+roomCode+'/messages',{method:'POST',body:JSON.stringify({message:msg})});input.value='';loadWorkspaceMessages(roomCode)}
 
-// ==================== NOTIFICATIONS ====================
+// ==================== NOTIFICATIONS (unchanged) ====================
 async function fetchNotifications(){if(!state.user)return;try{let d=await apiCall('/api/notifications');state.notifications=d.notifications||[];state.unreadCount=state.notifications.filter(n=>!n.read).length;updateNotifBadge();renderNotifList()}catch(e){}}
 function updateNotifBadge(){let badge=document.getElementById('notifBadge');badge.textContent=state.unreadCount||'0';badge.style.display=state.unreadCount?'flex':'none'}
 function openNotifPanel(){document.getElementById('notifPanel').classList.toggle('open')}
@@ -876,41 +864,7 @@ function closeNotifPanel(){document.getElementById('notifPanel').classList.remov
 function renderNotifList(){let list=document.getElementById('notifList');if(state.notifications.length===0){list.innerHTML='<div class="notif-empty">No notifications</div>';return}list.innerHTML=state.notifications.map(n=>'<div class="notif-item '+(n.read?'':'unread')+'"><div class="notif-icon">'+(n.type==='moderation'?'⚠️':'ℹ️')+'</div><div class="notif-message">'+n.message+'<div class="notif-time">'+new Date(n.created).toLocaleString()+'</div></div></div>').join('')}
 async function markAllRead(){try{await apiCall('/api/notifications/read',{method:'POST'});state.notifications.forEach(n=>n.read=true);state.unreadCount=0;updateNotifBadge();renderNotifList()}catch(e){}}
 
-// ==================== TOKEN PURCHASE ====================
-function openTokenPurchaseModal(){let modal=document.getElementById('tokenPurchaseModalContent');modal.innerHTML=`<h2>Buy Tokens</h2>`+TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="purchaseTokens(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('')+`<button class="btn btn-outline" onclick="closeModal('tokenPurchaseModal')">Cancel</button>`;document.getElementById('tokenPurchaseModal').classList.add('open');}
-function purchaseTokens(amount,tokens){let modal=document.getElementById('tokenPurchaseModalContent');modal.innerHTML=`<h2>Buy ${tokens} Tokens</h2><p>Amount: $${amount}</p><div style="display:flex;gap:8px;margin-bottom:10px;"><button class="btn" onclick="setTokenCoin('BTC')">BTC</button><button class="btn" onclick="setTokenCoin('ETH')">ETH</button></div><div id="tokenWalletAddr" style="font-size:11px;background:var(--bg-tertiary);padding:10px;border-radius:8px;word-break:break-all;margin-bottom:10px;">${WALLETS[state.selectedCoin]}</div><input type="text" id="tokenTxidInput" class="auth-input" placeholder="Transaction ID"><button class="btn" onclick="verifyTokenPurchase(${amount})">Verify Payment</button><button class="btn btn-outline" onclick="openTokenPurchaseModal()">Back</button>`;}
-function setTokenCoin(c){state.selectedCoin=c;document.getElementById('tokenWalletAddr').innerText=WALLETS[c];}
-async function verifyTokenPurchase(amount){let txid=document.getElementById('tokenTxidInput').value.trim();if(!txid){toast('Enter TXID');return}try{let res=await apiCall('/api/tokens/purchase',{method:'POST',body:JSON.stringify({package_amount:amount,txid,currency:state.selectedCoin})});if(res.verified){state.tokenBalance=res.new_balance;closeModal('tokenPurchaseModal');toast(`Added ${res.tokens_added} tokens!`);updateProfileUI();}else toast('Verification pending: '+res.message)}catch(e){toast('Verification failed')}}
-
-// ==================== DEVELOPER PAGE ====================
-function openDeveloperPage(){if(!state.user||(!state.is_admin&&state.tokenBalance<10000)){toast('Developer access requires more tokens or Founder status');return}document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.add('open');loadDeveloperTab('keys')}
-function closeDeveloperPage(){document.getElementById('developerFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
-function switchDeveloperTab(tab){state.developerTab=tab;document.querySelectorAll('#developerTabs .research-hub-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#developerTabs .research-hub-tab[onclick="switchDeveloperTab('${tab}')"]`).classList.add('active');loadDeveloperTab(tab)}
-async function loadDeveloperTab(tab){
-    let content=document.getElementById('developerTabContent');
-    if(tab==='keys'){await loadApiKeys();content.innerHTML=`<h3>API Keys</h3><button class="btn" onclick="createApiKey()">+ Generate New Key</button><div id="apiKeyList" style="margin-top:12px;">${state.apiKeys.map(k=>`<div class="developer-key-card"><span class="key-prefix">${escapeHtml(k.prefix)}</span><div class="key-actions"><button onclick="revokeApiKey('${k.id}')">Revoke</button></div></div>`).join('')||'<p>No API keys yet.</p>'}</div>`;}
-    else if(tab==='webhooks'){await loadWebhooks();content.innerHTML=`<h3>Webhooks</h3><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div id="webhookList" style="margin-top:12px;">${state.webhooks.map(w=>`<div class="developer-key-card"><span>${escapeHtml(w.url)}</span><span style="font-size:10px;">${w.events}</span><div class="key-actions"><button onclick="deleteWebhook('${w.id}')">Delete</button></div></div>`).join('')||'<p>No webhooks configured.</p>'}</div>`;}
-    else if(tab==='embed'){let embedRes;try{embedRes=await apiCall('/api/developer/embed')}catch(e){embedRes=null;}content.innerHTML=`<h3>Embed Widget</h3>${embedRes?`<p>Script tag:</p><pre style="background:var(--bg-tertiary);padding:10px;border-radius:8px;overflow-x:auto;">&lt;script src="${embedRes.script_url}" data-token="${embedRes.embed_token}"&gt;&lt;/script&gt;</pre>`:'<p>Embed available for Pro/Founder tiers.</p>'}`;}
-    else if(tab==='tokens'){content.innerHTML=`<h3>Buy Tokens (Pay‑as‑you‑go)</h3><p style="margin-bottom:12px;">Current balance: <strong>${state.tokenBalance} tokens</strong></p>`+TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="openTokenPurchaseFromDev(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('');}
-    else if(tab==='enterprise'){content.innerHTML=`<h3>Enterprise Token Packages</h3><p style="margin-bottom:12px;">Current balance: <strong>${state.tokenBalance} tokens</strong></p>`+ENTERPRISE_TOKEN_PACKAGES.map(p=>`<div class="token-package-card" onclick="openTokenPurchaseFromDev(${p.amount},${p.tokens})"><div class="token-package-amount">$${p.amount}</div><div class="token-package-tokens">${p.tokens} tokens</div></div>`).join('');}
-    else if(tab==='usage'){let usage;try{let d=await apiCall('/api/developer/usage');usage=d.usage||[]}catch(e){usage=[]}content.innerHTML=`<h3>API Usage (30 days)</h3>`+usage.map(u=>`<div class="developer-key-card"><span>${u.endpoint}</span><span>${u.requests} requests, ${u.tokens} tokens</span></div>`).join('')||'<p>No usage data.</p>';}
-}
-function openTokenPurchaseFromDev(amount,tokens){purchaseTokens(amount,tokens)}
-async function loadApiKeys(){try{let d=await apiCall('/api/developer/keys');state.apiKeys=d.keys||[]}catch(e){}}
-async function createApiKey(){try{let res=await apiCall('/api/developer/keys',{method:'POST',body:JSON.stringify({})});let content=document.getElementById('developerTabContent');content.innerHTML=`<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;"><strong>Your new API key (copy now):</strong><div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button><button class="btn btn-outline" onclick="loadDeveloperTab('keys')">Done</button></div>`;}catch(e){toast('Failed to generate key: '+(e.message||'Unknown error'));}}
-async function revokeApiKey(id){if(!confirm('Revoke this key?'))return;try{await apiCall('/api/developer/keys/'+id,{method:'DELETE'});toast('Key revoked');await loadApiKeys();loadDeveloperTab('keys')}catch(e){toast('Failed')}}
-async function loadWebhooks(){try{let d=await apiCall('/api/developer/webhooks');state.webhooks=d.webhooks||[]}catch(e){}}
-function showCreateWebhook(){let url=prompt('Webhook URL:');if(!url)return;let events=prompt('Events (comma separated):','new_message');if(!events)return;createWebhook(url,events)}
-async function createWebhook(url,events){try{await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});toast('Webhook created');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
-async function deleteWebhook(id){if(!confirm('Delete this webhook?'))return;try{await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});toast('Webhook deleted');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
-
-// ==================== GUEST MODALS ====================
-function openGuestLoginModal(){let modal=document.getElementById('guestLoginModalContent');modal.innerHTML=`<h2>Sign In</h2><input type="email" id="guestLoginEmail" class="auth-input" placeholder="Email"><input type="password" id="guestLoginPassword" class="auth-input" placeholder="Password"><div id="guestLoginError" class="error-msg"></div><button class="btn" onclick="handleGuestLogin()">Sign In</button><button class="btn btn-outline" onclick="closeModal('guestLoginModal')">Cancel</button>`;document.getElementById('guestLoginModal').classList.add('open')}
-async function handleGuestLogin(){let e=document.getElementById('guestLoginEmail').value.trim(),p=document.getElementById('guestLoginPassword').value,err=document.getElementById('guestLoginError');if(!e||!p){err.innerText='Required';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});let d=await r.json();if(d.token){state.token=d.token;state.user=d.user;state.is_admin=d.user.is_admin||false;state.tokenBalance=d.user.token_balance||0;state.reasoningDepth=d.user.reasoning_depth||1;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));closeModal('guestLoginModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();renderMessages();fetchNotifications();fetchWalletStatus();}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
-function openGuestSignupModal(){let modal=document.getElementById('guestSignupModalContent');modal.innerHTML=`<h2>Create Free Account</h2><input type="text" id="guestSignupName" class="auth-input" placeholder="Name"><input type="email" id="guestSignupEmail" class="auth-input" placeholder="Email"><input type="password" id="guestSignupPassword" class="auth-input" placeholder="Password (min 6)"><div id="guestSignupError" class="error-msg"></div><div id="guestSignupSuccess" class="success-msg"></div><button class="btn" onclick="handleGuestSignup()">Create Account</button><button class="btn btn-outline" onclick="closeModal('guestSignupModal')">Cancel</button>`;document.getElementById('guestSignupModal').classList.add('open')}
-async function handleGuestSignup(){let n=document.getElementById('guestSignupName').value.trim(),e=document.getElementById('guestSignupEmail').value.trim(),p=document.getElementById('guestSignupPassword').value,err=document.getElementById('guestSignupError'),suc=document.getElementById('guestSignupSuccess');if(!e||!p){err.innerText='Required';err.style.display='block';return}if(p.length<6){err.innerText='Min 6 chars';err.style.display='block';return}err.style.display='none';try{let r=await fetch(CFG.API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p,name:n})});let d=await r.json();if(d.token){suc.innerText='Created! Redirecting...';suc.style.display='block';state.token=d.token;state.user=d.user;state.is_admin=false;state.tokenBalance=d.user.token_balance||0;state.reasoningDepth=1;localStorage.setItem('ct',d.token);setCookie('ct',d.token,30);localStorage.setItem('cu',JSON.stringify(d.user));setTimeout(()=>{closeModal('guestSignupModal');document.getElementById('authContainer').style.display='none';document.getElementById('app').style.display='flex';updateProfileUI();updateUIBasedOnTier();renderMessages();fetchNotifications();fetchWalletStatus()},1200)}else{err.innerText=d.detail||'Failed';err.style.display='block'}}catch(e){err.innerText='Failed';err.style.display='block'}}
-
-// ==================== FILE UPLOAD & SUGGESTIONS ====================
+// ==================== FILE UPLOAD & SUGGESTIONS (unchanged) ====================
 async function triggerFileUpload(){
     if(!state.user){toast('Sign in to upload files');return}
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
@@ -922,11 +876,11 @@ async function triggerFileUpload(){
 function useSuggestion(text){document.getElementById('messageInput').value=text;sendMessage();hideSuggestions()}
 function hideSuggestions(){let pills=document.getElementById('suggestionPills');if(pills)pills.style.display='none'}
 
-// ==================== SCROLL BUTTON ====================
+// ==================== SCROLL BUTTON (unchanged) ====================
 function setupScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
 function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex';}
 
-// ==================== OS WALLET (Multi‑token) ====================
+// ==================== OS WALLET (Multi‑token, Ticker, News) ====================
 function openWallet(){
     if(!state.user){ toast('Sign in to access OS Wallet'); return; }
     document.getElementById('chatView').style.display='none';
@@ -1116,8 +1070,12 @@ async function fetchMaticBalance(address){
     try{
         let resp = await fetch(`${CFG.API}/api/wallet/matic-balance?address=${address}`, {headers:{'Authorization':'Bearer '+state.token}});
         let data = await resp.json();
-        document.getElementById('osMaticBalance') && (document.getElementById('osMaticBalance').innerText = `${data.matic} MATIC`);
-    }catch(e){ document.getElementById('osMaticBalance') && (document.getElementById('osMaticBalance').innerText = 'MATIC unavailable'); }
+        if(typeof data.matic === 'number'){
+            document.getElementById('osMaticBalance').innerText = `${data.matic} MATIC`;
+        } else {
+            document.getElementById('osMaticBalance').innerText = 'MATIC unavailable';
+        }
+    }catch(e){ document.getElementById('osMaticBalance').innerText = 'MATIC unavailable'; }
 }
 
 async function fetchAllTokenBalances(address){
@@ -1135,7 +1093,7 @@ async function fetchAllTokenBalances(address){
                 balance = await contract.balanceOf(address);
                 html += `<div><strong>${token.symbol}</strong>: ${ethers.utils.formatUnits(balance, token.decimals)}</div>`;
             }
-        } catch(e) { /* ignore failed balance fetches */ }
+        } catch(e) { /* ignore */ }
     }
     document.getElementById('tokenBalancesList').innerHTML = html || 'No tokens found.';
 }
@@ -1154,6 +1112,8 @@ async function fetchCapBalance(){
         state.capStaked = res.staked;
         state.capTier = res.tier;
         document.getElementById('osCapStaked') && (document.getElementById('osCapStaked').innerText = res.staked.toLocaleString());
+        updateProfileUI();
+        updateUIBasedOnTier();
     }catch(e){}
 }
 
@@ -1182,7 +1142,7 @@ async function walletSend(){
 
 function walletReceive(){ prompt('Your Polygon address:', state.walletAddress || 'Unlock wallet first'); }
 
-function walletStake(){ walletSend(); } // simplified
+function walletStake(){ walletSend(); }
 async function walletUnstake(){
     let amount = prompt('Amount to unstake:');
     if(!amount) return;
@@ -1198,7 +1158,6 @@ async function executeSwap(){
     let toToken = document.getElementById('swapToToken').value;
     let amount = document.getElementById('swapAmount').value;
     if(!amount) return;
-    // Map symbols to addresses
     const tokenMap = { 'MATIC':'0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 'USDT':'0xc2132D05D31c914a87C6611C10748AEb04B58e8F', 'WETH':'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', 'WBTC':'0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A', 'CAP': CFG.CAP_ADDRESS };
     let fromAddr = tokenMap[fromToken]; let toAddr = tokenMap[toToken];
     if(!fromAddr||!toAddr) return toast('Token not supported');
@@ -1219,28 +1178,24 @@ async function confirmSwap(to, data, value){
     }catch(e){ toast('Swap failed: '+e.message); }
 }
 
-// Market Ticker
+// Market Ticker (fixed infinite marquee)
 async function startTicker(){
     const tickerEl = document.getElementById('tickerMarquee');
     const updateTicker = async () => {
         try {
-            const resp = await fetch(CFG.API+'/api/market/prices'); // we need a backend endpoint for prices; reuse existing get_market_prices? Actually we can call coinGecko directly from frontend
-            // Simpler: use a backend endpoint that returns the same as get_market_prices. We'll call /api/market/prices (we'll add that later) or fallback to a direct API call.
-            // For now, we'll use a free API: coingecko simple price
             const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron&vs_currencies=usd&include_24hr_change=true');
             const data = await r.json();
             const names = {bitcoin:'BTC',ethereum:'ETH',ripple:'XRP',solana:'SOL',cardano:'ADA',dogecoin:'DOGE','avalanche-2':'AVAX',chainlink:'LINK',polkadot:'DOT',tron:'TRX'};
-            let items = [];
+            let items = '';
             for (let [key, val] of Object.entries(data)) {
                 const symbol = names[key] || key.toUpperCase();
                 const price = val.usd;
                 const change = val.usd_24h_change?.toFixed(2) || '0';
                 const cls = change >= 0 ? 'positive' : 'negative';
-                items.push(`<span class="ticker-item"><span class="ticker-price">${symbol} $${price}</span> <span class="ticker-change ${cls}">${change}%</span></span>`);
+                items += `<span class="ticker-item"><span class="ticker-price">${symbol} $${price}</span> <span class="ticker-change ${cls}">${change}%</span></span>`;
             }
-            // Add CAP price from DEX if available
-            if (state.capTier) { /* later */ }
-            tickerEl.innerHTML = `<div class="ticker-content">${items.join('')}</div>`;
+            // Duplicate items for seamless scrolling
+            tickerEl.innerHTML = `<div class="ticker-track">${items}${items}</div>`;
         } catch(e) { console.log('Ticker error', e); }
     };
     updateTicker();
@@ -1273,9 +1228,8 @@ async function fetchStreak(){
     if (!state.user) return;
     try {
         let res = await apiCall('/api/gamification/streak');
-        // display streak in top bar? We'll put it in the sidebar profile section
         if (res.streak > 0) {
-            document.getElementById('profileTokens').innerHTML += ` <span class="streak-badge">🔥 ${res.streak}</span>`;
+            document.getElementById('profileStakedInfo').innerHTML += ` <span class="streak-badge">🔥 ${res.streak}</span>`;
         }
     } catch(e){}
 }
@@ -1296,13 +1250,12 @@ async function openProfileModal(){
         ${state.user?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}
     </div>
     <div style="font-weight:600;margin-top:8px;">${state.user?state.user.name||state.user.email:'Guest'}</div>
-    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Balance: ${state.tokenBalance||0} tokens</div>
+    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Staked: ${state.capStaked} CAP (Tier: ${state.capTier})</div>
     ${badgesHtml}
     ${state.user?`<label>Reasoning Depth</label>
     <input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()">
     <div class="token-info" id="depthCostInfo">~${Math.round(50*DEPTH_MULTIPLIERS[state.reasoningDepth-1])} tokens / message</div>
     <button class="btn" onclick="saveReasoningDepth()">Save Depth</button>`:''}
-    ${state.user?`<button class="btn btn-outline" onclick="openTokenPurchaseModal();closeModal('profileModal')">Buy Tokens</button>`:''}
     <div class="modal-setting" onclick="openPrivacyModal();closeModal('profileModal')">Privacy Policy</div>
     <div class="modal-setting" onclick="openTermsModal();closeModal('profileModal')">Terms of Service</div>
     ${state.user?`<button class="btn btn-outline" style="color:var(--danger);" onclick="logout();closeModal('profileModal')">Sign Out</button>`:''}
@@ -1332,7 +1285,42 @@ async function loadLeaderboard(type){
     }catch(e){ document.getElementById('lbContent').innerHTML = 'Failed to load.'; }
 }
 
-// ==================== FOUNDER DASHBOARD (split tabs) ====================
+// ==================== DEVELOPER (API Keys fixed) ====================
+function openDeveloperPage(){if(!state.user||(state.capTier!=='pro'&&state.capTier!=='enterprise'&&!state.is_admin)){toast('Upgrade to Pro for Developer access');return}document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.add('open');loadDeveloperTab('keys')}
+function closeDeveloperPage(){document.getElementById('developerFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
+function switchDeveloperTab(tab){state.developerTab=tab;document.querySelectorAll('#developerTabs .research-hub-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#developerTabs .research-hub-tab[onclick="switchDeveloperTab('${tab}')"]`).classList.add('active');loadDeveloperTab(tab)}
+async function loadDeveloperTab(tab){
+    let content=document.getElementById('developerTabContent');
+    if(tab==='keys'){await loadApiKeys();content.innerHTML=`<h3>API Keys</h3><button class="btn" onclick="createApiKey()">+ Generate New Key</button><div id="apiKeyList" style="margin-top:12px;">${state.apiKeys.map(k=>`<div class="developer-key-card"><span class="key-prefix">${escapeHtml(k.prefix)}</span><div class="key-actions"><button onclick="revokeApiKey('${k.id}')">Revoke</button></div></div>`).join('')||'<p>No API keys yet.</p>'}</div>`;}
+    else if(tab==='webhooks'){await loadWebhooks();content.innerHTML=`<h3>Webhooks</h3><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div id="webhookList" style="margin-top:12px;">${state.webhooks.map(w=>`<div class="developer-key-card"><span>${escapeHtml(w.url)}</span><span style="font-size:10px;">${w.events}</span><div class="key-actions"><button onclick="deleteWebhook('${w.id}')">Delete</button></div></div>`).join('')||'<p>No webhooks configured.</p>'}</div>`;}
+    else if(tab==='embed'){let embedRes;try{embedRes=await apiCall('/api/developer/embed')}catch(e){embedRes=null;}content.innerHTML=`<h3>Embed Widget</h3>${embedRes?`<p>Script tag:</p><pre style="background:var(--bg-tertiary);padding:10px;border-radius:8px;overflow-x:auto;">&lt;script src="${embedRes.script_url}" data-token="${embedRes.embed_token}"&gt;&lt;/script&gt;</pre>`:'<p>Embed available for Pro/Founder tiers.</p>'}`;}
+    else if(tab==='tokens'){content.innerHTML=`<h3>Stake $CAP</h3><p>Stake $CAP to unlock higher rate limits and features.</p><p>Current staked: <strong>${state.capStaked} CAP</strong> (Tier: ${state.capTier})</p><button class="btn" onclick="openWallet()">Open OS Wallet to Stake</button>`;}
+    else if(tab==='enterprise'){content.innerHTML=`<h3>Enterprise</h3><p>Enterprise tier requires 100M $CAP staked.</p><p>Contact support for custom solutions.</p>`;}
+    else if(tab==='usage'){let usage;try{let d=await apiCall('/api/developer/usage');usage=d.usage||[]}catch(e){usage=[]}content.innerHTML=`<h3>API Usage (30 days)</h3>`+usage.map(u=>`<div class="developer-key-card"><span>${u.endpoint}</span><span>${u.requests} requests, ${u.tokens} tokens</span></div>`).join('')||'<p>No usage data.</p>';}
+}
+async function loadApiKeys(){try{let d=await apiCall('/api/developer/keys');state.apiKeys=d.keys||[]}catch(e){}}
+async function createApiKey(){
+    try {
+        let res = await apiCall('/api/developer/keys', {method:'POST', body:JSON.stringify({})});
+        let modal = document.getElementById('apiKeyModalContent');
+        modal.innerHTML = `<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;">
+            <strong>Your new API key (copy now):</strong>
+            <div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div>
+            <button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button>
+            <button class="btn btn-outline" onclick="closeModal('apiKeyModal')">Done</button>
+        </div>`;
+        document.getElementById('apiKeyModal').classList.add('open');
+    } catch(e) {
+        toast('Failed to generate key: '+(e.message||'Unknown error'));
+    }
+}
+async function revokeApiKey(id){if(!confirm('Revoke this key?'))return;try{await apiCall('/api/developer/keys/'+id,{method:'DELETE'});toast('Key revoked');await loadApiKeys();loadDeveloperTab('keys')}catch(e){toast('Failed')}}
+async function loadWebhooks(){try{let d=await apiCall('/api/developer/webhooks');state.webhooks=d.webhooks||[]}catch(e){}}
+function showCreateWebhook(){let url=prompt('Webhook URL:');if(!url)return;let events=prompt('Events (comma separated):','new_message');if(!events)return;createWebhook(url,events)}
+async function createWebhook(url,events){try{await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});toast('Webhook created');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
+async function deleteWebhook(id){if(!confirm('Delete this webhook?'))return;try{await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});toast('Webhook deleted');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
+
+// ==================== FOUNDER DASHBOARD (unchanged) ====================
 function openFounderDashboard(){
     if(!state.user?.is_admin){ toast('Founder access required'); return }
     document.getElementById('chatView').style.display='none';
@@ -1343,15 +1331,8 @@ function openFounderDashboard(){
     document.getElementById('founderDashboardPage').classList.add('open');
     loadFounderDashboard('cap');
 }
-function closeFounderDashboard(){
-    document.getElementById('founderDashboardPage').classList.remove('open');
-    document.getElementById('chatView').style.display='flex';
-}
-function switchDashTab(tab){
-    document.querySelectorAll('#founderDashboardPage .dashboard-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelector(`#founderDashboardPage .dashboard-tab[onclick="switchDashTab('${tab}')"]`).classList.add('active');
-    loadFounderDashboard(tab);
-}
+function closeFounderDashboard(){document.getElementById('founderDashboardPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
+function switchDashTab(tab){document.querySelectorAll('#founderDashboardPage .dashboard-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#founderDashboardPage .dashboard-tab[onclick="switchDashTab('${tab}')"]`).classList.add('active');loadFounderDashboard(tab);}
 async function loadFounderDashboard(tab='cap'){
     let content = document.getElementById('founderDashboardContent');
     content.innerHTML = '<p>Loading...</p>';
@@ -1365,20 +1346,12 @@ async function loadFounderDashboard(tab='cap'){
             html += `<div class="dashboard-card"><h3>Revenue (est.)</h3><div class="big-number">${data.revenue_estimate.toLocaleString()} CAP</div></div>`;
             html += `<div class="dashboard-card"><h3>Total Burns</h3><div class="big-number">${data.total_burns}</div></div>`;
             html += `<div class="dashboard-card"><h3>DEX Price</h3><div class="big-number">${data.dex_price ? data.dex_price.toFixed(6) + ' MATIC' : 'N/A'}</div></div>`;
-            if(data.treasury_address) {
-                html += `<div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance ? data.treasury_balance.toLocaleString() : 'N/A'} CAP</div><small>Address: ${data.treasury_address}</small></div>`;
-                html += `<div class="dashboard-card"><h3>Total Allocation</h3><div class="big-number">${data.treasury_total_allocation.toLocaleString()} CAP</div></div>`;
-            }
-            if(data.total_supply_onchain) {
-                html += `<div class="dashboard-card"><h3>On‑Chain Supply</h3><div class="big-number">${data.total_supply_onchain.toLocaleString()} CAP</div></div>`;
-            }
-            html += '</div>';
-            html += '<h3 style="margin-top:20px;">Recent Transactions</h3>';
+            if(data.treasury_address) { html += `<div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance ? data.treasury_balance.toLocaleString() : 'N/A'} CAP</div><small>Address: ${data.treasury_address}</small></div>`; }
+            if(data.total_supply_onchain) { html += `<div class="dashboard-card"><h3>On‑Chain Supply</h3><div class="big-number">${data.total_supply_onchain.toLocaleString()} CAP</div></div>`; }
+            html += '</div><h3 style="margin-top:20px;">Recent Transactions</h3>';
             if(data.recent_transactions && data.recent_transactions.length){
                 html += '<table class="admin-table"><thead><tr><th>Type</th><th>Amount</th><th>TX Hash</th><th>Status</th><th>Date</th></tr></thead><tbody>';
-                data.recent_transactions.forEach(tx => {
-                    html += `<tr><td>${tx.type}</td><td>${tx.amount}</td><td>${tx.tx_hash ? tx.tx_hash.substring(0,10)+'...' : ''}</td><td>${tx.status}</td><td>${tx.created ? new Date(tx.created).toLocaleString() : ''}</td></tr>`;
-                });
+                data.recent_transactions.forEach(tx => { html += `<tr><td>${tx.type}</td><td>${tx.amount}</td><td>${tx.tx_hash ? tx.tx_hash.substring(0,10)+'...' : ''}</td><td>${tx.status}</td><td>${tx.created ? new Date(tx.created).toLocaleString() : ''}</td></tr>`; });
                 html += '</tbody></table>';
             } else { html += '<p>No recent transactions.</p>'; }
             content.innerHTML = html;
@@ -1413,28 +1386,27 @@ async function init(){
         await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchWalletStatus(); fetchStreak();
         if(state.walletEncrypted && state.walletEncryptedSalt){
             state.walletAddress = localStorage.getItem('os_address') || '';
+            fetchCapBalance(); // update staked display
         }
     }
 }
 async function initSession(){
-    let storedBal = localStorage.getItem('tokenBalance'); if(storedBal) state.tokenBalance = parseInt(storedBal);
     try {
         let resp = await fetch(CFG.API+'/api/auth/validate', {headers:{'Authorization':'Bearer '+state.token}});
         if(resp.ok){
             let data = await resp.json();
-            state.user = data.user; state.is_admin = data.is_admin; state.tokenBalance = data.token_balance; state.reasoningDepth = data.reasoning_depth;
+            state.user = data.user; state.is_admin = data.is_admin; state.reasoningDepth = data.reasoning_depth;
             localStorage.setItem('cu', JSON.stringify(data.user)); localStorage.setItem('is_admin', data.is_admin.toString());
             localStorage.setItem('reasoningDepth', data.reasoning_depth.toString());
-            localStorage.setItem('tokenBalance', data.token_balance.toString());
+            fetchCapBalance();
         } else if(resp.status === 401){
             let guestResp = await fetch(CFG.API+'/api/session'); let guestData = await guestResp.json();
             state.token = guestData.token; state.user = null; state.is_admin = false;
-            state.tokenBalance = guestData.token_balance || DEFAULT_GUEST_TOKENS; state.reasoningDepth = 1;
+            state.reasoningDepth = 1;
             localStorage.setItem('ct', guestData.token); setCookie('ct', guestData.token, 365);
             localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
-            localStorage.setItem('tokenBalance', state.tokenBalance.toString());
-        } else { if(storedBal) state.tokenBalance = parseInt(storedBal); }
-    } catch(e) { if(storedBal) state.tokenBalance = parseInt(storedBal); }
+        }
+    } catch(e) {}
     updateProfileUI(); updateUIBasedOnTier();
 }
 init();
