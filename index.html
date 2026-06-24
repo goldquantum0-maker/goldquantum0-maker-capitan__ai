@@ -286,7 +286,7 @@
             <input type="password" id="loginPassword" class="auth-input" placeholder="Password">
             <div id="loginError" class="error-msg"></div>
             <button class="auth-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
-            <div class="auth-switch"><a onclick="switchAuthTab('forgot')">Forgot Password?</a></div>
+            <div class="auth-switch"><a href="mailto:support@capitan.ai">Contact Support</a></div>
         </div>
         <div id="signupForm" style="display:none;">
             <input type="text" id="signupName" class="auth-input" placeholder="Full Name (optional)">
@@ -296,13 +296,6 @@
             <div id="signupSuccess" class="success-msg"></div>
             <button class="auth-btn" id="signupBtn" onclick="handleSignup()">Create Account</button>
             <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Sign In</a></div>
-        </div>
-        <div id="forgotForm" style="display:none;">
-            <input type="email" id="forgotEmail" class="auth-input" placeholder="Email">
-            <div id="forgotError" class="error-msg"></div>
-            <div id="forgotSuccess" class="success-msg"></div>
-            <button class="auth-btn" onclick="handleForgotPassword()">Send Reset Link</button>
-            <div class="auth-switch"><a onclick="switchAuthTab('login')">Back to Sign In</a></div>
         </div>
         <div style="text-align:center; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
             <button class="auth-btn ghost" onclick="startGuestSession()">
@@ -331,7 +324,7 @@
         </div>
         <div class="menu-item" onclick="openWallet()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-            <span>Wallet</span>
+            <span>OS Wallet</span>
         </div>
         <div class="menu-item" onclick="openPortfolio()" id="portfolioMenuItem" style="display:none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -450,13 +443,11 @@
     <button class="scroll-to-bottom" id="scrollToBottomBtn" onclick="document.getElementById('messagesArea').scrollTo({top: document.getElementById('messagesArea').scrollHeight, behavior:'smooth'})">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
-    <!-- Notification Panel -->
     <div class="notif-panel" id="notifPanel">
         <h3>Notifications <button onclick="markAllRead()" style="font-size:10px; background:var(--accent-blue); border:none; color:white; padding:4px 10px; border-radius:20px; cursor:pointer;">Mark all read</button></h3>
         <div id="notifList" style="max-height:40vh; overflow-y:auto;"></div>
         <div class="notif-actions" style="margin-top:12px;"><button class="btn btn-outline" onclick="closeNotifPanel()">Close</button></div>
     </div>
-    <!-- Full-page Portfolio view -->
     <div class="full-page-view" id="portfolioFullPage">
         <button class="close-btn" onclick="closePortfolioFullPage()" style="position:absolute;top:20px;right:20px;">&times;</button>
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px; max-width:800px; margin-left:auto; margin-right:auto; width:100%;">
@@ -464,7 +455,6 @@
         </div>
         <div id="portfolioFullContent" class="portfolio-content"></div>
     </div>
-    <!-- Research Hub full-page view -->
     <div class="full-page-view" id="researchHubFullPage">
         <button class="close-btn" onclick="closeResearchHub()" style="position:absolute;top:20px;right:20px;">&times;</button>
         <div style="max-width:900px; width:100%; margin:0 auto;">
@@ -477,7 +467,6 @@
             <div id="researchTabContent"></div>
         </div>
     </div>
-    <!-- Developer full-page view -->
     <div class="full-page-view" id="developerFullPage">
         <button class="close-btn" onclick="closeDeveloperPage()" style="position:absolute;top:20px;right:20px;">&times;</button>
         <div style="max-width:800px; width:100%; margin:0 auto;">
@@ -493,7 +482,6 @@
             <div id="developerTabContent"></div>
         </div>
     </div>
-    <!-- Founder Dashboard full-page view -->
     <div class="full-page-view" id="founderDashboardPage">
         <button class="close-btn" onclick="closeFounderDashboard()" style="position:absolute;top:20px;right:20px;">&times;</button>
         <div style="max-width:1100px; width:100%; margin:0 auto;">
@@ -505,16 +493,13 @@
             <div id="founderDashboardContent"></div>
         </div>
     </div>
-    <!-- Wallet full-screen view -->
     <div class="wallet-fullscreen" id="walletFullPage">
         <button class="close-btn" onclick="closeWallet()" style="position:absolute;top:20px;right:20px;">&times;</button>
         <div class="wallet-container" id="walletContainer"></div>
     </div>
-    <!-- Workspace Messages Modal -->
     <div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div></div>
 </div>
 
-<!-- Modals -->
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
 <div id="tokenPurchaseModal" class="modal-overlay"><div class="modal" id="tokenPurchaseModalContent"></div></div>
 <div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
@@ -529,7 +514,7 @@
 const CFG = {
     API: 'https://capitan-ai-jxu8.onrender.com',
     RPC_URL: 'https://polygon-rpc.com',
-    CAP_ADDRESS: '', // fill after token deployment
+    CAP_ADDRESS: '',
     HOT_WALLET: '0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F'
 };
 const WALLETS = { BTC: 'bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2', ETH: '0x28c18922072f904f91499A603d7AF8F9C57aDD8b' };
@@ -570,13 +555,13 @@ let state = {
     capStaked: 0,
     capTier: 'free',
     walletExists: false,
-    totpEnabled: false,
-    totpSecret: null,
     walletSigner: null,
-    walletAddress: null
+    walletAddress: null,
+    walletEncrypted: localStorage.getItem('os_encrypted') || null,
+    walletEncryptedSalt: localStorage.getItem('os_salt') || null,
+    withdrawals: []
 };
 
-// ==================== UTILITIES ====================
 function setCookie(n,v,d){let e="";if(d){let t=new Date();t.setTime(t.getTime()+d*864e5);e="; expires="+t.toUTCString()}document.cookie=n+"="+(v||"")+e+"; path=/; SameSite=Lax"}
 function getCookie(n){let e=n+"=",a=document.cookie.split(';');for(let i=0;i<a.length;i++){let c=a[i].trim();if(c.indexOf(e)===0)return c.substring(e.length)}return null}
 if(!state.token){let ct=getCookie('ct');if(ct){state.token=ct;localStorage.setItem('ct',ct)}}
@@ -600,13 +585,11 @@ finish(){if(this.cursor)this.cursor.remove();this.container.innerHTML=formatMark
 
 function formatMarkdown(t){if(!t)return'';return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre><code>$2</code></pre>').replace(/\n/g,'<br>')}
 
-// Theme
 function setTheme(theme){state.theme=theme;document.body.className=theme;localStorage.setItem('theme',theme);document.getElementById('themeLightCheck').style.display=theme==='light'?'inline':'none';document.getElementById('themeDarkCheck').style.display=theme==='dark'?'inline':'none';document.getElementById('themeSystemCheck').style.display=theme==='system'?'inline':'none';document.getElementById('themeOLEDCheck').style.display=theme==='oled'?'inline':'none'}
 setTheme(state.theme);
 function toggleSidebar(){let s=document.getElementById('sidebar'),o=document.getElementById('overlay');if(window.innerWidth<=768){s.classList.toggle('open');o.classList.toggle('open')}else{s.classList.toggle('collapsed')}}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
 
-// Founder
 document.addEventListener('keydown', function(e) { if (e.ctrlKey && e.shiftKey && e.key === 'F') { e.preventDefault(); promptFounderLogin(); } });
 function handleFounderClick(){state.founderClickCount++;if(state.founderClickCount>=13){state.founderClickCount=0;promptFounderLogin();}}
 function promptFounderLogin(){
@@ -662,11 +645,9 @@ function updateUIBasedOnTier(){
 // ==================== AUTH ====================
 function switchAuthTab(tab) {
     document.getElementById('loginForm').style.display = 'none'; document.getElementById('signupForm').style.display = 'none';
-    document.getElementById('forgotForm').style.display = 'none'; document.getElementById('tabLogin').classList.remove('active');
-    document.getElementById('tabSignup').classList.remove('active');
+    document.getElementById('tabLogin').classList.remove('active'); document.getElementById('tabSignup').classList.remove('active');
     if (tab === 'login') { document.getElementById('loginForm').style.display = 'block'; document.getElementById('tabLogin').classList.add('active'); }
     else if (tab === 'signup') { document.getElementById('signupForm').style.display = 'block'; document.getElementById('tabSignup').classList.add('active'); }
-    else if (tab === 'forgot') { document.getElementById('forgotForm').style.display = 'block'; }
 }
 function openPrivacyModal() {
     fetch(CFG.API+'/api/legal/privacy').then(r=>r.json()).then(data=>{
@@ -720,13 +701,6 @@ async function handleSignup(){
         }else{err.innerText=d.detail||'Signup failed';err.style.display='block'}
     }catch(e){err.innerText='Signup failed: '+e.message;err.style.display='block'}
     btn.disabled=false;btn.innerText='Create Account';
-}
-
-async function handleForgotPassword(){
-    let e=document.getElementById('forgotEmail').value.trim(),err=document.getElementById('forgotError'),suc=document.getElementById('forgotSuccess');
-    if(!e){err.innerText='Email required';err.style.display='block';return}
-    err.style.display='none';
-    try{await fetch(CFG.API+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})});suc.innerText='If an account exists, a reset link has been sent.';suc.style.display='block';}catch(e){err.innerText='Request failed';err.style.display='block'}
 }
 
 async function startGuestSession(){
@@ -913,19 +887,9 @@ function hideSuggestions(){let pills=document.getElementById('suggestionPills');
 function setupScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
 function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex';}
 
-// ==================== WALLET SYSTEM ====================
-async function fetchWalletStatus(){
-    if(!state.user) return;
-    try{
-        let d = await apiCall('/api/wallet/status');
-        state.walletExists = d.exists;
-        state.totpEnabled = d.totp_enabled;
-        state.walletAddress = d.address || null;
-    }catch(e){}
-}
-
+// ==================== OS WALLET (Client‑side) ====================
 function openWallet(){
-    if(!state.user){ toast('Sign in to access wallet'); return; }
+    if(!state.user){ toast('Sign in to access OS Wallet'); return; }
     document.getElementById('chatView').style.display='none';
     document.getElementById('portfolioFullPage').classList.remove('open');
     document.getElementById('researchHubFullPage').classList.remove('open');
@@ -942,23 +906,27 @@ function closeWallet(){
 
 async function renderWallet(){
     let container = document.getElementById('walletContainer');
-    await fetchWalletStatus();
-    let html = '<h2>💳 Wallet Centre</h2>';
-    if(!state.walletExists){
+    let hasWallet = state.walletEncrypted && state.walletEncryptedSalt;
+    let address = state.walletAddress || (localStorage.getItem('os_address') || '');
+    let html = '<h2>💳 OS Wallet</h2>';
+
+    if(!hasWallet){
         html += `
         <div class="wallet-card">
-            <h3>Create your CAPITAN Wallet</h3>
-            <p>One password is all you need. 2FA can be added later for extra security.</p>
-            <input type="password" id="walletPassword" class="auth-input" placeholder="Choose a strong password (min 10 chars)">
-            <button class="btn" onclick="createWalletSimple()">Create Wallet</button>
-            <p style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">Already have a seed? <a onclick="importWallet()">Import wallet</a></p>
+            <h3>Create OS Wallet</h3>
+            <p>Generate a new seed phrase and secure it with a password. Never share it.</p>
+            <input type="password" id="osWalletPassword" class="auth-input" placeholder="Password (min 10 chars)">
+            <button class="btn" onclick="createOSWallet()">Create OS Wallet</button>
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">Already have a seed? <a onclick="importOSWallet()">Import</a></p>
         </div>`;
     } else {
         html += `
         <div class="wallet-card">
-            <div class="wallet-address">${state.walletAddress || 'Address unavailable'}</div>
-            <div class="wallet-balance" id="walletCapBalance">Loading...</div>
+            <div class="wallet-address" id="osWalletAddress">${address || 'Locked'}</div>
+            <div class="wallet-balance" id="osMaticBalance">Loading MATIC...</div>
+            <div class="wallet-balance" style="font-size:1.2rem;margin-top:8px;">$CAP Staked: <span id="osCapStaked">${state.capStaked.toLocaleString()}</span></div>
             <div class="wallet-actions">
+                <button onclick="unlockOSWallet()">🔓 Unlock</button>
                 <button onclick="walletSend()">Send</button>
                 <button onclick="walletReceive()">Receive</button>
                 <button onclick="walletStake()">Stake</button>
@@ -973,74 +941,167 @@ async function renderWallet(){
                 <button class="btn swap-btn" onclick="executeSwap()">Get Quote</button>
                 <div id="swapQuote" style="margin-top:8px;font-size:12px;"></div>
             </div>
+            <p style="font-size:10px;margin-top:10px;">Need MATIC? <a style="color:var(--accent-blue);cursor:pointer;">Buy with Fiat (Coming Soon)</a></p>
         </div>
         <div class="wallet-card">
-            <h3>Security</h3>
-            ${!state.totpEnabled ? '<button class="btn" onclick="setup2FA()">Enable 2FA</button>' : '<p>2FA is active ✅</p>'}
-            <button class="btn btn-outline" onclick="walletChangePassword()">Change Password</button>
+            <h3>Withdrawals</h3>
+            <div id="withdrawalList">Loading...</div>
         </div>
         <div class="wallet-card">
             <h3>Recent Transactions</h3>
-            <div id="walletTxList">Loading...</div>
+            <div id="walletTxList">No recent transactions.</div>
         </div>`;
     }
     container.innerHTML = html;
-    if(state.walletExists){
+    if(hasWallet && address){
+        fetchMaticBalance(address);
         fetchCapBalance();
-        fetchWalletTransactions();
+        fetchWithdrawals();
     }
 }
 
-async function createWalletSimple(){
-    let password = document.getElementById('walletPassword').value;
-    if(!password || password.length<10) return toast('Password min 10 characters');
+async function createOSWallet(){
+    let password = document.getElementById('osWalletPassword').value;
+    if(!password || password.length<10) return toast('Password min 10 chars');
     try{
-        let d = await apiCall('/api/wallet/create', {method:'POST', body:JSON.stringify({password, totp_code: ''})});
-        state.walletExists = true;
-        state.walletAddress = d.address;
-        toast('Wallet created!');
-        renderWallet();
-    }catch(e){ toast('Failed: '+e.message); }
+        const wallet = ethers.Wallet.createRandom();
+        const seedPhrase = wallet.mnemonic.phrase;
+        const address = wallet.address;
+        const privateKey = wallet.privateKey;
+
+        document.getElementById('walletContainer').innerHTML = `
+        <div class="wallet-card">
+            <h3>Your Secret Recovery Phrase</h3>
+            <p style="font-weight:bold;font-size:14px;word-break:break-word;">${seedPhrase}</p>
+            <p style="color:red;font-weight:bold;">WRITE THIS DOWN. Never share it. Without it you lose access forever.</p>
+            <button class="btn" id="confirmSeedBtn">I've Saved My Seed Phrase</button>
+        </div>`;
+        document.getElementById('confirmSeedBtn').addEventListener('click', async ()=>{
+            const encrypted = await encryptWallet({address, privateKey, mnemonic: seedPhrase}, password);
+            state.walletEncrypted = encrypted.encryptedData;
+            state.walletEncryptedSalt = encrypted.salt;
+            state.walletAddress = address;
+            localStorage.setItem('os_encrypted', encrypted.encryptedData);
+            localStorage.setItem('os_salt', encrypted.salt);
+            localStorage.setItem('os_address', address);
+            toast('OS Wallet created!');
+            renderWallet();
+        });
+    }catch(e){ toast('Creation failed'); }
 }
 
-async function unlockWallet(){
+async function importOSWallet(){
+    let seed = prompt('Enter your seed phrase:');
+    if(!seed) return;
+    let password = prompt('Set a password to encrypt this wallet:');
+    if(!password || password.length<10) return toast('Password min 10 chars');
+    try{
+        const wallet = ethers.Wallet.fromMnemonic(seed);
+        const encrypted = await encryptWallet({address: wallet.address, privateKey: wallet.privateKey, mnemonic: seed}, password);
+        state.walletEncrypted = encrypted.encryptedData;
+        state.walletEncryptedSalt = encrypted.salt;
+        state.walletAddress = wallet.address;
+        localStorage.setItem('os_encrypted', encrypted.encryptedData);
+        localStorage.setItem('os_salt', encrypted.salt);
+        localStorage.setItem('os_address', wallet.address);
+        toast('Wallet imported!');
+        renderWallet();
+    }catch(e){ toast('Invalid seed phrase'); }
+}
+
+async function unlockOSWallet(){
     let password = prompt('Wallet password:');
     if(!password) return;
-    let totpCode = state.totpEnabled ? prompt('2FA code:') : '';
     try{
-        let d = await apiCall('/api/wallet/unlock', {method:'POST', body:JSON.stringify({password, totp_code: totpCode})});
-        state.walletSigner = new ethers.Wallet(d.private_key, new ethers.providers.JsonRpcProvider(CFG.RPC_URL));
+        const decrypted = await decryptWallet(state.walletEncrypted, state.walletEncryptedSalt, password);
+        state.walletSigner = new ethers.Wallet(decrypted.privateKey, new ethers.providers.JsonRpcProvider(CFG.RPC_URL));
+        state.walletAddress = decrypted.address;
         toast('Wallet unlocked');
-    }catch(e){ toast('Unlock failed: '+e.message); }
+    }catch(e){ toast('Wrong password'); }
 }
 
-async function setup2FA(){
+// Encryption helpers using Web Crypto API
+async function encryptWallet(data, password){
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveBits','deriveKey']);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plaintext = enc.encode(JSON.stringify(data));
+    const encrypted = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, plaintext);
+    const combined = new Uint8Array(salt.byteLength + iv.byteLength + encrypted.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.byteLength);
+    combined.set(new Uint8Array(encrypted), salt.byteLength+iv.byteLength);
+    return {encryptedData: btoa(String.fromCharCode(...combined)), salt: btoa(String.fromCharCode(...salt))};
+}
+
+async function decryptWallet(encryptedData, saltStr, password){
+    const enc = new TextEncoder();
+    const combined = Uint8Array.from(atob(encryptedData), c=>c.charCodeAt(0));
+    const salt = Uint8Array.from(atob(saltStr), c=>c.charCodeAt(0));
+    const iv = combined.slice(16, 28);
+    const data = combined.slice(28);
+    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, false, ['decrypt']);
+    const decrypted = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, data);
+    return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+async function fetchMaticBalance(address){
     try{
-        let d = await apiCall('/api/2fa/setup', {method:'POST'});
-        state.totpSecret = d.secret;
-        let code = prompt('Enter the QR code secret into your authenticator app, then enter the 6-digit code:');
-        if(!code) return;
-        await apiCall('/api/2fa/verify', {method:'POST', body:JSON.stringify({code, secret: d.secret})});
-        state.totpEnabled = true;
-        toast('2FA enabled');
-        renderWallet();
-    }catch(e){ toast('2FA setup failed'); }
+        let resp = await fetch(`${CFG.API}/api/wallet/matic-balance?address=${address}`, {headers:{'Authorization':'Bearer '+state.token}});
+        let data = await resp.json();
+        document.getElementById('osMaticBalance') && (document.getElementById('osMaticBalance').innerText = `${data.matic} MATIC`);
+    }catch(e){ document.getElementById('osMaticBalance') && (document.getElementById('osMaticBalance').innerText = 'MATIC unavailable'); }
 }
 
-async function walletStake(){
-    if(!state.walletSigner) await unlockWallet();
+async function fetchCapBalance(){
+    try{
+        let res = await apiCall('/api/cap/balance');
+        state.capStaked = res.staked;
+        state.capTier = res.tier;
+        document.getElementById('osCapStaked') && (document.getElementById('osCapStaked').innerText = res.staked.toLocaleString());
+    }catch(e){}
+}
+
+async function fetchWithdrawals(){
+    try{
+        let res = await apiCall('/api/cap/withdrawals');
+        let html = '';
+        if(res.length===0){ html = '<p>No withdrawals.</p>'; }
+        else{
+            html = '<table class="tx-table"><tr><th>Amount</th><th>To</th><th>Status</th><th>Tx</th></tr>';
+            res.forEach(w=>{
+                html += `<tr><td>${w.amount}</td><td>${w.destination.substring(0,8)}...</td><td>${w.status}</td><td>${w.tx_hash? w.tx_hash.substring(0,10)+'...':'-'}</td></tr>`;
+            });
+            html += '</table>';
+        }
+        document.getElementById('withdrawalList').innerHTML = html;
+    }catch(e){}
+}
+
+async function walletSend(){
+    if(!state.walletSigner) await unlockOSWallet();
     if(!state.walletSigner) return;
-    let amount = prompt('Amount to stake (CAP):');
-    if(!amount) return;
+    let to = prompt('Recipient address:');
+    let amount = prompt('Amount (CAP):');
+    if(!to || !amount) return;
     try{
         let contract = new ethers.Contract(CFG.CAP_ADDRESS, ['function transfer(address,uint256)'], state.walletSigner);
-        let txRequest = await contract.populateTransaction.transfer(CFG.HOT_WALLET, ethers.utils.parseUnits(amount, 18));
-        let signedTx = await state.walletSigner.signTransaction(txRequest);
-        await apiCall('/api/wallet/relay', {method:'POST', body:JSON.stringify({signed_tx: signedTx})});
-        await apiCall('/api/cap/deposit', {method:'POST', body:JSON.stringify({tx_hash: signedTx})});
-        fetchCapBalance();
-        toast('Staked!');
-    }catch(e){ toast('Staking failed: '+e.message); }
+        let tx = await contract.populateTransaction.transfer(to, ethers.utils.parseUnits(amount, 18));
+        let signedTx = await state.walletSigner.signTransaction(tx);
+        let relayRes = await apiCall('/api/wallet/relay', {method:'POST', body:JSON.stringify({signed_tx: signedTx})});
+        toast('Transaction sent: '+relayRes.tx_hash);
+    }catch(e){ toast('Send failed: '+e.message); }
+}
+
+function walletReceive(){
+    prompt('Your Polygon address:', state.walletAddress || 'Unlock wallet first');
+}
+
+function walletStake(){
+    walletSend(); // simplified; real stake would send to hot wallet
 }
 
 async function walletUnstake(){
@@ -1049,12 +1110,13 @@ async function walletUnstake(){
     let dest = prompt('Your Polygon address to receive CAP:');
     if(!dest) return;
     try{
-        let d = await apiCall('/api/cap/withdraw', {method:'POST', body:JSON.stringify({amount:parseInt(amount), address:dest})});
-        toast('Withdrawal requested. It will be processed shortly.');
-    }catch(e){ toast('Withdrawal failed: '+e.message); }
+        let res = await apiCall('/api/cap/withdraw', {method:'POST', body:JSON.stringify({amount:parseInt(amount), address:dest})});
+        toast('Withdrawal requested. Track in Withdrawals tab.');
+        fetchWithdrawals();
+    }catch(e){ toast('Unstake failed'); }
 }
 
-async function toggleSwapPanel(){
+function toggleSwapPanel(){
     document.getElementById('swapPanel').style.display = document.getElementById('swapPanel').style.display === 'none' ? 'block' : 'none';
 }
 
@@ -1070,55 +1132,9 @@ async function executeSwap(){
 }
 
 async function confirmSwap(txData){
-    if(!state.walletSigner) await unlockWallet();
+    if(!state.walletSigner) await unlockOSWallet();
     toast('Swap executed (simulation)');
 }
-
-async function fetchCapBalance(){
-    if(!state.user) return;
-    try{
-        let res = await apiCall('/api/cap/balance');
-        state.capStaked = res.staked;
-        state.capTier = res.tier;
-        document.getElementById('walletCapBalance') && (document.getElementById('walletCapBalance').innerText = `${state.capStaked || 0} CAP`);
-    }catch(e){}
-}
-
-async function fetchWalletTransactions(){
-    let el = document.getElementById('walletTxList');
-    if(!el) return;
-    el.innerHTML = '<p>No recent transactions.</p>';
-}
-
-// ==================== PROFILE MODAL (cleaned) ====================
-async function openProfileModal(){
-    let modal = document.getElementById('profileModalContent');
-    let logged = !!state.user;
-    let defaultAvatar = document.getElementById('profileAvatar').src;
-    modal.innerHTML = `
-    <h2>Account Settings</h2>
-    <div style="text-align:center;">
-        <img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto || defaultAvatar}">
-        ${logged?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}
-    </div>
-    <div style="font-weight:600;margin-top:8px;">${logged?state.user.name||state.user.email:'Guest'}</div>
-    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Balance: ${state.tokenBalance||0} tokens</div>
-    ${logged?`<label>Reasoning Depth</label>
-    <input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()">
-    <div class="token-info" id="depthCostInfo">~${Math.round(50*DEPTH_MULTIPLIERS[state.reasoningDepth-1])} tokens / message</div>
-    <button class="btn" onclick="saveReasoningDepth()">Save Depth</button>`:''}
-    ${logged?`<button class="btn btn-outline" onclick="openTokenPurchaseModal();closeModal('profileModal')">Buy Tokens</button>`:''}
-    <div class="modal-setting" onclick="openPrivacyModal();closeModal('profileModal')">Privacy Policy</div>
-    <div class="modal-setting" onclick="openTermsModal();closeModal('profileModal')">Terms of Service</div>
-    ${logged?`<button class="btn btn-outline" style="color:var(--danger);" onclick="logout();closeModal('profileModal')">Sign Out</button>`:''}
-    <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>
-    `;
-    document.getElementById('profileModal').classList.add('open');
-}
-function updateDepthCost(){let depth=parseInt(document.getElementById('depthSlider').value);let cost=Math.round(50*DEPTH_MULTIPLIERS[depth-1]);document.getElementById('depthCostInfo').innerText=`~${cost} tokens / message`;}
-async function saveReasoningDepth(){let depth=parseInt(document.getElementById('depthSlider').value);state.reasoningDepth=depth;if(state.user){await apiCall('/api/auth/update-profile',{method:'POST',body:JSON.stringify({reasoning_depth:depth})});toast('Reasoning depth saved');closeModal('profileModal');}}
-async function fetchTokenBalance(){if(!state.user)return;try{let d=await apiCall('/api/tokens/balance');state.tokenBalance=d.balance;updateProfileUI();}catch(e){}}
-function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
 
 // ==================== FOUNDER DASHBOARD (split tabs) ====================
 function openFounderDashboard(){
@@ -1199,6 +1215,9 @@ async function init(){
     if(state.token){
         document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
         await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchWalletStatus();
+        if(state.walletEncrypted && state.walletEncryptedSalt){
+            state.walletAddress = localStorage.getItem('os_address') || '';
+        }
     }
 }
 async function initSession(){
