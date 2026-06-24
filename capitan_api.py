@@ -1,7 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v39.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v40.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-$CAP as in‑app currency; no token balances; improved AI continuity.
+All wallet addresses integrated, deploy‑time distribution, $CAP as sole currency.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading
 from typing import Optional, List, Tuple, Dict, Any
@@ -78,21 +78,26 @@ class Settings(BaseSettings):
     PRIVACY_POLICY_TEXT: str = ""
     TERMS_CONDITIONS_TEXT: str = ""
 
+    # Wallet addresses
+    CAP_HOT_WALLET: str = "0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A"   # Phantom
+    CLOSEAI_TREASURY_ADDRESS: str = "0x5bD39AD3e8B1CB01e7385958160FD9b2675D02d1"  # Trust
+    FOUNDER_WALLET: str = "0xd043ecc5A45D808B93c8549aAe4Ec4Fa6ee3C221"   # Coinomi
+    REWARDS_WALLET: str = "0x89d9280c221Cc5F1a9272DE4DC8b7E021700aC6A"   # OS Wallet
+    LIQUIDITY_WALLET: str = "0x23f5d895e20eBb118168FB4901E12a3488DFf875"  # Edge
+
     # $CAP on‑chain
     CAP_CONTRACT_ADDRESS: str = ""
-    CAP_HOT_WALLET: str = "0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F"
     CAP_DEX_PAIR_ADDRESS: str = ""
-    CLOSEAI_TREASURY_ADDRESS: str = ""
     POLYGON_RPC_URL: str = "https://polygon-rpc.com"
     CAP_DECIMALS: int = 18
-    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000
+    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000  # 75 trillion (not used in distribution)
 
-    # Relayer
+    # Relayer (gas auto‑top‑up)
     RELAYER_PRIVATE_KEY: str = ""
     RELAYER_MIN_MATIC: float = 2.0
     RELAYER_SWAP_CAP_AMOUNT: int = 100_000
 
-    # Deployer
+    # Deployer (Edge wallet)
     DEPLOYER_PRIVATE_KEY: str = ""
 
     # Crypto news RSS feed
@@ -104,7 +109,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="39.0")
+app = FastAPI(title="CAPITAN AI API", version="40.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -282,7 +287,13 @@ CAP_BUILDER_THRESHOLD = 20_000_000
 CAP_PRO_THRESHOLD = 50_000_000
 CAP_ENTERPRISE_THRESHOLD = 100_000_000
 
-# Token system removed entirely – $CAP staking is the only access method
+# Token distribution amounts (in raw units, 18 decimals)
+TOTAL_SUPPLY = 500_000_000_000_000 * 10**18  # 500 trillion
+FOUNDER_AMOUNT = 10_000_000_000_000 * 10**18   # 10 trillion
+TREASURY_AMOUNT = 375_000_000_000_000 * 10**18 # 375 trillion
+HOT_AMOUNT = 50_000_000_000_000 * 10**18       # 50 trillion
+LIQUIDITY_AMOUNT = 15_000_000_000_000 * 10**18 # 15 trillion
+REWARDS_AMOUNT = 50_000_000_000_000 * 10**18   # 50 trillion
 
 def init_db():
     try:
@@ -539,7 +550,7 @@ def init_db():
                               (b[0], b[1], b[2], b[3], b[4]))
 
                 conn.commit()
-        logger.info("✅ Database initialized (v39.0)")
+        logger.info("✅ Database initialized (v40.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -769,11 +780,9 @@ def summarize_conversation(messages: List[dict], max_tokens: int = 8000) -> List
     """Summarize older messages if total tokens exceed limit, keeping recent messages intact."""
     if not messages:
         return messages
-    # Estimate total tokens
     total = sum(count_tokens(m["content"]) for m in messages if "content" in m)
     if total <= max_tokens:
         return messages
-    # Find the split point: keep last N messages that fit half the budget, summarize the rest
     budget_recent = max_tokens // 2
     recent = []
     recent_tokens = 0
@@ -787,26 +796,13 @@ def summarize_conversation(messages: List[dict], max_tokens: int = 8000) -> List
     older = messages[:-len(recent)] if recent else messages
     if not older:
         return recent
-    # Summarize older messages using a cheap model
     summary_prompt = "Summarize the following conversation history, preserving key facts, decisions, and user preferences. Keep it concise.\n\n" + "\n".join([f"{m['role']}: {m['content'][:200]}..." for m in older])
-    # Use the same AI model but with a lower max_tokens
     try:
         summary, _, _ = call_ai_model([{"role": "user", "content": summary_prompt}], 1)
         summary_msg = {"role": "system", "content": f"[CONVERSATION SUMMARY]\n{summary}"}
         return [summary_msg] + recent
     except:
-        # Fallback: just truncate older messages
         return recent
-
-def deduct_tokens(user_id: str = None, session_id: str = None, tokens_used: int = 0):
-    # No longer used – $CAP staking determines access, no token balance
-    pass
-
-def user_token_balance(user_id: str) -> int:
-    return 0  # removed
-
-def session_token_balance(session_id: str) -> int:
-    return 0
 
 def get_thread_context(chat_id: str, user_id: str = None, session_id: str = None) -> str:
     try:
@@ -1305,8 +1301,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                         file_text = row[0]
                         user_msg += "\n\n[DOCUMENT CONTENT]\n" + file_text[:30000]
 
-    # No token check – staking determines access
-
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1392,8 +1386,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                     conn.commit()
         except Exception as e:
             logger.error(f"Save AI msg error: {e}")
-
-        # No token deduction
 
         if is_authenticated:
             update_streak(user_id, now_utc().date())
@@ -1749,8 +1741,6 @@ def mark_read(user: dict = Depends(get_current_user)):
             c.execute("UPDATE notifications SET read=TRUE WHERE user_id=%s", (user["id"],))
             conn.commit()
     return {"ok": True}
-
-# Token purchase endpoints removed – $CAP staking is the sole currency
 
 # ==================== FEEDBACK ====================
 class FeedbackRequest(BaseModel):
@@ -2326,6 +2316,12 @@ def cap_dashboard(founder: dict = Depends(founder_only)):
     dex_price = get_cap_price_from_dex() if WEB3_AVAILABLE else None
     treasury_balance = get_treasury_balance() if WEB3_AVAILABLE else None
     total_supply = get_cap_total_supply() if WEB3_AVAILABLE else None
+    founder_balance = None
+    if WEB3_AVAILABLE and settings.FOUNDER_WALLET:
+        try:
+            contract = get_cap_contract()
+            founder_balance = float(Web3.from_wei(contract.functions.balanceOf(Web3.to_checksum_address(settings.FOUNDER_WALLET)).call(), 'ether'))
+        except: pass
 
     return {
         "total_staked": total_staked,
@@ -2339,7 +2335,12 @@ def cap_dashboard(founder: dict = Depends(founder_only)):
         "treasury_balance": treasury_balance,
         "treasury_total_allocation": settings.CLOSEAI_TOTAL_ALLOCATION,
         "total_supply_onchain": total_supply,
-        "contract_address": settings.CAP_CONTRACT_ADDRESS
+        "contract_address": settings.CAP_CONTRACT_ADDRESS,
+        "founder_wallet": settings.FOUNDER_WALLET,
+        "founder_balance": founder_balance,
+        "rewards_wallet": settings.REWARDS_WALLET,
+        "liquidity_wallet": settings.LIQUIDITY_WALLET,
+        "hot_wallet": settings.CAP_HOT_WALLET,
     }
 
 # ==================== OS WALLET ====================
@@ -2491,7 +2492,7 @@ def run_periodically(func, interval):
         except:
             pass
 
-# ==================== ADMIN: DEPLOY CAP & CREATE POOL ====================
+# ==================== ADMIN: DEPLOY CAP & DISTRIBUTE ====================
 @app.post("/api/admin/deploy-cap")
 async def deploy_cap_token(founder: dict = Depends(founder_only)):
     if not WEB3_AVAILABLE or not settings.DEPLOYER_PRIVATE_KEY:
@@ -2513,6 +2514,30 @@ async def deploy_cap_token(founder: dict = Depends(founder_only)):
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
         contract_address = receipt['contractAddress']
         settings.CAP_CONTRACT_ADDRESS = contract_address
+        logger.info(f"CAP token deployed at {contract_address}")
+
+        # Distribute tokens to the five wallets
+        cap_contract = w3.eth.contract(address=contract_address, abi=abi)
+        distributions = [
+            (settings.FOUNDER_WALLET, FOUNDER_AMOUNT),
+            (settings.CLOSEAI_TREASURY_ADDRESS, TREASURY_AMOUNT),
+            (settings.CAP_HOT_WALLET, HOT_AMOUNT),
+            (settings.LIQUIDITY_WALLET, LIQUIDITY_AMOUNT),
+            (settings.REWARDS_WALLET, REWARDS_AMOUNT),
+        ]
+        for dest, amount in distributions:
+            transfer_tx = cap_contract.functions.transfer(
+                Web3.to_checksum_address(dest), amount
+            ).build_transaction({
+                'from': deployer.address,
+                'nonce': w3.eth.get_transaction_count(deployer.address),
+                'gas': 100000,
+                'gasPrice': w3.eth.gas_price,
+            })
+            signed_transfer = deployer.sign_transaction(transfer_tx)
+            w3.eth.send_raw_transaction(signed_transfer.rawTransaction)
+            logger.info(f"Transferred {amount / 10**18} CAP to {dest}")
+
         return {"status": "deployed", "address": contract_address, "tx_hash": tx_hash.hex()}
     except Exception as e:
         raise HTTPException(500, f"Deployment failed: {str(e)}")
@@ -2581,7 +2606,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "39.0", "database": db_status}
+    return {"status": "ok", "version": "40.0", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
@@ -2592,7 +2617,7 @@ async def manifest():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "39.0"}
+    return {"name": "CAPITAN AI", "version": "40.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
