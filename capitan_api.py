@@ -1,8 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v38.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v39.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-Self‑contained; includes $CAP deployer, gas relay, withdrawal queue,
-client‑side OS Wallet endpoints, streaks, badges, leaderboard, news.
+$CAP as in‑app currency; no token balances; improved AI continuity.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading
 from typing import Optional, List, Tuple, Dict, Any
@@ -105,7 +104,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="38.0")
+app = FastAPI(title="CAPITAN AI API", version="39.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -226,13 +225,13 @@ def get_current_user(request: Request):
             with conn.cursor() as c:
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
                 if not c.fetchone(): return None
-                c.execute("SELECT id, email, name, reasoning_depth, preferred_domain, token_balance, is_admin FROM users WHERE id = %s", (user_id,))
+                c.execute("SELECT id, email, name, reasoning_depth, preferred_domain, is_admin FROM users WHERE id = %s", (user_id,))
                 row = c.fetchone()
                 if row:
                     return {
                         "id": row[0], "email": row[1], "name": row[2] or row[1].split('@')[0],
                         "reasoning_depth": row[3] or 1, "preferred_domain": row[4] or "general",
-                        "token_balance": row[5] or 0, "is_admin": row[6] or False
+                        "is_admin": row[5] or False
                     }
     except Exception as e:
         logger.error(f"get_current_user error: {e}")
@@ -249,21 +248,21 @@ async def get_current_session(request: Request):
     if payload.get("type") == "user":
         user = get_current_user(request)
         if user:
-            return {"id": user["id"], "is_user": True, "user_data": user, "token_balance": user["token_balance"]}
+            return {"id": user["id"], "is_user": True, "user_data": user}
     session_id = payload.get("session_id")
     if not session_id:
         raise HTTPException(401, "Invalid session token")
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT id, token_balance FROM sessions WHERE id = %s", (session_id,))
+                c.execute("SELECT id FROM sessions WHERE id = %s", (session_id,))
                 row = c.fetchone()
                 if row:
-                    return {"id": row[0], "token_balance": row[1] or 0, "is_user": False}
+                    return {"id": row[0], "is_user": False}
                 else:
-                    c.execute("INSERT INTO sessions (id, token_balance) VALUES (%s, 600)", (session_id,))
+                    c.execute("INSERT INTO sessions (id) VALUES (%s)", (session_id,))
                     conn.commit()
-                    return {"id": session_id, "token_balance": 600, "is_user": False}
+                    return {"id": session_id, "is_user": False}
     except Exception as e:
         logger.error(f"get_current_session error: {e}")
     raise HTTPException(401, "Session not found")
@@ -277,40 +276,19 @@ def founder_only(user: dict = Depends(get_current_user)):
 MAX_PROJECTS = 30
 MAX_WORKSPACES = 30
 MAX_FILE_SIZE_MB = 60
-GUEST_TOKEN_BALANCE = 600
-REGISTER_TOKEN_BALANCE = 3000
 DEPTH_MULTIPLIERS = [1.0, 1.5, 2.0, 3.0, 4.0]
-
-WALLETS = {
-    "BTC": "bc1qrv6yr6e0mat96rvrc8smdf9rvu9rlp8xuk8new",
-    "ETH": "0x5bd39ad3e8b1cb01e7385958160fd9b2675d02d1"
-}
-TOKEN_WALLETS = {
-    "BTC": "bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2",
-    "ETH": "0x28c18922072f904f91499A603d7AF8F9C57aDD8b"
-}
-TOKEN_PACKAGES = [
-    {"amount": 5,   "tokens": 5000},
-    {"amount": 10,  "tokens": 10000},
-    {"amount": 20,  "tokens": 24000},
-    {"amount": 50,  "tokens": 70000},
-    {"amount": 100, "tokens": 150000}
-]
-ENTERPRISE_TOKEN_PACKAGES = [
-    {"amount": 200, "tokens": 320000},
-    {"amount": 500, "tokens": 850000},
-    {"amount": 1000,"tokens": 2000000}
-]
 
 CAP_BUILDER_THRESHOLD = 20_000_000
 CAP_PRO_THRESHOLD = 50_000_000
 CAP_ENTERPRISE_THRESHOLD = 100_000_000
 
+# Token system removed entirely – $CAP staking is the only access method
+
 def init_db():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                # Users
+                # Users – token_balance column removed
                 c.execute('''
                     CREATE TABLE IF NOT EXISTS users (
                         id UUID PRIMARY KEY,
@@ -319,14 +297,13 @@ def init_db():
                         name TEXT,
                         reasoning_depth INTEGER DEFAULT 1,
                         preferred_domain TEXT DEFAULT 'general',
-                        token_balance INTEGER DEFAULT 0,
                         is_admin BOOLEAN DEFAULT FALSE,
                         last_active TIMESTAMP DEFAULT NOW(),
                         created_at TIMESTAMP DEFAULT NOW(),
                         updated_at TIMESTAMP DEFAULT NOW()
                     )
                 ''')
-                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_balance INTEGER DEFAULT 0")
+                c.execute("ALTER TABLE users DROP COLUMN IF EXISTS token_balance")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active TIMESTAMP DEFAULT NOW()")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS tier")
@@ -335,12 +312,12 @@ def init_db():
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_streak_date DATE")
 
-                # Sessions
+                # Sessions – token_balance removed
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
-                    token_balance INTEGER DEFAULT 600,
                     created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
+                c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS token_balance")
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS tier")
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS msg_reset_date")
@@ -412,7 +389,7 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
                 c.execute("ALTER TABLE workspace_messages ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
-                # Payments
+                # Payments – kept for fiat on‑ramp later (optional)
                 c.execute('''CREATE TABLE IF NOT EXISTS payments (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     txid TEXT UNIQUE, currency TEXT, amount REAL, status TEXT DEFAULT 'pending',
@@ -500,11 +477,8 @@ def init_db():
                     url TEXT NOT NULL, events TEXT DEFAULT 'new_message',
                     is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute('''CREATE TABLE IF NOT EXISTS token_purchases (
-                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                    txid TEXT UNIQUE, currency TEXT, amount_usd REAL,
-                    tokens INTEGER, verified INTEGER DEFAULT 0, created TIMESTAMP DEFAULT NOW()
-                )''')
+                # Token purchases table removed entirely – no in‑app tokens
+                c.execute("DROP TABLE IF EXISTS token_purchases")
 
                 # $CAP Tables
                 c.execute('''CREATE TABLE IF NOT EXISTS cap_stakes (
@@ -565,7 +539,7 @@ def init_db():
                               (b[0], b[1], b[2], b[3], b[4]))
 
                 conn.commit()
-        logger.info("✅ Database initialized (v38.0)")
+        logger.info("✅ Database initialized (v39.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -782,12 +756,6 @@ def call_ai_model(messages: List[dict], reasoning_depth: int = 1) -> Tuple[str, 
 
     return "I'm having trouble connecting to AI services. Please try again in a moment.", "fallback", 0.3
 
-def estimate_tokens(user_msg: str, ai_response: str, depth: int = 1) -> int:
-    combined = user_msg + ai_response
-    raw = count_tokens(combined)
-    multiplier = DEPTH_MULTIPLIERS[depth-1] if 1 <= depth <= 5 else 1.0
-    return max(1, int(raw * multiplier))
-
 def count_tokens(text: str) -> int:
     if TIKTOKEN_AVAILABLE:
         try:
@@ -797,28 +765,48 @@ def count_tokens(text: str) -> int:
             pass
     return int(len(text.split()) / 0.75)
 
+def summarize_conversation(messages: List[dict], max_tokens: int = 8000) -> List[dict]:
+    """Summarize older messages if total tokens exceed limit, keeping recent messages intact."""
+    if not messages:
+        return messages
+    # Estimate total tokens
+    total = sum(count_tokens(m["content"]) for m in messages if "content" in m)
+    if total <= max_tokens:
+        return messages
+    # Find the split point: keep last N messages that fit half the budget, summarize the rest
+    budget_recent = max_tokens // 2
+    recent = []
+    recent_tokens = 0
+    for m in reversed(messages):
+        tok = count_tokens(m["content"])
+        if recent_tokens + tok <= budget_recent:
+            recent.insert(0, m)
+            recent_tokens += tok
+        else:
+            break
+    older = messages[:-len(recent)] if recent else messages
+    if not older:
+        return recent
+    # Summarize older messages using a cheap model
+    summary_prompt = "Summarize the following conversation history, preserving key facts, decisions, and user preferences. Keep it concise.\n\n" + "\n".join([f"{m['role']}: {m['content'][:200]}..." for m in older])
+    # Use the same AI model but with a lower max_tokens
+    try:
+        summary, _, _ = call_ai_model([{"role": "user", "content": summary_prompt}], 1)
+        summary_msg = {"role": "system", "content": f"[CONVERSATION SUMMARY]\n{summary}"}
+        return [summary_msg] + recent
+    except:
+        # Fallback: just truncate older messages
+        return recent
+
 def deduct_tokens(user_id: str = None, session_id: str = None, tokens_used: int = 0):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            if user_id:
-                c.execute("UPDATE users SET token_balance = GREATEST(0, token_balance - %s) WHERE id = %s", (tokens_used, user_id))
-            elif session_id:
-                c.execute("UPDATE sessions SET token_balance = GREATEST(0, token_balance - %s) WHERE id = %s", (tokens_used, session_id))
-            conn.commit()
+    # No longer used – $CAP staking determines access, no token balance
+    pass
 
 def user_token_balance(user_id: str) -> int:
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT token_balance FROM users WHERE id = %s", (user_id,))
-            row = c.fetchone()
-            return row[0] if row else 0
+    return 0  # removed
 
 def session_token_balance(session_id: str) -> int:
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT token_balance FROM sessions WHERE id = %s", (session_id,))
-            row = c.fetchone()
-            return row[0] if row else 0
+    return 0
 
 def get_thread_context(chat_id: str, user_id: str = None, session_id: str = None) -> str:
     try:
@@ -1079,9 +1067,9 @@ async def register(req: RegisterRequest):
                 password_hash = hash_password(req.password)
                 user_id = str(uuid.uuid4())
                 name = req.name or req.email.split('@')[0]
-                c.execute("""INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, token_balance, last_active)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,NOW())""",
-                    (user_id, req.email, password_hash, name, 1, "general", REGISTER_TOKEN_BALANCE))
+                c.execute("""INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, last_active)
+                    VALUES (%s,%s,%s,%s,%s,%s,NOW())""",
+                    (user_id, req.email, password_hash, name, 1, "general"))
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
@@ -1096,7 +1084,7 @@ async def register(req: RegisterRequest):
                     "user": {
                         "id": user_id, "email": req.email, "name": name,
                         "reasoning_depth": 1, "preferred_domain": "general",
-                        "token_balance": REGISTER_TOKEN_BALANCE, "is_admin": False
+                        "is_admin": False
                     }
                 }
     except HTTPException:
@@ -1110,11 +1098,11 @@ async def login(req: LoginRequest, request: Request):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("SELECT id, email, password_hash, name, reasoning_depth, preferred_domain, token_balance, is_admin FROM users WHERE email = %s", (req.email,))
+                c.execute("SELECT id, email, password_hash, name, reasoning_depth, preferred_domain, is_admin FROM users WHERE email = %s", (req.email,))
                 user = c.fetchone()
                 if not user or not verify_password(req.password, user[2]):
                     raise HTTPException(401, "Invalid email or password")
-                user_id, email, _, name, reasoning_depth, preferred_domain, token_balance, is_admin = user
+                user_id, email, _, name, reasoning_depth, preferred_domain, is_admin = user
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
@@ -1126,7 +1114,7 @@ async def login(req: LoginRequest, request: Request):
                     "user": {
                         "id": user_id, "email": email, "name": name or email.split('@')[0],
                         "reasoning_depth": reasoning_depth or 1, "preferred_domain": preferred_domain or "general",
-                        "token_balance": token_balance or 0, "is_admin": is_admin or False
+                        "is_admin": is_admin or False
                     }
                 }
     except HTTPException:
@@ -1156,7 +1144,7 @@ async def me(request: Request):
     return {
         "id": user["id"], "email": user["email"], "name": user["name"],
         "reasoning_depth": user["reasoning_depth"], "preferred_domain": user["preferred_domain"],
-        "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
+        "is_admin": user.get("is_admin", False)
     }
 
 @app.get("/api/auth/validate")
@@ -1168,9 +1156,8 @@ async def validate_token(request: Request):
         "user": {
             "id": user["id"], "email": user["email"], "name": user["name"],
             "reasoning_depth": user["reasoning_depth"], "preferred_domain": user["preferred_domain"],
-            "token_balance": user["token_balance"], "is_admin": user.get("is_admin", False)
+            "is_admin": user.get("is_admin", False)
         },
-        "token_balance": user["token_balance"],
         "is_admin": user.get("is_admin", False),
         "reasoning_depth": user["reasoning_depth"]
     }
@@ -1219,12 +1206,12 @@ async def get_anonymous_session():
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("INSERT INTO sessions (id, token_balance) VALUES (%s, %s)", (session_id, GUEST_TOKEN_BALANCE))
+                c.execute("INSERT INTO sessions (id) VALUES (%s)", (session_id,))
                 conn.commit()
     except Exception as e:
         logger.error(f"get_anonymous_session error: {e}")
     token = create_session_token(session_id)
-    return {"id": session_id, "token": token, "token_balance": GUEST_TOKEN_BALANCE}
+    return {"id": session_id, "token": token}
 
 @app.post("/api/founder")
 async def founder_login(req: dict, request: Request):
@@ -1241,22 +1228,22 @@ async def founder_login(req: dict, request: Request):
                 existing = c.fetchone()
                 if existing:
                     user_id = existing[0]
-                    c.execute("UPDATE users SET is_admin=TRUE, reasoning_depth=5, token_balance=999999999 WHERE id=%s", (user_id,))
+                    c.execute("UPDATE users SET is_admin=TRUE, reasoning_depth=5 WHERE id=%s", (user_id,))
                 else:
                     user_id = str(uuid.uuid4())
-                    c.execute("INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, token_balance, is_admin) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-                              (user_id, "founder@capitan.ai", hash_password("founder_sentinel"), "CAPITAN Founder", 5, "general", 999999999, True))
+                    c.execute("INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, is_admin) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                              (user_id, "founder@capitan.ai", hash_password("founder_sentinel"), "CAPITAN Founder", 5, "general", True))
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=365)))
                 conn.commit()
                 log_activity(user_id, "founder_login", f"IP: {identifier}")
-                return {"verified": True, "token": token, "user": {"id": user_id, "name": "CAPITAN Founder", "email": "founder@capitan.ai", "reasoning_depth": 5, "preferred_domain": "general", "token_balance": 999999999, "is_admin": True}}
+                return {"verified": True, "token": token, "user": {"id": user_id, "name": "CAPITAN Founder", "email": "founder@capitan.ai", "reasoning_depth": 5, "preferred_domain": "general", "is_admin": True}}
     except Exception as e:
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ==================== CHAT WITH STREAKS & BADGES ====================
+# ==================== CHAT ENDPOINT – no token cost, with conversation summarization ====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1273,14 +1260,12 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         user_id = user["id"]
         reasoning_depth = user.get("reasoning_depth", 1)
         preferred_domain = user.get("preferred_domain", "general")
-        token_balance = user.get("token_balance", 0)
         is_admin = user.get("is_admin", False)
         is_authenticated = True
     else:
         user_id = None
         reasoning_depth = 1
         preferred_domain = "general"
-        token_balance = session["token_balance"]
         is_admin = False
         is_authenticated = False
 
@@ -1296,7 +1281,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     else:
         chat_rate_limit = 30
     if not check_rate_limit(identifier, "chat", chat_rate_limit):
-        raise HTTPException(429, "Rate limit exceeded.")
+        raise HTTPException(429, "Rate limit exceeded. Stake more $CAP for higher limits.")
 
     user_msg = None
     for m in reversed(req.messages):
@@ -1320,11 +1305,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                         file_text = row[0]
                         user_msg += "\n\n[DOCUMENT CONTENT]\n" + file_text[:30000]
 
-    if not is_admin:
-        estimated_cost = estimate_tokens(user_msg, "", reasoning_depth)
-        current_balance = token_balance if is_authenticated else session_token_balance(session["id"])
-        if current_balance < estimated_cost:
-            raise HTTPException(402, f"Insufficient tokens. Need ~{estimated_cost}, you have {current_balance}.")
+    # No token check – staking determines access
 
     try:
         with get_db() as conn:
@@ -1390,6 +1371,8 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         memory_context
     )
     messages_for_ai = [{"role": "system", "content": system_prompt}] + chat_history
+    # Summarize conversation if too long
+    messages_for_ai = summarize_conversation(messages_for_ai, max_tokens=7000)
     result, model_used, confidence = call_ai_model(messages_for_ai, reasoning_depth)
 
     if result:
@@ -1410,30 +1393,24 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         except Exception as e:
             logger.error(f"Save AI msg error: {e}")
 
-        tokens_used = estimate_tokens(user_msg, result, reasoning_depth)
-        if not is_admin:
-            deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
+        # No token deduction
 
         if is_authenticated:
             update_streak(user_id, now_utc().date())
             background_tasks.add_task(check_and_award_badges, user_id, domain)
 
         if is_authenticated:
-            new_balance = user_token_balance(user_id)
             with get_db() as conn:
                 with conn.cursor() as c:
                     c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
                     conn.commit()
-        else:
-            new_balance = session_token_balance(session["id"])
 
         return {
             "content": result, "chat_id": chat_id, "model": model_used, "domain": domain,
-            "confidence": round(confidence,2), "message_id": msg_id, "tokens_used": tokens_used,
-            "new_balance": new_balance
+            "confidence": round(confidence,2), "message_id": msg_id
         }
     else:
-        return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback", "new_balance": token_balance if is_authenticated else session_token_balance(session["id"])}
+        return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
 
 def update_streak(user_id: str, today: date):
     with get_db() as conn:
@@ -1773,105 +1750,7 @@ def mark_read(user: dict = Depends(get_current_user)):
             conn.commit()
     return {"ok": True}
 
-# ==================== TOKEN PURCHASE ====================
-@app.get("/api/tokens/wallets")
-def get_token_wallets():
-    return {"wallets": TOKEN_WALLETS}
-
-@app.get("/api/tokens/packages")
-def get_token_packages(enterprise: bool = False):
-    packages = ENTERPRISE_TOKEN_PACKAGES if enterprise else TOKEN_PACKAGES
-    return {"packages": packages}
-
-@app.get("/api/tokens/balance")
-def get_token_balance(user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    return {"balance": user_token_balance(user["id"])}
-
-class TokenPurchaseRequest(BaseModel):
-    package_amount: float
-    txid: str
-    currency: str = "BTC"
-
-def verify_transaction(txid: str, currency: str, expected_usd: float, use_token_wallet: bool = True) -> Tuple[bool, float]:
-    wallets = TOKEN_WALLETS if use_token_wallet else WALLETS
-    if currency == "BTC":
-        try:
-            r = requests.get(f"https://blockchain.info/rawtx/{txid}", timeout=15)
-            if r.status_code == 200:
-                btc_price = 0
-                if settings.COINGECKO_KEY:
-                    try:
-                        resp = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
-                                            headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=5)
-                        if resp.status_code == 200:
-                            btc_price = resp.json()["bitcoin"]["usd"]
-                    except Exception as e:
-                        logger.error(f"BTC price error: {e}")
-                for out in r.json().get("out", []):
-                    if out.get("addr") == wallets["BTC"]:
-                        received = out.get("value", 0) / 1e8
-                        if btc_price > 0:
-                            received_usd = received * btc_price
-                            if received_usd >= expected_usd * 0.95:
-                                return True, received_usd
-                        else:
-                            return True, received * 40000
-        except Exception as e:
-            logger.error(f"BTC verification error: {e}")
-    elif currency == "ETH" and settings.ETHERSCAN_API_KEY:
-        try:
-            r = requests.get(f"https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash={txid}&apikey={settings.ETHERSCAN_API_KEY}", timeout=15)
-            if r.status_code == 200:
-                tx = r.json().get("result", {})
-                if tx and tx.get("to","").lower() == wallets["ETH"].lower():
-                    value = int(tx.get("value","0"), 16) / 1e18
-                    eth_price = 0
-                    if settings.COINGECKO_KEY:
-                        try:
-                            resp = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
-                                                headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=5)
-                            if resp.status_code == 200:
-                                eth_price = resp.json()["ethereum"]["usd"]
-                        except Exception as e:
-                            logger.error(f"ETH price error: {e}")
-                    if eth_price > 0:
-                        received_usd = value * eth_price
-                        if received_usd >= expected_usd * 0.95:
-                            return True, received_usd
-                    else:
-                        return True, value * 2000
-        except Exception as e:
-            logger.error(f"ETH verification error: {e}")
-    return False, 0.0
-
-@app.post("/api/tokens/purchase")
-def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    pkg = None
-    for p in TOKEN_PACKAGES + ENTERPRISE_TOKEN_PACKAGES:
-        if p["amount"] == req.package_amount:
-            pkg = p
-            break
-    if not pkg:
-        raise HTTPException(400, "Invalid package amount")
-    verified, usd_received = verify_transaction(req.txid.strip(), req.currency.upper(), req.package_amount, use_token_wallet=True)
-    purchase_id = str(uuid.uuid4())
-    with get_db() as conn:
-        with conn.cursor() as c:
-            try:
-                c.execute("INSERT INTO token_purchases (id, user_id, txid, currency, amount_usd, tokens, verified) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                          (purchase_id, user["id"], req.txid.strip(), req.currency.upper(), req.package_amount, pkg["tokens"], 1 if verified else 0))
-                if verified:
-                    c.execute("UPDATE users SET token_balance = token_balance + %s WHERE id = %s", (pkg["tokens"], user["id"]))
-                conn.commit()
-            except psycopg2.errors.UniqueViolation:
-                conn.rollback()
-                raise HTTPException(400, "Transaction ID already claimed")
-    if verified:
-        return {"verified": True, "tokens_added": pkg["tokens"], "new_balance": user_token_balance(user["id"])}
-    else:
-        return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
+# Token purchase endpoints removed – $CAP staking is the sole currency
 
 # ==================== FEEDBACK ====================
 class FeedbackRequest(BaseModel):
@@ -2115,14 +1994,12 @@ def admin_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM users WHERE token_balance > 0"); active_users = c.fetchone()[0]
             c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'"); new_this_week = c.fetchone()[0]
             c.execute("SELECT COUNT(*) FROM chat_messages"); total_messages = c.fetchone()[0]
             c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
             c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
-            return {"total_users": total_users, "active_users": active_users, "active_today": active_today,
-                    "new_this_week": new_this_week, "total_messages": total_messages,
+            return {"total_users": total_users, "active_today": active_today,
+                    "total_messages": total_messages,
                     "pending_flags": pending_flags, "threats_today": threats_today}
 
 @app.get("/api/admin/users")
@@ -2131,23 +2008,12 @@ def admin_users(page: int = 1, search: str = "", founder: dict = Depends(founder
     with get_db() as conn:
         with conn.cursor() as c:
             if search:
-                c.execute("SELECT id, email, name, reasoning_depth, token_balance, created_at, last_active FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT %s OFFSET %s",
+                c.execute("SELECT id, email, name, reasoning_depth, created_at, last_active FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT %s OFFSET %s",
                           (f'%{search}%', f'%{search}%', limit, offset))
             else:
-                c.execute("SELECT id, email, name, reasoning_depth, token_balance, created_at, last_active FROM users ORDER BY created_at DESC LIMIT %s OFFSET %s", (limit, offset))
-            users = [{"id": r[0], "email": r[1], "name": r[2], "reasoning_depth": r[3], "token_balance": r[4], "created_at": r[5].isoformat() if r[5] else None, "last_active": r[6].isoformat() if r[6] else None} for r in c.fetchall()]
+                c.execute("SELECT id, email, name, reasoning_depth, created_at, last_active FROM users ORDER BY created_at DESC LIMIT %s OFFSET %s", (limit, offset))
+            users = [{"id": r[0], "email": r[1], "name": r[2], "reasoning_depth": r[3], "created_at": r[4].isoformat() if r[4] else None, "last_active": r[5].isoformat() if r[5] else None} for r in c.fetchall()]
     return {"users": users}
-
-@app.post("/api/admin/user/{user_id}/balance")
-def admin_change_balance(user_id: str, req: dict, founder: dict = Depends(founder_only)):
-    new_balance = req.get("balance")
-    if new_balance is None:
-        raise HTTPException(400, "Balance required")
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE users SET token_balance = %s WHERE id = %s", (int(new_balance), user_id))
-            conn.commit()
-    return {"ok": True}
 
 @app.delete("/api/admin/user/{user_id}")
 def admin_delete_user(user_id: str, founder: dict = Depends(founder_only)):
@@ -2199,7 +2065,7 @@ def review_flag(flag_id: str, req: dict, founder: dict = Depends(founder_only)):
             if action == "block_user":
                 c.execute("SELECT user_id FROM content_flags WHERE id=%s", (flag_id,))
                 user_id = c.fetchone()[0]
-                c.execute("UPDATE users SET token_balance=0 WHERE id=%s", (user_id,))
+                c.execute("UPDATE users SET is_admin=FALSE WHERE id=%s", (user_id,))
             conn.commit()
     return {"ok": True}
 
@@ -2476,7 +2342,7 @@ def cap_dashboard(founder: dict = Depends(founder_only)):
         "contract_address": settings.CAP_CONTRACT_ADDRESS
     }
 
-# ==================== OS WALLET (client‑side, backend only exposes MATIC balance) ====================
+# ==================== OS WALLET ====================
 @app.get("/api/wallet/matic-balance")
 async def get_matic_balance(address: str):
     if not WEB3_AVAILABLE:
@@ -2488,7 +2354,6 @@ async def get_matic_balance(address: str):
     except Exception as e:
         raise HTTPException(400, str(e))
 
-# Relayer (used by client‑side signed transactions)
 @app.post("/api/wallet/relay")
 async def relay_transaction(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -2664,14 +2529,12 @@ async def create_liquidity_pool(req: dict, founder: dict = Depends(founder_only)
         w3 = get_web3()
         deployer = w3.eth.account.from_key(settings.DEPLOYER_PRIVATE_KEY)
         cap_address = Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS)
-        router_address = "0xa5E0829CaCEd8fFDD4De3c43696ef1C7E60EF4c4"  # QuickSwap v2 router
-        factory_address = "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"  # QuickSwap v2 factory
+        router_address = "0xa5E0829CaCEd8fFDD4De3c43696ef1C7E60EF4c4"
+        factory_address = "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
 
-        # ABI for addLiquidityETH
         router_abi = json.loads('[{"name":"addLiquidityETH","type":"function","inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amountTokenDesired","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"payable","type":"function"}]')
         router = w3.eth.contract(address=router_address, abi=router_abi)
 
-        # Approve router to spend CAP
         cap_contract = w3.eth.contract(address=cap_address, abi=ERC20_ABI)
         approve_tx = cap_contract.functions.approve(router_address, int(cap_amount)).build_transaction({
             'from': deployer.address,
@@ -2682,12 +2545,10 @@ async def create_liquidity_pool(req: dict, founder: dict = Depends(founder_only)
         signed_approve = deployer.sign_transaction(approve_tx)
         w3.eth.send_raw_transaction(signed_approve.rawTransaction)
 
-        # Add liquidity with ETH (MATIC)
         add_liq_tx = router.functions.addLiquidityETH(
             cap_address,
             int(cap_amount),
-            0,  # min token amount
-            0,  # min ETH amount
+            0, 0,
             deployer.address,
             int(time.time()) + 600
         ).build_transaction({
@@ -2701,10 +2562,9 @@ async def create_liquidity_pool(req: dict, founder: dict = Depends(founder_only)
         tx_hash = w3.eth.send_raw_transaction(signed_add.rawTransaction)
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
-        # Get pair address
         factory_abi = json.loads('[{"constant":true,"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"}],"name":"getPair","outputs":[{"internalType":"address","name":"pair","type":"address"}],"type":"function"}]')
         factory = w3.eth.contract(address=factory_address, abi=factory_abi)
-        wmatic_address = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"  # WMATIC on Polygon
+        wmatic_address = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
         pair_address = factory.functions.getPair(cap_address, wmatic_address).call()
         settings.CAP_DEX_PAIR_ADDRESS = pair_address
 
@@ -2721,7 +2581,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "38.0", "database": db_status}
+    return {"status": "ok", "version": "39.0", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
@@ -2732,7 +2592,7 @@ async def manifest():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "38.0"}
+    return {"name": "CAPITAN AI", "version": "39.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
