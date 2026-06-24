@@ -1,12 +1,14 @@
 """
-CAPITAN AI — Enterprise Backend v37.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v38.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-Self‑contained; includes $CAP deployer, gas relay, withdrawal queue, and client‑side OS Wallet.
+Self‑contained; includes $CAP deployer, gas relay, withdrawal queue,
+client‑side OS Wallet endpoints, streaks, badges, leaderboard, news.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading
 from typing import Optional, List, Tuple, Dict, Any
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
+import xml.etree.ElementTree as ET
 
 import PyPDF2, docx, openpyxl
 import psycopg2
@@ -84,15 +86,18 @@ class Settings(BaseSettings):
     CLOSEAI_TREASURY_ADDRESS: str = ""
     POLYGON_RPC_URL: str = "https://polygon-rpc.com"
     CAP_DECIMALS: int = 18
-    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000  # 75 trillion CAP
+    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000
 
-    # Relayer (gas auto‑top‑up)
+    # Relayer
     RELAYER_PRIVATE_KEY: str = ""
     RELAYER_MIN_MATIC: float = 2.0
-    RELAYER_SWAP_CAP_AMOUNT: int = 100_000  # 100k CAP to swap for MATIC
+    RELAYER_SWAP_CAP_AMOUNT: int = 100_000
 
-    # Deployer (for token and pool creation)
+    # Deployer
     DEPLOYER_PRIVATE_KEY: str = ""
+
+    # Crypto news RSS feed
+    CRYPTO_NEWS_RSS: str = "https://cointelegraph.com/rss"
 
     class Config:
         env_file = ".env"
@@ -100,7 +105,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="37.0")
+app = FastAPI(title="CAPITAN AI API", version="38.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -297,10 +302,9 @@ ENTERPRISE_TOKEN_PACKAGES = [
     {"amount": 1000,"tokens": 2000000}
 ]
 
-# Updated staking thresholds
-CAP_BUILDER_THRESHOLD = 20_000_000      # 20M
-CAP_PRO_THRESHOLD = 50_000_000          # 50M
-CAP_ENTERPRISE_THRESHOLD = 100_000_000  # 100M
+CAP_BUILDER_THRESHOLD = 20_000_000
+CAP_PRO_THRESHOLD = 50_000_000
+CAP_ENTERPRISE_THRESHOLD = 100_000_000
 
 def init_db():
     try:
@@ -328,6 +332,8 @@ def init_db():
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS tier")
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS daily_msg_count")
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS msg_reset_date")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_streak_date DATE")
 
                 # Sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
@@ -500,7 +506,7 @@ def init_db():
                     tokens INTEGER, verified INTEGER DEFAULT 0, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # $CAP Tables (v37.0)
+                # $CAP Tables
                 c.execute('''CREATE TABLE IF NOT EXISTS cap_stakes (
                     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                     staked_amount BIGINT DEFAULT 0,
@@ -532,14 +538,40 @@ def init_db():
                 )''')
                 c.execute("ALTER TABLE withdrawal_queue ADD COLUMN IF NOT EXISTS tx_hash TEXT")
 
+                # Badges and user badges
+                c.execute('''CREATE TABLE IF NOT EXISTS badges (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    icon TEXT DEFAULT '🏆',
+                    condition_type TEXT,
+                    threshold INTEGER
+                )''')
+                c.execute('''CREATE TABLE IF NOT EXISTS user_badges (
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    badge_id INTEGER REFERENCES badges(id),
+                    earned_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (user_id, badge_id)
+                )''')
+                badge_definitions = [
+                    ("First Message", "Sent your first chat", "💬", "messages_count", 1),
+                    ("Power User", "Sent 100 messages", "⚡", "messages_count", 100),
+                    ("Code Wizard", "Asked 50 coding questions", "💻", "coding_messages", 50),
+                    ("Staker", "Staked any amount of $CAP", "💎", "stake_amount", 1),
+                    ("Whale", "Staked over 100M $CAP", "🐋", "stake_amount", 100_000_000),
+                ]
+                for b in badge_definitions:
+                    c.execute("INSERT INTO badges (name, description, icon, condition_type, threshold) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                              (b[0], b[1], b[2], b[3], b[4]))
+
                 conn.commit()
-        logger.info("✅ Database initialized (v37.0)")
+        logger.info("✅ Database initialized (v38.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
-# ==================== SYSTEM PROMPT (unchanged) ====================
+# ==================== SYSTEM PROMPT ====================
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
@@ -1028,7 +1060,7 @@ async def get_privacy():
 async def get_terms():
     return {"text": settings.TERMS_CONDITIONS_TEXT or DEFAULT_TERMS}
 
-# Auth endpoints
+# ==================== AUTH ENDPOINTS ====================
 class RegisterRequest(BaseModel): email: str; password: str; name: Optional[str] = None
 class LoginRequest(BaseModel): email: str; password: str
 
@@ -1179,7 +1211,7 @@ async def delete_account(user: dict = Depends(get_current_user)):
         logger.error(f"delete_account error: {e}")
         raise HTTPException(500, "Delete failed")
 
-# Forgot-password endpoint REMOVED.
+# Forgot-password endpoint removed — use Contact Support
 
 @app.get("/api/session")
 async def get_anonymous_session():
@@ -1224,7 +1256,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# Chat endpoint
+# ==================== CHAT WITH STREAKS & BADGES ====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1383,6 +1415,10 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
             deduct_tokens(user_id if is_authenticated else None, session["id"] if not is_authenticated else None, tokens_used)
 
         if is_authenticated:
+            update_streak(user_id, now_utc().date())
+            background_tasks.add_task(check_and_award_badges, user_id, domain)
+
+        if is_authenticated:
             new_balance = user_token_balance(user_id)
             with get_db() as conn:
                 with conn.cursor() as c:
@@ -1399,63 +1435,135 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     else:
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback", "new_balance": token_balance if is_authenticated else session_token_balance(session["id"])}
 
-@app.get("/api/chats")
-async def get_chats(request: Request):
-    user = get_current_user(request)
-    if user:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE user_id=%s ORDER BY updated DESC LIMIT 100", (user["id"],))
-                rows = c.fetchall()
-                return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
-    else:
-        try:
-            session = await get_current_session(request)
-            with get_db() as conn:
-                with conn.cursor() as c:
-                    c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 100", (session["id"],))
-                    rows = c.fetchall()
-                    return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in rows]}
-        except Exception as e:
-            logger.error(f"get_chats error: {e}")
-    return {"chats": []}
-
-@app.get("/api/chats/{chat_id}")
-async def get_chat(chat_id: str, request: Request):
-    user = get_current_user(request)
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                if user: c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
-                else:
-                    session = await get_current_session(request)
-                    c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
-                if not c.fetchone(): raise HTTPException(404, "Chat not found")
-                c.execute("SELECT role, content, model, reasoning_chain, confidence_score, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
-                rows = c.fetchall()
-                return {"messages": [{"id": i, "role": r[0], "content": r[1], "model": r[2] or "AI", "reasoning_chain": json.loads(r[3]) if r[3] else None, "confidence": r[4], "created": r[5].isoformat() if r[5] else None} for i, r in enumerate(rows)]}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"get_chat error: {e}")
-        raise HTTPException(500, str(e))
-
-@app.delete("/api/chats/{chat_id}")
-async def delete_chat(chat_id: str, request: Request):
-    user = get_current_user(request)
+def update_streak(user_id: str, today: date):
     with get_db() as conn:
         with conn.cursor() as c:
-            if user:
-                c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND user_id=%s", (chat_id, user["id"]))
-                c.execute("DELETE FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
-            else:
-                session = await get_current_session(request)
-                c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, session["id"]))
-                c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
-            conn.commit()
-    return {"deleted": True}
+            c.execute("SELECT last_streak_date, streak_count FROM users WHERE id = %s", (user_id,))
+            row = c.fetchone()
+            if row:
+                last_date = row[0]
+                count = row[1] or 0
+                if last_date is None or last_date < today - timedelta(days=1):
+                    c.execute("UPDATE users SET streak_count = 1, last_streak_date = %s WHERE id = %s", (today, user_id))
+                elif last_date == today - timedelta(days=1):
+                    c.execute("UPDATE users SET streak_count = %s, last_streak_date = %s WHERE id = %s", (count + 1, today, user_id))
+                elif last_date == today:
+                    pass
+                else:
+                    c.execute("UPDATE users SET streak_count = 1, last_streak_date = %s WHERE id = %s", (today, user_id))
+                conn.commit()
 
-# Portfolio
+def check_and_award_badges(user_id: str, domain: str = None):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM chat_messages WHERE user_id = %s AND role = 'user'", (user_id,))
+            messages_count = c.fetchone()[0]
+            c.execute("SELECT staked_amount FROM cap_stakes WHERE user_id = %s", (user_id,))
+            stake_row = c.fetchone()
+            staked = stake_row[0] if stake_row else 0
+            coding_count = 0
+            if domain == 'coding':
+                c.execute("SELECT COUNT(*) FROM chat_messages WHERE user_id = %s AND role = 'user' AND content ILIKE '%code%'", (user_id,))
+                coding_count = c.fetchone()[0]
+            else:
+                c.execute("SELECT COUNT(*) FROM chat_messages m JOIN chats c ON m.chat_id = c.id WHERE m.user_id = %s AND c.topic_thread = 'coding'", (user_id,))
+                coding_count = c.fetchone()[0]
+
+            c.execute("SELECT id, condition_type, threshold FROM badges")
+            badges = c.fetchall()
+            for badge_id, cond_type, threshold in badges:
+                c.execute("SELECT 1 FROM user_badges WHERE user_id = %s AND badge_id = %s", (user_id, badge_id))
+                if c.fetchone():
+                    continue
+                awarded = False
+                if cond_type == "messages_count" and messages_count >= threshold:
+                    awarded = True
+                elif cond_type == "coding_messages" and coding_count >= threshold:
+                    awarded = True
+                elif cond_type == "stake_amount" and staked >= threshold:
+                    awarded = True
+                if awarded:
+                    c.execute("INSERT INTO user_badges (user_id, badge_id) VALUES (%s, %s)", (user_id, badge_id))
+                    c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)",
+                              (str(uuid.uuid4()), user_id, "badge", f"You earned the badge: {badge_id}"))
+            conn.commit()
+
+# ==================== GAMIFICATION & LEADERBOARD ====================
+@app.get("/api/gamification/streak")
+def get_streak(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT streak_count, last_streak_date FROM users WHERE id = %s", (user["id"],))
+            row = c.fetchone()
+            return {"streak": row[0] if row else 0, "date": str(row[1]) if row and row[1] else None}
+
+@app.get("/api/badges")
+def get_user_badges(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT b.id, b.name, b.description, b.icon, ub.earned_at
+                FROM user_badges ub JOIN badges b ON ub.badge_id = b.id
+                WHERE ub.user_id = %s
+                ORDER BY ub.earned_at DESC
+            """, (user["id"],))
+            badges = [{"id": r[0], "name": r[1], "description": r[2], "icon": r[3], "earned_at": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+    return {"badges": badges}
+
+@app.get("/api/leaderboard")
+def get_leaderboard(type: str = "staked", limit: int = 10):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if type == "staked":
+                c.execute("""
+                    SELECT u.name, u.email, cs.staked_amount, cs.tier
+                    FROM users u JOIN cap_stakes cs ON u.id = cs.user_id
+                    WHERE cs.staked_amount > 0
+                    ORDER BY cs.staked_amount DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = c.fetchall()
+                result = [{"name": r[0] or r[1].split('@')[0], "staked": r[2], "tier": r[3]} for r in rows]
+            elif type == "messages":
+                c.execute("""
+                    SELECT u.name, u.email, COUNT(cm.id) as msg_count
+                    FROM users u JOIN chat_messages cm ON u.id = cm.user_id
+                    WHERE cm.role = 'user'
+                    GROUP BY u.id, u.name, u.email
+                    ORDER BY msg_count DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = c.fetchall()
+                result = [{"name": r[0] or r[1].split('@')[0], "messages": r[2]} for r in rows]
+            else:
+                raise HTTPException(400, "Invalid type")
+    return {"leaderboard": result}
+
+# ==================== CRYPTO NEWS ====================
+@app.get("/api/news")
+def get_crypto_news(limit: int = 10):
+    try:
+        r = requests.get(settings.CRYPTO_NEWS_RSS, timeout=10)
+        if r.status_code == 200:
+            root = ET.fromstring(r.content)
+            items = root.findall('.//item')
+            news = []
+            for item in items[:limit]:
+                title = item.find('title').text if item.find('title') is not None else ''
+                link = item.find('link').text if item.find('link') is not None else ''
+                description = item.find('description').text if item.find('description') is not None else ''
+                clean_desc = re.sub(r'<[^>]+>', '', description)[:200]
+                news.append({"title": title, "url": link, "summary": clean_desc})
+            return {"news": news}
+        else:
+            return {"news": []}
+    except Exception as e:
+        logger.error(f"News fetch error: {e}")
+        return {"news": []}
+
+# ==================== PORTFOLIO ====================
 class PortfolioItemCreate(BaseModel):
     name: str
     content: str = ""
@@ -1511,7 +1619,7 @@ def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"deleted": True}
 
-# Research Hub
+# ==================== RESEARCH HUB ====================
 @app.get("/api/research/topics")
 def get_research_topics(domain: Optional[str] = None):
     with get_db() as conn:
@@ -1556,7 +1664,7 @@ def delete_user_project(project_id: str, user: dict = Depends(get_current_user))
             conn.commit()
     return {"deleted": True}
 
-# Workspaces
+# ==================== WORKSPACES ====================
 @app.post("/api/workspace/create")
 def create_workspace(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1646,7 +1754,7 @@ def send_workspace_message(room_code: str, req: dict, user: dict = Depends(get_c
             conn.commit()
     return {"sent": True}
 
-# Notifications
+# ==================== NOTIFICATIONS ====================
 @app.get("/api/notifications")
 def get_notifications(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1665,7 +1773,7 @@ def mark_read(user: dict = Depends(get_current_user)):
             conn.commit()
     return {"ok": True}
 
-# Token Purchase
+# ==================== TOKEN PURCHASE ====================
 @app.get("/api/tokens/wallets")
 def get_token_wallets():
     return {"wallets": TOKEN_WALLETS}
@@ -1751,17 +1859,21 @@ def purchase_tokens(req: TokenPurchaseRequest, user: dict = Depends(get_current_
     purchase_id = str(uuid.uuid4())
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute("INSERT INTO token_purchases (id, user_id, txid, currency, amount_usd, tokens, verified) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                      (purchase_id, user["id"], req.txid.strip(), req.currency.upper(), req.package_amount, pkg["tokens"], 1 if verified else 0))
-            if verified:
-                c.execute("UPDATE users SET token_balance = token_balance + %s WHERE id = %s", (pkg["tokens"], user["id"]))
-            conn.commit()
+            try:
+                c.execute("INSERT INTO token_purchases (id, user_id, txid, currency, amount_usd, tokens, verified) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                          (purchase_id, user["id"], req.txid.strip(), req.currency.upper(), req.package_amount, pkg["tokens"], 1 if verified else 0))
+                if verified:
+                    c.execute("UPDATE users SET token_balance = token_balance + %s WHERE id = %s", (pkg["tokens"], user["id"]))
+                conn.commit()
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                raise HTTPException(400, "Transaction ID already claimed")
     if verified:
         return {"verified": True, "tokens_added": pkg["tokens"], "new_balance": user_token_balance(user["id"])}
     else:
         return {"verified": False, "message": "Payment is being verified. Tokens will be credited once confirmed."}
 
-# Feedback
+# ==================== FEEDBACK ====================
 class FeedbackRequest(BaseModel):
     message_id: str
     rating: int = Field(..., ge=1, le=5)
@@ -1778,7 +1890,7 @@ def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)
             conn.commit()
     return {"received": True}
 
-# Portfolio optimizer (optional deps)
+# ==================== PORTFOLIO OPTIMIZER ====================
 @app.get("/api/portfolio/optimize")
 async def optimize_portfolio(
     coins: str = Query("bitcoin,ethereum", description="Comma‑separated coin IDs"),
@@ -1844,7 +1956,7 @@ async def optimize_portfolio(
         logger.error(f"Portfolio optimize error: {e}")
         raise HTTPException(500, "Optimization failed")
 
-# File upload
+# ==================== FILE UPLOAD ====================
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -1865,7 +1977,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
             conn.commit()
     return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
 
-# Developer endpoints
+# ==================== DEVELOPER ENDPOINTS ====================
 @app.post("/api/developer/keys")
 def create_api_key(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1948,7 +2060,7 @@ def get_api_usage(user: dict = Depends(get_current_user)):
             usage = [{"endpoint": r[0], "requests": r[1], "tokens": r[2]} for r in c.fetchall()]
     return {"usage": usage}
 
-# API key middleware
+# ==================== API KEY MIDDLEWARE ====================
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     auth = request.headers.get("Authorization", "")
@@ -1976,7 +2088,7 @@ async def api_key_middleware(request: Request, call_next):
     else:
         return await call_next(request)
 
-# Security middleware
+# ==================== SECURITY MIDDLEWARE ====================
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     if settings.ENABLE_SECURITY_MONITOR:
@@ -1997,7 +2109,7 @@ async def security_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
-# Founder admin
+# ==================== FOUNDER ADMIN ====================
 @app.get("/api/admin/dashboard")
 def admin_dashboard(founder: dict = Depends(founder_only)):
     with get_db() as conn:
@@ -2115,7 +2227,7 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
-# ---------------- $CAP Helpers & Endpoints ----------------
+# ---------------- $CAP HELPERS & ENDPOINTS ----------------
 ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
 
 DEX_PAIR_ABI = json.loads('[{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}]')
@@ -2255,15 +2367,19 @@ def deposit_cap(req: dict, user: dict = Depends(get_current_user)):
     amount = int(deposit["amount"])
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute("""
-                INSERT INTO cap_stakes (user_id, staked_amount, tier)
-                VALUES (%s, %s, 'free')
-                ON CONFLICT (user_id)
-                DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
-            """, (user["id"], amount))
-            c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, status) VALUES (%s,%s,%s,%s,%s,'completed')",
-                      (str(uuid.uuid4()), user["id"], "deposit", amount, tx_hash))
-            conn.commit()
+            try:
+                c.execute("""
+                    INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                    VALUES (%s, %s, 'free')
+                    ON CONFLICT (user_id)
+                    DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+                """, (user["id"], amount))
+                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, status) VALUES (%s,%s,%s,%s,%s,'completed')",
+                          (str(uuid.uuid4()), user["id"], "deposit", amount, tx_hash))
+                conn.commit()
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                raise HTTPException(400, "Transaction hash already used")
     tier = update_user_tier(user["id"])
     new_balance = user_cap_balance(user["id"])
     return {"staked": new_balance, "tier": tier, "deposited": amount}
@@ -2360,7 +2476,7 @@ def cap_dashboard(founder: dict = Depends(founder_only)):
         "contract_address": settings.CAP_CONTRACT_ADDRESS
     }
 
-# ==================== OS Wallet (client‑side, backend only exposes MATIC balance) ====================
+# ==================== OS WALLET (client‑side, backend only exposes MATIC balance) ====================
 @app.get("/api/wallet/matic-balance")
 async def get_matic_balance(address: str):
     if not WEB3_AVAILABLE:
@@ -2425,7 +2541,7 @@ async def swap_execute(req: dict, user: dict = Depends(get_current_user)):
         logger.error(f"Swap relay error: {e}")
         raise HTTPException(500, "Swap failed")
 
-# ==================== Background Withdrawal Processor ====================
+# ==================== BACKGROUND WITHDRAWAL PROCESSOR ====================
 def process_withdrawals():
     if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
         return
@@ -2455,7 +2571,7 @@ def process_withdrawals():
     except Exception as e:
         logger.error(f"Withdrawal processing error: {e}")
 
-# ==================== Gas Auto‑Top‑Up Relayer ====================
+# ==================== GAS AUTO‑TOP‑UP RELAYER ====================
 def gas_auto_topup():
     if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
         return
@@ -2496,7 +2612,7 @@ def gas_auto_topup():
     except Exception as e:
         logger.error(f"Gas auto‑top‑up error: {e}")
 
-# Start background threads on app startup
+# ==================== BACKGROUND THREADS ====================
 @app.on_event("startup")
 async def startup_event():
     threading.Thread(target=lambda: run_periodically(process_withdrawals, 60), daemon=True).start()
@@ -2510,7 +2626,7 @@ def run_periodically(func, interval):
         except:
             pass
 
-# ==================== Admin: Deploy CAP Token & Create Pool ====================
+# ==================== ADMIN: DEPLOY CAP & CREATE POOL ====================
 @app.post("/api/admin/deploy-cap")
 async def deploy_cap_token(founder: dict = Depends(founder_only)):
     if not WEB3_AVAILABLE or not settings.DEPLOYER_PRIVATE_KEY:
@@ -2518,8 +2634,7 @@ async def deploy_cap_token(founder: dict = Depends(founder_only)):
     try:
         w3 = get_web3()
         deployer = w3.eth.account.from_key(settings.DEPLOYER_PRIVATE_KEY)
-        # Hardcoded minimal ERC20 bytecode (in production, load from a compiled artifact)
-        bytecode = "0x60806040523480156200001157600080fd5b506040518060400160405280600b81526020017f4341504954414e204149000000000000000000000000000000000000000000008152506040518060400160405280600381526020017f43415000000000000000000000000000000000000000000000000000000000008152508160039080519060200190620000969291906200027f565b508060049080519060200190620000af9291906200027f565b505050620000df690696f6d2d792c800000620000d0620000e560201b60201c565b620000ed60201b60201c565b620004e4565b600030905090565b600073ffffffffffffffffffffffffffffffffffffffff168273ffffffffffffffffffffffffffffffffffffffff16141562000190576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040162000187906200041b565b60405180910390fd5b620001a460008383620002b660201b60201c565b8060026000828254620001b8919062000476565b92505081905550806000808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008282546200020e919062000476565b925050819055508173ffffffffffffffffffffffffffffffffffffffff16600073ffffffffffffffffffffffffffffffffffffffff167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef836040516200027591906200043d565b60405180910390a35050565b8280546200028d906200048e565b90600052602060002090601f016020900481019282620002b15760008555620002fc565b82601f10620002cc57805160ff1916838001178555620002fc565b82800160010185558215620002fc579182015b82811115620002fb578251825591602001919060010190620002df565b5b5090506200030b91906200030f565b5090565b5b808211156200032a57600081600090555060010162000310565b5090565b60006200033d601f836200045a565b91506200034a82620004bb565b602082019050919050565b6000620003646022836200045a565b91506200037182620004bb565b604082019050919050565b60006200038b602f836200045a565b91506200039882620004bb565b604082019050919050565b6000620003b2600a836200045a565b9150620003bf82620004bb565b602082019050919050565b6000620003d9601f836200045a565b9150620003e682620004bb565b602082019050919050565b6000620004006028836200045a565b91506200040d82620004bb565b604082019050919050565b6000602082019050818103600083015262000436816200032e565b9050919050565b60006020820190506200045460008301846200045a565b92915050565b600082825260208201905092915050565b6000819050919050565b600062000483826200046b565b91506200048e836200046b565b9250827fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff03821115620004c657620004c5620004d0565b5b828201905092915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b610f7b80620004f46000396000f3fe608060405234801561001057600080fd5b50600436106100a95760003560e01c80633950935111610071578063395093511461016857806370a082311461019857806395d89b41146101c8578063a457c2d7146101e6578063a9059cbb14610216578063dd62ed3e14610246576100a9565b806306fdde03146100ae578063095ea7b3146100cc57806318160ddd146100fc57806323b872dd1461011a578063313ce5671461014a575b600080fd5b6100b6610276565b6040516100c39190610a99565b60405180910390f35b6100e660048036038101906100e19190610b54565b610308565b6040516100f39190610baf565b60405180910390f35b610104610326565b6040516101119190610bd9565b60405180910390f35b610134600480360381019061012f9190610bf4565b610330565b6040516101419190610baf565b60405180910390f35b610152610428565b60405161015f9190610c60565b60405180910390f35b610182600480360381019061017d9190610b54565b610431565b60405161018f9190610baf565b60405180910390f35b6101b260048036038101906101ad9190610c7b565b6104bb565b6040516101bf9190610bd9565b60405180910390f35b6101d0610503565b6040516101dd9190610a99565b60405180910390f35b61020060048036038101906101fb9190610b54565b610595565b60405161020d9190610baf565b60405180910390f35b610230600480360381019061022b9190610b54565b610660565b60405161023d9190610baf565b60405180910390f35b610260600480360381019061025b9190610ca8565b61067e565b60405161026d9190610bd9565b60405180910390f35b60606003805461028590610d17565b80601f01602080910402602001604051908101604052809291908181526020018280546102b190610d17565b80156102fe5780601f106102d3576101008083540402835291602001916102fe565b820191906000526020600020905b8154815290600101906020018083116102e157829003601f168201915b5050505050905090565b600061031c610315610705565b848461070d565b6001905092915050565b60025481565b600061033d8484846108d7565b600061034985856109f0565b90506000610357868661067e565b90508481101561039c576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161039390610dbb565b60405180910390fd5b6103b1856103a8610705565b8686850361070d565b60006103bd88886109f0565b905085811015610402576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016103f990610e4d565b60405180910390fd5b61041a8888610415610705565b61070d565b6001925050509392505050565b601281565b60006104b061043e610705565b846104ab8560016000610451898661067e565b61045b9190610e9c565b600160008a73ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008973ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205461070d565b600191505092915050565b60008060008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b60606004805461051290610d17565b80601f016020809104026020016040519081016040528092919081815260200182805461053e90610d17565b801561058b5780601f106105605761010080835404028352916020019161058b565b820191906000526020600020905b81548152906001019060200180831161056e57829003601f168201915b5050505050905090565b60006105cf6105a2610705565b84846105ae878961067e565b6105b89190610ef2565b6105c29190610e9c565b8661070d565b60006105db85856109f0565b905084811015610620576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161061790610f98565b60405180910390fd5b6106358661062c610705565b8385870361070d565b61064a86610641610705565b8685870361070d565b60019250505092915050565b600061067461066d610705565b84846108d7565b6001905092915050565b6000600160008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054905092915050565b600033905090565b600073ffffffffffffffffffffffffffffffffffffffff168373ffffffffffffffffffffffffffffffffffffffff16141561077d576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016107749061102a565b60405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff168273ffffffffffffffffffffffffffffffffffffffff1614156107ed576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016107e4906110bc565b60405180910390fd5b6000600160008673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055508173ffffffffffffffffffffffffffffffffffffffff168373ffffffffffffffffffffffffffffffffffffffff167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925836040516108ca9190610bd9565b60405180910390a3505050565b600073ffffffffffffffffffffffffffffffffffffffff168373ffffffffffffffffffffffffffffffffffffffff161415610947576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161093e9061114e565b60405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff168273ffffffffffffffffffffffffffffffffffffffff1614156109b7576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016109ae906111e0565b60405180910390fd5b6109c2838383610a5b565b6109cd838383610a5b565b6109d8838383610a5b565b6109e3828484610a5b565b6109ee838383610a5b565b505050565b6000816109fd8486610ef2565b610a079190610e9c565b905092915050565b600081519050919050565b600082825260208201905092915050565b60005b83811015610a5b578082015181840152602081019050610a40565b50505050565b6000610a6682610a0f565b610a708185610a1a565b9350610a80818560208601610a3d565b610a8981610f1e565b840191505092915050565b60006020820190508181036000830152610ab38184610a5b565b905092915050565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b6000610aeb82610ac0565b9050919050565b610afb81610ae0565b8114610b0657600080fd5b50565b600081359050610b1881610af2565b92915050565b6000819050919050565b610b3181610b1e565b8114610b3c57600080fd5b50565b600081359050610b4e81610b28565b92915050565b60008060408385031215610b6b57610b6a610abb565b5b6000610b7985828601610b09565b9250506020610b8a85828601610b3f565b9150509250929050565b60008115159050919050565b610ba981610b94565b82525050565b6000602082019050610bc46000830184610ba0565b92915050565b610bd381610b1e565b82525050565b6000602082019050610bee6000830184610bca565b92915050565b600080600060608486031215610c0d57610c0c610abb565b5b6000610c1b86828701610b09565b9350506020610c2c86828701610b09565b9250506040610c3d86828701610b3f565b9150509250925092565b600060ff82169050919050565b610c5a81610c47565b82525050565b6000602082019050610c756000830184610c51565b92915050565b600060208284031215610c9157610c90610abb565b5b6000610c9f84828501610b09565b91505092915050565b60008060408385031215610cbf57610cbe610abb565b5b6000610ccd85828601610b09565b9250506020610cde85828601610b09565b9150509250929050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052602260045260246000fd5b60006002820490506001821680610d2f57607f821691505b60208210811415610d4357610d42610ce8565b5b50919050565b7f45524332303a206d696e7420746f20746865207a65726f206164647265737300600082015250565b6000610d7d601f83610a1a565b9150610d8882610d49565b602082019050919050565b6000610da0601f83610a1a565b9150610dab82610d49565b602082019050919050565b60006020820190508181036000830152610dd481610d70565b9050919050565b7f45524332303a206d696e7420746f20746865207a65726f206164647265737300600082015250565b6000610e11601f83610a1a565b9150610e1c82610d49565b602082019050919050565b6000610e34601f83610a1a565b9150610e3f82610d49565b602082019050919050565b60006020820190508181036000830152610e6681610e04565b9050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b6000610ea782610b1e565b9150610eb283610b1e565b9250827fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff03821115610ee757610ee6610e6d565b5b828201905092915050565b6000610efd82610b1e565b9150610f0883610b1e565b925082821015610f1b57610f1a610e6d565b5b828203905092915050565b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0601f8301169050919050565b7f45524332303a207472616e7366657220746f20746865207a65726f2061646472600082015250565b6000610f82602283610a1a565b9150610f8d82610f4e565b604082019050919050565b60006020820190508181036000830152610fb181610f75565b9050919050565b7f45524332303a20617070726f76652066726f6d20746865207a65726f20616464600082015250565b6000610fee602083610a1a565b9150610ff982610fb8565b602082019050919050565b6000611011602283610a1a565b915061101c82610fb8565b604082019050919050565b6000602082019050818103600083015261104381610fe1565b9050919050565b7f45524332303a20617070726f766520746f20746865207a65726f206164647265600082015250565b6000611080602283610a1a565b915061108b8261104a565b604082019050919050565b60006110a3602283610a1a565b91506110ae8261104a565b604082019050919050565b600060208201905081810360008301526110d581611073565b9050919050565b7f45524332303a207472616e7366657220746f20746865207a65726f2061646472600082015250565b6000611112602283610a1a565b915061111d826110dc565b604082019050919050565b6000611135602283610a1a565b9150611140826110dc565b604082019050919050565b6000602082019050818103600083015261116781611105565b9050919050565b7f45524332303a207472616e7366657220746f20746865207a65726f2061646472600082015250565b60006111a4602283610a1a565b91506111af8261116e565b604082019050919050565b60006111c7602283610a1a565b91506111d28261116e565b604082019050919050565b600060208201905081810360008301526111f981611197565b905091905056fea2646970667358221220f9f8428ee06e64d63506f9a482b0e63d4b6263ed0aecee0b4a38da0ee36ef3ce64736f6c63430008040033"  # example
+        bytecode = "0x60806040523480156200001157600080fd5b506040518060400160405280600b81526020017f4341504954414e204149000000000000000000000000000000000000000000008152506040518060400160405280600381526020017f43415000000000000000000000000000000000000000000000000000000000008152508160039080519060200190620000969291906200027f565b508060049080519060200190620000af9291906200027f565b505050620000df690696f6d2d792c800000620000d0620000e560201b60201c565b620000ed60201b60201c565b620004e4565b600030905090565b600073ffffffffffffffffffffffffffffffffffffffff168273ffffffffffffffffffffffffffffffffffffffff16141562000190576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040162000187906200041b565b60405180910390fd5b620001a460008383620002b660201b60201c565b8060026000828254620001b8919062000476565b92505081905550806000808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008282546200020e919062000476565b925050819055508173ffffffffffffffffffffffffffffffffffffffff16600073ffffffffffffffffffffffffffffffffffffffff167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef836040516200027591906200043d565b60405180910390a35050565b8280546200028d906200048e565b90600052602060002090601f016020900481019282620002b15760008555620002fc565b82601f10620002cc57805160ff1916838001178555620002fc565b82800160010185558215620002fc579182015b82811115620002fb578251825591602001919060010190620002df565b5b5090506200030b91906200030f565b5090565b5b808211156200032a57600081600090555060010162000310565b5090565b60006200033d601f836200045a565b91506200034a82620004bb565b602082019050919050565b6000620003646022836200045a565b91506200037182620004bb565b604082019050919050565b60006200038b602f836200045a565b91506200039882620004bb565b604082019050919050565b6000620003b2600a836200045a565b9150620003bf82620004bb565b602082019050919050565b6000620003d9601f836200045a565b9150620003e682620004bb565b602082019050919050565b6000620004006028836200045a565b91506200040d82620004bb565b604082019050919050565b6000602082019050818103600083015262000436816200032e565b9050919050565b60006020820190506200045460008301846200045a565b92915050565b600082825260208201905092915050565b6000819050919050565b600062000483826200046b565b91506200048e836200046b565b9250827fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff03821115620004c657620004c5620004d0565b5b828201905092915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b610f7b80620004f46000396000f3fe608060405234801561001057600080fd5b50600436106100a95760003560e01c80633950935111610071578063395093511461016857806370a082311461019857806395d89b41146101c8578063a457c2d7146101e6578063a9059cbb14610216578063dd62ed3e14610246576100a9565b806306fdde03146100ae578063095ea7b3146100cc57806318160ddd146100fc57806323b872dd1461011a578063313ce5671461014a575b600080fd5b6100b6610276565b6040516100c39190610a99565b60405180910390f35b6100e660048036038101906100e19190610b54565b610308565b6040516100f39190610baf565b60405180910390f35b610104610326565b6040516101119190610bd9565b60405180910390f35b610134600480360381019061012f9190610bf4565b610330565b6040516101419190610baf565b60405180910390f35b610152610428565b60405161015f9190610c60565b60405180910390f35b610182600480360381019061017d9190610b54565b610431565b60405161018f9190610baf565b60405180910390f35b6101b260048036038101906101ad9190610c7b565b6104bb565b6040516101bf9190610bd9565b60405180910390f35b6101d0610503565b6040516101dd9190610a99565b60405180910390f35b61020060048036038101906101fb9190610b54565b610595565b60405161020d9190610baf565b60405180910390f35b610230600480360381019061022b9190610b54565b610660565b60405161023d9190610baf565b60405180910390f35b610260600480360381019061025b9190610ca8565b61067e565b60405161026d9190610bd9565b60405180910390f35b60606003805461028590610d17565b80601f01602080910402602001604051908101604052809291908181526020018280546102b190610d17565b80156102fe5780601f106102d3576101008083540402835291602001916102fe565b820191906000526020600020905b8154815290600101906020018083116102e157829003601f168201915b5050505050905090565b600061031c610315610705565b848461070d565b6001905092915050565b60025481565b600061033d8484846108d7565b600061034985856109f0565b90506000610357868661067e565b90508481101561039c576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161039390610dbb565b60405180910390fd5b6103b1856103a8610705565b8686850361070d565b60006103bd88886109f0565b905085811015610402576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016103f990610e4d565b60405180910390fd5b61041a8888610415610705565b61070d565b6001925050509392505050565b601281565b60006104b061043e610705565b846104ab8560016000610451898661067e565b61045b9190610e9c565b600160008a73ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008973ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205461070d565b600191505092915050565b60008060008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b60606004805461051290610d17565b80601f016020809104026020016040519081016040528092919081815260200182805461053e90610d17565b801561058b5780601f106105605761010080835404028352916020019161058b565b820191906000526020600020905b81548152906001019060200180831161056e57829003601f168201915b5050505050905090565b60006105cf6105a2610705565b84846105ae878961067e565b6105b89190610ef2565b6105c29190610e9c565b8661070d565b60006105db85856109f0565b905084811015610620576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161061790610f98565b60405180910390fd5b6106358661062c610705565b8385870361070d565b61064a86610641610705565b8685870361070d565b60019250505092915050565b600061067461066d610705565b84846108d7565b6001905092915050565b6000600160008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054905092915050565b600033905090565b600073ffffffffffffffffffffffffffffffffffffffff168373ffffffffffffffffffffffffffffffffffffffff16141561077d576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016107749061102a565b60405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff168273ffffffffffffffffffffffffffffffffffffffff1614156107ed576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016107e4906110bc565b60405180910390fd5b6000600160008673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055508173ffffffffffffffffffffffffffffffffffffffff168373ffffffffffffffffffffffffffffffffffffffff167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925836040516108ca9190610bd9565b60405180910390a3505050565b600073ffffffffffffffffffffffffffffffffffffffff168373ffffffffffffffffffffffffffffffffffffffff161415610947576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161093e9061114e565b60405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff168273ffffffffffffffffffffffffffffffffffffffff1614156109b7576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004016109ae906111e0565b60405180910390fd5b6109c2838383610a5b565b6109cd838383610a5b565b6109d8838383610a5b565b6109e3828484610a5b565b6109ee838383610a5b565b505050565b6000816109fd8486610ef2565b610a079190610e9c565b905092915050565b600081519050919050565b600082825260208201905092915050565b60005b83811015610a5b578082015181840152602081019050610a40565b50505050565b6000610a6682610a0f565b610a708185610a1a565b9350610a80818560208601610a3d565b610a8981610f1e565b840191505092915050565b60006020820190508181036000830152610ab38184610a5b565b905092915050565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b6000610aeb82610ac0565b9050919050565b610afb81610ae0565b8114610b0657600080fd5b50565b600081359050610b1881610af2565b92915050565b6000819050919050565b610b3181610b1e565b8114610b3c57600080fd5b50565b600081359050610b4e81610b28565b92915050565b60008060408385031215610b6b57610b6a610abb565b5b6000610b7985828601610b09565b9250506020610b8a85828601610b3f565b9150509250929050565b60008115159050919050565b610ba981610b94565b82525050565b6000602082019050610bc46000830184610ba0565b92915050565b610bd381610b1e565b82525050565b6000602082019050610bee6000830184610bca565b92915050565b600080600060608486031215610c0d57610c0c610abb565b5b6000610c1b86828701610b09565b9350506020610c2c86828701610b09565b9250506040610c3d86828701610b3f565b9150509250925092565b600060ff82169050919050565b610c5a81610c47565b82525050565b6000602082019050610c756000830184610c51565b92915050565b600060208284031215610c9157610c90610abb565b5b6000610c9f84828501610b09565b91505092915050565b60008060408385031215610cbf57610cbe610abb565b5b6000610ccd85828601610b09565b9250506020610cde85828601610b09565b9150509250929050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052602260045260246000fd5b60006002820490506001821680610d2f57607f821691505b60208210811415610d4357610d42610ce8565b5b50919050565b7f45524332303a206d696e7420746f20746865207a65726f206164647265737300600082015250565b6000610d7d601f83610a1a565b9150610d8882610d49565b602082019050919050565b6000610da0601f83610a1a565b9150610dab82610d49565b602082019050919050565b60006020820190508181036000830152610dd481610d70565b9050919050565b7f45524332303a206d696e7420746f20746865207a65726f206164647265737300600082015250565b6000610e11601f83610a1a565b9150610e1c82610d49565b602082019050919050565b6000610e34601f83610a1a565b9150610e3f82610d49565b602082019050919050565b60006020820190508181036000830152610e6681610e04565b9050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b6000610ea782610b1e565b9150610eb283610b1e565b9250827fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff03821115610ee757610ee6610e6d565b5b828201905092915050565b6000610efd82610b1e565b9150610f0883610b1e565b925082821015610f1b57610f1a610e6d565b5b828203905092915050565b60007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0601f8301169050919050565b7f45524332303a207472616e7366657220746f20746865207a65726f2061646472600082015250565b6000610f82602283610a1a565b9150610f8d82610f4e565b604082019050919050565b60006020820190508181036000830152610fb181610f75565b9050919050565b7f45524332303a20617070726f76652066726f6d20746865207a65726f20616464600082015250565b6000610fee602083610a1a565b9150610ff982610fb8565b602082019050919050565b6000611011602283610a1a565b915061101c82610fb8565b604082019050919050565b6000602082019050818103600083015261104381610fe1565b9050919050565b7f45524332303a20617070726f766520746f20746865207a65726f206164647265600082015250565b6000611080602283610a1a565b915061108b8261104a565b604082019050919050565b60006110a3602283610a1a565b91506110ae8261104a565b604082019050919050565b600060208201905081810360008301526110d581611073565b9050919050565b7f45524332303a207472616e7366657220746f20746865207a65726f2061646472600082015250565b6000611112602283610a1a565b915061111d826110dc565b604082019050919050565b6000611135602283610a1a565b9150611140826110dc565b604082019050919050565b6000602082019050818103600083015261116781611105565b9050919050565b7f45524332303a207472616e7366657220746f20746865207a65726f2061646472600082015250565b60006111a4602283610a1a565b91506111af8261116e565b604082019050919050565b60006111c7602283610a1a565b91506111d28261116e565b604082019050919050565b600060208201905081810360008301526111f981611197565b905091905056fea2646970667358221220f9f8428ee06e64d63506f9a482b0e63d4b6263ed0aecee0b4a38da0ee36ef3ce64736f6c63430008040033"
         abi = json.loads('[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}]')
         Contract = w3.eth.contract(abi=abi, bytecode=bytecode)
         tx = Contract.constructor().build_transaction({
@@ -2538,9 +2653,64 @@ async def deploy_cap_token(founder: dict = Depends(founder_only)):
         raise HTTPException(500, f"Deployment failed: {str(e)}")
 
 @app.post("/api/admin/create-pool")
-async def create_liquidity_pool(founder: dict = Depends(founder_only)):
-    # (implementation omitted for brevity but would call QuickSwap router addLiquidity)
-    pass
+async def create_liquidity_pool(req: dict, founder: dict = Depends(founder_only)):
+    if not WEB3_AVAILABLE or not settings.DEPLOYER_PRIVATE_KEY:
+        raise HTTPException(501, "web3 or deployer key missing")
+    cap_amount = req.get("cap_amount")
+    matic_amount = req.get("matic_amount")
+    if not cap_amount or not matic_amount:
+        raise HTTPException(400, "cap_amount and matic_amount required (in wei/raw units)")
+    try:
+        w3 = get_web3()
+        deployer = w3.eth.account.from_key(settings.DEPLOYER_PRIVATE_KEY)
+        cap_address = Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS)
+        router_address = "0xa5E0829CaCEd8fFDD4De3c43696ef1C7E60EF4c4"  # QuickSwap v2 router
+        factory_address = "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"  # QuickSwap v2 factory
+
+        # ABI for addLiquidityETH
+        router_abi = json.loads('[{"name":"addLiquidityETH","type":"function","inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amountTokenDesired","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"payable","type":"function"}]')
+        router = w3.eth.contract(address=router_address, abi=router_abi)
+
+        # Approve router to spend CAP
+        cap_contract = w3.eth.contract(address=cap_address, abi=ERC20_ABI)
+        approve_tx = cap_contract.functions.approve(router_address, int(cap_amount)).build_transaction({
+            'from': deployer.address,
+            'nonce': w3.eth.get_transaction_count(deployer.address),
+            'gas': 100000,
+            'gasPrice': w3.eth.gas_price,
+        })
+        signed_approve = deployer.sign_transaction(approve_tx)
+        w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+
+        # Add liquidity with ETH (MATIC)
+        add_liq_tx = router.functions.addLiquidityETH(
+            cap_address,
+            int(cap_amount),
+            0,  # min token amount
+            0,  # min ETH amount
+            deployer.address,
+            int(time.time()) + 600
+        ).build_transaction({
+            'from': deployer.address,
+            'value': int(matic_amount),
+            'nonce': w3.eth.get_transaction_count(deployer.address),
+            'gas': 300000,
+            'gasPrice': w3.eth.gas_price,
+        })
+        signed_add = deployer.sign_transaction(add_liq_tx)
+        tx_hash = w3.eth.send_raw_transaction(signed_add.rawTransaction)
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        # Get pair address
+        factory_abi = json.loads('[{"constant":true,"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"}],"name":"getPair","outputs":[{"internalType":"address","name":"pair","type":"address"}],"type":"function"}]')
+        factory = w3.eth.contract(address=factory_address, abi=factory_abi)
+        wmatic_address = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"  # WMATIC on Polygon
+        pair_address = factory.functions.getPair(cap_address, wmatic_address).call()
+        settings.CAP_DEX_PAIR_ADDRESS = pair_address
+
+        return {"status": "pool_created", "tx_hash": tx_hash.hex(), "pair_address": pair_address}
+    except Exception as e:
+        raise HTTPException(500, f"Pool creation failed: {str(e)}")
 
 # Health, manifest, root
 @app.get("/health")
@@ -2551,7 +2721,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "37.0", "database": db_status}
+    return {"status": "ok", "version": "38.0", "database": db_status}
 
 @app.get("/manifest.json")
 async def manifest():
@@ -2562,7 +2732,7 @@ async def manifest():
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "37.0"}
+    return {"name": "CAPITAN AI", "version": "38.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
