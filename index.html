@@ -537,8 +537,16 @@
 const CFG = {
     API: 'https://capitan-ai-jxu8.onrender.com',
     RPC_URL: 'https://polygon-rpc.com',
-    CAP_ADDRESS: '',
-    HOT_WALLET: '0x003E88850a34F7fd9A81d532CCFe3DdA0CC8427F'
+    CAP_ADDRESS: '', // will be set after deployment via dashboard
+    HOT_WALLET: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A' // Phantom
+};
+// Wallet addresses for display
+const WALLET_ADDRESSES = {
+    founder: '0xd043ecc5A45D808B93c8549aAe4Ec4Fa6ee3C221',
+    treasury: '0x5bD39AD3e8B1CB01e7385958160FD9b2675D02d1',
+    hot: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A',
+    liquidity: '0x23f5d895e20eBb118168FB4901E12a3488DFf875',
+    rewards: '0x89d9280c221Cc5F1a9272DE4DC8b7E021700aC6A'
 };
 const POLYGON_TOKENS = [
     { symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', decimals: 6 },
@@ -553,7 +561,6 @@ const POLYGON_TOKENS = [
 ];
 
 const DEPTH_MULTIPLIERS = [1, 1.5, 2, 3, 4];
-const DEFAULT_GUEST_TOKENS = 600; // legacy, not used now
 
 let state = {
     token: localStorage.getItem('ct') || null,
@@ -1348,6 +1355,7 @@ async function loadFounderDashboard(tab='cap'){
             html += `<div class="dashboard-card"><h3>DEX Price</h3><div class="big-number">${data.dex_price ? data.dex_price.toFixed(6) + ' MATIC' : 'N/A'}</div></div>`;
             if(data.treasury_address) { html += `<div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance ? data.treasury_balance.toLocaleString() : 'N/A'} CAP</div><small>Address: ${data.treasury_address}</small></div>`; }
             if(data.total_supply_onchain) { html += `<div class="dashboard-card"><h3>On‑Chain Supply</h3><div class="big-number">${data.total_supply_onchain.toLocaleString()} CAP</div></div>`; }
+            if(data.founder_wallet) { html += `<div class="dashboard-card"><h3>Founder Wallet</h3><div class="big-number">${data.founder_balance ? data.founder_balance.toLocaleString() : 'N/A'} CAP</div><small>Address: ${data.founder_wallet}</small></div>`; }
             html += '</div><h3 style="margin-top:20px;">Recent Transactions</h3>';
             if(data.recent_transactions && data.recent_transactions.length){
                 html += '<table class="admin-table"><thead><tr><th>Type</th><th>Amount</th><th>TX Hash</th><th>Status</th><th>Date</th></tr></thead><tbody>';
@@ -1386,7 +1394,7 @@ async function init(){
         await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchWalletStatus(); fetchStreak();
         if(state.walletEncrypted && state.walletEncryptedSalt){
             state.walletAddress = localStorage.getItem('os_address') || '';
-            fetchCapBalance(); // update staked display
+            fetchCapBalance();
         }
     }
 }
