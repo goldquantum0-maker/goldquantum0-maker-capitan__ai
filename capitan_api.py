@@ -1,8 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v41.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v42.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 All wallet addresses integrated, deploy‑time distribution, $CAP as sole currency,
-PWA support with auto‑generated icons and service worker.
+PWA support, starter CAP, in‑app CAP purchase with MATIC at internal rate.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
@@ -91,14 +91,14 @@ class Settings(BaseSettings):
     CAP_DEX_PAIR_ADDRESS: str = ""
     POLYGON_RPC_URL: str = "https://polygon-rpc.com"
     CAP_DECIMALS: int = 18
-    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000  # 75 trillion (not used in distribution)
+    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000
 
-    # Relayer (gas auto‑top‑up)
+    # Relayer
     RELAYER_PRIVATE_KEY: str = ""
     RELAYER_MIN_MATIC: float = 2.0
     RELAYER_SWAP_CAP_AMOUNT: int = 100_000
 
-    # Deployer (Edge wallet)
+    # Deployer
     DEPLOYER_PRIVATE_KEY: str = ""
 
     # Crypto news RSS feed
@@ -110,7 +110,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="41.0")
+app = FastAPI(title="CAPITAN AI API", version="42.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -140,13 +140,6 @@ def get_db():
         yield conn
     finally:
         pool.putconn(conn)
-
-redis_client = None
-if REDIS_AVAILABLE and hasattr(settings, 'REDIS_URL') and settings.REDIS_URL:
-    try:
-        redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
-    except:
-        pass
 
 # Helpers
 def sid(): return secrets.token_hex(4).upper()
@@ -289,12 +282,18 @@ CAP_PRO_THRESHOLD = 50_000_000
 CAP_ENTERPRISE_THRESHOLD = 100_000_000
 
 # Token distribution amounts (in raw units, 18 decimals)
-TOTAL_SUPPLY = 500_000_000_000_000 * 10**18  # 500 trillion
-FOUNDER_AMOUNT = 10_000_000_000_000 * 10**18   # 10 trillion
-TREASURY_AMOUNT = 375_000_000_000_000 * 10**18 # 375 trillion
-HOT_AMOUNT = 50_000_000_000_000 * 10**18       # 50 trillion
-LIQUIDITY_AMOUNT = 15_000_000_000_000 * 10**18 # 15 trillion
-REWARDS_AMOUNT = 50_000_000_000_000 * 10**18   # 50 trillion
+TOTAL_SUPPLY = 500_000_000_000_000 * 10**18
+FOUNDER_AMOUNT = 10_000_000_000_000 * 10**18
+TREASURY_AMOUNT = 375_000_000_000_000 * 10**18
+HOT_AMOUNT = 50_000_000_000_000 * 10**18
+LIQUIDITY_AMOUNT = 15_000_000_000_000 * 10**18
+REWARDS_AMOUNT = 50_000_000_000_000 * 10**18
+
+# Starter CAP bonus
+STARTER_CAP_AMOUNT = 2500 * 10**18  # 2500 CAP in raw units
+
+# Default internal rate: 1 MATIC = 10,000,000 CAP
+DEFAULT_CAP_MATIC_RATE = 10_000_000  # number of CAP per 1 MATIC
 
 def init_db():
     try:
@@ -323,6 +322,7 @@ def init_db():
                 c.execute("ALTER TABLE users DROP COLUMN IF EXISTS msg_reset_date")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0")
                 c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_streak_date DATE")
+                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS starter_cap_claimed BOOLEAN DEFAULT FALSE")
 
                 # Sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
@@ -489,7 +489,6 @@ def init_db():
                     url TEXT NOT NULL, events TEXT DEFAULT 'new_message',
                     is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
                 )''')
-                # Token purchases table removed entirely – no in‑app tokens
                 c.execute("DROP TABLE IF EXISTS token_purchases")
 
                 # $CAP Tables
@@ -511,6 +510,8 @@ def init_db():
                     status TEXT DEFAULT 'pending',
                     created TIMESTAMP DEFAULT NOW()
                 )''')
+                c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS currency TEXT")
+                c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS matic_amount REAL")
                 # Withdrawal queue
                 c.execute('''CREATE TABLE IF NOT EXISTS withdrawal_queue (
                     id UUID PRIMARY KEY,
@@ -550,8 +551,18 @@ def init_db():
                     c.execute("INSERT INTO badges (name, description, icon, condition_type, threshold) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                               (b[0], b[1], b[2], b[3], b[4]))
 
+                # Platform settings (key-value store)
+                c.execute('''CREATE TABLE IF NOT EXISTS platform_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated TIMESTAMP DEFAULT NOW()
+                )''')
+                # Insert default rate if not exists
+                c.execute("INSERT INTO platform_settings (key, value) VALUES ('cap_matic_rate', %s) ON CONFLICT (key) DO NOTHING",
+                          (str(DEFAULT_CAP_MATIC_RATE),))
+
                 conn.commit()
-        logger.info("✅ Database initialized (v41.0)")
+        logger.info("✅ Database initialized (v42.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -1240,7 +1251,7 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ==================== CHAT ENDPOINT – no token cost, with conversation summarization ====================
+# ==================== CHAT ENDPOINT (with starter CAP claim) ====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
@@ -1269,14 +1280,10 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     identifier = user_id if user else session["id"]
 
     tier = get_user_tier(user_id) if is_authenticated else "free"
-    if tier == "enterprise":
-        chat_rate_limit = 500
-    elif tier == "pro":
-        chat_rate_limit = 100
-    elif tier == "builder":
-        chat_rate_limit = 50
-    else:
-        chat_rate_limit = 30
+    if tier == "enterprise": chat_rate_limit = 500
+    elif tier == "pro": chat_rate_limit = 100
+    elif tier == "builder": chat_rate_limit = 50
+    else: chat_rate_limit = 30
     if not check_rate_limit(identifier, "chat", chat_rate_limit):
         raise HTTPException(429, "Rate limit exceeded. Stake more $CAP for higher limits.")
 
@@ -1366,10 +1373,10 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         memory_context
     )
     messages_for_ai = [{"role": "system", "content": system_prompt}] + chat_history
-    # Summarize conversation if too long
     messages_for_ai = summarize_conversation(messages_for_ai, max_tokens=7000)
     result, model_used, confidence = call_ai_model(messages_for_ai, reasoning_depth)
 
+    starter_claimed = False
     if result:
         msg_id = f"msg_{sid()}"
         try:
@@ -1389,10 +1396,9 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
             logger.error(f"Save AI msg error: {e}")
 
         if is_authenticated:
+            starter_claimed = claim_starter_cap(user_id)
             update_streak(user_id, now_utc().date())
             background_tasks.add_task(check_and_award_badges, user_id, domain)
-
-        if is_authenticated:
             with get_db() as conn:
                 with conn.cursor() as c:
                     c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
@@ -1400,10 +1406,33 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
 
         return {
             "content": result, "chat_id": chat_id, "model": model_used, "domain": domain,
-            "confidence": round(confidence,2), "message_id": msg_id
+            "confidence": round(confidence,2), "message_id": msg_id,
+            "starter_claimed": starter_claimed
         }
     else:
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
+
+def claim_starter_cap(user_id: str) -> bool:
+    """Award 2500 CAP to new users on first chat if not already claimed."""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT starter_cap_claimed FROM users WHERE id = %s", (user_id,))
+                row = c.fetchone()
+                if row and not row[0]:
+                    c.execute("UPDATE users SET starter_cap_claimed = TRUE WHERE id = %s", (user_id,))
+                    c.execute("""
+                        INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                        VALUES (%s, %s, 'free')
+                        ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+                    """, (user_id, STARTER_CAP_AMOUNT))
+                    c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, status) VALUES (%s,%s,'starter',%s,'system','completed')",
+                              (str(uuid.uuid4()), user_id, STARTER_CAP_AMOUNT))
+                    conn.commit()
+                    return True
+    except Exception as e:
+        logger.error(f"claim_starter_cap error: {e}")
+    return False
 
 def update_streak(user_id: str, today: date):
     with get_db() as conn:
@@ -1457,6 +1486,94 @@ def check_and_award_badges(user_id: str, domain: str = None):
                     c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)",
                               (str(uuid.uuid4()), user_id, "badge", f"You earned the badge: {badge_id}"))
             conn.commit()
+
+# ==================== IN‑APP CAP PURCHASE ENDPOINT ====================
+def get_cap_matic_rate() -> int:
+    """Get the current internal rate (CAP per MATIC) from platform settings."""
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT value FROM platform_settings WHERE key = 'cap_matic_rate'")
+                row = c.fetchone()
+                if row:
+                    return int(row[0])
+    except:
+        pass
+    return DEFAULT_CAP_MATIC_RATE
+
+def verify_matic_payment(tx_hash: str, expected_matic: float) -> bool:
+    """Check if a MATIC transaction was sent to the Hot Wallet with the expected value."""
+    if not WEB3_AVAILABLE:
+        return False
+    try:
+        w3 = Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
+        receipt = w3.eth.get_transaction(tx_hash)
+        if not receipt:
+            return False
+        # Check recipient matches the Hot Wallet
+        if receipt['to'] and receipt['to'].lower() == settings.CAP_HOT_WALLET.lower():
+            value_matic = float(w3.from_wei(receipt['value'], 'ether'))
+            # Allow 5% tolerance for gas fluctuations
+            if value_matic >= expected_matic * 0.95:
+                return True
+    except Exception as e:
+        logger.error(f"verify_matic_payment error: {e}")
+    return False
+
+class PurchaseRequest(BaseModel):
+    cap_amount: int  # in raw units (with decimals)
+    tx_hash: str
+
+@app.post("/api/cap/purchase")
+def purchase_cap(req: PurchaseRequest, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    rate = get_cap_matic_rate()
+    # Calculate expected MATIC
+    cap_whole = req.cap_amount / 10**18
+    expected_matic = cap_whole / rate
+    if expected_matic < 0.0001:
+        raise HTTPException(400, "Amount too small.")
+    
+    # Verify transaction
+    verified = verify_matic_payment(req.tx_hash.strip(), expected_matic)
+    
+    with get_db() as conn:
+        with conn.cursor() as c:
+            try:
+                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, currency, matic_amount, status) VALUES (%s,%s,'purchase',%s,%s,'MATIC',%s,%s)",
+                          (str(uuid.uuid4()), user["id"], req.cap_amount, req.tx_hash.strip(), expected_matic, 'completed' if verified else 'pending'))
+                if verified:
+                    c.execute("""
+                        INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                        VALUES (%s, %s, 'free')
+                        ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+                    """, (user["id"], req.cap_amount))
+                    update_user_tier(user["id"])
+                conn.commit()
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                raise HTTPException(400, "Transaction ID already claimed.")
+    
+    if verified:
+        return {"verified": True, "cap_added": cap_whole, "new_staked": user_cap_balance(user["id"])}
+    else:
+        return {"verified": False, "message": "Payment could not be verified. Please check the TXID and try again."}
+
+@app.get("/api/cap/rate")
+def get_cap_rate():
+    return {"cap_per_matic": get_cap_matic_rate(), "matic_payment_address": settings.CAP_HOT_WALLET}
+
+# Admin: set rate
+@app.post("/api/admin/cap/rate")
+def set_cap_rate(req: dict, founder: dict = Depends(founder_only)):
+    new_rate = req.get("rate")
+    if not new_rate or int(new_rate) <= 0:
+        raise HTTPException(400, "Invalid rate")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE platform_settings SET value = %s, updated = NOW() WHERE key = 'cap_matic_rate'", (str(new_rate),))
+            conn.commit()
+    return {"cap_matic_rate": int(new_rate)}
 
 # ==================== GAMIFICATION & LEADERBOARD ====================
 @app.get("/api/gamification/streak")
@@ -2607,7 +2724,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "41.0", "database": db_status}
+    return {"status": "ok", "version": "42.0", "database": db_status}
 
 # PWA Icon
 def generate_png_icon(size: int) -> bytes:
@@ -2699,7 +2816,7 @@ self.addEventListener('fetch', event => {
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "41.0"}
+    return {"name": "CAPITAN AI", "version": "42.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
