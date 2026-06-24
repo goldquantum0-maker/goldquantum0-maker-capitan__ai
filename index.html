@@ -251,7 +251,24 @@
         .wallet-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
         .wallet-card h3 { font-size:16px; margin-bottom:12px; }
         .wallet-balance { font-size:2rem; font-weight:700; color:var(--accent-blue); }
-        .wallet-address { font-family:monospace; font-size:14px; color:var(--text-secondary); word-break:break-all; }
+        .wallet-address { font-family:monospace; font-size:14px; color:var(--text-secondary); word-break:break-all; display:flex; align-items:center; gap:8px; }
+        .wallet-address .copy-btn, .wallet-address .toggle-vis { background:none; border:none; color:var(--text-tertiary); cursor:pointer; }
+        .wallet-address .copy-btn:hover, .wallet-address .toggle-vis:hover { color:var(--accent-blue); }
+        .ticker-marquee { width:100%; overflow:hidden; white-space:nowrap; background:var(--bg-tertiary); border-radius:var(--radius); padding:6px 0; margin:8px 0; }
+        .ticker-content { display:inline-block; animation:marquee 60s linear infinite; }
+        @keyframes marquee { 0% { transform:translateX(100%); } 100% { transform:translateX(-100%); } }
+        .ticker-item { display:inline-block; padding:0 20px; font-size:12px; color:var(--text-primary); }
+        .ticker-price { font-weight:600; }
+        .ticker-change.positive { color:var(--success); }
+        .ticker-change.negative { color:var(--danger); }
+        .news-panel-header { cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); }
+        .news-list { max-height:200px; overflow-y:auto; transition:max-height 0.3s ease; }
+        .news-list.collapsed { max-height:0; }
+        .news-item { padding:6px 0; font-size:12px; border-bottom:1px solid var(--border); }
+        .news-item a { color:var(--accent-blue); text-decoration:none; }
+        .badge-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .badge { background:var(--accent-glow); border-radius:20px; padding:4px 10px; font-size:12px; display:flex; align-items:center; gap:4px; }
+        .streak-badge { display:flex; align-items:center; gap:4px; font-weight:600; color:#f59e0b; }
         .wallet-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:12px; margin-top:12px; }
         .wallet-actions button { padding:14px; border-radius:var(--radius); font-weight:600; font-size:14px; cursor:pointer; transition:0.2s; border:1px solid var(--border); background:var(--surface); color:var(--text-primary); }
         .wallet-actions button:hover { border-color:var(--accent-blue); background:var(--accent-blue-glow); }
@@ -341,6 +358,10 @@
         <div class="menu-item" onclick="openFounderDashboard()" id="dashboardMenuItem" style="display:none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
             <span>Dashboard</span>
+        </div>
+        <div class="menu-item" onclick="openLeaderboardModal()" id="leaderboardMenuItem" style="display:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            <span>Leaderboard</span>
         </div>
         <div id="workspaceSection" style="display:none;">
             <div class="sidebar-divider"></div>
@@ -508,6 +529,7 @@
 <div id="guestLoginModal" class="modal-overlay"><div class="modal" id="guestLoginModalContent"></div></div>
 <div id="workspaceCreateModal" class="modal-overlay"><div class="modal" id="workspaceCreateModalContent"></div></div>
 <div id="workspaceJoinModal" class="modal-overlay"><div class="modal" id="workspaceJoinModalContent"></div></div>
+<div id="leaderboardModal" class="modal-overlay"><div class="modal" id="leaderboardModalContent"></div></div>
 
 <script>
 // ==================== CONFIGURATION ====================
@@ -527,6 +549,19 @@ const ENTERPRISE_TOKEN_PACKAGES = [
 ];
 const DEPTH_MULTIPLIERS = [1, 1.5, 2, 3, 4];
 const DEFAULT_GUEST_TOKENS = 600;
+
+// Popular ERC‑20 tokens on Polygon for multi‑token wallet
+const POLYGON_TOKENS = [
+    { symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', decimals: 6 },
+    { symbol: 'USDC', address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', decimals: 6 },
+    { symbol: 'WETH', address: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', decimals: 18 },
+    { symbol: 'WBTC', address: '0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A', decimals: 8 },
+    { symbol: 'DAI', address: '0x8f3Cf7ad23Cd3CaDbD9735AFF958023239c6A063', decimals: 18 },
+    { symbol: 'LINK', address: '0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39', decimals: 18 },
+    { symbol: 'AAVE', address: '0xD6DF932A45C0f255f85145f286eA0b292B21C90B', decimals: 18 },
+    { symbol: 'CRV', address: '0x172370d5Cd63279eFa6d502DAB29171933a610AF', decimals: 18 },
+    { symbol: 'UNI', address: '0xb33EaAd8d922B1083446DC23f610c2567fB5180f', decimals: 18 },
+];
 
 let state = {
     token: localStorage.getItem('ct') || null,
@@ -554,12 +589,13 @@ let state = {
     reasoningDepth: parseInt(localStorage.getItem('reasoningDepth')) || 1,
     capStaked: 0,
     capTier: 'free',
-    walletExists: false,
     walletSigner: null,
-    walletAddress: null,
+    walletAddress: localStorage.getItem('os_address') || null,
     walletEncrypted: localStorage.getItem('os_encrypted') || null,
     walletEncryptedSalt: localStorage.getItem('os_salt') || null,
-    withdrawals: []
+    withdrawals: [],
+    addressVisible: false,
+    customTokens: JSON.parse(localStorage.getItem('custom_tokens') || '[]'),
 };
 
 function setCookie(n,v,d){let e="";if(d){let t=new Date();t.setTime(t.getTime()+d*864e5);e="; expires="+t.toUTCString()}document.cookie=n+"="+(v||"")+e+"; path=/; SameSite=Lax"}
@@ -638,6 +674,7 @@ function updateUIBasedOnTier(){
     document.getElementById('hubMenuItem').style.display=logged?'flex':'none';
     document.getElementById('developerMenuItem').style.display=(logged&&(state.tokenBalance>=10000||state.is_admin))?'flex':'none';
     document.getElementById('dashboardMenuItem').style.display = (logged && state.is_admin) ? 'flex' : 'none';
+    document.getElementById('leaderboardMenuItem').style.display = logged ? 'flex' : 'none';
     document.getElementById('guestButtons').style.display=logged?'none':'block';
     document.getElementById('workspaceSection').style.display=logged?'block':'none';
 }
@@ -742,6 +779,8 @@ async function sendMessage(){
         else state.loading=false;
         state.activeChatId=res.chat_id;
         if(state.tokenBalance<500)toast('Low tokens! Consider purchasing more.');
+        // Refresh streak after message
+        fetchStreak();
     }catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();state.loading=false;}
 }
 
@@ -887,7 +926,7 @@ function hideSuggestions(){let pills=document.getElementById('suggestionPills');
 function setupScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
 function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex';}
 
-// ==================== OS WALLET (Client‑side) ====================
+// ==================== OS WALLET (Multi‑token) ====================
 function openWallet(){
     if(!state.user){ toast('Sign in to access OS Wallet'); return; }
     document.getElementById('chatView').style.display='none';
@@ -898,23 +937,21 @@ function openWallet(){
     document.getElementById('walletFullPage').classList.add('open');
     renderWallet();
 }
-
 function closeWallet(){
     document.getElementById('walletFullPage').classList.remove('open');
     document.getElementById('chatView').style.display='flex';
 }
 
 async function renderWallet(){
-    let container = document.getElementById('walletContainer');
-    let hasWallet = state.walletEncrypted && state.walletEncryptedSalt;
-    let address = state.walletAddress || (localStorage.getItem('os_address') || '');
+    const container = document.getElementById('walletContainer');
+    const hasWallet = state.walletEncrypted && state.walletEncryptedSalt;
+    let address = state.walletAddress || '';
     let html = '<h2>💳 OS Wallet</h2>';
-
-    if(!hasWallet){
+    if (!hasWallet) {
         html += `
         <div class="wallet-card">
             <h3>Create OS Wallet</h3>
-            <p>Generate a new seed phrase and secure it with a password. Never share it.</p>
+            <p>Generate a new seed phrase and secure it with a password.</p>
             <input type="password" id="osWalletPassword" class="auth-input" placeholder="Password (min 10 chars)">
             <button class="btn" onclick="createOSWallet()">Create OS Wallet</button>
             <p style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">Already have a seed? <a onclick="importOSWallet()">Import</a></p>
@@ -922,7 +959,11 @@ async function renderWallet(){
     } else {
         html += `
         <div class="wallet-card">
-            <div class="wallet-address" id="osWalletAddress">${address || 'Locked'}</div>
+            <div class="wallet-address" id="osWalletAddress">
+                <span id="addressDisplay">${address ? (state.addressVisible ? address : address.slice(0,6)+'...'+address.slice(-4)) : 'Locked'}</span>
+                <button class="copy-btn" onclick="copyAddress()" title="Copy address"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                <button class="toggle-vis" onclick="toggleAddressVisibility()" title="Toggle visibility"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
             <div class="wallet-balance" id="osMaticBalance">Loading MATIC...</div>
             <div class="wallet-balance" style="font-size:1.2rem;margin-top:8px;">$CAP Staked: <span id="osCapStaked">${state.capStaked.toLocaleString()}</span></div>
             <div class="wallet-actions">
@@ -943,6 +984,25 @@ async function renderWallet(){
             </div>
             <p style="font-size:10px;margin-top:10px;">Need MATIC? <a style="color:var(--accent-blue);cursor:pointer;">Buy with Fiat (Coming Soon)</a></p>
         </div>
+        <!-- Multi‑token balances -->
+        <div class="wallet-card">
+            <h3>Token Balances</h3>
+            <div id="tokenBalancesList">Loading tokens...</div>
+            <div style="margin-top:8px;display:flex;gap:8px;">
+                <input type="text" id="customTokenAddress" class="auth-input" placeholder="Add token address" style="margin:0;">
+                <button class="btn" style="width:auto;padding:8px 12px;" onclick="addCustomToken()">+ Add</button>
+            </div>
+        </div>
+        <!-- Market Ticker -->
+        <div class="ticker-marquee" id="tickerMarquee"></div>
+        <!-- News Panel -->
+        <div class="wallet-card">
+            <div class="news-panel-header" onclick="toggleNewsPanel()">
+                <h3>Crypto News</h3>
+                <span id="newsToggleIcon">▼</span>
+            </div>
+            <div class="news-list" id="newsList"></div>
+        </div>
         <div class="wallet-card">
             <h3>Withdrawals</h3>
             <div id="withdrawalList">Loading...</div>
@@ -953,12 +1013,18 @@ async function renderWallet(){
         </div>`;
     }
     container.innerHTML = html;
-    if(hasWallet && address){
+    if (hasWallet && address) {
         fetchMaticBalance(address);
+        fetchAllTokenBalances(address);
         fetchCapBalance();
         fetchWithdrawals();
+        startTicker();
+        fetchNews();
     }
 }
+
+function copyAddress(){if(state.walletAddress){navigator.clipboard.writeText(state.walletAddress);toast('Address copied!')}}
+function toggleAddressVisibility(){state.addressVisible=!state.addressVisible;renderWallet();}
 
 async function createOSWallet(){
     let password = document.getElementById('osWalletPassword').value;
@@ -968,12 +1034,11 @@ async function createOSWallet(){
         const seedPhrase = wallet.mnemonic.phrase;
         const address = wallet.address;
         const privateKey = wallet.privateKey;
-
         document.getElementById('walletContainer').innerHTML = `
         <div class="wallet-card">
             <h3>Your Secret Recovery Phrase</h3>
-            <p style="font-weight:bold;font-size:14px;word-break:break-word;">${seedPhrase}</p>
-            <p style="color:red;font-weight:bold;">WRITE THIS DOWN. Never share it. Without it you lose access forever.</p>
+            <p style="font-weight:bold;font-size:14px;word-break:break-word;" id="seedPhraseDisplay">${seedPhrase}</p>
+            <p style="color:red;font-weight:bold;">WRITE THIS DOWN. Never share it.</p>
             <button class="btn" id="confirmSeedBtn">I've Saved My Seed Phrase</button>
         </div>`;
         document.getElementById('confirmSeedBtn').addEventListener('click', async ()=>{
@@ -1020,7 +1085,6 @@ async function unlockOSWallet(){
     }catch(e){ toast('Wrong password'); }
 }
 
-// Encryption helpers using Web Crypto API
 async function encryptWallet(data, password){
     const enc = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveBits','deriveKey']);
@@ -1056,6 +1120,34 @@ async function fetchMaticBalance(address){
     }catch(e){ document.getElementById('osMaticBalance') && (document.getElementById('osMaticBalance').innerText = 'MATIC unavailable'); }
 }
 
+async function fetchAllTokenBalances(address){
+    const provider = new ethers.providers.JsonRpcProvider(CFG.RPC_URL);
+    const allTokens = [...POLYGON_TOKENS, ...state.customTokens.map(a=>({symbol:'CUSTOM',address:a, decimals:18}))];
+    let html = '';
+    for (let token of allTokens) {
+        try {
+            let balance;
+            if (token.symbol === 'MATIC') {
+                balance = await provider.getBalance(address);
+                html += `<div><strong>MATIC</strong>: ${ethers.utils.formatEther(balance)}</div>`;
+            } else {
+                const contract = new ethers.Contract(token.address, ['function balanceOf(address) view returns (uint256)'], provider);
+                balance = await contract.balanceOf(address);
+                html += `<div><strong>${token.symbol}</strong>: ${ethers.utils.formatUnits(balance, token.decimals)}</div>`;
+            }
+        } catch(e) { /* ignore failed balance fetches */ }
+    }
+    document.getElementById('tokenBalancesList').innerHTML = html || 'No tokens found.';
+}
+
+async function addCustomToken(){
+    let addr = document.getElementById('customTokenAddress').value.trim();
+    if (!addr) return;
+    state.customTokens.push(addr);
+    localStorage.setItem('custom_tokens', JSON.stringify(state.customTokens));
+    await fetchAllTokenBalances(state.walletAddress);
+}
+
 async function fetchCapBalance(){
     try{
         let res = await apiCall('/api/cap/balance');
@@ -1068,15 +1160,7 @@ async function fetchCapBalance(){
 async function fetchWithdrawals(){
     try{
         let res = await apiCall('/api/cap/withdrawals');
-        let html = '';
-        if(res.length===0){ html = '<p>No withdrawals.</p>'; }
-        else{
-            html = '<table class="tx-table"><tr><th>Amount</th><th>To</th><th>Status</th><th>Tx</th></tr>';
-            res.forEach(w=>{
-                html += `<tr><td>${w.amount}</td><td>${w.destination.substring(0,8)}...</td><td>${w.status}</td><td>${w.tx_hash? w.tx_hash.substring(0,10)+'...':'-'}</td></tr>`;
-            });
-            html += '</table>';
-        }
+        let html = res.length===0?'<p>No withdrawals.</p>':'<table class="tx-table"><tr><th>Amount</th><th>To</th><th>Status</th><th>Tx</th></tr>'+res.map(w=>`<tr><td>${w.amount}</td><td>${w.destination.substring(0,8)}...</td><td>${w.status}</td><td>${w.tx_hash? w.tx_hash.substring(0,10)+'...':'-'}</td></tr>`).join('')+'</table>';
         document.getElementById('withdrawalList').innerHTML = html;
     }catch(e){}
 }
@@ -1096,44 +1180,156 @@ async function walletSend(){
     }catch(e){ toast('Send failed: '+e.message); }
 }
 
-function walletReceive(){
-    prompt('Your Polygon address:', state.walletAddress || 'Unlock wallet first');
-}
+function walletReceive(){ prompt('Your Polygon address:', state.walletAddress || 'Unlock wallet first'); }
 
-function walletStake(){
-    walletSend(); // simplified; real stake would send to hot wallet
-}
-
+function walletStake(){ walletSend(); } // simplified
 async function walletUnstake(){
     let amount = prompt('Amount to unstake:');
     if(!amount) return;
     let dest = prompt('Your Polygon address to receive CAP:');
     if(!dest) return;
-    try{
-        let res = await apiCall('/api/cap/withdraw', {method:'POST', body:JSON.stringify({amount:parseInt(amount), address:dest})});
-        toast('Withdrawal requested. Track in Withdrawals tab.');
-        fetchWithdrawals();
-    }catch(e){ toast('Unstake failed'); }
+    try{ let res = await apiCall('/api/cap/withdraw', {method:'POST', body:JSON.stringify({amount:parseInt(amount), address:dest})}); toast('Withdrawal requested.'); fetchWithdrawals(); }catch(e){ toast('Unstake failed'); }
 }
 
-function toggleSwapPanel(){
-    document.getElementById('swapPanel').style.display = document.getElementById('swapPanel').style.display === 'none' ? 'block' : 'none';
-}
+function toggleSwapPanel(){ document.getElementById('swapPanel').style.display = document.getElementById('swapPanel').style.display==='none'?'block':'none'; }
 
 async function executeSwap(){
     let fromToken = document.getElementById('swapFromToken').value;
     let toToken = document.getElementById('swapToToken').value;
     let amount = document.getElementById('swapAmount').value;
     if(!amount) return;
+    // Map symbols to addresses
+    const tokenMap = { 'MATIC':'0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 'USDT':'0xc2132D05D31c914a87C6611C10748AEb04B58e8F', 'WETH':'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', 'WBTC':'0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A', 'CAP': CFG.CAP_ADDRESS };
+    let fromAddr = tokenMap[fromToken]; let toAddr = tokenMap[toToken];
+    if(!fromAddr||!toAddr) return toast('Token not supported');
     try{
-        let quote = await apiCall('/api/wallet/swap/quote', {method:'POST', body:JSON.stringify({fromToken, toToken, amount})});
-        document.getElementById('swapQuote').innerHTML = `Best price: ${quote.estimatedAmount} ${toToken} (slippage: ${quote.slippage}%)<br><button class="btn" onclick="confirmSwap('${quote.txData}')">Confirm Swap</button>`;
+        let quote = await apiCall('/api/wallet/swap/quote', {method:'POST', body:JSON.stringify({fromToken:fromAddr, toToken:toAddr, amount: ethers.utils.parseEther(amount).toString()})});
+        document.getElementById('swapQuote').innerHTML = `Estimated: ${ethers.utils.formatEther(quote.estimatedAmount)} ${toToken}. <button class="btn" onclick="confirmSwap('${quote.tx.to}','${quote.tx.data}','${quote.tx.value}')">Confirm Swap</button>`;
     }catch(e){ toast('Quote failed'); }
 }
 
-async function confirmSwap(txData){
+async function confirmSwap(to, data, value){
     if(!state.walletSigner) await unlockOSWallet();
-    toast('Swap executed (simulation)');
+    if(!state.walletSigner) return;
+    try{
+        const tx = { to, data, value: value||'0x0', gasLimit: ethers.utils.hexlify(300000) };
+        const signedTx = await state.walletSigner.signTransaction(tx);
+        const relayRes = await apiCall('/api/wallet/relay', {method:'POST', body:JSON.stringify({signed_tx: signedTx})});
+        toast('Swap sent! '+relayRes.tx_hash);
+    }catch(e){ toast('Swap failed: '+e.message); }
+}
+
+// Market Ticker
+async function startTicker(){
+    const tickerEl = document.getElementById('tickerMarquee');
+    const updateTicker = async () => {
+        try {
+            const resp = await fetch(CFG.API+'/api/market/prices'); // we need a backend endpoint for prices; reuse existing get_market_prices? Actually we can call coinGecko directly from frontend
+            // Simpler: use a backend endpoint that returns the same as get_market_prices. We'll call /api/market/prices (we'll add that later) or fallback to a direct API call.
+            // For now, we'll use a free API: coingecko simple price
+            const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron&vs_currencies=usd&include_24hr_change=true');
+            const data = await r.json();
+            const names = {bitcoin:'BTC',ethereum:'ETH',ripple:'XRP',solana:'SOL',cardano:'ADA',dogecoin:'DOGE','avalanche-2':'AVAX',chainlink:'LINK',polkadot:'DOT',tron:'TRX'};
+            let items = [];
+            for (let [key, val] of Object.entries(data)) {
+                const symbol = names[key] || key.toUpperCase();
+                const price = val.usd;
+                const change = val.usd_24h_change?.toFixed(2) || '0';
+                const cls = change >= 0 ? 'positive' : 'negative';
+                items.push(`<span class="ticker-item"><span class="ticker-price">${symbol} $${price}</span> <span class="ticker-change ${cls}">${change}%</span></span>`);
+            }
+            // Add CAP price from DEX if available
+            if (state.capTier) { /* later */ }
+            tickerEl.innerHTML = `<div class="ticker-content">${items.join('')}</div>`;
+        } catch(e) { console.log('Ticker error', e); }
+    };
+    updateTicker();
+    setInterval(updateTicker, 30000);
+}
+
+async function fetchNews(){
+    try {
+        const res = await apiCall('/api/news');
+        const newsList = document.getElementById('newsList');
+        let html = '';
+        if (res.news && res.news.length) {
+            res.news.forEach(n => { html += `<div class="news-item"><a href="${n.url}" target="_blank">${n.title}</a></div>`; });
+        } else {
+            html = '<p>No news available.</p>';
+        }
+        newsList.innerHTML = html;
+    } catch(e) { document.getElementById('newsList').innerHTML = 'Failed to load news.'; }
+}
+
+function toggleNewsPanel(){
+    const list = document.getElementById('newsList');
+    list.classList.toggle('collapsed');
+    const icon = document.getElementById('newsToggleIcon');
+    icon.textContent = list.classList.contains('collapsed') ? '▶' : '▼';
+}
+
+// ==================== GAMIFICATION ====================
+async function fetchStreak(){
+    if (!state.user) return;
+    try {
+        let res = await apiCall('/api/gamification/streak');
+        // display streak in top bar? We'll put it in the sidebar profile section
+        if (res.streak > 0) {
+            document.getElementById('profileTokens').innerHTML += ` <span class="streak-badge">🔥 ${res.streak}</span>`;
+        }
+    } catch(e){}
+}
+
+async function openProfileModal(){
+    let modal = document.getElementById('profileModalContent');
+    let badgesHtml = '';
+    if (state.user) {
+        try {
+            const badgesRes = await apiCall('/api/badges');
+            badgesHtml = '<h3>Badges</h3><div class="badge-list">' + badgesRes.badges.map(b=>`<span class="badge">${b.icon} ${b.name}</span>`).join('') + '</div>';
+        } catch(e){}
+    }
+    modal.innerHTML = `
+    <h2>Account Settings</h2>
+    <div style="text-align:center;">
+        <img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto || document.getElementById('profileAvatar').src}">
+        ${state.user?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}
+    </div>
+    <div style="font-weight:600;margin-top:8px;">${state.user?state.user.name||state.user.email:'Guest'}</div>
+    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Balance: ${state.tokenBalance||0} tokens</div>
+    ${badgesHtml}
+    ${state.user?`<label>Reasoning Depth</label>
+    <input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()">
+    <div class="token-info" id="depthCostInfo">~${Math.round(50*DEPTH_MULTIPLIERS[state.reasoningDepth-1])} tokens / message</div>
+    <button class="btn" onclick="saveReasoningDepth()">Save Depth</button>`:''}
+    ${state.user?`<button class="btn btn-outline" onclick="openTokenPurchaseModal();closeModal('profileModal')">Buy Tokens</button>`:''}
+    <div class="modal-setting" onclick="openPrivacyModal();closeModal('profileModal')">Privacy Policy</div>
+    <div class="modal-setting" onclick="openTermsModal();closeModal('profileModal')">Terms of Service</div>
+    ${state.user?`<button class="btn btn-outline" style="color:var(--danger);" onclick="logout();closeModal('profileModal')">Sign Out</button>`:''}
+    <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>
+    `;
+    document.getElementById('profileModal').classList.add('open');
+}
+function updateDepthCost(){let depth=parseInt(document.getElementById('depthSlider').value);let cost=Math.round(50*DEPTH_MULTIPLIERS[depth-1]);document.getElementById('depthCostInfo').innerText=`~${cost} tokens / message`;}
+async function saveReasoningDepth(){let depth=parseInt(document.getElementById('depthSlider').value);state.reasoningDepth=depth;if(state.user){await apiCall('/api/auth/update-profile',{method:'POST',body:JSON.stringify({reasoning_depth:depth})});toast('Reasoning depth saved');closeModal('profileModal');}}
+function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
+
+// Leaderboard modal
+function openLeaderboardModal(){
+    let modal = document.getElementById('leaderboardModalContent');
+    modal.innerHTML = `<h2>Leaderboard</h2><div id="lbContent">Loading...</div><button class="btn btn-outline" onclick="closeModal('leaderboardModal')">Close</button>`;
+    document.getElementById('leaderboardModal').classList.add('open');
+    loadLeaderboard('staked');
+}
+async function loadLeaderboard(type){
+    try{
+        let res = await apiCall('/api/leaderboard?type='+type);
+        let html = '<div style="display:flex;gap:8px;margin-bottom:12px;"><button class="btn btn-outline" onclick="loadLeaderboard(\'staked\')" style="flex:1;">Staked</button><button class="btn btn-outline" onclick="loadLeaderboard(\'messages\')" style="flex:1;">Messages</button></div>';
+        html += '<table class="admin-table"><tr><th>Rank</th><th>Name</th><th>'+(type==='staked'?'Staked':'Messages')+'</th></tr>';
+        res.leaderboard.forEach((u,i)=>{ html += `<tr><td>${i+1}</td><td>${u.name}</td><td>${type==='staked'?u.staked.toLocaleString():u.messages}</td></tr>`; });
+        html += '</table>';
+        document.getElementById('lbContent').innerHTML = html;
+    }catch(e){ document.getElementById('lbContent').innerHTML = 'Failed to load.'; }
 }
 
 // ==================== FOUNDER DASHBOARD (split tabs) ====================
@@ -1214,7 +1410,7 @@ async function init(){
     if(localStorage.getItem('session_expired')&&!state.token){document.getElementById('sessionExpiredMsg').style.display='block';localStorage.removeItem('session_expired')}
     if(state.token){
         document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
-        await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchWalletStatus();
+        await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchWalletStatus(); fetchStreak();
         if(state.walletEncrypted && state.walletEncryptedSalt){
             state.walletAddress = localStorage.getItem('os_address') || '';
         }
