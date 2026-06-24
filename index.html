@@ -533,6 +533,17 @@
 <div id="apiKeyModal" class="modal-overlay"><div class="modal" id="apiKeyModalContent"></div></div>
 
 <script>
+// ==================== SERVICE WORKER ====================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('SW registered: ', registration);
+        }).catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+        });
+    });
+}
+
 // ==================== CONFIGURATION ====================
 const CFG = {
     API: 'https://capitan-ai-jxu8.onrender.com',
@@ -800,7 +811,7 @@ async function likeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){tr
 async function dislikeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:1,reason:'Not helpful'})});toast('Feedback noted.')}catch(e){}}else toast('Noted.')}
 async function saveToPortfolio(idx){let m=state.messages[idx];if(!m||!state.user){toast('Sign in to save');return}const title=m.content.split('\n')[0]?.trim().substring(0,80)||'Saved note';try{await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name:title||'Saved from chat',content:m.content,folder:'General',tags:[],attachments:[],chat_id:state.activeChatId})});toast('Saved to Portfolio 📌')}catch(e){toast('Could not save')}}
 
-// ==================== PORTFOLIO (same as before) ====================
+// ==================== PORTFOLIO ====================
 let portfolioActiveChat = null;
 function openPortfolio(){if(!state.user){toast('Sign in to access Portfolio');return}loadPortfolioFull()}
 async function loadPortfolioFull(){try{let d=await apiCall('/api/portfolio');state.portfolio=d.items||[];renderPortfolioFullPage()}catch(e){toast('Could not load Portfolio')}}
@@ -826,7 +837,7 @@ async function savePortfolioItemFull(){let name=document.getElementById('portNam
 function openPortfolioItem(id){let item=state.portfolio.find(i=>i.id===id);if(!item)return;document.getElementById('portfolioFullContent').innerHTML=`<h3>${escapeHtml(item.name||'Untitled')}</h3><p style="color:var(--text-secondary);font-size:12px;">Folder: ${escapeHtml(item.folder)}</p><div style="white-space:pre-wrap;margin:16px 0;">${escapeHtml(item.content||'')}</div><button class="btn btn-outline" onclick="renderPortfolioFullPage()">Back</button>`}
 async function deleteAllInView(tab){let idsToDelete=tab==='General'?state.portfolio.filter(i=>!i.chat_id).map(i=>i.id):state.portfolio.filter(i=>i.chat_id===tab).map(i=>i.id);if(!confirm('Delete all items in this tab?'))return;for(let id of idsToDelete){try{await apiCall('/api/portfolio/'+id,{method:'DELETE'})}catch(e){}}toast('Deleted');loadPortfolioFull()}
 
-// ==================== RESEARCH HUB (unchanged) ====================
+// ==================== RESEARCH HUB ====================
 function openResearchHub(){if(!state.user){toast('Sign in to access Research Hub');return}document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.add('open');loadResearchHub('topics')}
 function closeResearchHub(){document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 async function loadResearchHub(tab){
@@ -852,7 +863,7 @@ function renderTopics(topics){return topics.map(t=>`<div class="saved-card" oncl
 function startTopicChat(topicId){let topic=state.researchTopics.find(t=>t.id===topicId);if(!topic)return;closeResearchHub();newChat();state.messages.push({role:'user',content:topic.prompt});renderMessages();sendMessage()}
 async function createResearchProject(){let name=prompt('Project name:');if(!name)return;let desc=prompt('Description (optional):')||'';try{await apiCall('/api/research/projects',{method:'POST',body:JSON.stringify({name,description:desc})});toast('Project created');loadResearchHub('projects')}catch(e){toast('Could not create')}}
 
-// ==================== WORKSPACES (unchanged) ====================
+// ==================== WORKSPACES ====================
 async function loadWorkspaces(){if(!state.user)return;try{let d=await apiCall('/api/workspace/my');state.workspaces=d.workspaces||[];renderWorkspaceList()}catch(e){}}
 function renderWorkspaceList(){let list=document.getElementById('workspaceList');list.innerHTML=state.workspaces.map(w=>`<div class="workspace-item" onclick="openWorkspaceMessages('${w.room_code}')"><span>${w.name}</span><span style="font-size:9px;">${w.room_code}</span></div>`).join('')||'<div style="padding:6px 14px 6px 42px;font-size:10px;">No workspaces</div>'}
 function openWorkspaceCreateModal(){let modal=document.getElementById('workspaceCreateModalContent');modal.innerHTML=`<h2>Create Work Area</h2><input type="text" id="wsName" class="auth-input" placeholder="Name"><input type="text" id="wsCode" class="auth-input" placeholder="Room code"><button class="btn" onclick="createWorkspace()">Create</button><button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;document.getElementById('workspaceCreateModal').classList.add('open')}
@@ -863,7 +874,7 @@ function openWorkspaceMessages(roomCode){let modal=document.getElementById('work
 async function loadWorkspaceMessages(roomCode){try{let d=await apiCall('/api/workspace/rooms/'+roomCode+'/messages');let html=d.messages.map(m=>`<div style="margin-bottom:6px;"><strong>${escapeHtml(m.author)}</strong>${m.is_ai?' (AI)':''}: ${escapeHtml(m.message)}</div>`).join('');document.getElementById('workspaceMessageList').innerHTML=html||'No messages'}catch(e){document.getElementById('workspaceMessageList').innerHTML='Failed to load'}}
 async function sendWorkspaceMessage(roomCode){let input=document.getElementById('workspaceMessageInput'),msg=input.value.trim();if(!msg)return;await apiCall('/api/workspace/rooms/'+roomCode+'/messages',{method:'POST',body:JSON.stringify({message:msg})});input.value='';loadWorkspaceMessages(roomCode)}
 
-// ==================== NOTIFICATIONS (unchanged) ====================
+// ==================== NOTIFICATIONS ====================
 async function fetchNotifications(){if(!state.user)return;try{let d=await apiCall('/api/notifications');state.notifications=d.notifications||[];state.unreadCount=state.notifications.filter(n=>!n.read).length;updateNotifBadge();renderNotifList()}catch(e){}}
 function updateNotifBadge(){let badge=document.getElementById('notifBadge');badge.textContent=state.unreadCount||'0';badge.style.display=state.unreadCount?'flex':'none'}
 function openNotifPanel(){document.getElementById('notifPanel').classList.toggle('open')}
@@ -871,7 +882,7 @@ function closeNotifPanel(){document.getElementById('notifPanel').classList.remov
 function renderNotifList(){let list=document.getElementById('notifList');if(state.notifications.length===0){list.innerHTML='<div class="notif-empty">No notifications</div>';return}list.innerHTML=state.notifications.map(n=>'<div class="notif-item '+(n.read?'':'unread')+'"><div class="notif-icon">'+(n.type==='moderation'?'⚠️':'ℹ️')+'</div><div class="notif-message">'+n.message+'<div class="notif-time">'+new Date(n.created).toLocaleString()+'</div></div></div>').join('')}
 async function markAllRead(){try{await apiCall('/api/notifications/read',{method:'POST'});state.notifications.forEach(n=>n.read=true);state.unreadCount=0;updateNotifBadge();renderNotifList()}catch(e){}}
 
-// ==================== FILE UPLOAD & SUGGESTIONS (unchanged) ====================
+// ==================== FILE UPLOAD & SUGGESTIONS ====================
 async function triggerFileUpload(){
     if(!state.user){toast('Sign in to upload files');return}
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
@@ -883,7 +894,7 @@ async function triggerFileUpload(){
 function useSuggestion(text){document.getElementById('messageInput').value=text;sendMessage();hideSuggestions()}
 function hideSuggestions(){let pills=document.getElementById('suggestionPills');if(pills)pills.style.display='none'}
 
-// ==================== SCROLL BUTTON (unchanged) ====================
+// ==================== SCROLL BUTTON ====================
 function setupScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
 function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex';}
 
