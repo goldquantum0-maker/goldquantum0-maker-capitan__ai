@@ -549,8 +549,8 @@ if ('serviceWorker' in navigator) {
 const CFG = {
     API: 'https://capitan-ai-jxu8.onrender.com',
     RPC_URL: 'https://polygon-rpc.com',
-    CAP_ADDRESS: '', // will be set after deployment
-    HOT_WALLET: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A'
+CAP_ADDRESS: '0xb1a1e6DE26897bb0E22710C6C30b6994F1F39666',    HOT_WALLET: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A'
+    
 };
 const WALLET_ADDRESSES = {
     founder: '0xd043ecc5A45D808B93c8549aAe4Ec4Fa6ee3C221',
@@ -1225,7 +1225,7 @@ async function executeSwap(){
     let toToken = document.getElementById('swapToToken').value;
     let amount = document.getElementById('swapAmount').value;
     if(!amount) return;
-    const tokenMap = { 'MATIC':'0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 'USDT':'0xc2132D05D31c914a87C6611C10748AEb04B58e8F', 'WETH':'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', 'WBTC':'0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A', 'CAP': CFG.CAP_ADDRESS };
+    const tokenMap = { 'MATIC':'0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 'USDT':'0xc2132D05D31c914a87C6611C10748AEb04B58e8F', 'WETH':'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', 'WBTC':'0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A', 'CAP':'0xb1a1e6DE26897bb0E22710C6C30b6994F1F39666'
     let fromAddr = tokenMap[fromToken]; let toAddr = tokenMap[toToken];
     if(!fromAddr||!toAddr) return toast('Token not supported');
     try{
