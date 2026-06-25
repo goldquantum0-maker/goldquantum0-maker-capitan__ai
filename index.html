@@ -436,9 +436,15 @@
                 <div style="text-align:center;padding:50px 16px;">
                     <div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div>
                     <div id="suggestionPills" class="suggestion-pills">
-                        <button class="suggestion-pill" onclick="useSuggestion('Give me today\'s top business headlines')">Business</button>
-                        <button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">Tech</button>
-                        <button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">Everyday Life</button>
+                        <button class="suggestion-pill" onclick="useSuggestion('Give me today\'s top business headlines')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg> Business
+                        </button>
+                        <button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg> Tech
+                        </button>
+                        <button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg> Everyday Life
+                        </button>
                     </div>
                     <p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything...</p>
                 </div>
@@ -525,14 +531,17 @@
 <div id="workspaceJoinModal" class="modal-overlay"><div class="modal" id="workspaceJoinModalContent"></div></div>
 <div id="leaderboardModal" class="modal-overlay"><div class="modal" id="leaderboardModalContent"></div></div>
 <div id="apiKeyModal" class="modal-overlay"><div class="modal" id="apiKeyModalContent"></div></div>
-<div id="walletPasswordModal" class="modal-overlay"><div class="modal" id="walletPasswordModalContent"></div></div>
-<div id="seedPhraseModal" class="modal-overlay"><div class="modal" id="seedPhraseModalContent"></div></div>
+<div id="buyCapModal" class="modal-overlay"><div class="modal" id="buyCapModalContent"></div></div>
 
 <script>
 // ==================== SERVICE WORKER ====================
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(reg => console.log('SW registered')).catch(e => console.log('SW failed', e));
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('SW registered: ', registration);
+        }).catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+        });
     });
 }
 
@@ -540,7 +549,7 @@ if ('serviceWorker' in navigator) {
 const CFG = {
     API: 'https://capitan-ai-jxu8.onrender.com',
     RPC_URL: 'https://polygon-rpc.com',
-    CAP_ADDRESS: '',
+    CAP_ADDRESS: '', // will be set after deployment
     HOT_WALLET: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A'
 };
 const WALLET_ADDRESSES = {
@@ -595,8 +604,7 @@ let state = {
     withdrawals: [],
     addressVisible: false,
     customTokens: JSON.parse(localStorage.getItem('custom_tokens') || '[]'),
-    capRate: 10000000,
-    capPaymentAddress: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A'
+    capMaticRate: 10000000,
 };
 
 function setCookie(n,v,d){let e="";if(d){let t=new Date();t.setTime(t.getTime()+d*864e5);e="; expires="+t.toUTCString()}document.cookie=n+"="+(v||"")+e+"; path=/; SameSite=Lax"}
@@ -645,6 +653,7 @@ function promptFounderLogin(){
     }).catch(e=>toast('Error: '+e.message));
 }
 
+// ==================== API CALLS ====================
 async function apiCall(endpoint,opts={}){
     let headers={'Content-Type':'application/json'};
     if(state.token)headers['Authorization']='Bearer '+state.token;
@@ -772,12 +781,13 @@ async function sendMessage(){
         let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify({messages:state.messages.slice(0,-1),chat_id:state.activeChatId,show_reasoning:false})});
         const content=res.content||'No response';
         state.messages[aiIdx]={role:'assistant',content:content,message_id:res.message_id};
-        if(res.starter_claimed){toast('🎉 2,500 CAP added to your staking balance!'); fetchCapBalance(); updateProfileUI();}
         renderMessages(); updateProfileUI();
         let streamTarget=document.getElementById('msg-'+aiIdx);
         if(streamTarget)new SmoothStreamer(content,streamTarget,()=>{state.loading=false});
         else state.loading=false;
         state.activeChatId=res.chat_id;
+        if(res.starter_claimed) toast('🎉 Your starter CAP is now active! 2,500 CAP has been added to your staking balance.');
+        fetchCapBalance();
         fetchStreak();
     }catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();state.loading=false;}
 }
@@ -785,7 +795,7 @@ async function sendMessage(){
 function renderMessages(){
     let c=document.getElementById('messagesArea'); if(!c)return;
     if(!state.messages.length){
-        c.innerHTML=`<div style="text-align:center;padding:50px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><div id="suggestionPills" class="suggestion-pills"><button class="suggestion-pill" onclick="useSuggestion('Give me today\\'s top business headlines')">Business</button><button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">Tech</button><button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">Everyday Life</button></div><p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything...</p></div>`;
+        c.innerHTML=`<div style="text-align:center;padding:50px 16px;"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><div id="suggestionPills" class="suggestion-pills"><button class="suggestion-pill" onclick="useSuggestion('Give me today\\'s top business headlines')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M12 10l-4 4M12 10l4 4M6 4h12M6 8h12"/></svg>Business</button><button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg>Tech</button><button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>Everyday Life</button></div><p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything...</p></div>`;
         updateGreeting(); updateScrollButton(); return;
     }
     c.innerHTML=state.messages.map((m,i)=>{
@@ -803,7 +813,7 @@ async function likeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){tr
 async function dislikeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:1,reason:'Not helpful'})});toast('Feedback noted.')}catch(e){}}else toast('Noted.')}
 async function saveToPortfolio(idx){let m=state.messages[idx];if(!m||!state.user){toast('Sign in to save');return}const title=m.content.split('\n')[0]?.trim().substring(0,80)||'Saved note';try{await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name:title||'Saved from chat',content:m.content,folder:'General',tags:[],attachments:[],chat_id:state.activeChatId})});toast('Saved to Portfolio 📌')}catch(e){toast('Could not save')}}
 
-// ==================== PORTFOLIO (unchanged) ====================
+// ==================== PORTFOLIO ====================
 let portfolioActiveChat = null;
 function openPortfolio(){if(!state.user){toast('Sign in to access Portfolio');return}loadPortfolioFull()}
 async function loadPortfolioFull(){try{let d=await apiCall('/api/portfolio');state.portfolio=d.items||[];renderPortfolioFullPage()}catch(e){toast('Could not load Portfolio')}}
@@ -829,7 +839,7 @@ async function savePortfolioItemFull(){let name=document.getElementById('portNam
 function openPortfolioItem(id){let item=state.portfolio.find(i=>i.id===id);if(!item)return;document.getElementById('portfolioFullContent').innerHTML=`<h3>${escapeHtml(item.name||'Untitled')}</h3><p style="color:var(--text-secondary);font-size:12px;">Folder: ${escapeHtml(item.folder)}</p><div style="white-space:pre-wrap;margin:16px 0;">${escapeHtml(item.content||'')}</div><button class="btn btn-outline" onclick="renderPortfolioFullPage()">Back</button>`}
 async function deleteAllInView(tab){let idsToDelete=tab==='General'?state.portfolio.filter(i=>!i.chat_id).map(i=>i.id):state.portfolio.filter(i=>i.chat_id===tab).map(i=>i.id);if(!confirm('Delete all items in this tab?'))return;for(let id of idsToDelete){try{await apiCall('/api/portfolio/'+id,{method:'DELETE'})}catch(e){}}toast('Deleted');loadPortfolioFull()}
 
-// ==================== RESEARCH HUB (unchanged) ====================
+// ==================== RESEARCH HUB ====================
 function openResearchHub(){if(!state.user){toast('Sign in to access Research Hub');return}document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.add('open');loadResearchHub('topics')}
 function closeResearchHub(){document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 async function loadResearchHub(tab){
@@ -855,7 +865,7 @@ function renderTopics(topics){return topics.map(t=>`<div class="saved-card" oncl
 function startTopicChat(topicId){let topic=state.researchTopics.find(t=>t.id===topicId);if(!topic)return;closeResearchHub();newChat();state.messages.push({role:'user',content:topic.prompt});renderMessages();sendMessage()}
 async function createResearchProject(){let name=prompt('Project name:');if(!name)return;let desc=prompt('Description (optional):')||'';try{await apiCall('/api/research/projects',{method:'POST',body:JSON.stringify({name,description:desc})});toast('Project created');loadResearchHub('projects')}catch(e){toast('Could not create')}}
 
-// ==================== WORKSPACES (unchanged) ====================
+// ==================== WORKSPACES ====================
 async function loadWorkspaces(){if(!state.user)return;try{let d=await apiCall('/api/workspace/my');state.workspaces=d.workspaces||[];renderWorkspaceList()}catch(e){}}
 function renderWorkspaceList(){let list=document.getElementById('workspaceList');list.innerHTML=state.workspaces.map(w=>`<div class="workspace-item" onclick="openWorkspaceMessages('${w.room_code}')"><span>${w.name}</span><span style="font-size:9px;">${w.room_code}</span></div>`).join('')||'<div style="padding:6px 14px 6px 42px;font-size:10px;">No workspaces</div>'}
 function openWorkspaceCreateModal(){let modal=document.getElementById('workspaceCreateModalContent');modal.innerHTML=`<h2>Create Work Area</h2><input type="text" id="wsName" class="auth-input" placeholder="Name"><input type="text" id="wsCode" class="auth-input" placeholder="Room code"><button class="btn" onclick="createWorkspace()">Create</button><button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;document.getElementById('workspaceCreateModal').classList.add('open')}
@@ -866,7 +876,7 @@ function openWorkspaceMessages(roomCode){let modal=document.getElementById('work
 async function loadWorkspaceMessages(roomCode){try{let d=await apiCall('/api/workspace/rooms/'+roomCode+'/messages');let html=d.messages.map(m=>`<div style="margin-bottom:6px;"><strong>${escapeHtml(m.author)}</strong>${m.is_ai?' (AI)':''}: ${escapeHtml(m.message)}</div>`).join('');document.getElementById('workspaceMessageList').innerHTML=html||'No messages'}catch(e){document.getElementById('workspaceMessageList').innerHTML='Failed to load'}}
 async function sendWorkspaceMessage(roomCode){let input=document.getElementById('workspaceMessageInput'),msg=input.value.trim();if(!msg)return;await apiCall('/api/workspace/rooms/'+roomCode+'/messages',{method:'POST',body:JSON.stringify({message:msg})});input.value='';loadWorkspaceMessages(roomCode)}
 
-// ==================== NOTIFICATIONS (unchanged) ====================
+// ==================== NOTIFICATIONS ====================
 async function fetchNotifications(){if(!state.user)return;try{let d=await apiCall('/api/notifications');state.notifications=d.notifications||[];state.unreadCount=state.notifications.filter(n=>!n.read).length;updateNotifBadge();renderNotifList()}catch(e){}}
 function updateNotifBadge(){let badge=document.getElementById('notifBadge');badge.textContent=state.unreadCount||'0';badge.style.display=state.unreadCount?'flex':'none'}
 function openNotifPanel(){document.getElementById('notifPanel').classList.toggle('open')}
@@ -874,7 +884,7 @@ function closeNotifPanel(){document.getElementById('notifPanel').classList.remov
 function renderNotifList(){let list=document.getElementById('notifList');if(state.notifications.length===0){list.innerHTML='<div class="notif-empty">No notifications</div>';return}list.innerHTML=state.notifications.map(n=>'<div class="notif-item '+(n.read?'':'unread')+'"><div class="notif-icon">'+(n.type==='moderation'?'⚠️':'ℹ️')+'</div><div class="notif-message">'+n.message+'<div class="notif-time">'+new Date(n.created).toLocaleString()+'</div></div></div>').join('')}
 async function markAllRead(){try{await apiCall('/api/notifications/read',{method:'POST'});state.notifications.forEach(n=>n.read=true);state.unreadCount=0;updateNotifBadge();renderNotifList()}catch(e){}}
 
-// ==================== FILE UPLOAD & SUGGESTIONS (unchanged) ====================
+// ==================== FILE UPLOAD & SUGGESTIONS ====================
 async function triggerFileUpload(){
     if(!state.user){toast('Sign in to upload files');return}
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
@@ -886,11 +896,11 @@ async function triggerFileUpload(){
 function useSuggestion(text){document.getElementById('messageInput').value=text;sendMessage();hideSuggestions()}
 function hideSuggestions(){let pills=document.getElementById('suggestionPills');if(pills)pills.style.display='none'}
 
-// ==================== SCROLL BUTTON (unchanged) ====================
+// ==================== SCROLL BUTTON ====================
 function setupScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
 function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex';}
 
-// ==================== OS WALLET ====================
+// ==================== OS WALLET (Multi‑token, Ticker, News, Purchase) ====================
 function openWallet(){
     if(!state.user){ toast('Sign in to access OS Wallet'); return; }
     document.getElementById('chatView').style.display='none';
@@ -916,10 +926,12 @@ async function renderWallet(){
         <div class="wallet-card">
             <h3>Create OS Wallet</h3>
             <p>Generate a new seed phrase and secure it with a password.</p>
+            <input type="password" id="osWalletPassword" class="auth-input" placeholder="Password (min 10 chars)">
             <button class="btn" onclick="createOSWallet()">Create OS Wallet</button>
             <p style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">Already have a seed? <a onclick="importOSWallet()">Import</a></p>
         </div>`;
     } else {
+        if (!state.capMaticRate) { try { let r = await apiCall('/api/cap/rate'); state.capMaticRate = r.cap_per_matic; } catch(e){} }
         html += `
         <div class="wallet-card">
             <div class="wallet-address" id="osWalletAddress">
@@ -936,7 +948,7 @@ async function renderWallet(){
                 <button onclick="walletStake()">Stake</button>
                 <button onclick="walletUnstake()">Unstake</button>
                 <button onclick="toggleSwapPanel()">Swap</button>
-                <button onclick="openBuyCapPanel()">Buy CAP</button>
+                <button onclick="openBuyCapModal()">🛒 Buy $CAP</button>
             </div>
             <div class="swap-panel" id="swapPanel" style="display:none;">
                 <h4>Swap $CAP</h4>
@@ -946,8 +958,9 @@ async function renderWallet(){
                 <button class="btn swap-btn" onclick="executeSwap()">Get Quote</button>
                 <div id="swapQuote" style="margin-top:8px;font-size:12px;"></div>
             </div>
-            <p style="font-size:10px;margin-top:10px;">Need MATIC? <a style="color:var(--accent-blue);cursor:pointer;" onclick="toast('Buy MATIC with Fiat (Coming Soon)')">Buy with Fiat (Coming Soon)</a></p>
+            <p style="font-size:10px;margin-top:10px;">Need MATIC? <a style="color:var(--accent-blue);cursor:pointer;" onclick="openBuyCapModal()">Buy $CAP with MATIC</a></p>
         </div>
+        <!-- Multi‑token balances -->
         <div class="wallet-card">
             <h3>Token Balances</h3>
             <div id="tokenBalancesList">Loading tokens...</div>
@@ -956,7 +969,9 @@ async function renderWallet(){
                 <button class="btn" style="width:auto;padding:8px 12px;" onclick="addCustomToken()">+ Add</button>
             </div>
         </div>
+        <!-- Market Ticker -->
         <div class="ticker-marquee" id="tickerMarquee"></div>
+        <!-- News Panel -->
         <div class="wallet-card">
             <div class="news-panel-header" onclick="toggleNewsPanel()">
                 <h3>Crypto News</h3>
@@ -984,104 +999,111 @@ async function renderWallet(){
     }
 }
 
+function openBuyCapModal() {
+    let modal = document.getElementById('buyCapModalContent');
+    modal.innerHTML = `
+        <h2>🛒 Buy $CAP</h2>
+        <p style="font-size:13px; margin-bottom:8px;">Send MATIC to the address below, then paste the TXID to verify.</p>
+        <p style="font-size:13px; margin-bottom:12px;">Rate: <strong id="buyRate">${state.capMaticRate.toLocaleString()} CAP</strong> per 1 MATIC</p>
+        <input type="number" id="buyCapAmount" class="auth-input" placeholder="Amount of CAP to buy">
+        <p style="font-size:12px;">Equivalent: <span id="maticNeeded">0</span> MATIC (≈$<span id="usdNeeded">0</span>)</p>
+        <p style="font-size:11px; word-break:break-all; margin:8px 0;">Payment address: <strong>${CFG.HOT_WALLET}</strong></p>
+        <button class="btn" onclick="navigator.clipboard.writeText('${CFG.HOT_WALLET}');toast('Address copied!')">Copy Address</button>
+        <input type="text" id="buyTxHash" class="auth-input" placeholder="Transaction ID (TXID)">
+        <button class="btn" onclick="verifyPurchase()">Verify Payment</button>
+        <button class="btn btn-outline" onclick="closeModal('buyCapModal')">Cancel</button>
+    `;
+    document.getElementById('buyCapAmount').addEventListener('input', function() {
+        let cap = parseFloat(this.value) || 0;
+        let matic = cap / state.capMaticRate;
+        document.getElementById('maticNeeded').innerText = matic.toFixed(6);
+        document.getElementById('usdNeeded').innerText = (matic * 2.5).toFixed(2);
+    });
+    document.getElementById('buyCapModal').classList.add('open');
+}
+
+async function verifyPurchase() {
+    let capAmount = parseFloat(document.getElementById('buyCapAmount').value);
+    let txHash = document.getElementById('buyTxHash').value.trim();
+    if (!capAmount || !txHash) return toast('Fill all fields');
+    try {
+        let res = await apiCall('/api/cap/purchase', {
+            method: 'POST',
+            body: JSON.stringify({ cap_amount: Math.floor(capAmount * 1e18).toString(), tx_hash: txHash })
+        });
+        if (res.verified) {
+            toast('✅ Purchase successful! CAP added to your stake.');
+            fetchCapBalance();
+            closeModal('buyCapModal');
+        } else {
+            toast('Payment could not be verified. Check the TXID and try again.');
+        }
+    } catch(e) {
+        toast('Purchase failed: ' + e.message);
+    }
+}
+
+// ==================== WALLET FUNCTIONS ====================
 function copyAddress(){if(state.walletAddress){navigator.clipboard.writeText(state.walletAddress);toast('Address copied!')}}
 function toggleAddressVisibility(){state.addressVisible=!state.addressVisible;renderWallet();}
 
-// Wallet password modal
-function showWalletPasswordModal(title, onConfirm, confirmText = 'Confirm') {
-    const modal = document.getElementById('walletPasswordModalContent');
-    modal.innerHTML = `
-        <h2>${title}</h2>
-        <input type="password" id="walletModalPassword" class="auth-input" placeholder="Enter password">
-        <div id="walletModalError" class="error-msg"></div>
-        <button class="btn" id="walletModalConfirmBtn">${confirmText}</button>
-        <button class="btn btn-outline" onclick="closeModal('walletPasswordModal')">Cancel</button>
-    `;
-    document.getElementById('walletPasswordModal').classList.add('open');
-    const btn = document.getElementById('walletModalConfirmBtn');
-    const input = document.getElementById('walletModalPassword');
-    input.focus();
-    btn.addEventListener('click', () => {
-        const password = input.value;
-        if (!password || password.length < 10) {
-            document.getElementById('walletModalError').innerText = 'Password min 10 characters';
-            return;
-        }
-        closeModal('walletPasswordModal');
-        onConfirm(password);
-    });
-}
-
-// Seed phrase modal
-function showSeedPhraseModal(seedPhrase, onSaved) {
-    const words = seedPhrase.split(' ');
-    const modal = document.getElementById('seedPhraseModalContent');
-    modal.innerHTML = `
-        <h2>Your Secret Recovery Phrase</h2>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;" id="seedWordsContainer">
-            ${words.map((w,i) => `<span class="badge" style="cursor:pointer; background:var(--bg-tertiary);" onclick="revealSeedWord(this, '${w}')">••••</span>`).join('')}
-        </div>
-        <p style="color:red;font-weight:bold;">Tap each word to reveal it. Write it down. Never share it.</p>
-        <button class="btn" id="seedSavedBtn">I've Saved My Seed Phrase</button>
-    `;
-    document.getElementById('seedPhraseModal').classList.add('open');
-    document.getElementById('seedSavedBtn').addEventListener('click', () => {
-        closeModal('seedPhraseModal');
-        onSaved();
-    });
-}
-function revealSeedWord(el, word) { el.textContent = word; el.style.background = 'var(--accent-glow)'; }
-
 async function createOSWallet(){
-    showWalletPasswordModal('Create OS Wallet Password', async (password) => {
-        try {
-            const wallet = ethers.Wallet.createRandom();
-            const seedPhrase = wallet.mnemonic.phrase;
-            const address = wallet.address;
-            const privateKey = wallet.privateKey;
-            showSeedPhraseModal(seedPhrase, async () => {
-                const encrypted = await encryptWallet({address, privateKey, mnemonic: seedPhrase}, password);
-                state.walletEncrypted = encrypted.encryptedData;
-                state.walletEncryptedSalt = encrypted.salt;
-                state.walletAddress = address;
-                localStorage.setItem('os_encrypted', encrypted.encryptedData);
-                localStorage.setItem('os_salt', encrypted.salt);
-                localStorage.setItem('os_address', address);
-                toast('OS Wallet created!');
-                renderWallet();
-            });
-        } catch(e) { toast('Creation failed'); }
-    }, 'Create');
+    let password = document.getElementById('osWalletPassword').value;
+    if(!password || password.length<10) return toast('Password min 10 chars');
+    try{
+        const wallet = ethers.Wallet.createRandom();
+        const seedPhrase = wallet.mnemonic.phrase;
+        const address = wallet.address;
+        const privateKey = wallet.privateKey;
+        document.getElementById('walletContainer').innerHTML = `
+        <div class="wallet-card">
+            <h3>Your Secret Recovery Phrase</h3>
+            <p style="font-weight:bold;font-size:14px;word-break:break-word;" id="seedPhraseDisplay">${seedPhrase}</p>
+            <p style="color:red;font-weight:bold;">WRITE THIS DOWN. Never share it.</p>
+            <button class="btn" id="confirmSeedBtn">I've Saved My Seed Phrase</button>
+        </div>`;
+        document.getElementById('confirmSeedBtn').addEventListener('click', async ()=>{
+            const encrypted = await encryptWallet({address, privateKey, mnemonic: seedPhrase}, password);
+            state.walletEncrypted = encrypted.encryptedData;
+            state.walletEncryptedSalt = encrypted.salt;
+            state.walletAddress = address;
+            localStorage.setItem('os_encrypted', encrypted.encryptedData);
+            localStorage.setItem('os_salt', encrypted.salt);
+            localStorage.setItem('os_address', address);
+            toast('OS Wallet created!');
+            renderWallet();
+        });
+    }catch(e){ toast('Creation failed'); }
 }
 
 async function importOSWallet(){
-    const seed = prompt('Enter your seed phrase:');
+    let seed = prompt('Enter your seed phrase:');
     if(!seed) return;
-    showWalletPasswordModal('Set Wallet Password', async (password) => {
-        try {
-            const wallet = ethers.Wallet.fromMnemonic(seed);
-            const encrypted = await encryptWallet({address: wallet.address, privateKey: wallet.privateKey, mnemonic: seed}, password);
-            state.walletEncrypted = encrypted.encryptedData;
-            state.walletEncryptedSalt = encrypted.salt;
-            state.walletAddress = wallet.address;
-            localStorage.setItem('os_encrypted', encrypted.encryptedData);
-            localStorage.setItem('os_salt', encrypted.salt);
-            localStorage.setItem('os_address', wallet.address);
-            toast('Wallet imported!');
-            renderWallet();
-        } catch(e) { toast('Invalid seed phrase'); }
-    }, 'Import');
+    let password = prompt('Set a password to encrypt this wallet:');
+    if(!password || password.length<10) return toast('Password min 10 chars');
+    try{
+        const wallet = ethers.Wallet.fromMnemonic(seed);
+        const encrypted = await encryptWallet({address: wallet.address, privateKey: wallet.privateKey, mnemonic: seed}, password);
+        state.walletEncrypted = encrypted.encryptedData;
+        state.walletEncryptedSalt = encrypted.salt;
+        state.walletAddress = wallet.address;
+        localStorage.setItem('os_encrypted', encrypted.encryptedData);
+        localStorage.setItem('os_salt', encrypted.salt);
+        localStorage.setItem('os_address', wallet.address);
+        toast('Wallet imported!');
+        renderWallet();
+    }catch(e){ toast('Invalid seed phrase'); }
 }
 
 async function unlockOSWallet(){
-    showWalletPasswordModal('Unlock Wallet', async (password) => {
-        try {
-            const decrypted = await decryptWallet(state.walletEncrypted, state.walletEncryptedSalt, password);
-            state.walletSigner = new ethers.Wallet(decrypted.privateKey, new ethers.providers.JsonRpcProvider(CFG.RPC_URL));
-            state.walletAddress = decrypted.address;
-            toast('Wallet unlocked');
-        } catch(e) { toast('Wrong password'); }
-    }, 'Unlock');
+    let password = prompt('Wallet password:');
+    if(!password) return;
+    try{
+        const decrypted = await decryptWallet(state.walletEncrypted, state.walletEncryptedSalt, password);
+        state.walletSigner = new ethers.Wallet(decrypted.privateKey, new ethers.providers.JsonRpcProvider(CFG.RPC_URL));
+        state.walletAddress = decrypted.address;
+        toast('Wallet unlocked');
+    }catch(e){ toast('Wrong password'); }
 }
 
 async function encryptWallet(data, password){
@@ -1115,8 +1137,11 @@ async function fetchMaticBalance(address){
     try{
         let resp = await fetch(`${CFG.API}/api/wallet/matic-balance?address=${address}`, {headers:{'Authorization':'Bearer '+state.token}});
         let data = await resp.json();
-        if(typeof data.matic === 'number') document.getElementById('osMaticBalance').innerText = `${data.matic} MATIC`;
-        else document.getElementById('osMaticBalance').innerText = 'MATIC unavailable';
+        if(typeof data.matic === 'number'){
+            document.getElementById('osMaticBalance').innerText = `${data.matic} MATIC`;
+        } else {
+            document.getElementById('osMaticBalance').innerText = 'MATIC unavailable';
+        }
     }catch(e){ document.getElementById('osMaticBalance').innerText = 'MATIC unavailable'; }
 }
 
@@ -1220,80 +1245,6 @@ async function confirmSwap(to, data, value){
     }catch(e){ toast('Swap failed: '+e.message); }
 }
 
-// ==================== IN‑APP CAP PURCHASE ====================
-function openBuyCapPanel(){
-    const container = document.getElementById('walletContainer');
-    const rate = state.capRate || 10000000;
-    const hotWallet = state.capPaymentAddress || CFG.HOT_WALLET;
-    let html = `
-        <div class="wallet-card">
-            <h3>Buy $CAP with MATIC</h3>
-            <p>Current rate: <strong>${rate.toLocaleString()} CAP per 1 MATIC</strong></p>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-                <button class="btn" style="flex:1;" onclick="selectPackage(1000000)">1M CAP<br><small>${(1000000/rate).toFixed(4)} MATIC</small></button>
-                <button class="btn" style="flex:1;" onclick="selectPackage(5000000)">5M CAP<br><small>${(5000000/rate).toFixed(4)} MATIC</small></button>
-                <button class="btn" style="flex:1;" onclick="selectPackage(10000000)">10M CAP<br><small>${(10000000/rate).toFixed(4)} MATIC</small></button>
-                <button class="btn" style="flex:1;" onclick="selectPackage(50000000)">50M CAP<br><small>${(50000000/rate).toFixed(4)} MATIC</small></button>
-                <button class="btn" style="flex:1;" onclick="selectPackage(100000000)">100M CAP<br><small>${(100000000/rate).toFixed(4)} MATIC</small></button>
-            </div>
-            <div style="margin-bottom:10px;">
-                <label>Custom amount (CAP):</label>
-                <input type="number" id="customCapAmount" class="auth-input" placeholder="Enter CAP amount" style="margin-top:4px;">
-            </div>
-            <div id="paymentInfo" style="display:none;margin-top:10px;">
-                <p>You will send <strong id="maticNeeded">0 MATIC</strong> to:</p>
-                <div style="background:var(--bg-tertiary);padding:8px;border-radius:8px;font-family:monospace;word-break:break-all;" id="paymentAddress">${hotWallet}</div>
-                <button class="btn" style="margin-top:6px;" onclick="copyPaymentAddress()">Copy Address</button>
-                <p style="margin-top:10px;">After sending MATIC, paste the transaction ID:</p>
-                <input type="text" id="purchaseTxHash" class="auth-input" placeholder="Transaction ID (TX Hash)">
-                <button class="btn" onclick="verifyPurchase()">Verify Payment</button>
-            </div>
-            <button class="btn btn-outline" onclick="renderWallet()">Back to Wallet</button>
-        </div>
-    `;
-    container.innerHTML = html;
-}
-function selectPackage(amount) {
-    document.getElementById('customCapAmount').value = amount;
-    updatePaymentInfo(amount);
-    document.getElementById('paymentInfo').style.display = 'block';
-}
-document.addEventListener('input', function(e) {
-    if (e.target.id === 'customCapAmount') {
-        const amount = parseInt(e.target.value);
-        if (amount > 0) {
-            updatePaymentInfo(amount);
-            document.getElementById('paymentInfo').style.display = 'block';
-        }
-    }
-});
-function updatePaymentInfo(capAmount) {
-    const rate = state.capRate || 10000000;
-    const matic = capAmount / rate;
-    document.getElementById('maticNeeded').innerText = matic.toFixed(6) + ' MATIC';
-}
-function copyPaymentAddress() {
-    const addr = state.capPaymentAddress || CFG.HOT_WALLET;
-    navigator.clipboard.writeText(addr); toast('Address copied!');
-}
-async function verifyPurchase() {
-    const txHash = document.getElementById('purchaseTxHash').value.trim();
-    if (!txHash) return toast('Enter TXID');
-    const capAmountRaw = parseInt(document.getElementById('customCapAmount').value) * 1e18;
-    try {
-        const res = await apiCall('/api/cap/purchase', { method:'POST', body:JSON.stringify({ cap_amount: capAmountRaw, tx_hash: txHash }) });
-        if (res.verified) {
-            toast(`✅ Purchased! New staked: ${res.new_staked} CAP`);
-            state.capStaked = res.new_staked;
-            updateProfileUI();
-            renderWallet();
-        } else {
-            toast('Verification pending: ' + (res.message || ''));
-        }
-    } catch(e) { toast('Verification failed: '+e.message); }
-}
-
-// ==================== TICKER & NEWS ====================
 async function startTicker(){
     const tickerEl = document.getElementById('tickerMarquee');
     const updateTicker = async () => {
@@ -1329,6 +1280,7 @@ async function fetchNews(){
         newsList.innerHTML = html;
     } catch(e) { document.getElementById('newsList').innerHTML = 'Failed to load news.'; }
 }
+
 function toggleNewsPanel(){
     const list = document.getElementById('newsList');
     list.classList.toggle('collapsed');
@@ -1337,11 +1289,25 @@ function toggleNewsPanel(){
 }
 
 // ==================== GAMIFICATION ====================
-async function fetchStreak(){ if(state.user) try { let r=await apiCall('/api/gamification/streak'); if(r.streak>0) document.getElementById('profileStakedInfo').innerHTML+=` <span class="streak-badge">🔥 ${r.streak}</span>`; } catch(e){} }
+async function fetchStreak(){
+    if (!state.user) return;
+    try {
+        let res = await apiCall('/api/gamification/streak');
+        if (res.streak > 0) {
+            document.getElementById('profileStakedInfo').innerHTML += ` <span class="streak-badge">🔥 ${res.streak}</span>`;
+        }
+    } catch(e){}
+}
+
 async function openProfileModal(){
     let modal = document.getElementById('profileModalContent');
     let badgesHtml = '';
-    if (state.user) { try { const badgesRes = await apiCall('/api/badges'); badgesHtml = '<h3>Badges</h3><div class="badge-list">' + badgesRes.badges.map(b=>`<span class="badge">${b.icon} ${b.name}</span>`).join('') + '</div>'; } catch(e){} }
+    if (state.user) {
+        try {
+            const badgesRes = await apiCall('/api/badges');
+            badgesHtml = '<h3>Badges</h3><div class="badge-list">' + badgesRes.badges.map(b=>`<span class="badge">${b.icon} ${b.name}</span>`).join('') + '</div>';
+        } catch(e){}
+    }
     modal.innerHTML = `
     <h2>Account Settings</h2>
     <div style="text-align:center;">
@@ -1351,7 +1317,10 @@ async function openProfileModal(){
     <div style="font-weight:600;margin-top:8px;">${state.user?state.user.name||state.user.email:'Guest'}</div>
     <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Staked: ${state.capStaked} CAP (Tier: ${state.capTier})</div>
     ${badgesHtml}
-    ${state.user?`<label>Reasoning Depth</label><input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()"><div class="token-info" id="depthCostInfo">~${Math.round(50*DEPTH_MULTIPLIERS[state.reasoningDepth-1])} tokens / message</div><button class="btn" onclick="saveReasoningDepth()">Save Depth</button>`:''}
+    ${state.user?`<label>Reasoning Depth</label>
+    <input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()">
+    <div class="token-info" id="depthCostInfo">~${Math.round(50*DEPTH_MULTIPLIERS[state.reasoningDepth-1])} tokens / message</div>
+    <button class="btn" onclick="saveReasoningDepth()">Save Depth</button>`:''}
     <div class="modal-setting" onclick="openPrivacyModal();closeModal('profileModal')">Privacy Policy</div>
     <div class="modal-setting" onclick="openTermsModal();closeModal('profileModal')">Terms of Service</div>
     ${state.user?`<button class="btn btn-outline" style="color:var(--danger);" onclick="logout();closeModal('profileModal')">Sign Out</button>`:''}
@@ -1359,26 +1328,29 @@ async function openProfileModal(){
     `;
     document.getElementById('profileModal').classList.add('open');
 }
-function updateDepthCost(){let d=parseInt(document.getElementById('depthSlider').value);document.getElementById('depthCostInfo').innerText=`~${Math.round(50*DEPTH_MULTIPLIERS[d-1])} tokens / message`;}
-async function saveReasoningDepth(){let d=parseInt(document.getElementById('depthSlider').value);state.reasoningDepth=d;if(state.user){await apiCall('/api/auth/update-profile',{method:'POST',body:JSON.stringify({reasoning_depth:d})});toast('Reasoning depth saved');closeModal('profileModal');}}
+function updateDepthCost(){let depth=parseInt(document.getElementById('depthSlider').value);let cost=Math.round(50*DEPTH_MULTIPLIERS[depth-1]);document.getElementById('depthCostInfo').innerText=`~${cost} tokens / message`;}
+async function saveReasoningDepth(){let depth=parseInt(document.getElementById('depthSlider').value);state.reasoningDepth=depth;if(state.user){await apiCall('/api/auth/update-profile',{method:'POST',body:JSON.stringify({reasoning_depth:depth})});toast('Reasoning depth saved');closeModal('profileModal');}}
 function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let reader=new FileReader();reader.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto};reader.readAsDataURL(f)};inp.click()}
 
+// Leaderboard modal
 function openLeaderboardModal(){
-    document.getElementById('leaderboardModalContent').innerHTML=`<h2>Leaderboard</h2><div id="lbContent">Loading...</div><button class="btn btn-outline" onclick="closeModal('leaderboardModal')">Close</button>`;
-    document.getElementById('leaderboardModal').classList.add('open'); loadLeaderboard('staked');
+    let modal = document.getElementById('leaderboardModalContent');
+    modal.innerHTML = `<h2>Leaderboard</h2><div id="lbContent">Loading...</div><button class="btn btn-outline" onclick="closeModal('leaderboardModal')">Close</button>`;
+    document.getElementById('leaderboardModal').classList.add('open');
+    loadLeaderboard('staked');
 }
 async function loadLeaderboard(type){
-    try {
-        let res=await apiCall('/api/leaderboard?type='+type);
-        let html='<div style="display:flex;gap:8px;margin-bottom:12px;"><button class="btn btn-outline" onclick="loadLeaderboard(\'staked\')" style="flex:1;">Staked</button><button class="btn btn-outline" onclick="loadLeaderboard(\'messages\')" style="flex:1;">Messages</button></div>';
-        html+='<table class="admin-table"><tr><th>Rank</th><th>Name</th><th>'+(type==='staked'?'Staked':'Messages')+'</th></tr>';
-        res.leaderboard.forEach((u,i)=>{ html+=`<tr><td>${i+1}</td><td>${u.name}</td><td>${type==='staked'?u.staked.toLocaleString():u.messages}</td></tr>`; });
-        html+='</table>';
-        document.getElementById('lbContent').innerHTML=html;
-    }catch(e){ document.getElementById('lbContent').innerHTML='Failed to load.'; }
+    try{
+        let res = await apiCall('/api/leaderboard?type='+type);
+        let html = '<div style="display:flex;gap:8px;margin-bottom:12px;"><button class="btn btn-outline" onclick="loadLeaderboard(\'staked\')" style="flex:1;">Staked</button><button class="btn btn-outline" onclick="loadLeaderboard(\'messages\')" style="flex:1;">Messages</button></div>';
+        html += '<table class="admin-table"><tr><th>Rank</th><th>Name</th><th>'+(type==='staked'?'Staked':'Messages')+'</th></tr>';
+        res.leaderboard.forEach((u,i)=>{ html += `<tr><td>${i+1}</td><td>${u.name}</td><td>${type==='staked'?u.staked.toLocaleString():u.messages}</td></tr>`; });
+        html += '</table>';
+        document.getElementById('lbContent').innerHTML = html;
+    }catch(e){ document.getElementById('lbContent').innerHTML = 'Failed to load.'; }
 }
 
-// ==================== DEVELOPER ====================
+// ==================== DEVELOPER (API Keys fixed) ====================
 function openDeveloperPage(){if(!state.user||(state.capTier!=='pro'&&state.capTier!=='enterprise'&&!state.is_admin)){toast('Upgrade to Pro for Developer access');return}document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.add('open');loadDeveloperTab('keys')}
 function closeDeveloperPage(){document.getElementById('developerFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 function switchDeveloperTab(tab){state.developerTab=tab;document.querySelectorAll('#developerTabs .research-hub-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#developerTabs .research-hub-tab[onclick="switchDeveloperTab('${tab}')"]`).classList.add('active');loadDeveloperTab(tab)}
@@ -1393,45 +1365,65 @@ async function loadDeveloperTab(tab){
 }
 async function loadApiKeys(){try{let d=await apiCall('/api/developer/keys');state.apiKeys=d.keys||[]}catch(e){}}
 async function createApiKey(){
-    try{
-        let res = await apiCall('/api/developer/keys', {method:'POST',body:JSON.stringify({})});
-        document.getElementById('apiKeyModalContent').innerHTML=`<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;"><strong>Your new API key:</strong><div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button><button class="btn btn-outline" onclick="closeModal('apiKeyModal')">Done</button></div>`;
+    try {
+        let res = await apiCall('/api/developer/keys', {method:'POST', body:JSON.stringify({})});
+        let modal = document.getElementById('apiKeyModalContent');
+        modal.innerHTML = `<div class="developer-key-card" style="flex-direction:column;align-items:flex-start;">
+            <strong>Your new API key (copy now):</strong>
+            <div style="background:var(--bg-tertiary);padding:8px;border-radius:6px;font-family:monospace;margin:8px 0;">${res.key}</div>
+            <button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!')">Copy</button>
+            <button class="btn btn-outline" onclick="closeModal('apiKeyModal')">Done</button>
+        </div>`;
         document.getElementById('apiKeyModal').classList.add('open');
-    }catch(e){toast('Failed: '+e.message);}
+    } catch(e) {
+        toast('Failed to generate key: '+(e.message||'Unknown error'));
+    }
 }
-async function revokeApiKey(id){if(!confirm('Revoke?'))return;try{await apiCall('/api/developer/keys/'+id,{method:'DELETE'});toast('Revoked');loadApiKeys();loadDeveloperTab('keys')}catch(e){toast('Failed')}}
+async function revokeApiKey(id){if(!confirm('Revoke this key?'))return;try{await apiCall('/api/developer/keys/'+id,{method:'DELETE'});toast('Key revoked');await loadApiKeys();loadDeveloperTab('keys')}catch(e){toast('Failed')}}
 async function loadWebhooks(){try{let d=await apiCall('/api/developer/webhooks');state.webhooks=d.webhooks||[]}catch(e){}}
-function showCreateWebhook(){let u=prompt('Webhook URL:');if(!u)return;let e=prompt('Events:','new_message');if(!e)return;createWebhook(u,e)}
-async function createWebhook(url,events){try{await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});toast('Created');loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
-async function deleteWebhook(id){if(!confirm('Delete?'))return;try{await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});toast('Deleted');loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
+function showCreateWebhook(){let url=prompt('Webhook URL:');if(!url)return;let events=prompt('Events (comma separated):','new_message');if(!events)return;createWebhook(url,events)}
+async function createWebhook(url,events){try{await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});toast('Webhook created');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
+async function deleteWebhook(id){if(!confirm('Delete this webhook?'))return;try{await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});toast('Webhook deleted');await loadWebhooks();loadDeveloperTab('webhooks')}catch(e){toast('Failed')}}
 
-// ==================== FOUNDER DASHBOARD ====================
+// ==================== FOUNDER DASHBOARD (with deploy/pool buttons) ====================
 function openFounderDashboard(){
     if(!state.user?.is_admin){ toast('Founder access required'); return }
-    document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('developerFullPage').classList.remove('open');document.getElementById('walletFullPage').classList.remove('open');document.getElementById('founderDashboardPage').classList.add('open');
+    document.getElementById('chatView').style.display='none';
+    document.getElementById('portfolioFullPage').classList.remove('open');
+    document.getElementById('researchHubFullPage').classList.remove('open');
+    document.getElementById('developerFullPage').classList.remove('open');
+    document.getElementById('walletFullPage').classList.remove('open');
+    document.getElementById('founderDashboardPage').classList.add('open');
     loadFounderDashboard('cap');
 }
 function closeFounderDashboard(){document.getElementById('founderDashboardPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 function switchDashTab(tab){document.querySelectorAll('#founderDashboardPage .dashboard-tab').forEach(t=>t.classList.remove('active'));document.querySelector(`#founderDashboardPage .dashboard-tab[onclick="switchDashTab('${tab}')"]`).classList.add('active');loadFounderDashboard(tab);}
 async function loadFounderDashboard(tab='cap'){
-    let content = document.getElementById('founderDashboardContent'); content.innerHTML = '<p>Loading...</p>';
+    let content = document.getElementById('founderDashboardContent');
+    content.innerHTML = '<p>Loading...</p>';
     if(tab === 'cap'){
         try {
             let data = await apiCall('/api/admin/cap/dashboard');
             let html = '<div class="grid-2">';
+            html += `<div class="dashboard-card"><h3>Deploy & Pool</h3>
+                <button class="btn" onclick="deployCapToken()">🚀 Deploy $CAP Token</button>
+                <button class="btn btn-outline" onclick="createLiquidityPool()" style="margin-top:8px;">💧 Create DEX Pool</button>
+            </div>`;
             html += `<div class="dashboard-card"><h3>Total Staked</h3><div class="big-number">${data.total_staked.toLocaleString()}</div></div>`;
             html += `<div class="dashboard-card"><h3>Stakers</h3><div class="big-number">${data.stakers_count}</div></div>`;
             html += `<div class="dashboard-card"><h3>CLOSEAI Stake</h3><div class="big-number">${data.closeai_stake.toLocaleString()}</div></div>`;
             html += `<div class="dashboard-card"><h3>Revenue (est.)</h3><div class="big-number">${data.revenue_estimate.toLocaleString()} CAP</div></div>`;
             html += `<div class="dashboard-card"><h3>Total Burns</h3><div class="big-number">${data.total_burns}</div></div>`;
             html += `<div class="dashboard-card"><h3>DEX Price</h3><div class="big-number">${data.dex_price ? data.dex_price.toFixed(6) + ' MATIC' : 'N/A'}</div></div>`;
-            if(data.founder_wallet) html += `<div class="dashboard-card"><h3>Founder Wallet</h3><div class="big-number">${data.founder_balance ? data.founder_balance.toLocaleString() : 'N/A'} CAP</div><small>${data.founder_wallet}</small></div>`;
+            if(data.treasury_address) { html += `<div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance ? data.treasury_balance.toLocaleString() : 'N/A'} CAP</div><small>Address: ${data.treasury_address}</small></div>`; }
+            if(data.total_supply_onchain) { html += `<div class="dashboard-card"><h3>On‑Chain Supply</h3><div class="big-number">${data.total_supply_onchain.toLocaleString()} CAP</div></div>`; }
+            if(data.founder_wallet) { html += `<div class="dashboard-card"><h3>Founder Wallet</h3><div class="big-number">${data.founder_balance ? data.founder_balance.toLocaleString() : 'N/A'} CAP</div><small>Address: ${data.founder_wallet}</small></div>`; }
             html += '</div><h3 style="margin-top:20px;">Recent Transactions</h3>';
             if(data.recent_transactions && data.recent_transactions.length){
                 html += '<table class="admin-table"><thead><tr><th>Type</th><th>Amount</th><th>TX Hash</th><th>Status</th><th>Date</th></tr></thead><tbody>';
                 data.recent_transactions.forEach(tx => { html += `<tr><td>${tx.type}</td><td>${tx.amount}</td><td>${tx.tx_hash ? tx.tx_hash.substring(0,10)+'...' : ''}</td><td>${tx.status}</td><td>${tx.created ? new Date(tx.created).toLocaleString() : ''}</td></tr>`; });
                 html += '</tbody></table>';
-            } else html += '<p>No recent transactions.</p>';
+            } else { html += '<p>No recent transactions.</p>'; }
             content.innerHTML = html;
         } catch(e) { content.innerHTML = '<p>Failed to load $CAP dashboard.</p>'; }
     } else if(tab === 'ai'){
@@ -1449,6 +1441,36 @@ async function loadFounderDashboard(tab='cap'){
     }
 }
 
+async function deployCapToken() {
+    if (!confirm('This will deploy the $CAP token on Polygon Mainnet. Continue?')) return;
+    toast('Deploying $CAP token...');
+    try {
+        const res = await apiCall('/api/admin/deploy-cap', { method: 'POST', body: JSON.stringify({}) });
+        toast('✅ $CAP deployed at ' + res.address);
+        console.log('CAP address:', res.address);
+    } catch (e) {
+        toast('Deploy failed: ' + (e.message || 'Unknown error'));
+    }
+}
+
+async function createLiquidityPool() {
+    const capAmount = prompt('CAP amount (in whole units, e.g., 1000):');
+    const maticAmount = prompt('MATIC amount (in whole units, e.g., 0.001):');
+    if (!capAmount || !maticAmount) return;
+    try {
+        const res = await apiCall('/api/admin/create-pool', {
+            method: 'POST',
+            body: JSON.stringify({
+                cap_amount: (parseFloat(capAmount) * 1e18).toString(),
+                matic_amount: (parseFloat(maticAmount) * 1e18).toString()
+            })
+        });
+        toast('✅ Pool created! Pair: ' + res.pair_address);
+    } catch (e) {
+        toast('Pool creation failed: ' + (e.message || 'Unknown error'));
+    }
+}
+
 // ==================== INIT ====================
 async function init(){
     setTheme(state.theme);
@@ -1458,10 +1480,14 @@ async function init(){
     document.getElementById('logoIcon').addEventListener('click', handleFounderClick);
     setupScrollButton();
     setTimeout(()=>{document.getElementById('splashScreen')?.classList.add('hide')},1600);
+    if(localStorage.getItem('session_expired')&&!state.token){document.getElementById('sessionExpiredMsg').style.display='block';localStorage.removeItem('session_expired')}
     if(state.token){
         document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
         await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchWalletStatus(); fetchStreak();
-        if(state.walletEncrypted && state.walletEncryptedSalt) { state.walletAddress = localStorage.getItem('os_address') || ''; fetchCapBalance(); }
+        if(state.walletEncrypted && state.walletEncryptedSalt){
+            state.walletAddress = localStorage.getItem('os_address') || '';
+            fetchCapBalance();
+        }
     }
 }
 async function initSession(){
@@ -1470,11 +1496,13 @@ async function initSession(){
         if(resp.ok){
             let data = await resp.json();
             state.user = data.user; state.is_admin = data.is_admin; state.reasoningDepth = data.reasoning_depth;
-            localStorage.setItem('cu', JSON.stringify(data.user)); localStorage.setItem('is_admin', data.is_admin.toString()); localStorage.setItem('reasoningDepth', data.reasoning_depth.toString());
+            localStorage.setItem('cu', JSON.stringify(data.user)); localStorage.setItem('is_admin', data.is_admin.toString());
+            localStorage.setItem('reasoningDepth', data.reasoning_depth.toString());
             fetchCapBalance();
         } else if(resp.status === 401){
             let guestResp = await fetch(CFG.API+'/api/session'); let guestData = await guestResp.json();
-            state.token = guestData.token; state.user = null; state.is_admin = false; state.reasoningDepth = 1;
+            state.token = guestData.token; state.user = null; state.is_admin = false;
+            state.reasoningDepth = 1;
             localStorage.setItem('ct', guestData.token); setCookie('ct', guestData.token, 365);
             localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
         }
