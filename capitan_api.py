@@ -1,9 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v42.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v43.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-All wallet addresses integrated, deploy‑time distribution, $CAP as sole currency,
-PWA support, starter CAP, in‑app CAP purchase with MATIC at internal rate.
-FIXED: rawTransaction → raw_transaction for web3.py v6+ compatibility.
+V3 DEX price support, starter CAP, in‑app purchase, PWA, deploy‑time distribution.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
@@ -81,15 +79,15 @@ class Settings(BaseSettings):
     TERMS_CONDITIONS_TEXT: str = ""
 
     # Wallet addresses
-    CAP_HOT_WALLET: str = "0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A"   # Phantom
-    CLOSEAI_TREASURY_ADDRESS: str = "0x5bD39AD3e8B1CB01e7385958160FD9b2675D02d1"  # Trust
-    FOUNDER_WALLET: str = "0xd043ecc5A45D808B93c8549aAe4Ec4Fa6ee3C221"   # Coinomi
-    REWARDS_WALLET: str = "0x89d9280c221Cc5F1a9272DE4DC8b7E021700aC6A"   # OS Wallet
-    LIQUIDITY_WALLET: str = "0x23f5d895e20eBb118168FB4901E12a3488DFf875"  # Edge
+    CAP_HOT_WALLET: str = "0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A"
+    CLOSEAI_TREASURY_ADDRESS: str = "0x5bD39AD3e8B1CB01e7385958160FD9b2675D02d1"
+    FOUNDER_WALLET: str = "0xd043ecc5A45D808B93c8549aAe4Ec4Fa6ee3C221"
+    REWARDS_WALLET: str = "0x89d9280c221Cc5F1a9272DE4DC8b7E021700aC6A"
+    LIQUIDITY_WALLET: str = "0x23f5d895e20eBb118168FB4901E12a3488DFf875"
 
     # $CAP on‑chain
-    CAP_CONTRACT_ADDRESS: str = ""
-    CAP_DEX_PAIR_ADDRESS: str = ""
+    CAP_CONTRACT_ADDRESS: str = "0xb1a1e6DE26897bb0E22710C6C30b6994F1F39666"
+    CAP_DEX_PAIR_ADDRESS: str = "0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6"
     POLYGON_RPC_URL: str = "https://polygon-mainnet.g.alchemy.com/v2/demo"
     CAP_DECIMALS: int = 18
     CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000
@@ -111,7 +109,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="42.0")
+app = FastAPI(title="CAPITAN AI API", version="43.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -282,7 +280,6 @@ CAP_BUILDER_THRESHOLD = 20_000_000
 CAP_PRO_THRESHOLD = 50_000_000
 CAP_ENTERPRISE_THRESHOLD = 100_000_000
 
-# Token distribution amounts (in raw units, 18 decimals)
 TOTAL_SUPPLY = 500_000_000_000_000 * 10**18
 FOUNDER_AMOUNT = 10_000_000_000_000 * 10**18
 TREASURY_AMOUNT = 375_000_000_000_000 * 10**18
@@ -290,11 +287,15 @@ HOT_AMOUNT = 50_000_000_000_000 * 10**18
 LIQUIDITY_AMOUNT = 15_000_000_000_000 * 10**18
 REWARDS_AMOUNT = 50_000_000_000_000 * 10**18
 
-# Starter CAP bonus
-STARTER_CAP_AMOUNT = 2500 * 10**18  # 2500 CAP in raw units
+STARTER_CAP_AMOUNT = 2500 * 10**18
+DEFAULT_CAP_MATIC_RATE = 10_000_000
 
-# Default internal rate: 1 MATIC = 10,000,000 CAP
-DEFAULT_CAP_MATIC_RATE = 10_000_000  # number of CAP per 1 MATIC
+# ABIs
+ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
+
+DEX_PAIR_ABI = json.loads('[{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}]')
+
+V3_POOL_ABI = json.loads('[{"inputs":[],"name":"slot0","outputs":[{"internalType":"uint160","name":"sqrtPriceX96","type":"uint160"},{"internalType":"int24","name":"tick","type":"int24"},{"internalType":"uint16","name":"observationIndex","type":"uint16"},{"internalType":"uint16","name":"observationCardinality","type":"uint16"},{"internalType":"uint16","name":"observationCardinalityNext","type":"uint16"},{"internalType":"uint8","name":"feeProtocol","type":"uint8"},{"internalType":"bool","name":"unlocked","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]')
 
 def init_db():
     try:
@@ -552,24 +553,23 @@ def init_db():
                     c.execute("INSERT INTO badges (name, description, icon, condition_type, threshold) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
                               (b[0], b[1], b[2], b[3], b[4]))
 
-                # Platform settings (key-value store)
+                # Platform settings
                 c.execute('''CREATE TABLE IF NOT EXISTS platform_settings (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL,
                     updated TIMESTAMP DEFAULT NOW()
                 )''')
-                # Insert default rate if not exists
                 c.execute("INSERT INTO platform_settings (key, value) VALUES ('cap_matic_rate', %s) ON CONFLICT (key) DO NOTHING",
                           (str(DEFAULT_CAP_MATIC_RATE),))
 
                 conn.commit()
-        logger.info("✅ Database initialized (v42.0)")
+        logger.info("✅ Database initialized (v43.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
 init_db()
 
-# ==================== SYSTEM PROMPT ====================
+# ==================== FULL SYSTEM PROMPT ====================
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
@@ -590,7 +590,7 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 - **When the user shares a large codebase or asks to refactor, you MUST build a mental model of the entire code before answering. Summarise the architecture, then proceed step‑by‑step.**
 - **Always provide complete, runnable code blocks. If a solution requires multiple files, output them as a zip‑like structure (filename + content).**
 - **For coding tasks, follow: 1) Understand the goal, 2) Analyse existing code, 3) Propose a design, 4) Implement, 5) Write tests, 6) Review for edge cases. Never skip steps.**
-- **After generating code, check whether it fully meets the user’s stated requirements. If it falls short, explicitly state the limitation and suggest how to complete it.**
+- **After generating code, check whether it fully meets the user's stated requirements. If it falls short, explicitly state the limitation and suggest how to complete it.**
 - **Code Review Mode**: If the user requests a review, output a structured report: Issues, Suggestions, Optimizations.
 
 ### General Intelligence & Reasoning (INTERNAL TREE‑OF‑THOUGHT)
@@ -616,14 +616,14 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 
 ## CRITICAL CONTINUITY RULE (MUST OBEY)
 - **Always read the full conversation history** before answering. This is not optional.
-- **Never start a new conversation** unless the user explicitly says “new chat” or “start over”.
+- **Never start a new conversation** unless the user explicitly says "new chat" or "start over".
 - Maintain a topic graph. Track active threads, pending decisions, and user constraints across the entire conversation.
 - **Working memory**: keep track of everything discussed in this session.
 - If a topic is resolved, offer one natural next step. Never force it.
 
 ## COMMUNICATION STYLE
 - Direct. Precise. Natural. Confident.
-- **Respond naturally, as a human expert would. Adapt your tone and structure to the user’s question. No pre‑set formats.**
+- **Respond naturally, as a human expert would. Adapt your tone and structure to the user's question. No pre‑set formats.**
 - **Match the user's technical level automatically. If the user identifies as a non‑expert in a domain, use analogies from their field (e.g., code analogies for engineers, cooking analogies for chefs).**
 - Ban filler phrases. Ban robotic introductions.
 - **Emojis**: use tastefully for warmth or clarity — never overuse.
@@ -790,7 +790,6 @@ def count_tokens(text: str) -> int:
     return int(len(text.split()) / 0.75)
 
 def summarize_conversation(messages: List[dict], max_tokens: int = 8000) -> List[dict]:
-    """Summarize older messages if total tokens exceed limit, keeping recent messages intact."""
     if not messages:
         return messages
     total = sum(count_tokens(m["content"]) for m in messages if "content" in m)
@@ -1412,7 +1411,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
 
 def claim_starter_cap(user_id: str) -> bool:
-    """Award 2500 CAP to new users on first chat if not already claimed."""
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1486,9 +1484,8 @@ def check_and_award_badges(user_id: str, domain: str = None):
                               (str(uuid.uuid4()), user_id, "badge", f"You earned the badge: {badge_id}"))
             conn.commit()
 
-# ==================== IN‑APP CAP PURCHASE ENDPOINT ====================
+# ==================== IN‑APP CAP PURCHASE ====================
 def get_cap_matic_rate() -> int:
-    """Get the current internal rate (CAP per MATIC) from platform settings."""
     try:
         with get_db() as conn:
             with conn.cursor() as c:
@@ -1501,7 +1498,6 @@ def get_cap_matic_rate() -> int:
     return DEFAULT_CAP_MATIC_RATE
 
 def verify_matic_payment(tx_hash: str, expected_matic: float) -> bool:
-    """Check if a MATIC transaction was sent to the Hot Wallet with the expected value."""
     if not WEB3_AVAILABLE:
         return False
     try:
@@ -1509,10 +1505,8 @@ def verify_matic_payment(tx_hash: str, expected_matic: float) -> bool:
         receipt = w3.eth.get_transaction(tx_hash)
         if not receipt:
             return False
-        # Check recipient matches the Hot Wallet
         if receipt['to'] and receipt['to'].lower() == settings.CAP_HOT_WALLET.lower():
             value_matic = float(w3.from_wei(receipt['value'], 'ether'))
-            # Allow 5% tolerance for gas fluctuations
             if value_matic >= expected_matic * 0.95:
                 return True
     except Exception as e:
@@ -1520,20 +1514,18 @@ def verify_matic_payment(tx_hash: str, expected_matic: float) -> bool:
     return False
 
 class PurchaseRequest(BaseModel):
-    cap_amount: int  # in raw units (with decimals)
+    cap_amount: int
     tx_hash: str
 
 @app.post("/api/cap/purchase")
 def purchase_cap(req: PurchaseRequest, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     rate = get_cap_matic_rate()
-    # Calculate expected MATIC
     cap_whole = req.cap_amount / 10**18
     expected_matic = cap_whole / rate
     if expected_matic < 0.0001:
         raise HTTPException(400, "Amount too small.")
     
-    # Verify transaction
     verified = verify_matic_payment(req.tx_hash.strip(), expected_matic)
     
     with get_db() as conn:
@@ -1562,7 +1554,6 @@ def purchase_cap(req: PurchaseRequest, user: dict = Depends(get_current_user)):
 def get_cap_rate():
     return {"cap_per_matic": get_cap_matic_rate(), "matic_payment_address": settings.CAP_HOT_WALLET}
 
-# Admin: set rate
 @app.post("/api/admin/cap/rate")
 def set_cap_rate(req: dict, founder: dict = Depends(founder_only)):
     new_rate = req.get("rate")
@@ -2201,10 +2192,6 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
     return {"ok": True}
 
 # ---------------- $CAP HELPERS & ENDPOINTS ----------------
-ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
-
-DEX_PAIR_ABI = json.loads('[{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}]')
-
 def get_web3():
     if not WEB3_AVAILABLE:
         raise HTTPException(501, "web3 not installed")
@@ -2283,23 +2270,25 @@ def get_cap_price_from_dex() -> Optional[float]:
         return None
     try:
         w3 = get_web3()
-        pair_contract = w3.eth.contract(
-            address=Web3.to_checksum_address(settings.CAP_DEX_PAIR_ADDRESS),
-            abi=DEX_PAIR_ABI
-        )
-        reserves = pair_contract.functions.getReserves().call()
-        token0 = pair_contract.functions.token0().call()
+        pool_address = Web3.to_checksum_address(settings.CAP_DEX_PAIR_ADDRESS)
+        pool_contract = w3.eth.contract(address=pool_address, abi=V3_POOL_ABI)
+        
+        slot0 = pool_contract.functions.slot0().call()
+        sqrt_price_x96 = slot0[0]
+        token0 = pool_contract.functions.token0().call()
         cap_address = Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS)
+        
+        sqrt_price = sqrt_price_x96 / (2**96)
+        spot_price = sqrt_price * sqrt_price
+        
         if token0.lower() == cap_address.lower():
-            cap_reserve = reserves[0]
-            matic_reserve = reserves[1]
+            price = spot_price
         else:
-            cap_reserve = reserves[1]
-            matic_reserve = reserves[0]
-        price = float(w3.from_wei(matic_reserve, 'ether')) / float(w3.from_wei(cap_reserve, 'ether'))
-        return price
+            price = 1.0 / spot_price
+        
+        return float(price)
     except Exception as e:
-        logger.error(f"get_cap_price_from_dex error: {e}")
+        logger.error(f"get_cap_price_from_dex (v3) error: {e}")
         return None
 
 def get_treasury_balance() -> Optional[float]:
@@ -2633,7 +2622,6 @@ async def deploy_cap_token(founder: dict = Depends(founder_only)):
         settings.CAP_CONTRACT_ADDRESS = contract_address
         logger.info(f"CAP token deployed at {contract_address}")
 
-        # Distribute tokens to the five wallets
         cap_contract = w3.eth.contract(address=contract_address, abi=abi)
         distributions = [
             (settings.FOUNDER_WALLET, FOUNDER_AMOUNT),
@@ -2723,11 +2711,9 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "42.0", "database": db_status}
+    return {"status": "ok", "version": "43.0", "database": db_status}
 
-# PWA Icon
 def generate_png_icon(size: int) -> bytes:
-    """Generate a simple PNG icon with CAPITAN branding using pure Python."""
     def create_png(width, height, pixels):
         def chunk(chunk_type, data):
             c = chunk_type + data
@@ -2746,7 +2732,7 @@ def generate_png_icon(size: int) -> bytes:
         return header + chunk(b'IHDR', ihdr) + chunk(b'IDAT', compressed) + chunk(b'IEND', b'')
     
     pixels = []
-    bg_color = (14, 110, 142, 255)  # #0e6e8e
+    bg_color = (14, 110, 142, 255)
     fg_color = (255, 255, 255, 255)
     for y in range(size):
         for x in range(size):
@@ -2785,16 +2771,8 @@ async def manifest():
         "background_color": "#0f172a",
         "theme_color": "#0b6d8c",
         "icons": [
-            {
-                "src": f"{base_url}/icons/192",
-                "sizes": "192x192",
-                "type": "image/png"
-            },
-            {
-                "src": f"{base_url}/icons/512",
-                "sizes": "512x512",
-                "type": "image/png"
-            }
+            {"src": f"{base_url}/icons/192", "sizes": "192x192", "type": "image/png"},
+            {"src": f"{base_url}/icons/512", "sizes": "512x512", "type": "image/png"}
         ]
     })
 
@@ -2815,7 +2793,7 @@ self.addEventListener('fetch', event => {
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "42.0"}
+    return {"name": "CAPITAN AI", "version": "43.0"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
