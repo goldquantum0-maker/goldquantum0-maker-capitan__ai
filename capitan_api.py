@@ -3,6 +3,7 @@ CAPITAN AI — Enterprise Backend v42.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 All wallet addresses integrated, deploy‑time distribution, $CAP as sole currency,
 PWA support, starter CAP, in‑app CAP purchase with MATIC at internal rate.
+FIXED: rawTransaction → raw_transaction for web3.py v6+ compatibility.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
@@ -89,7 +90,7 @@ class Settings(BaseSettings):
     # $CAP on‑chain
     CAP_CONTRACT_ADDRESS: str = ""
     CAP_DEX_PAIR_ADDRESS: str = ""
-    POLYGON_RPC_URL: str = "https://polygon-rpc.com"
+    POLYGON_RPC_URL: str = "https://polygon-mainnet.g.alchemy.com/v2/demo"
     CAP_DECIMALS: int = 18
     CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000
 
@@ -1205,8 +1206,6 @@ async def delete_account(user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"delete_account error: {e}")
         raise HTTPException(500, "Delete failed")
-
-# Forgot-password endpoint removed — use Contact Support
 
 @app.get("/api/session")
 async def get_anonymous_session():
@@ -2549,7 +2548,7 @@ def process_withdrawals():
                         'gasPrice': w3.eth.gas_price,
                     })
                     signed = relayer.sign_transaction(tx)
-                    tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+                    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
                     c.execute("UPDATE withdrawal_queue SET status='completed', tx_hash=%s, updated=NOW() WHERE id=%s", (tx_hash.hex(), row[0]))
                 conn.commit()
     except Exception as e:
@@ -2577,7 +2576,7 @@ def gas_auto_topup():
                 'gasPrice': w3.eth.gas_price,
             })
             signed_approve = relayer.sign_transaction(approve_tx)
-            w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+            w3.eth.send_raw_transaction(signed_approve.raw_transaction)
             swap_tx = router.functions.swapExactTokensForETH(
                 settings.RELAYER_SWAP_CAP_AMOUNT,
                 0,
@@ -2591,7 +2590,7 @@ def gas_auto_topup():
                 'gasPrice': w3.eth.gas_price,
             })
             signed_swap = relayer.sign_transaction(swap_tx)
-            w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+            w3.eth.send_raw_transaction(signed_swap.raw_transaction)
             logger.info("Gas auto‑top‑up executed.")
     except Exception as e:
         logger.error(f"Gas auto‑top‑up error: {e}")
@@ -2628,7 +2627,7 @@ async def deploy_cap_token(founder: dict = Depends(founder_only)):
             'gasPrice': w3.eth.gas_price,
         })
         signed = deployer.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
         contract_address = receipt['contractAddress']
         settings.CAP_CONTRACT_ADDRESS = contract_address
@@ -2653,7 +2652,7 @@ async def deploy_cap_token(founder: dict = Depends(founder_only)):
                 'gasPrice': w3.eth.gas_price,
             })
             signed_transfer = deployer.sign_transaction(transfer_tx)
-            w3.eth.send_raw_transaction(signed_transfer.rawTransaction)
+            w3.eth.send_raw_transaction(signed_transfer.raw_transaction)
             logger.info(f"Transferred {amount / 10**18} CAP to {dest}")
 
         return {"status": "deployed", "address": contract_address, "tx_hash": tx_hash.hex()}
@@ -2686,7 +2685,7 @@ async def create_liquidity_pool(req: dict, founder: dict = Depends(founder_only)
             'gasPrice': w3.eth.gas_price,
         })
         signed_approve = deployer.sign_transaction(approve_tx)
-        w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+        w3.eth.send_raw_transaction(signed_approve.raw_transaction)
 
         add_liq_tx = router.functions.addLiquidityETH(
             cap_address,
@@ -2702,7 +2701,7 @@ async def create_liquidity_pool(req: dict, founder: dict = Depends(founder_only)
             'gasPrice': w3.eth.gas_price,
         })
         signed_add = deployer.sign_transaction(add_liq_tx)
-        tx_hash = w3.eth.send_raw_transaction(signed_add.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_add.raw_transaction)
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
         factory_abi = json.loads('[{"constant":true,"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"}],"name":"getPair","outputs":[{"internalType":"address","name":"pair","type":"address"}],"type":"function"}]')
