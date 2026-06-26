@@ -13,10 +13,10 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root {
-            --bg-primary-light:#ffffff; --bg-secondary-light:#f3f4f6; --bg-tertiary-light:#e5e7eb;
-            --surface-light:#ffffff; --border-light:#d1d5db; --text-primary-light:#0f172a;
+            --bg-primary-light:#ffffff; --bg-secondary-light:#f8fafc; --bg-tertiary-light:#e2e8f0;
+            --surface-light:#ffffff; --border-light:#cbd5e1; --text-primary-light:#0f172a;
             --text-secondary-light:#334155; --text-tertiary-light:#64748b;
-            --sidebar-bg-light:#f3f4f6; --input-bg-light:#f3f4f6;
+            --sidebar-bg-light:#f1f5f9; --input-bg-light:#f1f5f9;
             --bg-primary-dark:#000000; --bg-secondary-dark:#0a0a0a; --bg-tertiary-dark:#111111;
             --surface-dark:#0a0a0a; --border-dark:#1e293b; --text-primary-dark:#f8fafc;
             --text-secondary-dark:#cbd5e1; --text-tertiary-dark:#94a3b8;
@@ -24,7 +24,7 @@
             --accent:#9ca3af; --accent-light:#d1d5db; --accent-dark:#6b7280; --accent-glow:rgba(156,163,175,0.2);
             --accent-blue:#3b82f6; --accent-blue-dark:#2563eb; --accent-blue-glow:rgba(59,130,246,0.3);
             --danger:#ef4444; --success:#10b981;
-            --font-size:12.5px; --line-height:1.55;
+            --font-size:13px; --line-height:1.55;
             --shadow-sm:0 1px 2px rgba(0,0,0,0.05); --shadow-md:0 4px 6px -1px rgba(0,0,0,0.1);
             --shadow-lg:0 10px 15px -3px rgba(0,0,0,0.1);
             --radius:12px;
@@ -34,7 +34,7 @@
             --surface:var(--surface-light); --border:var(--border-light); --text-primary:var(--text-primary-light);
             --text-secondary:var(--text-secondary-light); --text-tertiary:var(--text-tertiary-light);
             --sidebar-bg:var(--sidebar-bg-light); --input-bg:var(--input-bg-light);
-            --bubble-user:linear-gradient(135deg,#3b82f6,#2563eb); --bubble-assistant:#f3f4f6;
+            --bubble-user:linear-gradient(135deg,#3b82f6,#2563eb); --bubble-assistant:#f1f5f9;
         }
         body.dark {
             --bg-primary:var(--bg-primary-dark); --bg-secondary:var(--bg-secondary-dark); --bg-tertiary:var(--bg-tertiary-dark);
@@ -61,7 +61,7 @@
             --surface:var(--surface-light); --border:var(--border-light); --text-primary:var(--text-primary-light);
             --text-secondary:var(--text-secondary-light); --text-tertiary:var(--text-tertiary-light);
             --sidebar-bg:var(--sidebar-bg-light); --input-bg:var(--input-bg-light);
-            --bubble-user:linear-gradient(135deg,#3b82f6,#2563eb); --bubble-assistant:#f3f4f6;
+            --bubble-user:linear-gradient(135deg,#3b82f6,#2563eb); --bubble-assistant:#f1f5f9;
         }}
         body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg-primary); color:var(--text-primary); font-size:var(--font-size); line-height:var(--line-height); height:100vh; overflow:hidden; transition:background 0.2s,color 0.2s; }
         .splash { position:fixed; inset:0; z-index:10000; background:linear-gradient(135deg,#0f172a,#0284c7); display:flex; align-items:center; justify-content:center; transition:opacity 0.6s,visibility 0.6s; }
@@ -244,7 +244,6 @@
         .dashboard-card .big-number { font-size:2rem; font-weight:700; color:var(--accent-blue); }
         .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
         @media (max-width:600px){ .grid-2 { grid-template-columns:1fr; } }
-        /* Elite wallet restyle */
         .wallet-fullscreen { position:fixed; inset:0; background:var(--bg-primary); z-index:110; display:none; flex-direction:column; overflow-y:auto; padding:20px; }
         .wallet-fullscreen.open { display:flex; }
         .wallet-fullscreen .close-btn { align-self:flex-end; background:var(--accent-blue); color:white; border:none; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
@@ -1545,7 +1544,7 @@ async function handleGuestLogin() {
     } catch(e) { err.innerText = e.message; err.style.display = 'block'; }
 }
 
-// ==================== fetchWalletStatus (MISSING FIX) ====================
+// ==================== fetchWalletStatus ====================
 async function fetchWalletStatus() {
     if (state.walletEncrypted && state.walletEncryptedSalt && state.walletAddress) {
         fetchCapBalance();
@@ -1554,42 +1553,73 @@ async function fetchWalletStatus() {
 }
 
 // ==================== INIT ====================
-async function init(){
-    setTheme(state.theme);
-    document.getElementById('toggleSidebarBtn').addEventListener('click',toggleSidebar);
-    document.addEventListener('click',e=>{if(window.innerWidth<=768&&document.getElementById('sidebar').classList.contains('open')&&!document.getElementById('sidebar').contains(e.target)&&!document.getElementById('toggleSidebarBtn').contains(e.target))closeSidebar()});
-    document.getElementById('messageInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'});
-    document.getElementById('logoIcon').addEventListener('click', handleFounderClick);
-    setupScrollButton();
-    setTimeout(()=>{document.getElementById('splashScreen')?.classList.add('hide')},1600);
-    if(localStorage.getItem('session_expired')&&!state.token){document.getElementById('sessionExpiredMsg').style.display='block';localStorage.removeItem('session_expired')}
-    if(state.token){
-        document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
-        await initSession(); renderMessages(); updateUIBasedOnTier(); loadWorkspaces(); fetchNotifications(); fetchWalletStatus(); fetchStreak();
-        if(state.walletEncrypted && state.walletEncryptedSalt){
-            state.walletAddress = localStorage.getItem('os_address') || '';
-            fetchCapBalance();
-        }
-    }
-}
-async function initSession(){
+async function init() {
     try {
-        let resp = await fetch(CFG.API+'/api/auth/validate', {headers:{'Authorization':'Bearer '+state.token}});
-        if(resp.ok){
-            let data = await resp.json();
-            state.user = data.user; state.is_admin = data.is_admin; state.reasoningDepth = data.reasoning_depth;
-            localStorage.setItem('cu', JSON.stringify(data.user)); localStorage.setItem('is_admin', data.is_admin.toString());
-            localStorage.setItem('reasoningDepth', data.reasoning_depth.toString());
-            fetchCapBalance();
-        } else if(resp.status === 401){
-            let guestResp = await fetch(CFG.API+'/api/session'); let guestData = await guestResp.json();
-            state.token = guestData.token; state.user = null; state.is_admin = false;
-            state.reasoningDepth = 1;
-            localStorage.setItem('ct', guestData.token); setCookie('ct', guestData.token, 365);
-            localStorage.removeItem('cu'); localStorage.removeItem('is_admin');
+        setTheme(state.theme);
+        document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
+        document.addEventListener('click', e => {
+            if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') &&
+                !document.getElementById('sidebar').contains(e.target) &&
+                !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar();
+        });
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+        document.getElementById('logoIcon').addEventListener('click', handleFounderClick);
+        setupScrollButton();
+
+        // Hide splash after 1.6 seconds
+        setTimeout(() => {
+            document.getElementById('splashScreen')?.classList.add('hide');
+        }, 1600);
+
+        // Check for expired session message
+        if (localStorage.getItem('session_expired') && !state.token) {
+            document.getElementById('sessionExpiredMsg').style.display = 'block';
+            localStorage.removeItem('session_expired');
         }
-    } catch(e) {}
-    updateProfileUI(); updateUIBasedOnTier();
+
+        if (state.token) {
+            // User is logged in, try to validate and load app
+            try {
+                await initSession();
+            } catch (e) {
+                console.error('Session validation failed:', e);
+                // Fallback: clear token, force login
+                state.token = null;
+                state.user = null;
+                localStorage.removeItem('ct');
+                localStorage.removeItem('cu');
+            }
+        }
+
+        // Show the correct UI
+        if (state.token) {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            updateUIBasedOnTier();
+            loadWorkspaces();
+            fetchNotifications();
+            fetchWalletStatus();
+            fetchStreak();
+            if (state.walletEncrypted && state.walletEncryptedSalt) {
+                state.walletAddress = localStorage.getItem('os_address') || '';
+                fetchCapBalance();
+            }
+            renderMessages();
+        } else {
+            // Not logged in, show auth screen
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Init crash:', err);
+        // Ultimate fallback: show auth screen
+        document.getElementById('splashScreen')?.classList.add('hide');
+        document.getElementById('authContainer').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+    }
 }
 init();
 </script>
