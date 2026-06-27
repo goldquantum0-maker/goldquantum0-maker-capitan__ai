@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0b1622">
+    <meta name="theme-color" content="#0A0F1F">
     <title>CAPITAN AI — Enterprise Intelligence</title>
     <link rel="manifest" href="https://capitanai.billionaireman35.workers.dev/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         :root {
@@ -17,12 +18,13 @@
             --surface-light:#ffffff; --border-light:#cbd5e1; --text-primary-light:#0f172a;
             --text-secondary-light:#334155; --text-tertiary-light:#64748b;
             --sidebar-bg-light:#f1f5f9; --input-bg-light:#f1f5f9;
-            --bg-primary-dark:#000000; --bg-secondary-dark:#0a0a0a; --bg-tertiary-dark:#111111;
-            --surface-dark:#0a0a0a; --border-dark:#1e293b; --text-primary-dark:#f8fafc;
+            --bg-primary-dark:#000000; --bg-secondary-dark:#0A0F1F; --bg-tertiary-dark:#111111;
+            --surface-dark:#0A0F1F; --border-dark:#1e293b; --text-primary-dark:#f8fafc;
             --text-secondary-dark:#cbd5e1; --text-tertiary-dark:#94a3b8;
-            --sidebar-bg-dark:rgba(10,10,10,0.98); --input-bg-dark:#0a0a0a;
+            --sidebar-bg-dark:rgba(10,15,31,0.98); --input-bg-dark:#0A0F1F;
             --accent:#9ca3af; --accent-light:#d1d5db; --accent-dark:#6b7280; --accent-glow:rgba(156,163,175,0.2);
             --accent-blue:#3b82f6; --accent-blue-dark:#2563eb; --accent-blue-glow:rgba(59,130,246,0.3);
+            --accent-violet:#8b5cf6; --gold:#f59e0b;
             --danger:#ef4444; --success:#10b981;
             --font-size:13px; --line-height:1.55;
             --shadow-sm:0 1px 2px rgba(0,0,0,0.05); --shadow-md:0 4px 6px -1px rgba(0,0,0,0.1);
@@ -64,17 +66,21 @@
             --bubble-user:linear-gradient(135deg,#3b82f6,#2563eb); --bubble-assistant:#f1f5f9;
         }}
         body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg-primary); color:var(--text-primary); font-size:var(--font-size); line-height:var(--line-height); height:100vh; overflow:hidden; transition:background 0.2s,color 0.2s; }
-        .splash { position:fixed; inset:0; z-index:10000; background:linear-gradient(135deg,#0f172a,#0284c7); display:flex; align-items:center; justify-content:center; transition:opacity 0.6s,visibility 0.6s; }
+        .splash { position:fixed; inset:0; z-index:10000; background:#0A0F1F; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.8s,visibility 0.8s; }
         .splash.hide { opacity:0; visibility:hidden; }
-        .splash-logo { width:80px; height:80px; animation:splashPulse 1.2s ease-in-out infinite; }
-        @keyframes splashPulse { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.05); opacity:0.9; } }
+        .splash-ring { width:120px; height:120px; border-radius:50%; border:2px solid rgba(59,130,246,0.2); animation:splashPulse 2s ease-in-out infinite; display:flex; align-items:center; justify-content:center; }
+        .splash-inner { width:80px; height:80px; border-radius:50%; background:rgba(59,130,246,0.1); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; }
+        .splash-logo-text { font-size:2.5rem; font-weight:800; background:linear-gradient(135deg,#60a5fa,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .splash-subtitle { margin-top:20px; font-size:14px; color:#94a3b8; letter-spacing:4px; text-transform:uppercase; animation:fadeIn 1s ease 0.5s both; }
+        @keyframes splashPulse { 0%,100% { transform:scale(1); opacity:0.8; } 50% { transform:scale(1.05); opacity:1; } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .app { display:flex; height:100%; width:100%; position:relative; }
-        .sidebar { width:290px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; transition:transform 0.3s; flex-shrink:0; z-index:30; overflow-y:auto; }
+        .sidebar { width:290px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; transition:transform 0.3s; flex-shrink:0; z-index:30; overflow-y:auto; backdrop-filter:blur(20px); }
         @media (min-width:769px){ .sidebar.collapsed { transform:translateX(-290px); position:fixed; height:100%; } }
         @media (max-width:768px){ .sidebar { position:fixed; left:0; top:0; height:100%; width:100%; max-width:320px; transform:translateX(-100%); z-index:40; box-shadow:20px 0 40px rgba(0,0,0,0.3); } .sidebar.open { transform:translateX(0); } .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:35; display:none; } .overlay.open { display:block; } }
         .sidebar-brand { padding:16px 16px 12px; display:flex; align-items:center; gap:8px; user-select:none; }
-        .sidebar-brand .logo-icon { width:26px; height:15px; cursor:pointer; }
-        .sidebar-brand .logo-text { font-weight:800; font-size:18px; letter-spacing:2px; background:linear-gradient(135deg, #d1d5db, #9ca3af, #6b7280, #4b5563); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-size:200% 200%; animation:logoShift 4s ease infinite; }
+        .sidebar-brand .logo-icon { width:26px; height:26px; cursor:pointer; }
+        .sidebar-brand .logo-text { font-weight:800; font-size:18px; letter-spacing:2px; background:linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-size:200% 200%; animation:logoShift 4s ease infinite; }
         @keyframes logoShift { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
         .top-bar { position:fixed; top:12px; right:12px; z-index:45; display:flex; justify-content:flex-end; pointer-events:none; }
         .toggle-sidebar { pointer-events:auto; background:var(--surface); border:1px solid var(--border); border-radius:40px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-secondary); box-shadow:var(--shadow-sm); }
@@ -168,7 +174,7 @@
         .btn-outline:hover { background:var(--bg-tertiary); }
         .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:var(--surface); color:var(--text-primary); padding:10px 20px; border-radius:36px; font-size:12px; z-index:1100; box-shadow:var(--shadow-lg); border:1px solid var(--border); animation:toastIn 0.3s ease; display:flex; align-items:center; gap:5px; }
         @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
-        .auth-container { display:flex; justify-content:center; align-items:center; height:100vh; background:linear-gradient(135deg,#0f172a,#0284c7); }
+        .auth-container { display:flex; justify-content:center; align-items:center; height:100vh; background:linear-gradient(135deg,#0A0F1F,#0284c7); }
         .auth-card { background:var(--surface); padding:32px; border-radius:28px; width:380px; max-width:90%; box-shadow:var(--shadow-lg); animation:fadeSlideUp 0.5s ease; }
         .auth-card h1 { font-size:24px; margin-bottom:8px; }
         .auth-tab { flex:1; padding:10px; text-align:center; background:transparent; border:none; font-size:14px; font-weight:600; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; transition:0.2s; }
@@ -248,7 +254,7 @@
         .wallet-fullscreen.open { display:flex; }
         .wallet-fullscreen .close-btn { align-self:flex-end; background:var(--accent-blue); color:white; border:none; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:20px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
         .wallet-fullscreen .wallet-container { max-width:900px; width:100%; margin:0 auto; }
-        .elite-wallet { background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; color: #f1f5f9; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .elite-wallet { background: linear-gradient(145deg, #0A0F1F 0%, #1e293b 100%); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; color: #f1f5f9; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         .elite-wallet h2 { font-size: 1.8rem; font-weight: 700; background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 24px; }
         .balance-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(148,163,184,0.2); border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
         .balance-card .balance-label { font-size: 0.8rem; color: #94a3b8; }
@@ -284,11 +290,12 @@
 </head>
 <body>
 <div class="splash" id="splashScreen">
-    <svg class="splash-logo" viewBox="0 0 640 360">
-        <rect width="640" height="360" fill="#0e6e8e"/>
-        <circle cx="320" cy="180" r="80" fill="none" stroke="white" stroke-width="8"/>
-        <text x="320" y="205" text-anchor="middle" font-family="Arial,sans-serif" font-size="90" fill="white" font-weight="bold">C</text>
-    </svg>
+    <div class="splash-ring">
+        <div class="splash-inner">
+            <span class="splash-logo-text">C</span>
+        </div>
+    </div>
+    <div class="splash-subtitle">Enterprise Intelligence</div>
 </div>
 
 <!-- Auth Container -->
@@ -417,7 +424,7 @@
                 <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%239ca3af'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%239ca3af'/%3E%3C/svg%3E">
                 <div class="profile-details">
                     <div class="profile-name" id="profileName">Guest</div>
-                    <div class="profile-tokens" id="profileStakedInfo">0 $CAP$ staked</div>
+                    <div class="profile-tokens" id="profileStakedInfo">0 CLOSE staked</div>
                 </div>
             </div>
             <button class="signout-icon" id="signoutIcon" onclick="event.stopPropagation(); logout()" title="Sign Out" style="display:none;">
@@ -499,7 +506,7 @@
                 <div class="research-hub-tab active" onclick="switchDeveloperTab('keys')">API Keys</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('webhooks')">Webhooks</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('embed')">Embed</div>
-                <div class="research-hub-tab" onclick="switchDeveloperTab('tokens')">Stake $CAP$</div>
+                <div class="research-hub-tab" onclick="switchDeveloperTab('tokens')">Stake CLOSE</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('enterprise')">Enterprise</div>
                 <div class="research-hub-tab" onclick="switchDeveloperTab('usage')">Usage</div>
             </div>
@@ -511,7 +518,7 @@
         <div style="max-width:1100px; width:100%; margin:0 auto;">
             <h2 style="margin-bottom:16px;">Founder Dashboard</h2>
             <div class="dashboard-tabs">
-                <div class="dashboard-tab active" onclick="switchDashTab('cap')">$CAP$</div>
+                <div class="dashboard-tab active" onclick="switchDashTab('cap')">CLOSE</div>
                 <div class="dashboard-tab" onclick="switchDashTab('ai')">AI Metrics</div>
             </div>
             <div id="founderDashboardContent"></div>
@@ -534,6 +541,7 @@
 <div id="leaderboardModal" class="modal-overlay"><div class="modal" id="leaderboardModalContent"></div></div>
 <div id="apiKeyModal" class="modal-overlay"><div class="modal" id="apiKeyModalContent"></div></div>
 <div id="buyCapModal" class="modal-overlay"><div class="modal" id="buyCapModalContent"></div></div>
+<div id="receiveModal" class="modal-overlay"><div class="modal" id="receiveModalContent"></div></div>
 
 <script>
 // ==================== SERVICE WORKER ====================
@@ -551,15 +559,17 @@ if ('serviceWorker' in navigator) {
 const CFG = {
     API: 'https://capitan-ai-jxu8.onrender.com',
     RPC_URL: 'https://polygon-rpc.com',
-    CAP_ADDRESS: '0xb1a1e6DE26897bb0E22710C6C30b6994F1F39666',
-    HOT_WALLET: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A'
+    CLOSE_ADDRESS: '0x3c6833cFDdED80fE76474a3Cb2Cc050Daec91fe8',
+    HOT_WALLET: '0x941e799C698409C52e995FfEcfD8E31F2A237a53',
+    PAIR_ADDRESS: '0x643240847B313bfd4108084A2A85a16FA938b5A2',
+    POLYGONSCAN_API: localStorage.getItem('polygonscan_api') || ''
 };
 const WALLET_ADDRESSES = {
     founder: '0xd043ecc5A45D808B93c8549aAe4Ec4Fa6ee3C221',
     treasury: '0x5bD39AD3e8B1CB01e7385958160FD9b2675D02d1',
-    hot: '0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A',
     liquidity: '0x23f5d895e20eBb118168FB4901E12a3488DFf875',
-    rewards: '0x89d9280c221Cc5F1a9272DE4DC8b7E021700aC6A'
+    operations: '0xbb9C9AF25392a2A4d8Ad084F1DFB9bD81c84878d',
+    hot: '0x941e799C698409C52e995FfEcfD8E31F2A237a53'
 };
 const POLYGON_TOKENS = [
     { symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', decimals: 6 },
@@ -585,10 +595,9 @@ let state = {
     workspaces: [],
     researchTopics: [],
     researchProjects: [],
-    theme: localStorage.getItem('theme') || 'light',
+    theme: localStorage.getItem('theme') || 'dark',
     profilePhoto: localStorage.getItem('profilePhoto') || null,
     founderClickCount: 0,
-    selectedCoin: 'BTC',
     currentStreamer: null,
     notifications: [],
     unreadCount: 0,
@@ -673,7 +682,7 @@ async function apiCall(endpoint,opts={}){
 function updateProfileUI(){
     let n=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
     document.getElementById('profileName').innerText=n;
-    document.getElementById('profileStakedInfo').innerHTML = `${state.capStaked||0} $CAP$ staked`;
+    document.getElementById('profileStakedInfo').innerHTML = `${state.capStaked||0} CLOSE staked`;
     if(state.profilePhoto)document.getElementById('profileAvatar').src=state.profilePhoto;
     document.getElementById('signoutIcon').style.display = state.user ? 'block' : 'none';
 }
@@ -787,7 +796,7 @@ async function sendMessage(){
         if(streamTarget)new SmoothStreamer(content,streamTarget,()=>{state.loading=false});
         else state.loading=false;
         state.activeChatId=res.chat_id;
-        if(res.starter_claimed) toast('🎉 Your starter $CAP$ is now active! 2,500 $CAP$ has been added to your staking balance.');
+        if(res.starter_claimed) toast('🎉 Your starter CLOSE is now active! 2,500 CLOSE has been added to your staking balance.');
         fetchCapBalance();
         fetchStreak();
     }catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();state.loading=false;}
@@ -803,13 +812,14 @@ function renderMessages(){
         if(m.isTyping)return'<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>';
         let html=m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content);
         let actions='';
-        if(m.role==='assistant'&&!m.isTyping){actions='<div class="action-icons"><button onclick="copyMessage('+i+')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button onclick="likeMessage('+i+')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button><button onclick="dislikeMessage('+i+')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button><button onclick="saveToPortfolio('+i+')" title="Save to Portfolio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button></div>';}
+        if(m.role==='assistant'&&!m.isTyping){actions='<div class="action-icons"><button onclick="copyMessage('+i+')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button onclick="shareMessage('+i+')" title="Share"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button><button onclick="likeMessage('+i+')" title="Like"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button><button onclick="dislikeMessage('+i+')" title="Dislike"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button><button onclick="saveToPortfolio('+i+')" title="Save to Portfolio"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button></div>';}
         return'<div class="message '+m.role+'"><div class="message-content" id="msg-'+i+'">'+html+'</div>'+actions+'</div>';
     }).join('');
     updateScrollButton(); scrollBottom();
 }
 
 function copyMessage(idx){let m=state.messages[idx];if(m){navigator.clipboard.writeText(m.content);toast('Copied!')}}
+function shareMessage(idx){let m=state.messages[idx];if(m&&navigator.share){navigator.share({text:m.content});}else if(m){navigator.clipboard.writeText(m.content);toast('Link copied to clipboard');}}
 async function likeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:5})});toast('Thanks! 👍')}catch(e){}}else toast('Thanks!')}
 async function dislikeMessage(idx){let m=state.messages[idx];if(m&&m.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:1,reason:'Not helpful'})});toast('Feedback noted.')}catch(e){}}else toast('Noted.')}
 async function saveToPortfolio(idx){let m=state.messages[idx];if(!m||!state.user){toast('Sign in to save');return}const title=m.content.split('\n')[0]?.trim().substring(0,80)||'Saved note';try{await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name:title||'Saved from chat',content:m.content,folder:'General',tags:[],attachments:[],chat_id:state.activeChatId})});toast('Saved to Portfolio 📌')}catch(e){toast('Could not save')}}
@@ -935,9 +945,9 @@ async function renderWallet(){
         if (!state.capMaticRate) { try { let r = await apiCall('/api/cap/rate'); state.capMaticRate = r.cap_per_matic; } catch(e){} }
         html += `
         <div class="balance-card">
-            <div><div class="balance-label">Wallet $CAP$</div><div class="balance-amount" id="osCapOnChain">...</div></div>
+            <div><div class="balance-label">Wallet CLOSE</div><div class="balance-amount" id="osCloseOnChain">...</div></div>
             <div><div class="balance-label">Wallet POL</div><div class="balance-amount" id="osMaticBalance">...</div></div>
-            <div><div class="balance-label">Staked $CAP$</div><div class="balance-amount" id="osCapStaked">${state.capStaked.toLocaleString()}</div></div>
+            <div><div class="balance-label">Staked CLOSE</div><div class="balance-amount" id="osCloseStaked">${state.capStaked.toLocaleString()}</div></div>
         </div>
         <div class="wallet-address" style="margin:16px 0;">
             <span id="addressDisplay">${address ? (state.addressVisible ? address : address.slice(0,6)+'...'+address.slice(-4)) : 'Locked'}</span>
@@ -951,21 +961,21 @@ async function renderWallet(){
             <button class="action-btn" onclick="walletStake()">Stake</button>
             <button class="action-btn" onclick="walletUnstake()">Unstake</button>
             <button class="action-btn" onclick="toggleSwapPanel()">Swap</button>
-            <button class="action-btn" onclick="openBuyCapModal()">🛒 Buy $CAP$</button>
+            <button class="action-btn" onclick="openBuyCapModal()">🛒 Buy CLOSE</button>
         </div>
         <div class="staking-info">
-            <strong>Staking:</strong> Your $CAP$ stays in your wallet. Staking records your balance in‑app for higher limits and rewards.<br>
+            <strong>Staking:</strong> Your CLOSE stays in your wallet. Staking records your balance in‑app for higher limits and rewards.<br>
             <strong>Unstaking:</strong> Request a withdrawal to your Polygon address (may incur a small fee).
         </div>
         <div class="swap-panel" id="swapPanel" style="display:none;">
-            <h4>Swap $CAP$</h4>
-            <select id="swapFromToken"><option value="CAP">$CAP$</option></select>
+            <h4>Swap CLOSE</h4>
+            <select id="swapFromToken"><option value="CLOSE">CLOSE</option></select>
             <select id="swapToToken"><option value="MATIC">MATIC</option><option value="USDT">USDT</option><option value="WETH">WETH</option><option value="WBTC">WBTC</option></select>
             <input type="number" id="swapAmount" placeholder="Amount">
             <button class="btn swap-btn" onclick="executeSwap()">Get Quote</button>
             <div id="swapQuote" style="margin-top:8px;font-size:12px;"></div>
         </div>
-        <p style="font-size:10px;margin-top:10px;">Need POL? <a style="color:var(--accent-blue);cursor:pointer;" onclick="openBuyCapModal()">Buy $CAP$ with POL</a></p>
+        <p style="font-size:10px;margin-top:10px;">Need POL? <a style="color:var(--accent-blue);cursor:pointer;" onclick="openBuyCapModal()">Buy CLOSE with POL</a></p>
         <div class="token-list" id="tokenBalancesList">Loading tokens...</div>
         <div style="margin-top:8px;display:flex;gap:8px;">
             <input type="text" id="customTokenAddress" class="auth-input" placeholder="Add token address" style="margin:0;">
@@ -994,16 +1004,17 @@ async function renderWallet(){
         fetchWithdrawals();
         startTicker();
         fetchNews();
+        if (CFG.POLYGONSCAN_API) fetchTransactionHistory(address);
     }
 }
 
 function openBuyCapModal() {
     let modal = document.getElementById('buyCapModalContent');
     modal.innerHTML = `
-        <h2>🛒 Buy $CAP$</h2>
+        <h2>🛒 Buy CLOSE</h2>
         <p style="font-size:13px; margin-bottom:8px;">Send POL to the address below, then paste the TXID to verify.</p>
-        <p style="font-size:13px; margin-bottom:12px;">Rate: <strong id="buyRate">${state.capMaticRate.toLocaleString()} $CAP$</strong> per 1 POL</p>
-        <input type="number" id="buyCapAmount" class="auth-input" placeholder="Amount of $CAP$ to buy">
+        <p style="font-size:13px; margin-bottom:12px;">Rate: <strong id="buyRate">${state.capMaticRate.toLocaleString()} CLOSE</strong> per 1 POL</p>
+        <input type="number" id="buyCapAmount" class="auth-input" placeholder="Amount of CLOSE to buy">
         <p style="font-size:12px;">Equivalent: <span id="maticNeeded">0</span> POL (≈$<span id="usdNeeded">0</span>)</p>
         <p style="font-size:11px; word-break:break-all; margin:8px 0;">Payment address: <strong>${CFG.HOT_WALLET}</strong></p>
         <button class="btn" onclick="navigator.clipboard.writeText('${CFG.HOT_WALLET}');toast('Address copied!')">Copy Address</button>
@@ -1030,7 +1041,7 @@ async function verifyPurchase() {
             body: JSON.stringify({ cap_amount: Math.floor(capAmount * 1e18).toString(), tx_hash: txHash })
         });
         if (res.verified) {
-            toast('✅ Purchase successful! $CAP$ added to your stake.');
+            toast('✅ Purchase successful! CLOSE added to your stake.');
             fetchCapBalance();
             closeModal('buyCapModal');
         } else {
@@ -1044,6 +1055,19 @@ async function verifyPurchase() {
 // ==================== WALLET FUNCTIONS ====================
 function copyAddress(){if(state.walletAddress){navigator.clipboard.writeText(state.walletAddress);toast('Address copied!')}}
 function toggleAddressVisibility(){state.addressVisible=!state.addressVisible;renderWallet();}
+
+function walletReceive(){
+    const modal = document.getElementById('receiveModalContent');
+    modal.innerHTML = `<h2>Receive CLOSE</h2>
+        <p style="font-size:12px;word-break:break-all;margin-bottom:12px;">${state.walletAddress}</p>
+        <div id="qrCode" style="text-align:center;"></div>
+        <button class="btn" onclick="navigator.clipboard.writeText('${state.walletAddress}');toast('Copied!')">Copy Address</button>
+        <button class="btn btn-outline" onclick="closeModal('receiveModal')">Close</button>`;
+    document.getElementById('receiveModal').classList.add('open');
+    if (typeof QRCode !== 'undefined') {
+        new QRCode(document.getElementById('qrCode'), { text: state.walletAddress, width: 200, height: 200 });
+    }
+}
 
 async function createOSWallet(){
     let password = document.getElementById('osWalletPassword').value;
@@ -1148,8 +1172,8 @@ async function fetchAllTokenBalances(address){
     const allTokens = [...POLYGON_TOKENS, ...state.customTokens.map(a=>({symbol:'CUSTOM',address:a, decimals:18}))];
     let html = '';
     try{
-        let capBalance = await (new ethers.Contract(CFG.CAP_ADDRESS, ['function balanceOf(address) view returns (uint256)'], provider)).balanceOf(address);
-        document.getElementById('osCapOnChain').innerText = `${ethers.utils.formatEther(capBalance)} $CAP$`;
+        let closeBalance = await (new ethers.Contract(CFG.CLOSE_ADDRESS, ['function balanceOf(address) view returns (uint256)'], provider)).balanceOf(address);
+        document.getElementById('osCloseOnChain').innerText = `${ethers.utils.formatEther(closeBalance)} CLOSE`;
     }catch(e){}
     for (let token of allTokens) {
         try {
@@ -1180,7 +1204,7 @@ async function fetchCapBalance(){
         let res = await apiCall('/api/cap/balance');
         state.capStaked = res.staked;
         state.capTier = res.tier;
-        document.getElementById('osCapStaked') && (document.getElementById('osCapStaked').innerText = res.staked.toLocaleString());
+        document.getElementById('osCloseStaked') && (document.getElementById('osCloseStaked').innerText = res.staked.toLocaleString());
         updateProfileUI();
         updateUIBasedOnTier();
     }catch(e){}
@@ -1194,14 +1218,30 @@ async function fetchWithdrawals(){
     }catch(e){}
 }
 
+async function fetchTransactionHistory(address){
+    if (!CFG.POLYGONSCAN_API) return;
+    try {
+        const res = await fetch(`https://api.polygonscan.com/api?module=account&action=tokentx&contractaddress=${CFG.CLOSE_ADDRESS}&address=${address}&apikey=${CFG.POLYGONSCAN_API}`);
+        const data = await res.json();
+        if (data.status === '1' && data.result.length > 0) {
+            let html = '<table class="tx-table"><tr><th>Hash</th><th>From</th><th>To</th><th>Amount</th></tr>';
+            data.result.slice(0,10).forEach(tx => {
+                html += `<tr><td><a href="https://polygonscan.com/tx/${tx.hash}" target="_blank">${tx.hash.substring(0,8)}...</a></td><td>${tx.from.substring(0,6)}...</td><td>${tx.to.substring(0,6)}...</td><td>${(tx.value / 1e18).toLocaleString()} CLOSE</td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('walletTxList').innerHTML = html;
+        }
+    } catch(e) {}
+}
+
 async function walletSend(){
     if(!state.walletSigner) await unlockOSWallet();
     if(!state.walletSigner) return;
     let to = prompt('Recipient address:');
-    let amount = prompt('Amount ($CAP$):');
+    let amount = prompt('Amount (CLOSE):');
     if(!to || !amount) return;
     try{
-        let contract = new ethers.Contract(CFG.CAP_ADDRESS, ['function transfer(address,uint256)'], state.walletSigner);
+        let contract = new ethers.Contract(CFG.CLOSE_ADDRESS, ['function transfer(address,uint256)'], state.walletSigner);
         let tx = await contract.populateTransaction.transfer(to, ethers.utils.parseUnits(amount, 18));
         let signedTx = await state.walletSigner.signTransaction(tx);
         let relayRes = await apiCall('/api/wallet/relay', {method:'POST', body:JSON.stringify({signed_tx: signedTx})});
@@ -1209,13 +1249,11 @@ async function walletSend(){
     }catch(e){ toast('Send failed: '+e.message); }
 }
 
-function walletReceive(){ prompt('Your Polygon address:', state.walletAddress || 'Unlock wallet first'); }
-
 function walletStake(){ walletSend(); }
 async function walletUnstake(){
     let amount = prompt('Amount to unstake:');
     if(!amount) return;
-    let dest = prompt('Your Polygon address to receive $CAP$:');
+    let dest = prompt('Your Polygon address to receive CLOSE:');
     if(!dest) return;
     try{ let res = await apiCall('/api/cap/withdraw', {method:'POST', body:JSON.stringify({amount:parseInt(amount), address:dest})}); toast('Withdrawal requested.'); fetchWithdrawals(); }catch(e){ toast('Unstake failed'); }
 }
@@ -1227,7 +1265,7 @@ async function executeSwap(){
     let toToken = document.getElementById('swapToToken').value;
     let amount = document.getElementById('swapAmount').value;
     if(!amount) return;
-    const tokenMap = { 'MATIC':'0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 'USDT':'0xc2132D05D31c914a87C6611C10748AEb04B58e8F', 'WETH':'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', 'WBTC':'0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A', 'CAP':CFG.CAP_ADDRESS };
+    const tokenMap = { 'MATIC':'0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 'USDT':'0xc2132D05D31c914a87C6611C10748AEb04B58e8F', 'WETH':'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', 'WBTC':'0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A', 'CLOSE':CFG.CLOSE_ADDRESS };
     let fromAddr = tokenMap[fromToken]; let toAddr = tokenMap[toToken];
     if(!fromAddr||!toAddr) return toast('Token not supported');
     try{
@@ -1317,7 +1355,7 @@ async function openProfileModal(){
         ${state.user?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}
     </div>
     <div style="font-weight:600;margin-top:8px;">${state.user?state.user.name||state.user.email:'Guest'}</div>
-    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Staked: ${state.capStaked} $CAP$ (Tier: ${state.capTier})</div>
+    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Staked: ${state.capStaked} CLOSE (Tier: ${state.capTier})</div>
     ${badgesHtml}
     ${state.user?`<label>Reasoning Depth</label>
     <input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()">
@@ -1361,8 +1399,8 @@ async function loadDeveloperTab(tab){
     if(tab==='keys'){await loadApiKeys();content.innerHTML=`<h3>API Keys</h3><button class="btn" onclick="createApiKey()">+ Generate New Key</button><div id="apiKeyList" style="margin-top:12px;">${state.apiKeys.map(k=>`<div class="developer-key-card"><span class="key-prefix">${escapeHtml(k.prefix)}</span><div class="key-actions"><button onclick="revokeApiKey('${k.id}')">Revoke</button></div></div>`).join('')||'<p>No API keys yet.</p>'}</div>`;}
     else if(tab==='webhooks'){await loadWebhooks();content.innerHTML=`<h3>Webhooks</h3><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div id="webhookList" style="margin-top:12px;">${state.webhooks.map(w=>`<div class="developer-key-card"><span>${escapeHtml(w.url)}</span><span style="font-size:10px;">${w.events}</span><div class="key-actions"><button onclick="deleteWebhook('${w.id}')">Delete</button></div></div>`).join('')||'<p>No webhooks configured.</p>'}</div>`;}
     else if(tab==='embed'){let embedRes;try{embedRes=await apiCall('/api/developer/embed')}catch(e){embedRes=null;}content.innerHTML=`<h3>Embed Widget</h3>${embedRes?`<p>Script tag:</p><pre style="background:var(--bg-tertiary);padding:10px;border-radius:8px;overflow-x:auto;">&lt;script src="${embedRes.script_url}" data-token="${embedRes.embed_token}"&gt;&lt;/script&gt;</pre>`:'<p>Embed available for Pro/Founder tiers.</p>'}`;}
-    else if(tab==='tokens'){content.innerHTML=`<h3>Stake $CAP$</h3><p>Stake $CAP$ to unlock higher rate limits and features.</p><p>Current staked: <strong>${state.capStaked} $CAP$</strong> (Tier: ${state.capTier})</p><button class="btn" onclick="openWallet()">Open OS Wallet to Stake</button>`;}
-    else if(tab==='enterprise'){content.innerHTML=`<h3>Enterprise</h3><p>Enterprise tier requires 100M $CAP$ staked.</p><p>Contact support for custom solutions.</p>`;}
+    else if(tab==='tokens'){content.innerHTML=`<h3>Stake CLOSE</h3><p>Stake CLOSE to unlock higher rate limits and features.</p><p>Current staked: <strong>${state.capStaked} CLOSE</strong> (Tier: ${state.capTier})</p><button class="btn" onclick="openWallet()">Open OS Wallet to Stake</button>`;}
+    else if(tab==='enterprise'){content.innerHTML=`<h3>Enterprise</h3><p>Enterprise tier requires 100M CLOSE staked.</p><p>Contact support for custom solutions.</p>`;}
     else if(tab==='usage'){let usage;try{let d=await apiCall('/api/developer/usage');usage=d.usage||[]}catch(e){usage=[]}content.innerHTML=`<h3>API Usage (30 days)</h3>`+usage.map(u=>`<div class="developer-key-card"><span>${u.endpoint}</span><span>${u.requests} requests, ${u.tokens} tokens</span></div>`).join('')||'<p>No usage data.</p>';}
 }
 async function loadApiKeys(){try{let d=await apiCall('/api/developer/keys');state.apiKeys=d.keys||[]}catch(e){}}
@@ -1408,18 +1446,18 @@ async function loadFounderDashboard(tab='cap'){
             let data = await apiCall('/api/admin/cap/dashboard');
             let html = '<div class="grid-2">';
             html += `<div class="dashboard-card"><h3>Deploy & Pool</h3>
-                <button class="btn" onclick="deployCapToken()">🚀 Deploy $CAP$ Token</button>
+                <button class="btn" onclick="deployCapToken()">🚀 Deploy CLOSE Token</button>
                 <button class="btn btn-outline" onclick="createLiquidityPool()" style="margin-top:8px;">💧 Create DEX Pool</button>
             </div>`;
             html += `<div class="dashboard-card"><h3>Total Staked</h3><div class="big-number">${data.total_staked.toLocaleString()}</div></div>`;
             html += `<div class="dashboard-card"><h3>Stakers</h3><div class="big-number">${data.stakers_count}</div></div>`;
             html += `<div class="dashboard-card"><h3>CLOSEAI Stake</h3><div class="big-number">${data.closeai_stake.toLocaleString()}</div></div>`;
-            html += `<div class="dashboard-card"><h3>Revenue (est.)</h3><div class="big-number">${data.revenue_estimate.toLocaleString()} $CAP$</div></div>`;
+            html += `<div class="dashboard-card"><h3>Revenue (est.)</h3><div class="big-number">${data.revenue_estimate.toLocaleString()} CLOSE</div></div>`;
             html += `<div class="dashboard-card"><h3>Total Burns</h3><div class="big-number">${data.total_burns}</div></div>`;
             html += `<div class="dashboard-card"><h3>DEX Price</h3><div class="big-number">${data.dex_price ? data.dex_price.toFixed(6) + ' POL' : 'N/A'}</div></div>`;
-            if(data.treasury_address) { html += `<div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance ? data.treasury_balance.toLocaleString() : 'N/A'} $CAP$</div><small>Address: ${data.treasury_address}</small></div>`; }
-            if(data.total_supply_onchain) { html += `<div class="dashboard-card"><h3>On‑Chain Supply</h3><div class="big-number">${data.total_supply_onchain.toLocaleString()} $CAP$</div></div>`; }
-            if(data.founder_wallet) { html += `<div class="dashboard-card"><h3>Founder Wallet</h3><div class="big-number">${data.founder_balance ? data.founder_balance.toLocaleString() : 'N/A'} $CAP$</div><small>Address: ${data.founder_wallet}</small></div>`; }
+            if(data.treasury_address) { html += `<div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance ? data.treasury_balance.toLocaleString() : 'N/A'} CLOSE</div><small>Address: ${data.treasury_address}</small></div>`; }
+            if(data.total_supply_onchain) { html += `<div class="dashboard-card"><h3>On‑Chain Supply</h3><div class="big-number">${data.total_supply_onchain.toLocaleString()} CLOSE</div></div>`; }
+            if(data.founder_wallet) { html += `<div class="dashboard-card"><h3>Founder Wallet</h3><div class="big-number">${data.founder_balance ? data.founder_balance.toLocaleString() : 'N/A'} CLOSE</div><small>Address: ${data.founder_wallet}</small></div>`; }
             html += '</div><h3 style="margin-top:20px;">Recent Transactions</h3>';
             if(data.recent_transactions && data.recent_transactions.length){
                 html += '<table class="admin-table"><thead><tr><th>Type</th><th>Amount</th><th>TX Hash</th><th>Status</th><th>Date</th></tr></thead><tbody>';
@@ -1427,7 +1465,7 @@ async function loadFounderDashboard(tab='cap'){
                 html += '</tbody></table>';
             } else { html += '<p>No recent transactions.</p>'; }
             content.innerHTML = html;
-        } catch(e) { content.innerHTML = '<p>Failed to load $CAP$ dashboard.</p>'; }
+        } catch(e) { content.innerHTML = '<p>Failed to load CLOSE dashboard.</p>'; }
     } else if(tab === 'ai'){
         try {
             let data = await apiCall('/api/admin/ai/dashboard');
@@ -1444,19 +1482,19 @@ async function loadFounderDashboard(tab='cap'){
 }
 
 async function deployCapToken() {
-    if (!confirm('This will deploy the $CAP$ token on Polygon Mainnet. Continue?')) return;
-    toast('Deploying $CAP$ token...');
+    if (!confirm('This will deploy the CLOSE token on Polygon Mainnet. Continue?')) return;
+    toast('Deploying CLOSE token...');
     try {
         const res = await apiCall('/api/admin/deploy-cap', { method: 'POST', body: JSON.stringify({}) });
-        toast('✅ $CAP$ deployed at ' + res.address);
-        console.log('$CAP$ address:', res.address);
+        toast('✅ CLOSE deployed at ' + res.address);
+        console.log('CLOSE address:', res.address);
     } catch (e) {
         toast('Deploy failed: ' + (e.message || 'Unknown error'));
     }
 }
 
 async function createLiquidityPool() {
-    const capAmount = prompt('$CAP$ amount (in whole units, e.g., 1000):');
+    const capAmount = prompt('CLOSE amount (in whole units, e.g., 1000):');
     const maticAmount = prompt('POL amount (in whole units, e.g., 0.001):');
     if (!capAmount || !maticAmount) return;
     try {
@@ -1569,10 +1607,10 @@ async function init() {
         document.getElementById('logoIcon').addEventListener('click', handleFounderClick);
         setupScrollButton();
 
-        // Hide splash after 1.6 seconds
+        // Hide splash after 2 seconds
         setTimeout(() => {
             document.getElementById('splashScreen')?.classList.add('hide');
-        }, 1600);
+        }, 2000);
 
         // Check for expired session message
         if (localStorage.getItem('session_expired') && !state.token) {
