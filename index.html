@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <style>
     /* ============================================================
-       CSS DESIGN SYSTEM – CAPITAN AI v2.0 (FINAL)
+       CSS DESIGN SYSTEM – CAPITAN AI v2.0 (FULL)
        ============================================================ */
     * {
       margin: 0;
@@ -157,18 +157,18 @@
     }
 
     /* ============================================================
-       AUTH CONTAINER – starts visible
+       AUTH CONTAINER – starts hidden, shown after splash
        ============================================================ */
     #authContainer {
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       height: 100vh;
       background: var(--bg-primary);
       padding: 16px;
     }
-    #authContainer.hidden {
-      display: none;
+    #authContainer.visible {
+      display: flex;
     }
     .auth-card {
       width: 100%;
@@ -1150,7 +1150,7 @@
       color: var(--text-primary);
     }
 
-    /* Token List */
+    /* Token List (rendered by JS) */
     .token-list {
       display: flex;
       flex-direction: column;
@@ -1504,6 +1504,29 @@
     }
 
     /* ============================================================
+       TYPING INDICATOR (FIX)
+       ============================================================ */
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 4px 0;
+    }
+    .typing-indicator span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      animation: typingBounce 1.2s ease-in-out infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ============================================================
        UTILITY CLASSES
        ============================================================ */
     .hidden {
@@ -1652,7 +1675,7 @@
   </div>
 
   <!-- ============================================================
-       AUTH CONTAINER (now starts visible, hidden by JS after check)
+       AUTH CONTAINER (starts hidden, JS shows after splash)
        ============================================================ -->
   <div id="authContainer">
     <div class="auth-card">
@@ -1963,10 +1986,8 @@
 
       <!-- Tab content -->
       <div id="walletTabContent">
-        <!-- Tokens (default) -->
-        <div class="token-list" id="tokenListContainer">
-          <div class="text-tertiary">Loading tokens…</div>
-        </div>
+        <!-- Tokens (default) – rendered by JS -->
+        <div class="text-tertiary">Loading tokens…</div>
       </div>
     </div>
   </div>
@@ -2063,7 +2084,7 @@
     </div>
   </div>
 
-  <!-- Swap Modal -->
+  <!-- Swap Modal (default button text "Get Quote") -->
   <div class="modal-overlay" id="swapModal">
     <div class="modal">
       <h2>Swap</h2>
@@ -2082,7 +2103,7 @@
       <div id="swapQuote" style="font-size:14px; color:var(--text-secondary); margin-bottom:12px;">Enter amount to see quote</div>
       <div class="btn-row">
         <button class="btn btn-secondary" id="swapCancelBtn">Cancel</button>
-        <button class="btn btn-primary" id="swapConfirmBtn">Confirm Swap</button>
+        <button class="btn btn-primary" id="swapConfirmBtn">Get Quote</button>
       </div>
     </div>
   </div>
@@ -2170,7 +2191,7 @@
       // ============================================================
       const CONFIG = {
         API_BASE: 'https://capitan-ai-jxu8.onrender.com',
-        REVENUE_WALLET: '0x23f5d895e20eBb118168FB4901E12a3488DFf875', // Edge Wallet
+        REVENUE_WALLET: '0x23f5d895e20eBb118168FB4901E12a3488DFf875',
         CLOSE_ADDRESS: '0x3c6833cFDdED80fE76474a3Cb2Cc050Daec91fe8',
         RPC_URL: 'https://polygon-rpc.com',
         NETWORKS: {
@@ -2195,7 +2216,7 @@
       };
 
       // ============================================================
-      // 2. STATE (Reactive)
+      // 2. STATE
       // ============================================================
       const state = {
         token: localStorage.getItem('ct') || null,
@@ -2293,7 +2314,7 @@
               localStorage.removeItem('ct');
               state.token = null;
               state.user = null;
-              document.getElementById('authContainer').style.display = 'flex';
+              document.getElementById('authContainer').classList.remove('visible');
               document.getElementById('app').classList.remove('visible');
               toast('Session expired. Please sign in again.', 'error');
               throw new Error('Session expired');
@@ -2324,7 +2345,7 @@
       }
 
       // ============================================================
-      // 5. AUTHENTICATION (FIXED: no validate call on fresh login)
+      // 5. AUTHENTICATION
       // ============================================================
       function switchAuthTab(tab) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -2348,7 +2369,6 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', state.isAdmin.toString());
-            // Trust the login response – skip extra validate call
             initApp();
             toast('Welcome back, ' + (state.user.name || email.split('@')[0]), 'success');
           } else {
@@ -2380,7 +2400,6 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', 'false');
-            // Trust the signup response – skip extra validate call
             await claimWelcomeBonus();
             initApp();
             toast('Account created! Welcome to Capitan AI.', 'success');
@@ -2441,7 +2460,7 @@
         state.walletAddress = null;
         state.walletEncrypted = null;
         state.walletEncryptedSalt = null;
-        document.getElementById('authContainer').style.display = 'flex';
+        document.getElementById('authContainer').classList.add('visible');
         document.getElementById('app').classList.remove('visible');
         document.getElementById('profileDrawer').classList.remove('open');
         toast('Signed out', 'info');
@@ -2518,10 +2537,12 @@
         switchWalletTab('tokens');
       }
 
+      // FIX: renderTokenList writes directly to walletTabContent
       async function loadWalletTokens() {
         const addr = state.walletAddress;
         if (!addr) {
-          document.getElementById('tokenListContainer').innerHTML = '<div class="text-tertiary">No wallet address found.</div>';
+          const container = document.getElementById('walletTabContent');
+          container.innerHTML = '<div class="text-tertiary">No wallet address found.</div>';
           return;
         }
         try {
@@ -2530,17 +2551,18 @@
           renderTokenList();
         } catch (e) {
           toast('Could not load tokens: ' + e.message, 'error');
-          document.getElementById('tokenListContainer').innerHTML = '<div class="text-tertiary">Failed to load tokens.</div>';
+          const container = document.getElementById('walletTabContent');
+          container.innerHTML = '<div class="text-tertiary">Failed to load tokens.</div>';
         }
       }
 
       function renderTokenList() {
-        const container = document.getElementById('tokenListContainer');
+        const container = document.getElementById('walletTabContent');
         if (!state.tokens.length) {
-          container.innerHTML = '<div class="text-tertiary">No tokens found.</div>';
+          container.innerHTML = '<div class="token-list"><div class="text-tertiary">No tokens found.</div></div>';
           return;
         }
-        let html = '';
+        let html = '<div class="token-list">';
         state.tokens.forEach(t => {
           html += `
             <div class="token-item">
@@ -2555,6 +2577,7 @@
             </div>
           `;
         });
+        html += '</div>';
         container.innerHTML = html;
       }
 
@@ -2651,7 +2674,6 @@
       function switchWalletTab(tab) {
         document.querySelectorAll('.wallet-tab').forEach(t => t.classList.remove('active'));
         document.querySelector(`.wallet-tab[data-wtab="${tab}"]`).classList.add('active');
-        const container = document.getElementById('walletTabContent');
         if (tab === 'tokens') {
           renderTokenList();
         } else if (tab === 'activity') {
@@ -2785,7 +2807,7 @@
       }
 
       // ============================================================
-      // 10. SEND / RECEIVE / SWAP MODALS (FIXED)
+      // 10. SEND / RECEIVE / SWAP MODALS
       // ============================================================
       function openSendModal() {
         const modal = document.getElementById('sendModal');
@@ -3074,9 +3096,8 @@
         document.getElementById('messageInput').focus();
       }
 
-      async function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const text = input.value.trim();
+      // FIX: separate function to send message with content
+      async function sendMessageWithContent(text) {
         if (!text || state.loading) return;
         const cost = CONFIG.SPEND_COSTS.chat;
         if (state.closeBalance < cost) {
@@ -3085,7 +3106,6 @@
         }
         const spent = await spendTokens('chat', cost);
         if (!spent) return;
-        input.value = '';
         state.messages.push({ role: 'user', content: text });
         renderMessages();
         state.loading = true;
@@ -3105,6 +3125,17 @@
         state.loading = false;
       }
 
+      async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if (!text || state.loading) return;
+        input.value = '';
+        await sendMessageWithContent(text);
+      }
+
+      // ============================================================
+      // 14. RENDER MESSAGES
+      // ============================================================
       function renderMessages() {
         const container = document.getElementById('messagesArea');
         if (!state.messages.length) {
@@ -3119,7 +3150,14 @@
         let html = '';
         state.messages.forEach((m, i) => {
           const roleClass = m.role === 'user' ? 'user' : 'assistant';
-          const content = m.isTyping ? '<div class="typing-indicator"><span></span><span></span><span></span></div>' : (m.role === 'user' ? escapeHtml(m.content) : sanitize(m.content));
+          let content;
+          if (m.isTyping) {
+            content = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+          } else if (m.role === 'user') {
+            content = escapeHtml(m.content);
+          } else {
+            content = sanitize(m.content);
+          }
           html += `<div class="message ${roleClass}"><div class="message-content">${content}</div></div>`;
         });
         container.innerHTML = html;
@@ -3135,10 +3173,10 @@
       }
 
       // ============================================================
-      // 14. INITIALISATION
+      // 15. INITIALISATION
       // ============================================================
       function initApp() {
-        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('authContainer').classList.remove('visible');
         document.getElementById('app').classList.add('visible');
         setTheme(state.theme);
         updateProfileUI();
@@ -3188,7 +3226,7 @@
       }
 
       // ============================================================
-      // 15. NOTIFICATIONS
+      // 16. NOTIFICATIONS
       // ============================================================
       async function fetchNotifications() {
         try {
@@ -3206,14 +3244,14 @@
       }
 
       // ============================================================
-      // 16. MODAL HELPERS
+      // 17. MODAL HELPERS
       // ============================================================
       function closeModal(id) {
         document.getElementById(id).classList.remove('open');
       }
 
       // ============================================================
-      // 17. EVENT BINDING (Full)
+      // 18. EVENT BINDING (Full)
       // ============================================================
       document.addEventListener('DOMContentLoaded', function() {
         // ---- Splash + session check ----
@@ -3230,11 +3268,11 @@
               .catch(() => {
                 localStorage.removeItem('ct');
                 state.token = null;
-                document.getElementById('authContainer').style.display = 'flex';
+                document.getElementById('authContainer').classList.add('visible');
                 document.getElementById('app').classList.remove('visible');
               });
           } else {
-            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('authContainer').classList.add('visible');
             document.getElementById('app').classList.remove('visible');
           }
         }, 2800);
@@ -3248,7 +3286,7 @@
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
         document.getElementById('guestBtn').addEventListener('click', startGuestSession);
 
-        // ---- Auth footer Privacy/Terms links (FIX) ----
+        // ---- Auth footer Privacy/Terms links ----
         document.getElementById('openPrivacyModalLink').addEventListener('click', function(e) {
           e.preventDefault();
           document.getElementById('privacyModal').classList.add('open');
@@ -3314,7 +3352,7 @@
           recognition.start();
         });
 
-        // ---- Upload ----
+        // ---- Upload (FIX: use sendMessageWithContent) ----
         document.getElementById('uploadBtn').addEventListener('click', function() {
           const input = document.createElement('input');
           input.type = 'file';
@@ -3329,9 +3367,8 @@
               const data = await res.json();
               if (res.ok) {
                 toast('Uploaded ' + file.name, 'success');
-                state.messages.push({ role: 'user', content: `[Uploaded: ${file.name}]\n\nPlease analyze this document.` });
-                renderMessages();
-                sendMessage();
+                const uploadText = `[Uploaded: ${file.name}]\n\nPlease analyze this document.`;
+                await sendMessageWithContent(uploadText);
               } else {
                 toast('Upload failed', 'error');
               }
@@ -3507,4 +3544,4 @@
     })();
   </script>
 </body>
-</html> 
+</html>
