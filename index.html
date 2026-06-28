@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <style>
     /* ============================================================
-       CSS DESIGN SYSTEM – CAPITAN AI v2.0 (FIXED)
+       CSS DESIGN SYSTEM – CAPITAN AI v2.0 (FINAL)
        ============================================================ */
     * {
       margin: 0;
@@ -157,7 +157,7 @@
     }
 
     /* ============================================================
-       AUTH CONTAINER – now starts visible
+       AUTH CONTAINER – starts visible
        ============================================================ */
     #authContainer {
       display: flex;
@@ -2230,7 +2230,7 @@
         notifications: [],
         unreadCount: 0,
         welcomeBonusClaimed: localStorage.getItem('welcomeBonusClaimed') === 'true',
-        pendingSwapQuote: null   // FIX: track swap quote
+        pendingSwapQuote: null
       };
 
       // ============================================================
@@ -2324,7 +2324,7 @@
       }
 
       // ============================================================
-      // 5. AUTHENTICATION
+      // 5. AUTHENTICATION (FIXED: no validate call on fresh login)
       // ============================================================
       function switchAuthTab(tab) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -2348,22 +2348,9 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', state.isAdmin.toString());
-            try {
-              const validateRes = await apiCall('/api/auth/validate');
-              if (validateRes.user) {
-                initApp();
-                toast('Welcome back, ' + (state.user.name || email.split('@')[0]), 'success');
-              } else {
-                throw new Error('Token validation failed');
-              }
-            } catch (validateErr) {
-              toast('Session validation failed. Please try again.', 'error');
-              localStorage.removeItem('ct');
-              state.token = null;
-              state.user = null;
-              document.getElementById('authContainer').style.display = 'flex';
-              document.getElementById('app').classList.remove('visible');
-            }
+            // Trust the login response – skip extra validate call
+            initApp();
+            toast('Welcome back, ' + (state.user.name || email.split('@')[0]), 'success');
           } else {
             err.textContent = data.detail || 'Login failed';
             err.style.display = 'block';
@@ -2393,23 +2380,10 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', 'false');
-            try {
-              const validateRes = await apiCall('/api/auth/validate');
-              if (validateRes.user) {
-                await claimWelcomeBonus();
-                initApp();
-                toast('Account created! Welcome to Capitan AI.', 'success');
-              } else {
-                throw new Error('Token validation failed');
-              }
-            } catch (validateErr) {
-              toast('Session validation failed. Please try again.', 'error');
-              localStorage.removeItem('ct');
-              state.token = null;
-              state.user = null;
-              document.getElementById('authContainer').style.display = 'flex';
-              document.getElementById('app').classList.remove('visible');
-            }
+            // Trust the signup response – skip extra validate call
+            await claimWelcomeBonus();
+            initApp();
+            toast('Account created! Welcome to Capitan AI.', 'success');
           } else {
             err.textContent = data.detail || 'Signup failed';
             err.style.display = 'block';
@@ -2856,7 +2830,6 @@
         from.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
         to.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
         document.getElementById('swapQuote').textContent = 'Enter amount to see quote';
-        // Reset pending quote
         state.pendingSwapQuote = null;
         document.getElementById('swapConfirmBtn').textContent = 'Get Quote';
       }
@@ -3086,7 +3059,7 @@
       }
 
       // ============================================================
-      // 13. CHAT FUNCTIONALITY
+      // 13. CHAT FUNCTIONALITY (Default landing page)
       // ============================================================
       function showChat() {
         document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
@@ -3170,6 +3143,7 @@
         setTheme(state.theme);
         updateProfileUI();
         updateCloseBalance();
+        // Default view: Chat (AI productivity)
         showView('chat');
         renderMessages();
         // DO NOT load wallet tokens/activity here – they are loaded when wallet opens
@@ -3243,22 +3217,22 @@
       // ============================================================
       document.addEventListener('DOMContentLoaded', function() {
         // ---- Splash + session check ----
-        // Wait for splash animation, then check session
         setTimeout(() => {
           document.getElementById('splashScreen').classList.add('hide');
-          // Now check session
           if (state.token) {
-            apiCall('/api/auth/validate').then(() => {
-              const storedUser = localStorage.getItem('cu');
-              if (storedUser) state.user = JSON.parse(storedUser);
-              state.isAdmin = localStorage.getItem('is_admin') === 'true';
-              initApp();
-            }).catch(() => {
-              localStorage.removeItem('ct');
-              state.token = null;
-              document.getElementById('authContainer').style.display = 'flex';
-              document.getElementById('app').classList.remove('visible');
-            });
+            apiCall('/api/auth/validate')
+              .then(() => {
+                const storedUser = localStorage.getItem('cu');
+                if (storedUser) state.user = JSON.parse(storedUser);
+                state.isAdmin = localStorage.getItem('is_admin') === 'true';
+                initApp();
+              })
+              .catch(() => {
+                localStorage.removeItem('ct');
+                state.token = null;
+                document.getElementById('authContainer').style.display = 'flex';
+                document.getElementById('app').classList.remove('visible');
+              });
           } else {
             document.getElementById('authContainer').style.display = 'flex';
             document.getElementById('app').classList.remove('visible');
@@ -3307,7 +3281,7 @@
           document.getElementById('overlay').classList.remove('open');
         });
 
-        // ---- Sidebar menu (single binding) ----
+        // ---- Sidebar menu ----
         document.querySelectorAll('.menu-item[data-view]').forEach(item => {
           item.addEventListener('click', () => {
             const view = item.dataset.view;
@@ -3403,7 +3377,6 @@
 
         // ---- Wallet ----
         document.getElementById('walletCloseBtn').addEventListener('click', closeWallet);
-        // The wallet menu item is already handled by the loop above, so no duplicate binding.
 
         // ---- Wallet tabs ----
         document.querySelectorAll('.wallet-tab').forEach(tab => {
@@ -3427,14 +3400,13 @@
           toast('Address copied', 'success');
         });
 
-        // ---- Swap modal (FIX) ----
+        // ---- Swap modal ----
         document.getElementById('swapCancelBtn').addEventListener('click', () => {
           state.pendingSwapQuote = null;
           document.getElementById('swapConfirmBtn').textContent = 'Get Quote';
           closeModal('swapModal');
         });
         document.getElementById('swapConfirmBtn').addEventListener('click', function() {
-          // If we have a pending quote, confirm; otherwise get a quote
           if (state.pendingSwapQuote) {
             confirmSwap();
           } else {
