@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <style>
     /* ============================================================
-       CSS DESIGN SYSTEM – CAPITAN AI v2.0
+       CSS DESIGN SYSTEM – CAPITAN AI v2.0 (FIXED)
        ============================================================ */
     * {
       margin: 0;
@@ -157,15 +157,18 @@
     }
 
     /* ============================================================
-       AUTH CONTAINER
+       AUTH CONTAINER – now starts visible
        ============================================================ */
     #authContainer {
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
       background: var(--bg-primary);
       padding: 16px;
+    }
+    #authContainer.hidden {
+      display: none;
     }
     .auth-card {
       width: 100%;
@@ -311,6 +314,9 @@
       height: 100vh;
       width: 100%;
       overflow: hidden;
+    }
+    #app.visible {
+      display: flex;
     }
 
     /* SIDEBAR (AI Productivity) */
@@ -1646,7 +1652,7 @@
   </div>
 
   <!-- ============================================================
-       AUTH CONTAINER
+       AUTH CONTAINER (now starts visible, hidden by JS after check)
        ============================================================ -->
   <div id="authContainer">
     <div class="auth-card">
@@ -2076,7 +2082,7 @@
       <div id="swapQuote" style="font-size:14px; color:var(--text-secondary); margin-bottom:12px;">Enter amount to see quote</div>
       <div class="btn-row">
         <button class="btn btn-secondary" id="swapCancelBtn">Cancel</button>
-        <button class="btn btn-primary" id="swapConfirmBtn">Get Quote</button>
+        <button class="btn btn-primary" id="swapConfirmBtn">Confirm Swap</button>
       </div>
     </div>
   </div>
@@ -2095,7 +2101,7 @@
       </div>
       <div style="background:var(--bg-secondary); padding:12px; border-radius:var(--radius-sm); margin-bottom:12px;">
         <p style="font-size:12px; margin:0;">Send POL to this address:</p>
-        <div style="font-family:monospace; word-break:break-all; font-size:13px;" id="buyPaymentAddress">0x0000…0000</div>
+        <div style="font-family:monospace; word-break:break-all; font-size:13px;" id="buyPaymentAddress">0x23f5d895e20eBb118168FB4901E12a3488DFf875</div>
         <button class="btn btn-secondary" id="buyCopyAddressBtn" style="margin-top:6px; width:auto; padding:4px 12px;">Copy</button>
       </div>
       <div class="form-group">
@@ -2153,7 +2159,7 @@
   </div>
 
   <!-- ============================================================
-       JAVASCRIPT – ENTERPRISE APPLICATION (Full)
+       JAVASCRIPT – ENTERPRISE APPLICATION (FULLY CORRECTED)
        ============================================================ -->
   <script>
     (function() {
@@ -2164,7 +2170,7 @@
       // ============================================================
       const CONFIG = {
         API_BASE: 'https://capitan-ai-jxu8.onrender.com',
-        REVENUE_WALLET: '0xYourEdgeWalletAddressHere', // Replace with actual Edge Wallet address
+        REVENUE_WALLET: '0x23f5d895e20eBb118168FB4901E12a3488DFf875', // Edge Wallet
         CLOSE_ADDRESS: '0x3c6833cFDdED80fE76474a3Cb2Cc050Daec91fe8',
         RPC_URL: 'https://polygon-rpc.com',
         NETWORKS: {
@@ -2223,7 +2229,8 @@
         chartTimeframe: '1h',
         notifications: [],
         unreadCount: 0,
-        welcomeBonusClaimed: localStorage.getItem('welcomeBonusClaimed') === 'true'
+        welcomeBonusClaimed: localStorage.getItem('welcomeBonusClaimed') === 'true',
+        pendingSwapQuote: null   // FIX: track swap quote
       };
 
       // ============================================================
@@ -2287,7 +2294,7 @@
               state.token = null;
               state.user = null;
               document.getElementById('authContainer').style.display = 'flex';
-              document.getElementById('app').style.display = 'none';
+              document.getElementById('app').classList.remove('visible');
               toast('Session expired. Please sign in again.', 'error');
               throw new Error('Session expired');
             }
@@ -2317,7 +2324,7 @@
       }
 
       // ============================================================
-      // 5. AUTHENTICATION (with token validation)
+      // 5. AUTHENTICATION
       // ============================================================
       function switchAuthTab(tab) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -2341,7 +2348,6 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', state.isAdmin.toString());
-            // Validate token immediately
             try {
               const validateRes = await apiCall('/api/auth/validate');
               if (validateRes.user) {
@@ -2356,7 +2362,7 @@
               state.token = null;
               state.user = null;
               document.getElementById('authContainer').style.display = 'flex';
-              document.getElementById('app').style.display = 'none';
+              document.getElementById('app').classList.remove('visible');
             }
           } else {
             err.textContent = data.detail || 'Login failed';
@@ -2402,7 +2408,7 @@
               state.token = null;
               state.user = null;
               document.getElementById('authContainer').style.display = 'flex';
-              document.getElementById('app').style.display = 'none';
+              document.getElementById('app').classList.remove('visible');
             }
           } else {
             err.textContent = data.detail || 'Signup failed';
@@ -2462,7 +2468,7 @@
         state.walletEncrypted = null;
         state.walletEncryptedSalt = null;
         document.getElementById('authContainer').style.display = 'flex';
-        document.getElementById('app').style.display = 'none';
+        document.getElementById('app').classList.remove('visible');
         document.getElementById('profileDrawer').classList.remove('open');
         toast('Signed out', 'info');
       }
@@ -2805,7 +2811,7 @@
       }
 
       // ============================================================
-      // 10. SEND / RECEIVE / SWAP MODALS
+      // 10. SEND / RECEIVE / SWAP MODALS (FIXED)
       // ============================================================
       function openSendModal() {
         const modal = document.getElementById('sendModal');
@@ -2850,6 +2856,9 @@
         from.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
         to.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
         document.getElementById('swapQuote').textContent = 'Enter amount to see quote';
+        // Reset pending quote
+        state.pendingSwapQuote = null;
+        document.getElementById('swapConfirmBtn').textContent = 'Get Quote';
       }
 
       async function getSwapQuote() {
@@ -2859,15 +2868,17 @@
         if (!amount) { toast('Enter amount', 'error'); return; }
         try {
           const data = await apiCall('/api/wallet/swap/quote', { method: 'POST', body: JSON.stringify({ fromToken: from, toToken: to, amount: amount.toString() }) });
+          state.pendingSwapQuote = data;
           document.getElementById('swapQuote').innerHTML = `Estimated output: ${formatNumber(data.estimated, 4)} ${data.toSymbol || ''}`;
           document.getElementById('swapConfirmBtn').textContent = 'Confirm Swap';
-          document.getElementById('swapConfirmBtn').onclick = () => confirmSwap(data);
         } catch (e) {
           toast('Quote failed: ' + e.message, 'error');
         }
       }
 
-      async function confirmSwap(quote) {
+      async function confirmSwap() {
+        const quote = state.pendingSwapQuote;
+        if (!quote) { toast('No quote available. Get a quote first.', 'error'); return; }
         try {
           await apiCall('/api/wallet/swap/execute', { method: 'POST', body: JSON.stringify({ quote: quote }) });
           toast('Swap executed!', 'success');
@@ -2880,7 +2891,7 @@
       }
 
       // ============================================================
-      // 11. PORTFOLIO, RESEARCH, DEVELOPER (simplified placeholders)
+      // 11. PORTFOLIO, RESEARCH, DEVELOPER
       // ============================================================
       function showPortfolio() {
         document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
@@ -3155,14 +3166,13 @@
       // ============================================================
       function initApp() {
         document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
+        document.getElementById('app').classList.add('visible');
         setTheme(state.theme);
         updateProfileUI();
         updateCloseBalance();
         showView('chat');
         renderMessages();
-        loadWalletTokens();
-        loadActivity(true);
+        // DO NOT load wallet tokens/activity here – they are loaded when wallet opens
         if (state.user && !state.welcomeBonusClaimed) {
           claimWelcomeBonus();
         }
@@ -3232,12 +3242,30 @@
       // 17. EVENT BINDING (Full)
       // ============================================================
       document.addEventListener('DOMContentLoaded', function() {
-        // Splash
+        // ---- Splash + session check ----
+        // Wait for splash animation, then check session
         setTimeout(() => {
           document.getElementById('splashScreen').classList.add('hide');
+          // Now check session
+          if (state.token) {
+            apiCall('/api/auth/validate').then(() => {
+              const storedUser = localStorage.getItem('cu');
+              if (storedUser) state.user = JSON.parse(storedUser);
+              state.isAdmin = localStorage.getItem('is_admin') === 'true';
+              initApp();
+            }).catch(() => {
+              localStorage.removeItem('ct');
+              state.token = null;
+              document.getElementById('authContainer').style.display = 'flex';
+              document.getElementById('app').classList.remove('visible');
+            });
+          } else {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('app').classList.remove('visible');
+          }
         }, 2800);
 
-        // Auth
+        // ---- Auth ----
         document.querySelectorAll('.auth-tab').forEach(tab => {
           tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
         });
@@ -3246,7 +3274,29 @@
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
         document.getElementById('guestBtn').addEventListener('click', startGuestSession);
 
-        // Sidebar toggle
+        // ---- Auth footer Privacy/Terms links (FIX) ----
+        document.getElementById('openPrivacyModalLink').addEventListener('click', function(e) {
+          e.preventDefault();
+          document.getElementById('privacyModal').classList.add('open');
+          document.getElementById('privacyText').textContent = 'Loading…';
+          apiCall('/api/legal/privacy').then(d => {
+            document.getElementById('privacyText').textContent = d.text || 'No policy available.';
+          }).catch(() => {
+            document.getElementById('privacyText').textContent = 'Unable to load privacy policy.';
+          });
+        });
+        document.getElementById('openTermsModalLink').addEventListener('click', function(e) {
+          e.preventDefault();
+          document.getElementById('termsModal').classList.add('open');
+          document.getElementById('termsText').textContent = 'Loading…';
+          apiCall('/api/legal/terms').then(d => {
+            document.getElementById('termsText').textContent = d.text || 'No terms available.';
+          }).catch(() => {
+            document.getElementById('termsText').textContent = 'Unable to load terms of service.';
+          });
+        });
+
+        // ---- Sidebar toggle ----
         document.getElementById('toggleSidebarBtn').addEventListener('click', function(e) {
           e.stopPropagation();
           document.getElementById('sidebar').classList.toggle('open');
@@ -3257,7 +3307,7 @@
           document.getElementById('overlay').classList.remove('open');
         });
 
-        // Sidebar menu
+        // ---- Sidebar menu (single binding) ----
         document.querySelectorAll('.menu-item[data-view]').forEach(item => {
           item.addEventListener('click', () => {
             const view = item.dataset.view;
@@ -3267,10 +3317,10 @@
           });
         });
 
-        // New chat
+        // ---- New chat ----
         document.getElementById('newChatBtn').addEventListener('click', newChat);
 
-        // Send message
+        // ---- Send message ----
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
         document.getElementById('messageInput').addEventListener('keydown', function(e) {
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -3279,7 +3329,7 @@
           }
         });
 
-        // Voice
+        // ---- Voice ----
         document.getElementById('voiceBtn').addEventListener('click', function() {
           if (!('webkitSpeechRecognition' in window)) { toast('Speech not supported', 'error'); return; }
           const recognition = new webkitSpeechRecognition();
@@ -3290,7 +3340,7 @@
           recognition.start();
         });
 
-        // Upload
+        // ---- Upload ----
         document.getElementById('uploadBtn').addEventListener('click', function() {
           const input = document.createElement('input');
           input.type = 'file';
@@ -3318,7 +3368,7 @@
           input.click();
         });
 
-        // Profile drawer
+        // ---- Profile drawer ----
         document.getElementById('profileTrigger').addEventListener('click', function() {
           document.getElementById('profileDrawer').classList.toggle('open');
         });
@@ -3351,37 +3401,48 @@
         });
         document.getElementById('drawerSignOut').addEventListener('click', logout);
 
-        // Wallet
+        // ---- Wallet ----
         document.getElementById('walletCloseBtn').addEventListener('click', closeWallet);
-        document.querySelector('.menu-item[data-view="wallet"]').addEventListener('click', openWallet);
+        // The wallet menu item is already handled by the loop above, so no duplicate binding.
 
-        // Wallet tabs
+        // ---- Wallet tabs ----
         document.querySelectorAll('.wallet-tab').forEach(tab => {
           tab.addEventListener('click', () => switchWalletTab(tab.dataset.wtab));
         });
 
-        // Wallet actions
+        // ---- Wallet actions ----
         document.getElementById('walletSendBtn').addEventListener('click', openSendModal);
         document.getElementById('walletReceiveBtn').addEventListener('click', openReceiveModal);
         document.getElementById('walletSwapBtn').addEventListener('click', openSwapModal);
         document.getElementById('walletBuyBtn').addEventListener('click', () => showBuyModal());
 
-        // Send modal
+        // ---- Send modal ----
         document.getElementById('sendCancelBtn').addEventListener('click', () => closeModal('sendModal'));
         document.getElementById('sendConfirmBtn').addEventListener('click', confirmSend);
 
-        // Receive modal
+        // ---- Receive modal ----
         document.getElementById('receiveCloseBtn').addEventListener('click', () => closeModal('receiveModal'));
         document.getElementById('receiveCopyBtn').addEventListener('click', () => {
           navigator.clipboard.writeText(state.walletAddress || '');
           toast('Address copied', 'success');
         });
 
-        // Swap modal
-        document.getElementById('swapCancelBtn').addEventListener('click', () => closeModal('swapModal'));
-        document.getElementById('swapConfirmBtn').addEventListener('click', getSwapQuote);
+        // ---- Swap modal (FIX) ----
+        document.getElementById('swapCancelBtn').addEventListener('click', () => {
+          state.pendingSwapQuote = null;
+          document.getElementById('swapConfirmBtn').textContent = 'Get Quote';
+          closeModal('swapModal');
+        });
+        document.getElementById('swapConfirmBtn').addEventListener('click', function() {
+          // If we have a pending quote, confirm; otherwise get a quote
+          if (state.pendingSwapQuote) {
+            confirmSwap();
+          } else {
+            getSwapQuote();
+          }
+        });
 
-        // Buy modal
+        // ---- Buy modal ----
         document.getElementById('buyCancelBtn').addEventListener('click', () => closeModal('buyModal'));
         document.getElementById('buyVerifyBtn').addEventListener('click', verifyPurchase);
         document.getElementById('buyAmount').addEventListener('input', updateBuyEquivalent);
@@ -3391,7 +3452,7 @@
           toast('Payment address copied', 'success');
         });
 
-        // Close other full-page views
+        // ---- Close other full-page views ----
         document.getElementById('portfolioCloseBtn').addEventListener('click', () => {
           document.getElementById('portfolioFullPage').classList.remove('open');
           showView('chat');
@@ -3409,7 +3470,7 @@
           showView('chat');
         });
 
-        // Password modal
+        // ---- Password modal ----
         document.getElementById('passwordCancelBtn').addEventListener('click', () => closeModal('passwordModal'));
         document.getElementById('passwordConfirmBtn').addEventListener('click', async () => {
           const old = document.getElementById('oldPassword').value;
@@ -3437,11 +3498,11 @@
           }
         });
 
-        // Privacy & Terms close
+        // ---- Privacy & Terms close ----
         document.getElementById('privacyCloseBtn').addEventListener('click', () => closeModal('privacyModal'));
         document.getElementById('termsCloseBtn').addEventListener('click', () => closeModal('termsModal'));
 
-        // Chart timeframes
+        // ---- Chart timeframes ----
         document.querySelectorAll('#chartTimeframes .time-pill').forEach(pill => {
           pill.addEventListener('click', () => {
             document.querySelectorAll('#chartTimeframes .time-pill').forEach(p => p.classList.remove('active'));
@@ -3451,29 +3512,11 @@
           });
         });
 
-        // Network selector – reload tokens on change
+        // ---- Network selector – reload tokens on change ----
         document.getElementById('networkSelect').addEventListener('change', function() {
           toast('Switching to ' + this.options[this.selectedIndex].text, 'info');
           loadWalletTokens();
         });
-
-        // Check session
-        if (state.token) {
-          apiCall('/api/auth/validate').then(() => {
-            const storedUser = localStorage.getItem('cu');
-            if (storedUser) state.user = JSON.parse(storedUser);
-            state.isAdmin = localStorage.getItem('is_admin') === 'true';
-            initApp();
-          }).catch(() => {
-            localStorage.removeItem('ct');
-            state.token = null;
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('app').style.display = 'none';
-          });
-        } else {
-          document.getElementById('authContainer').style.display = 'flex';
-          document.getElementById('app').style.display = 'none';
-        }
       });
 
       // Expose some functions to global scope for inline onclick
