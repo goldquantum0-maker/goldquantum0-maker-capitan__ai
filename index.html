@@ -13,11 +13,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <style>
-    /* ============================================================
-       DESIGN SYSTEM – CAPITAN AI v3.0 (World‑Class)
-       ============================================================ */
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-
+    /* Global styles – only used by light DOM (e.g. <body>) */
     :root {
       --bg-primary: #0b1622;
       --bg-secondary: #0f1a2a;
@@ -35,7 +31,6 @@
       --danger: #ef4444;
       --success: #10b981;
       --warning: #f59e0b;
-      /* Glassmorphism */
       --glass-bg: rgba(15, 26, 42, 0.6);
       --glass-border: rgba(255, 255, 255, 0.08);
       --glass-blur: blur(20px);
@@ -71,39 +66,14 @@
     }
 
     body {
-      font-family: var(--font-family);
-      font-size: var(--font-size-base);
-      line-height: var(--line-height-base);
-      background: var(--bg-primary);
+      margin: 0; padding: 0; height: 100vh; overflow: hidden;
+      font-family: var(--font-family); font-size: var(--font-size-base);
+      line-height: var(--line-height-base); background: var(--bg-primary);
       color: var(--text-primary);
-      height: 100vh;
-      overflow: hidden;
       transition: background var(--duration-med) var(--ease-smooth), color var(--duration-med) var(--ease-smooth);
     }
 
-    capitan-app-shell { display:block; height:100vh; width:100%; }
-
-    /* Shared pill button */
-    .pill-btn {
-      padding: 10px 20px;
-      border-radius: var(--radius-pill);
-      border: 1px solid var(--border);
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-blur);
-      color: var(--text-primary);
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all var(--duration-fast) var(--ease-smooth);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); transform: translateY(-2px); }
-    .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; box-shadow: 0 4px 15px rgba(0,212,255,0.3); }
-    .pill-btn.primary:hover { box-shadow: 0 8px 25px rgba(0,212,255,0.4); }
-    .pill-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+    capitan-app-shell { display: block; height: 100vh; width: 100%; }
   </style>
 </head>
 <body>
@@ -341,7 +311,19 @@
             .tab.active { color:var(--accent-cyan); border-bottom-color:var(--accent-cyan); }
             input { width:100%; padding:12px 16px; margin-bottom:12px; border:1.5px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); color:var(--text-primary); font-size:14px; font-family:inherit; }
             input:focus { outline:none; border-color:var(--accent-cyan); box-shadow:0 0 0 3px var(--accent-glow-cyan); }
-            .pill-btn { width:100%; }
+            .pill-btn {
+              padding: 10px 20px; border-radius: var(--radius-pill); border: 1px solid var(--border);
+              background: var(--glass-bg); backdrop-filter: var(--glass-blur); color: var(--text-primary);
+              font-weight: 600; font-size: 14px; cursor: pointer; transition: all var(--duration-fast) var(--ease-smooth);
+              display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.2); width:100%;
+            }
+            .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); }
+            .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; box-shadow: 0 4px 15px rgba(0,212,255,0.3); }
+            .pill-btn.primary:hover { box-shadow: 0 8px 25px rgba(0,212,255,0.4); }
+            .error { color:var(--danger); font-size:12px; margin-bottom:8px; }
+            .switch { text-align:center; margin-top:14px; font-size:13px; color:var(--text-secondary); }
+            .switch a { color:var(--accent-cyan); cursor:pointer; font-weight:600; text-decoration:none; }
           </style>
           <div class="auth-card">
             <h1>CAPITAN AI</h1>
@@ -351,7 +333,7 @@
               <div class="tab ${tab==='signup'?'active':''}" data-tab="signup">Create Account</div>
             </div>
             ${tab === 'login' ? this._renderLogin() : this._renderSignup()}
-            <div class="switch" style="text-align:center; margin-top:14px; font-size:13px; color:var(--text-secondary);"><a href="mailto:support@capitan.ai">Contact Support</a></div>
+            <div class="switch"><a href="mailto:support@capitan.ai">Contact Support</a></div>
           </div>
         `;
         this._attachEventListeners();
@@ -360,7 +342,7 @@
         return `
           <input type="email" id="loginEmail" placeholder="Email" />
           <input type="password" id="loginPassword" placeholder="Password" />
-          <div class="error" style="color:var(--danger);font-size:12px;margin-bottom:8px;" id="loginError">${store.get('auth.error') || ''}</div>
+          <div class="error" id="loginError">${store.get('auth.error') || ''}</div>
           <button class="pill-btn primary" id="loginBtn" ${store.get('auth.loading') ? 'disabled' : ''}>Sign In</button>
         `;
       }
@@ -369,9 +351,9 @@
           <input type="text" id="signupName" placeholder="Full Name (optional)" />
           <input type="email" id="signupEmail" placeholder="Email" />
           <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" />
-          <div class="error" style="color:var(--danger);font-size:12px;margin-bottom:8px;" id="signupError"></div>
+          <div class="error" id="signupError"></div>
           <button class="pill-btn primary" id="signupBtn">Create Account</button>
-          <div class="switch" style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-secondary);">Already have an account? <a id="switchToLogin">Sign In</a></div>
+          <div class="switch">Already have an account? <a id="switchToLogin">Sign In</a></div>
         `;
       }
       _attachEventListeners() {
@@ -469,7 +451,16 @@
         `;
       }
       _getView(view) {
-        const views = { chat:'<capitan-chat-view></capitan-chat-view>', wallet:'<capitan-wallet-view></capitan-wallet-view>', portfolio:'<capitan-portfolio-view></capitan-portfolio-view>', research:'<capitan-research-view></capitan-research-view>', developer:'<capitan-developer-view></capitan-developer-view>', workspaces:'<capitan-workspaces-view></capitan-workspaces-view>', community:'<capitan-community-view></capitan-community-view>', dashboard:'<capitan-dashboard-view></capitan-dashboard-view>' };
+        const views = {
+          chat:'<capitan-chat-view></capitan-chat-view>',
+          wallet:'<capitan-wallet-view></capitan-wallet-view>',
+          portfolio:'<capitan-portfolio-view></capitan-portfolio-view>',
+          research:'<capitan-research-view></capitan-research-view>',
+          developer:'<capitan-developer-view></capitan-developer-view>',
+          workspaces:'<capitan-workspaces-view></capitan-workspaces-view>',
+          community:'<capitan-community-view></capitan-community-view>',
+          dashboard:'<capitan-dashboard-view></capitan-dashboard-view>'
+        };
         return views[view] || views.chat;
       }
     }
@@ -544,12 +535,11 @@
     }
     Sidebar.define('capitan-sidebar');
 
-    // ==================== WALLET VIEW (World‑Class) ====================
+    // ==================== WALLET VIEW ====================
     class WalletView extends CapitanElement {
       constructor() {
         super();
         this._chart = null;
-        this._tabObserver = null;
       }
       subscribe() {
         return [
@@ -563,12 +553,10 @@
       connectedCallback() {
         super.connectedCallback();
         this._loadData();
-        this._pollActivity();
       }
       disconnectedCallback() {
         super.disconnectedCallback();
         if (this._chart) this._chart.destroy();
-        if (this._tabObserver) this._tabObserver.disconnect();
       }
       async _loadData() {
         await Promise.all([this._loadBalances(), this._loadActivity(true), this._loadMarkets()]);
@@ -609,20 +597,22 @@
           store.set('wallet.markets', { crypto, stocks, commodities });
         } catch (e) {}
       }
-      _pollActivity() {
-        setInterval(() => {
-          if (store.get('ui.activeView') === 'wallet') {
-            this._loadActivity(true);
-          }
-        }, 30000);
-      }
       render() {
-        const { totalUsd, balances, loadingBalances, activity, loadingActivity, markets, chartTimeframe } = store.get('wallet');
+        const { totalUsd, chartTimeframe } = store.get('wallet');
         const closeBalance = store.get('tokens.balance');
         const tab = store.get('ui.walletTab') || 'tokens';
         this.shadowRoot.innerHTML = `
           <style>
             :host { display:flex; flex-direction:column; height:100%; padding:24px; overflow-y:auto; background:var(--bg-primary); }
+            .pill-btn {
+              padding: 10px 20px; border-radius: var(--radius-pill); border: 1px solid var(--border);
+              background: var(--glass-bg); backdrop-filter: var(--glass-blur); color: var(--text-primary);
+              font-weight: 600; font-size: 14px; cursor: pointer; transition: all var(--duration-fast) var(--ease-smooth);
+              display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }
+            .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); }
+            .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; box-shadow: 0 4px 15px rgba(0,212,255,0.3); }
+            .pill-btn.primary:hover { box-shadow: 0 8px 25px rgba(0,212,255,0.4); }
             .glass-card { background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); }
             .header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:24px; }
             h1 { font-size:24px; font-weight:700; margin:0; }
@@ -641,13 +631,11 @@
             .tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; }
             .tab { padding:8px 16px; font-size:14px; font-weight:500; color:var(--text-tertiary); cursor:pointer; border-bottom:2px solid transparent; transition:all var(--duration-fast); }
             .tab.active { color:var(--accent-cyan); border-bottom-color:var(--accent-cyan); }
-            .tab-content { flex:1; }
             .token-list { display:flex; flex-direction:column; gap:6px; }
             .token-item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-secondary); border-radius:var(--radius-md); }
             .activity-item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-secondary); border-radius:var(--radius-sm); border-left:3px solid var(--border); }
             .markets-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
             .market-item { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; cursor:pointer; }
-            .market-item:hover { border-color:var(--accent-cyan); transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,212,255,0.1); }
             .skeleton { background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-md); }
             @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
           </style>
@@ -668,7 +656,7 @@
               <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </div>
           </div>
-          <div class="glass-card balance-card" id="balanceCard">
+          <div class="glass-card balance-card">
             <div>
               <div class="balance-total" id="totalUsd">$${this._fmtNum(totalUsd,2)}</div>
               <div style="color:var(--text-tertiary); font-size:13px; margin-top:4px;">Total Balance</div>
@@ -695,19 +683,7 @@
             <div class="tab ${tab==='markets'?'active':''}" data-tab="markets">Markets</div>
             <div class="tab ${tab==='ai'?'active':''}" data-tab="ai">AI Advisor</div>
           </div>
-          <div class="tab-content" id="tabContent">
-            ${this._renderTabContent(tab)}
-          </div>
-          <!-- Wallet Profile Sidebar -->
-          <div style="position:fixed; top:0; right:-360px; width:320px; height:100vh; background:var(--glass-bg); backdrop-filter:var(--glass-blur); border-left:1px solid var(--glass-border); z-index:200; transition:right 0.3s var(--ease-spring);" id="walletProfileDrawer">
-            <div style="padding:24px;">
-              <h2>Wallet Profile</h2>
-              <div class="profile-avatar" style="width:60px; height:60px; border-radius:50%; background:var(--accent-glow-cyan); margin:12px 0;">${store.get('auth.user')?.name?.charAt(0) || 'G'}</div>
-              <div><strong>${store.get('auth.user')?.name || 'Guest'}</strong></div>
-              <div style="font-size:13px; color:var(--text-secondary);">${this._fmtAddr(store.get('wallet.address'))}</div>
-              <div style="margin-top:16px;"><button class="pill-btn" id="copyWalletAddrBtn">Copy Address</button></div>
-            </div>
-          </div>
+          <div id="tabContent">${this._renderTabContent(tab)}</div>
         `;
         this._attachListeners();
         this._renderChart();
@@ -718,7 +694,7 @@
         if (tab === 'tokens') return this._renderTokens();
         if (tab === 'activity') return this._renderActivity();
         if (tab === 'markets') return this._renderMarketsTab();
-        if (tab === 'ai') return this._renderAIAssistant();
+        if (tab === 'ai') return '<div style="padding:20px;color:var(--text-secondary);">AI Advisor panel – coming soon</div>';
       }
       _renderTokens() {
         const balances = store.get('wallet.balances') || [];
@@ -743,11 +719,10 @@
         if (!activity.length) return '<div style="text-align:center;padding:40px;color:var(--text-tertiary);">No activity yet</div>';
         let html = '<div>';
         activity.forEach(item => {
-          const statusCls = item.status === 'completed' ? 'completed' : item.status === 'pending' ? 'pending' : 'failed';
           html += `
             <div class="activity-item">
               <div><div style="font-weight:500;">${item.type}</div><div style="font-size:12px;color:var(--text-tertiary);">${new Date(item.timestamp).toLocaleString()}</div></div>
-              <div><div>${this._fmtNum(item.amount)}</div><div class="status" style="font-size:12px;padding:2px 8px;border-radius:12px;background:var(--bg-tertiary);color:var(--text-secondary);">${item.status}</div></div>
+              <div><div>${this._fmtNum(item.amount)}</div><div style="font-size:12px;padding:2px 8px;border-radius:12px;background:var(--bg-tertiary);color:var(--text-secondary);">${item.status}</div></div>
             </div>
           `;
         });
@@ -761,9 +736,6 @@
           <button class="pill-btn" data-market="stocks">Stocks</button>
           <button class="pill-btn" data-market="commodities">Commodities</button>
         </div><div id="marketsGrid"></div>`;
-      }
-      _renderAIAssistant() {
-        return `<div style="padding:20px;color:var(--text-secondary);">AI Advisor panel – ask anything about your wallet.</div>`;
       }
       _updateTokensAndTotal() {
         if (!this.shadowRoot) return;
@@ -811,17 +783,14 @@
           localStorage.setItem('network', e.target.value);
           this._loadBalances();
         });
-        const addrDisp = this.shadowRoot.getElementById('addressDisplay');
-        addrDisp?.addEventListener('click', () => {
-          navigator.clipboard.writeText(store.get('wallet.address') || '');
-          this.toast('Address copied', 'success');
-        });
         this.shadowRoot.getElementById('sendBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'send']));
         this.shadowRoot.getElementById('receiveBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'receive']));
         this.shadowRoot.getElementById('swapBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'swap']));
         this.shadowRoot.getElementById('buyBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'buy']));
-        this.shadowRoot.getElementById('connectBtn')?.addEventListener('click', () => this._walletConnect());
-        // Tabs
+        this.shadowRoot.getElementById('connectBtn')?.addEventListener('click', () => {
+          const uri = prompt('Enter WalletConnect URI:');
+          if (uri) this.toast('WalletConnect not yet integrated', 'info');
+        });
         this.shadowRoot.querySelectorAll('.tab').forEach(tab => {
           tab.addEventListener('click', () => {
             this.shadowRoot.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -832,10 +801,9 @@
             if (tabName === 'tokens') tabContent.innerHTML = this._renderTokens();
             else if (tabName === 'activity') tabContent.innerHTML = this._renderActivity();
             else if (tabName === 'markets') { tabContent.innerHTML = this._renderMarketsTab(); this._attachMarketListeners(); this._showMarketList('crypto'); }
-            else if (tabName === 'ai') tabContent.innerHTML = this._renderAIAssistant();
+            else if (tabName === 'ai') tabContent.innerHTML = this._renderTabContent('ai');
           });
         });
-        // Chart timeframes
         this.shadowRoot.querySelectorAll('.time-pill').forEach(pill => {
           pill.addEventListener('click', () => {
             this.shadowRoot.querySelectorAll('.time-pill').forEach(p => p.classList.remove('active'));
@@ -874,14 +842,6 @@
           `).join('')}
         </div>`;
       }
-      _walletConnect() {
-        // Simulate WalletConnect – show URI input
-        const uri = prompt('Enter WalletConnect URI:');
-        if (uri) {
-          store.set('wallet.connectedDapps', [...store.get('wallet.connectedDapps'), { name:'dApp', icon:'' }]);
-          this.toast('Connected to dApp', 'success');
-        }
-      }
     }
     WalletView.define('capitan-wallet-view');
 
@@ -898,7 +858,7 @@
         if (modals.includes('swap')) this.shadowRoot.appendChild(this._createSwapModal());
         if (modals.includes('buy')) this.shadowRoot.appendChild(this._createBuyModal());
       }
-      _createModal(content) {
+      _modalWrap(content) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;';
         wrap.innerHTML = content;
@@ -906,8 +866,8 @@
       }
       _closeModal(name) { store.set('ui.modals', store.get('ui.modals').filter(m => m !== name)); }
       _createSendModal() {
-        const modal = this._createModal(`
-          <div class="glass-card" style="max-width:500px;width:100%;padding:24px;">
+        const modal = this._modalWrap(`
+          <div style="background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-lg); max-width:500px; width:100%; padding:24px;">
             <h2>Send</h2>
             <input id="sendAddress" placeholder="Recipient Address" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);"/>
             <select id="sendToken" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);">${(store.get('wallet.balances')||[]).map(t=>`<option value="${t.address}">${t.symbol}</option>`).join('')}</select>
@@ -918,6 +878,19 @@
             </div>
           </div>
         `);
+        // Add styles for pill-btn inside this modal (since it's part of the shadow DOM)
+        const style = document.createElement('style');
+        style.textContent = `
+          .pill-btn {
+            padding: 10px 20px; border-radius: 9999px; border: 1px solid var(--border);
+            background: var(--glass-bg); backdrop-filter: var(--glass-blur); color: var(--text-primary);
+            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          }
+          .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); }
+          .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; }
+        `;
+        modal.prepend(style);
         modal.querySelector('#sendCancel').addEventListener('click', () => this._closeModal('send'));
         modal.querySelector('#sendConfirm').addEventListener('click', async () => {
           const to = modal.querySelector('#sendAddress').value.trim();
@@ -939,8 +912,8 @@
       }
       _createReceiveModal() {
         const addr = store.get('wallet.address') || '0x0000000000000000000000000000000000000000';
-        const modal = this._createModal(`
-          <div class="glass-card" style="max-width:400px;width:100%;padding:24px;text-align:center;">
+        const modal = this._modalWrap(`
+          <div style="background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:24px; text-align:center;">
             <h2>Receive</h2>
             <div style="word-break:break-all; margin:12px 0; background:var(--bg-secondary); padding:10px; border-radius:var(--radius-md);">${addr}</div>
             <div id="qrCode" style="margin:12px 0;"></div>
@@ -948,14 +921,26 @@
             <button class="pill-btn" id="receiveClose" style="margin-top:8px;">Close</button>
           </div>
         `);
+        const style = document.createElement('style');
+        style.textContent = `
+          .pill-btn {
+            padding: 10px 20px; border-radius: 9999px; border: 1px solid var(--border);
+            background: var(--glass-bg); backdrop-filter: var(--glass-blur); color: var(--text-primary);
+            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          }
+          .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); }
+          .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; }
+        `;
+        modal.prepend(style);
         try { new QRCode(modal.querySelector('#qrCode'), { text: addr, width: 150, height: 150 }); } catch(e){}
         modal.querySelector('#copyAddr').addEventListener('click', () => { navigator.clipboard.writeText(addr); });
         modal.querySelector('#receiveClose').addEventListener('click', () => this._closeModal('receive'));
         return modal;
       }
       _createSwapModal() {
-        const modal = this._createModal(`
-          <div class="glass-card" style="max-width:500px;width:100%;padding:24px;">
+        const modal = this._modalWrap(`
+          <div style="background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-lg); max-width:500px; width:100%; padding:24px;">
             <h2>Swap</h2>
             <select id="swapFrom" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);">${(store.get('wallet.balances')||[]).map(t=>`<option value="${t.address}">${t.symbol}</option>`).join('')}</select>
             <select id="swapTo" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);">${(store.get('wallet.balances')||[]).map(t=>`<option value="${t.address}">${t.symbol}</option>`).join('')}</select>
@@ -966,6 +951,18 @@
             </div>
           </div>
         `);
+        const style = document.createElement('style');
+        style.textContent = `
+          .pill-btn {
+            padding: 10px 20px; border-radius: 9999px; border: 1px solid var(--border);
+            background: var(--glass-bg); backdrop-filter: var(--glass-blur); color: var(--text-primary);
+            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          }
+          .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); }
+          .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; }
+        `;
+        modal.prepend(style);
         modal.querySelector('#swapCancel').addEventListener('click', () => this._closeModal('swap'));
         modal.querySelector('#swapConfirm').addEventListener('click', async () => {
           const from = modal.querySelector('#swapFrom').value;
@@ -985,8 +982,8 @@
         return modal;
       }
       _createBuyModal() {
-        const modal = this._createModal(`
-          <div class="glass-card" style="max-width:500px;width:100%;padding:24px;">
+        const modal = this._modalWrap(`
+          <div style="background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-lg); max-width:500px; width:100%; padding:24px;">
             <h2>Buy CLOSE</h2>
             <div id="buyRate">Loading rate...</div>
             <input id="buyAmount" type="number" placeholder="CLOSE amount" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);"/>
@@ -1000,6 +997,18 @@
             </div>
           </div>
         `);
+        const style = document.createElement('style');
+        style.textContent = `
+          .pill-btn {
+            padding: 10px 20px; border-radius: 9999px; border: 1px solid var(--border);
+            background: var(--glass-bg); backdrop-filter: var(--glass-blur); color: var(--text-primary);
+            font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.15s;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          }
+          .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); }
+          .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; }
+        `;
+        modal.prepend(style);
         api.get('/api/token/rate').then(d => {
           modal.querySelector('#buyRate').innerText = `1 POL = ${d.rate} CLOSE`;
           modal.querySelector('#buyAddress').innerText = d.matic_payment_address;
@@ -1020,7 +1029,7 @@
     }
     ModalsContainer.define('capitan-modals');
 
-    // ==================== PLACEHOLDER VIEWS (implemented briefly) ====================
+    // ==================== PLACEHOLDER VIEWS ====================
     class ChatView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary);">Chat View — Full implementation coming</div>'; } }
     ChatView.define('capitan-chat-view');
     class PortfolioView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Portfolio</div>'; } }
