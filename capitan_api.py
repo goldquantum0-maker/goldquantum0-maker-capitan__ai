@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
     FOUNDER_KEY: str
-    FRONTEND_URL: str = "https://capitanai.com"
+    FRONTEND_URL: str ="https://capitanai.billionaireman35.workers.dev"
     GROQ_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
     COINGECKO_KEY: str = ""
