@@ -2317,7 +2317,7 @@
       }
 
       // ============================================================
-      // 5. AUTHENTICATION (with improved error handling)
+      // 5. AUTHENTICATION (with token validation)
       // ============================================================
       function switchAuthTab(tab) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -2341,8 +2341,23 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', state.isAdmin.toString());
-            initApp();
-            toast('Welcome back, ' + (state.user.name || email.split('@')[0]), 'success');
+            // Validate token immediately
+            try {
+              const validateRes = await apiCall('/api/auth/validate');
+              if (validateRes.user) {
+                initApp();
+                toast('Welcome back, ' + (state.user.name || email.split('@')[0]), 'success');
+              } else {
+                throw new Error('Token validation failed');
+              }
+            } catch (validateErr) {
+              toast('Session validation failed. Please try again.', 'error');
+              localStorage.removeItem('ct');
+              state.token = null;
+              state.user = null;
+              document.getElementById('authContainer').style.display = 'flex';
+              document.getElementById('app').style.display = 'none';
+            }
           } else {
             err.textContent = data.detail || 'Login failed';
             err.style.display = 'block';
@@ -2372,18 +2387,29 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', 'false');
-            await claimWelcomeBonus();
-            initApp();
-            toast('Account created! Welcome to Capitan AI.', 'success');
+            try {
+              const validateRes = await apiCall('/api/auth/validate');
+              if (validateRes.user) {
+                await claimWelcomeBonus();
+                initApp();
+                toast('Account created! Welcome to Capitan AI.', 'success');
+              } else {
+                throw new Error('Token validation failed');
+              }
+            } catch (validateErr) {
+              toast('Session validation failed. Please try again.', 'error');
+              localStorage.removeItem('ct');
+              state.token = null;
+              state.user = null;
+              document.getElementById('authContainer').style.display = 'flex';
+              document.getElementById('app').style.display = 'none';
+            }
           } else {
-            // Show the exact error message from the server
             err.textContent = data.detail || 'Signup failed';
             err.style.display = 'block';
           }
         } catch (e) {
-          // If the server returns a detailed error, display it; otherwise fallback
-          const msg = e.message || 'Registration failed';
-          err.textContent = msg;
+          err.textContent = e.message || 'Registration failed';
           err.style.display = 'block';
           console.error('Signup error:', e);
         }
@@ -2480,7 +2506,7 @@
       }
 
       // ============================================================
-      // 7. OS WALLET (Full-page) with fixed token loading
+      // 7. OS WALLET (Full-page)
       // ============================================================
       let walletChart = null;
 
@@ -2504,7 +2530,6 @@
           navigator.clipboard.writeText(addr);
           toast('Address copied', 'success');
         };
-        // Load tokens – uses the new /api/wallet/balances endpoint
         await loadWalletTokens();
         await loadActivity(true);
         renderChart();
@@ -2513,7 +2538,6 @@
         switchWalletTab('tokens');
       }
 
-      // Fixed: uses the correct backend endpoint
       async function loadWalletTokens() {
         const addr = state.walletAddress;
         if (!addr) {
@@ -3468,4 +3492,4 @@
     })();
   </script>
 </body>
-</html>
+</html> 
