@@ -56,7 +56,7 @@ def setup_web3(rpc_url: str) -> Web3:
             from web3.middleware import ExtraDataToPOAMiddleware
             w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         except ImportError:
-            pass  # Polygon may still work without it
+            pass
     return w3
 
 # ------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "https://capitanai.com"
     GROQ_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""      # for embeddings & moderation
+    OPENAI_API_KEY: str = ""
     COINGECKO_KEY: str = ""
     SERPAPI_KEY: str = ""
     NEWS_API_KEY: str = ""
@@ -85,7 +85,7 @@ class Settings(BaseSettings):
     CLOSE_TREASURY_ADDRESS: str = ""
     POLYGON_RPC_URL: str = "https://polygon-rpc.com"
     CLOSE_DECIMALS: int = 18
-    TOTAL_ALLOCATION: int = 75_000_000_000_000  # 75 trillion CLOSE
+    TOTAL_ALLOCATION: int = 75_000_000_000_000
     PRIVACY_POLICY_TEXT: str = ""
     TERMS_CONDITIONS_TEXT: str = ""
     FOUNDER_EXTRA_PROMPT: str = ""
@@ -98,12 +98,36 @@ settings = Settings()
 
 app = FastAPI(title="CAPITAN AI API", version="36.1")
 
+# ------------------------------------------------------------------------------
+# CORS Middleware - COMPREHENSIVE FIX
+# ------------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=86400,
 )
+
+# ------------------------------------------------------------------------------
+# Global CORS handler for OPTIONS requests
+# ------------------------------------------------------------------------------
+@app.middleware("http")
+async def cors_handler(request: Request, call_next):
+    if request.method == "OPTIONS":
+        response = Response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Max-Age"] = "86400"
+        return response
+    
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
@@ -324,7 +348,7 @@ def count_tokens(text: str) -> int:
     return int(len(text.split()) / 0.75)
 
 # ------------------------------------------------------------------------------
-# AI General Intelligence Layer (FULL IMPLEMENTATION)
+# AI General Intelligence Layer
 # ------------------------------------------------------------------------------
 
 CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
@@ -592,7 +616,6 @@ def get_relevant_memories(user_id: str, query: str, limit: int = 3) -> List[str]
                             return [r[0] for r in rows]
             except Exception as e:
                 logger.error(f"OpenAI embedding error: {e}")
-        # Fallback keyword search
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT content FROM memories WHERE user_id = %s ORDER BY created DESC LIMIT 100", (user_id,))
@@ -704,7 +727,7 @@ def moderate_content(text: str) -> Tuple[bool, str, str]:
     return False, "", "low"
 
 # ------------------------------------------------------------------------------
-# Database Initialization
+# Database Initialization - FIXED
 # ------------------------------------------------------------------------------
 def init_db():
     with get_db() as conn:
@@ -712,6 +735,7 @@ def init_db():
             c.execute("CREATE EXTENSION IF NOT EXISTS vector")
             c.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
 
+            # Create all tables
             c.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id UUID PRIMARY KEY,
@@ -749,7 +773,7 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS api_keys (
                     id UUID PRIMARY KEY,
                     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                    prefix TEXT NOT NULL,
+                    prefix TEXT,
                     key_hash TEXT NOT NULL,
                     scopes TEXT DEFAULT 'chat,research,portfolio',
                     is_active BOOLEAN DEFAULT TRUE,
@@ -758,7 +782,7 @@ def init_db():
                 )
             """)
             
-            # Fix: Add prefix column if table exists without it
+            # Add prefix column if it doesn't exist
             c.execute("""
                 DO $$
                 BEGIN
@@ -771,7 +795,7 @@ def init_db():
                 END $$;
             """)
             
-            # Create index only after ensuring column exists
+            # Create index
             c.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(prefix)")
 
             c.execute("""
@@ -1027,6 +1051,7 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )
             """)
+            
             # Seed built-in research topics
             topics = [
                 ('fin1','Market Analysis','Analyse global markets','finance','Conduct a market analysis of the S&P 500 focusing on tech stocks.'),
@@ -1093,9 +1118,11 @@ def terms():
 class RegisterReq(BaseModel): email: str; password: str; name: Optional[str] = None
 
 @app.post("/api/auth/register")
-def register(req: RegisterReq):
+def register(req: RegisterReq, request: Request):
     if not re.match(r'^[^@]+@[^@]+\.[^@]+$', req.email): raise HTTPException(400, "Invalid email")
     if len(req.password) < 6: raise HTTPException(400, "Password min 6 chars")
+    if not check_rate_limit(request.client.host, "register", limit=5, window=300):
+        raise HTTPException(429, "Too many registration attempts")
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("SELECT id FROM users WHERE email = %s", (req.email,))
@@ -1584,7 +1611,7 @@ def mark_read(user: dict = Depends(get_current_user)):
     return {"ok": True}
 
 # ------------------------------------------------------------------------------
-# Token Purchase (legacy crypto payments)
+# Token Purchase
 # ------------------------------------------------------------------------------
 TOKEN_WALLETS = {
     "BTC": "bc1q73vguguz44evvdt0yt6cj32la86ftjuwyqgxy2",
@@ -1750,7 +1777,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
     return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
 
 # ------------------------------------------------------------------------------
-# OS Wallet Endpoints (using safe setup_web3)
+# OS Wallet Endpoints
 # ------------------------------------------------------------------------------
 @app.post("/api/wallet/create")
 def create_wallet(req: dict, user: dict = Depends(get_current_user)):
@@ -2257,28 +2284,6 @@ def leaderboard(type: str = "staked"):
                 rows = c.fetchall()
                 return {"leaderboard": [{"name": r[0], "messages": r[1]} for r in rows]}
     return {"leaderboard": []}
-
-# ------------------------------------------------------------------------------
-# API Key Middleware (O(1) lookup)
-# ------------------------------------------------------------------------------
-@app.middleware("http")
-async def api_key_middleware(request: Request, call_next):
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("ApiKey "):
-        key = auth[7:]
-        prefix = key[:10]
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id, user_id, key_hash, scopes FROM api_keys WHERE prefix = %s AND is_active = TRUE", (prefix,))
-                row = c.fetchone()
-                if row and bcrypt.checkpw(key.encode(), row[2].encode()):
-                    c.execute("UPDATE api_keys SET last_used = NOW() WHERE id = %s", (row[0],))
-                    conn.commit()
-                    request.state.api_user_id = row[1]
-                    response = await call_next(request)
-                    return response
-        return Response(content="Invalid API key", status_code=401)
-    return await call_next(request)
 
 # ------------------------------------------------------------------------------
 # Health
