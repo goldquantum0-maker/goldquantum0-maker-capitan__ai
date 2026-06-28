@@ -1,7 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v44.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v44.1 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
 Fully compatible with frontend v2.0.
+Fixed: JWT secret stripping, session validation, token verification.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
@@ -109,7 +110,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="44.0")
+app = FastAPI(title="CAPITAN AI API", version="44.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -180,7 +181,8 @@ def create_token(user_id: str) -> str:
         "user_id": user_id, "type": "user",
         "exp": int((now_utc() + timedelta(days=30)).timestamp())
     }).encode()).decode().rstrip("=")
-    signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    secret = settings.JWT_SECRET.strip()  # Fix: strip whitespace/newlines
+    signature = base64.urlsafe_b64encode(hmac.new(secret.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
     return f"{header}.{payload}.{signature}"
 
 def create_session_token(session_id: str) -> str:
@@ -189,40 +191,55 @@ def create_session_token(session_id: str) -> str:
         "session_id": session_id, "type": "session",
         "exp": int((now_utc() + timedelta(days=365)).timestamp())
     }).encode()).decode().rstrip("=")
-    signature = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    secret = settings.JWT_SECRET.strip()
+    signature = base64.urlsafe_b64encode(hmac.new(secret.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
     return f"{header}.{payload}.{signature}"
 
 def verify_token(token: str):
     try:
         parts = token.split(".")
-        if len(parts) != 3: return None
+        if len(parts) != 3:
+            return None
         header, payload, signature = parts
         missing_padding = 4 - len(payload) % 4
         if missing_padding != 4:
             payload_padded = payload + "=" * missing_padding
         else:
             payload_padded = payload
-        expected = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
-        if not hmac.compare_digest(signature, expected): return None
+        secret = settings.JWT_SECRET.strip()
+        expected = base64.urlsafe_b64encode(hmac.new(secret.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+        if not hmac.compare_digest(signature, expected):
+            logger.warning(f"Signature mismatch for token: {token[:20]}...")
+            return None
         data = json.loads(base64.urlsafe_b64decode(payload_padded))
-        if data.get("exp", 0) < now_utc().timestamp(): return None
+        if data.get("exp", 0) < now_utc().timestamp():
+            logger.warning(f"Token expired: {token[:20]}...")
+            return None
         return data
-    except:
+    except Exception as e:
+        logger.error(f"verify_token exception: {e}")
         return None
 
 def get_current_user(request: Request):
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "): return None
+    if not auth.startswith("Bearer "):
+        return None
     token = auth[7:]
     payload = verify_token(token)
-    if not payload: return None
+    if not payload:
+        logger.warning(f"Invalid token payload: {token[:20]}...")
+        return None
     user_id = payload.get("user_id")
-    if not user_id: return None
+    if not user_id:
+        return None
     try:
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
-                if not c.fetchone(): return None
+                session_row = c.fetchone()
+                if not session_row:
+                    logger.warning(f"Session not found for token: {token[:20]}...")
+                    return None
                 c.execute("SELECT id, email, name, reasoning_depth, preferred_domain, is_admin FROM users WHERE id = %s", (user_id,))
                 row = c.fetchone()
                 if row:
@@ -231,9 +248,12 @@ def get_current_user(request: Request):
                         "reasoning_depth": row[3] or 1, "preferred_domain": row[4] or "general",
                         "is_admin": row[5] or False
                     }
+                else:
+                    logger.warning(f"User not found for id: {user_id}")
+                    return None
     except Exception as e:
         logger.error(f"get_current_user error: {e}")
-    return None
+        return None
 
 async def get_current_session(request: Request):
     auth = request.headers.get("Authorization", "")
@@ -541,7 +561,7 @@ def init_db():
                     pass
 
                 conn.commit()
-        logger.info("✅ Database initialized (v44.0)")
+        logger.info("✅ Database initialized (v44.1)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -1071,7 +1091,6 @@ async def register(req: RegisterRequest):
                     """, (api_key_id, user_id, key_hash, raw_key[:10]+"...", "CAPITAN Web App", "chat,research,portfolio"))
                 except Exception as e:
                     logger.error(f"API key insertion failed: {e}")
-                    # Continue without API key
                 conn.commit()
                 log_activity(user_id, "register")
                 return {
@@ -1101,6 +1120,10 @@ async def login(req: LoginRequest, request: Request):
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
+                # Verify insertion
+                c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
+                if not c.fetchone():
+                    raise Exception("Failed to store session token in database")
                 c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
                 conn.commit()
                 log_activity(user_id, "login", f"IP: {request.client.host}")
@@ -1115,8 +1138,8 @@ async def login(req: LoginRequest, request: Request):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Login: {e}")
-        raise HTTPException(500, "Login failed")
+        logger.error(f"Login: {e}", exc_info=True)
+        raise HTTPException(500, f"Login failed: {str(e)}")
 
 @app.post("/api/auth/logout")
 async def logout(request: Request):
@@ -2777,7 +2800,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "44.0", "database": db_status}
+    return {"status": "ok", "version": "44.1", "database": db_status}
 
 def generate_png_icon(size: int) -> bytes:
     def create_png(width, height, pixels):
@@ -2859,7 +2882,7 @@ self.addEventListener('fetch', event => {
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "44.0"}
+    return {"name": "CAPITAN AI", "version": "44.1"}
 
 # ==================== MARKETS ENDPOINTS (for wallet) ====================
 @app.get("/api/markets/crypto")
