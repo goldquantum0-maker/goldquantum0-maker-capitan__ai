@@ -157,7 +157,7 @@
     }
 
     /* ============================================================
-       AUTH CONTAINER – starts hidden, shown after splash
+       AUTH CONTAINER
        ============================================================ */
     #authContainer {
       display: none;
@@ -319,7 +319,7 @@
       display: flex;
     }
 
-    /* SIDEBAR (AI Productivity) */
+    /* SIDEBAR */
     .sidebar {
       width: 280px;
       background: var(--surface);
@@ -427,6 +427,28 @@
     .sidebar-divider {
       border-top: 1px solid var(--border);
       margin: 8px 16px;
+    }
+
+    /* Chat history list */
+    .chat-history-list {
+      padding: 0 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .chat-history-item {
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background var(--duration-fast);
+    }
+    .chat-history-item:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
     }
 
     /* Profile section at bottom */
@@ -862,23 +884,57 @@
       text-align: center;
     }
 
-    /* ============================================================
-       OVERLAY (for sidebar & drawer)
-       ============================================================ */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
-      z-index: 25;
-      display: none;
+    /* Inline edit fields */
+    .profile-edit-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: inherit;
+      margin-bottom: 6px;
     }
-    .overlay.open {
+
+    /* Notification drawer */
+    .notification-drawer {
+      position: fixed;
+      top: 60px;
+      right: 16px;
+      width: 350px;
+      max-width: 90vw;
+      max-height: 400px;
+      overflow-y: auto;
+      background: var(--surface-float);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      z-index: 300;
+      display: none;
+      padding: 12px;
+    }
+    .notification-drawer.open {
       display: block;
+    }
+    .notification-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background var(--duration-fast);
+    }
+    .notification-item:hover {
+      background: var(--bg-tertiary);
+    }
+    .notification-item .time {
+      font-size: 11px;
+      color: var(--text-tertiary);
     }
 
     /* ============================================================
-       FULL‑PAGE VIEWS (Wallet, Portfolio, Research, Developer, Dashboard)
+       FULL‑PAGE VIEWS
        ============================================================ */
     .full-page-view {
       position: fixed;
@@ -990,7 +1046,6 @@
       stroke: currentColor;
     }
 
-    /* Balance Card */
     .wallet-balance-card {
       background: linear-gradient(145deg, var(--surface-float), var(--bg-secondary));
       backdrop-filter: blur(10px);
@@ -1043,7 +1098,6 @@
       gap: 6px;
     }
 
-    /* Chart */
     .wallet-chart-container {
       background: var(--surface-float);
       backdrop-filter: blur(10px);
@@ -1082,7 +1136,6 @@
       max-height: 220px;
     }
 
-    /* Action Row */
     .wallet-actions {
       display: flex;
       gap: 8px;
@@ -1126,7 +1179,6 @@
       stroke-width: 2;
     }
 
-    /* Wallet Tabs */
     .wallet-tabs {
       display: flex;
       gap: 4px;
@@ -1150,7 +1202,6 @@
       color: var(--text-primary);
     }
 
-    /* Token List (rendered by JS) */
     .token-list {
       display: flex;
       flex-direction: column;
@@ -1276,9 +1327,6 @@
       display: flex;
       gap: 10px;
       margin-top: 16px;
-    }
-    .modal .btn-row .btn {
-      flex: 1;
     }
     .modal .btn {
       padding: 12px 20px;
@@ -1504,7 +1552,7 @@
     }
 
     /* ============================================================
-       TYPING INDICATOR (FIX)
+       TYPING INDICATOR
        ============================================================ */
     .typing-indicator {
       display: flex;
@@ -1527,38 +1575,69 @@
     }
 
     /* ============================================================
+       WORKSPACE PANEL (right drawer)
+       ============================================================ */
+    .workspace-panel {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 400px;
+      max-width: 90vw;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: -20px 0 60px rgba(0,0,0,0.5);
+      z-index: 200;
+      transition: right var(--duration-med) var(--ease-spring);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px;
+      overflow-y: auto;
+    }
+    .workspace-panel.open {
+      right: 0;
+    }
+    .workspace-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .workspace-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background var(--duration-fast);
+    }
+    .workspace-list-item:hover {
+      background: var(--bg-tertiary);
+    }
+    .workspace-messages {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+    }
+    .workspace-input {
+      display: flex;
+      gap: 8px;
+    }
+    .workspace-input input {
+      flex: 1;
+    }
+
+    /* ============================================================
        UTILITY CLASSES
        ============================================================ */
     .hidden {
       display: none !important;
-    }
-    .flex {
-      display: flex;
-    }
-    .flex-center {
-      align-items: center;
-      justify-content: center;
-    }
-    .gap-8 {
-      gap: 8px;
-    }
-    .gap-12 {
-      gap: 12px;
-    }
-    .mt-8 {
-      margin-top: 8px;
-    }
-    .mt-16 {
-      margin-top: 16px;
-    }
-    .mb-8 {
-      margin-bottom: 8px;
-    }
-    .mb-16 {
-      margin-bottom: 16px;
-    }
-    .text-center {
-      text-align: center;
     }
     .text-tertiary {
       color: var(--text-tertiary);
@@ -1566,6 +1645,9 @@
     .text-secondary {
       color: var(--text-secondary);
     }
+    .mt-16 { margin-top: 16px; }
+    .mb-16 { margin-bottom: 16px; }
+    .text-center { text-align: center; }
 
     /* ============================================================
        RESPONSIVE
@@ -1579,17 +1661,17 @@
         width: 280px;
         transform: translateX(-100%);
         z-index: 40;
-        box-shadow: 20px 0 40px rgba(0, 0, 0, 0.4);
+        box-shadow: 20px 0 40px rgba(0,0,0,0.4);
       }
       .sidebar.open {
         transform: translateX(0);
       }
-      .profile-drawer {
+      .profile-drawer, .workspace-panel {
         width: 100%;
         max-width: 100%;
         right: -100%;
       }
-      .profile-drawer.open {
+      .profile-drawer.open, .workspace-panel.open {
         right: 0;
       }
       .wallet-balance-card {
@@ -1637,21 +1719,6 @@
         height: 36px;
       }
     }
-
-    /* ============================================================
-       SCROLLBAR STYLING
-       ============================================================ */
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 10px;
-    }
   </style>
 </head>
 <body>
@@ -1675,7 +1742,7 @@
   </div>
 
   <!-- ============================================================
-       AUTH CONTAINER (starts hidden, JS shows after splash)
+       AUTH CONTAINER
        ============================================================ -->
   <div id="authContainer">
     <div class="auth-card">
@@ -1738,6 +1805,10 @@
         New chat
       </button>
 
+      <div class="sidebar-divider"></div>
+      <div class="chat-history-list" id="chatHistoryList"></div>
+      <div class="sidebar-divider"></div>
+
       <div class="sidebar-menu">
         <div class="menu-item active" data-view="chat">
           <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -1754,6 +1825,14 @@
         <div class="menu-item" data-view="developer">
           <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="16" x2="16" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           Developer
+        </div>
+        <div class="menu-item" data-view="workspaces">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+          Workspaces
+        </div>
+        <div class="menu-item" data-view="community">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-3-3.87"/><path d="M7 21v-2a4 4 0 0 1 3-3.87"/><circle cx="12" cy="7" r="4"/></svg>
+          Community
         </div>
         <div class="menu-item" data-view="dashboard" id="dashboardMenuItem" style="display:none;">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -1793,9 +1872,7 @@
     <!-- MAIN CHAT VIEW -->
     <main class="main" id="chatView">
       <div class="chat-container">
-        <div class="messages-area" id="messagesArea">
-          <!-- Dynamic content rendered by JS -->
-        </div>
+        <div class="messages-area" id="messagesArea"></div>
         <div class="input-area">
           <button class="input-btn" id="voiceBtn" title="Voice input">
             <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -1819,9 +1896,21 @@
         <svg viewBox="0 0 24 24" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="badge" id="notifBadge">0</span>
       </button>
+      <button class="top-bar-btn" id="mobileProfileBtn" style="display:none;">
+        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+      </button>
       <button class="top-bar-btn" id="toggleSidebarBtn">
         <svg viewBox="0 0 24 24" width="18" height="18"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
       </button>
+    </div>
+
+    <!-- Notification drawer -->
+    <div class="notification-drawer" id="notificationDrawer">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong>Notifications</strong>
+        <button class="input-btn" id="markAllReadBtn" style="width:auto; padding:2px 8px; font-size:11px;">Mark all read</button>
+      </div>
+      <div id="notificationList"></div>
     </div>
   </div>
 
@@ -1844,6 +1933,30 @@
         <div class="email" id="drawerEmail">guest@capitan.ai</div>
         <div class="tier" id="drawerTier">Free</div>
       </div>
+    </div>
+
+    <div class="profile-drawer-section">
+      <div class="section-title">Edit Profile</div>
+      <input type="text" id="editName" class="profile-edit-input" placeholder="Name" />
+      <select id="editDepth" class="profile-edit-input">
+        <option value="1">Reasoning Depth 1 (Fast)</option>
+        <option value="2">Reasoning Depth 2</option>
+        <option value="3">Reasoning Depth 3</option>
+        <option value="4">Reasoning Depth 4</option>
+        <option value="5">Reasoning Depth 5 (Deep)</option>
+      </select>
+      <select id="editDomain" class="profile-edit-input">
+        <option value="general">General</option>
+        <option value="finance">Finance</option>
+        <option value="coding">Coding</option>
+        <option value="science">Science</option>
+        <option value="math">Mathematics</option>
+        <option value="geopolitics">Geopolitics</option>
+        <option value="arts">Arts</option>
+        <option value="food">Food</option>
+      </select>
+      <button class="auth-btn" id="saveProfileBtn" style="margin-top:6px;">Save</button>
+      <div class="text-tertiary" id="streakDisplay" style="margin-top:4px;"></div>
     </div>
 
     <div class="profile-drawer-section">
@@ -1881,6 +1994,13 @@
     </div>
 
     <div class="profile-drawer-section">
+      <div class="profile-drawer-item danger" id="drawerDeleteAccount">
+        <svg viewBox="0 0 24 24"><path d="M10 4a2 2 0 0 1 4 0v4h4l1 16H5l1-16h4V4z"/></svg>
+        Delete Account
+      </div>
+    </div>
+
+    <div class="profile-drawer-section">
       <div class="profile-drawer-item danger" id="drawerSignOut">
         <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
         Sign Out
@@ -1889,6 +2009,37 @@
 
     <div class="profile-drawer-footer">
       CLOSEAI Technologies · CAPITAN AI v2.0
+    </div>
+  </div>
+
+  <!-- ============================================================
+       WORKSPACE PANEL (right sliding)
+       ============================================================ -->
+  <div class="workspace-panel" id="workspacePanel">
+    <div class="workspace-panel-header">
+      <h2>Workspaces</h2>
+      <button class="profile-drawer-close" id="workspacePanelClose">
+        <svg viewBox="0 0 24 24" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="workspaceListContainer"></div>
+    <div id="workspaceRoomView" style="display:none;">
+      <button class="btn btn-secondary" id="backToWorkspaceList" style="margin-bottom:8px;">← Back</button>
+      <div class="workspace-messages" id="workspaceMessages"></div>
+      <div class="workspace-input">
+        <input type="text" id="workspaceMessageInput" class="auth-input" placeholder="Type a message..." />
+        <button class="input-btn send" id="workspaceSendBtn">
+          <svg viewBox="0 0 24 24" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-secondary" id="createWorkspaceBtn">+ Create Room</button>
+      <div id="joinWorkspaceForm" style="margin-top:8px;">
+        <input type="text" id="joinRoomCode" class="auth-input" placeholder="Room Code" />
+        <input type="password" id="joinRoomPassword" class="auth-input" placeholder="Password (if any)" />
+        <button class="btn btn-primary" id="joinWorkspaceBtn">Join</button>
+      </div>
     </div>
   </div>
 
@@ -1902,7 +2053,6 @@
       <svg viewBox="0 0 24 24" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <div class="view-content">
-      <!-- Wallet header -->
       <div class="wallet-header">
         <div class="left">
           <h1>OS Wallets</h1>
@@ -1926,8 +2076,6 @@
           </button>
         </div>
       </div>
-
-      <!-- Balance Card -->
       <div class="wallet-balance-card">
         <div class="balance-left">
           <div>
@@ -1943,8 +2091,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Chart -->
       <div class="wallet-chart-container">
         <div class="chart-toolbar" id="chartTimeframes">
           <button class="time-pill active" data-time="1h">1H</button>
@@ -1956,8 +2102,6 @@
         </div>
         <canvas id="walletChart"></canvas>
       </div>
-
-      <!-- Action Row -->
       <div class="wallet-actions">
         <button class="action-btn" id="walletSendBtn">
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>
@@ -1976,19 +2120,12 @@
           Buy CLOSE
         </button>
       </div>
-
-      <!-- Tabs -->
       <div class="wallet-tabs">
         <div class="wallet-tab active" data-wtab="tokens">Tokens</div>
         <div class="wallet-tab" data-wtab="activity">Activity</div>
         <div class="wallet-tab" data-wtab="markets">Markets</div>
       </div>
-
-      <!-- Tab content -->
-      <div id="walletTabContent">
-        <!-- Tokens (default) – rendered by JS -->
-        <div class="text-tertiary">Loading tokens…</div>
-      </div>
+      <div id="walletTabContent"><div class="text-tertiary">Loading tokens…</div></div>
     </div>
   </div>
 
@@ -1999,6 +2136,7 @@
     </button>
     <div class="view-content" id="portfolioContent">
       <h2>Portfolio</h2>
+      <button class="btn btn-primary" id="newPortfolioItemBtn" style="margin-bottom:12px;">+ New Item</button>
       <div id="portfolioItems">Loading…</div>
     </div>
   </div>
@@ -2027,6 +2165,18 @@
     </div>
   </div>
 
+  <!-- Community Full‑Page -->
+  <div class="full-page-view" id="communityFullPage">
+    <button class="close-btn" id="communityCloseBtn">
+      <svg viewBox="0 0 24 24" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="view-content" id="communityContent">
+      <h2>Community</h2>
+      <div id="leaderboardContainer"></div>
+      <div id="badgesContainer" class="mt-16"></div>
+    </div>
+  </div>
+
   <!-- Founder Dashboard Full‑Page -->
   <div class="full-page-view" id="dashboardFullPage">
     <button class="close-btn" id="dashboardCloseBtn">
@@ -2034,7 +2184,6 @@
     </button>
     <div class="view-content" id="dashboardContent">
       <h2>Founder Dashboard</h2>
-      <div id="dashboardTabs"></div>
       <div id="dashboardTabContent"></div>
     </div>
   </div>
@@ -2060,10 +2209,7 @@
         <input type="number" id="sendAmount" placeholder="0.0" step="any" />
       </div>
       <div class="form-group">
-        <span class="gas-badge">
-          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none"><path d="M4 4h16v16H4z"/><path d="M8 4v16M16 4v16"/></svg>
-          Gas: Covered by Capitan
-        </span>
+        <span class="gas-badge">Gas covered by Capitan</span>
       </div>
       <div class="btn-row">
         <button class="btn btn-secondary" id="sendCancelBtn">Cancel</button>
@@ -2084,7 +2230,7 @@
     </div>
   </div>
 
-  <!-- Swap Modal (default button text "Get Quote") -->
+  <!-- Swap Modal -->
   <div class="modal-overlay" id="swapModal">
     <div class="modal">
       <h2>Swap</h2>
@@ -2100,10 +2246,9 @@
         <label>Amount</label>
         <input type="number" id="swapAmount" placeholder="0.0" step="any" />
       </div>
-      <div id="swapQuote" style="font-size:14px; color:var(--text-secondary); margin-bottom:12px;">Enter amount to see quote</div>
       <div class="btn-row">
         <button class="btn btn-secondary" id="swapCancelBtn">Cancel</button>
-        <button class="btn btn-primary" id="swapConfirmBtn">Get Quote</button>
+        <button class="btn btn-primary" id="swapConfirmBtn">Swap</button>
       </div>
     </div>
   </div>
@@ -2134,6 +2279,31 @@
         <button class="btn btn-primary" id="buyVerifyBtn">Verify Payment</button>
       </div>
       <div id="buyStatus" style="margin-top:8px; font-size:14px;"></div>
+    </div>
+  </div>
+
+  <!-- Portfolio Item Edit Modal -->
+  <div class="modal-overlay" id="portfolioItemModal">
+    <div class="modal">
+      <h2 id="portfolioItemModalTitle">New Item</h2>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="portfolioItemName" />
+      </div>
+      <div class="form-group">
+        <label>Content</label>
+        <textarea id="portfolioItemContent" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Folder</label>
+        <input type="text" id="portfolioItemFolder" placeholder="General" />
+      </div>
+      <input type="hidden" id="portfolioItemId" />
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="portfolioItemCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="portfolioItemSaveBtn">Save</button>
+        <button class="btn btn-danger" id="portfolioItemDeleteBtn" style="display:none;">Delete</button>
+      </div>
     </div>
   </div>
 
@@ -2179,8 +2349,31 @@
     </div>
   </div>
 
+  <!-- Create Workspace Modal -->
+  <div class="modal-overlay" id="createWorkspaceModal">
+    <div class="modal">
+      <h2>Create Workspace</h2>
+      <div class="form-group">
+        <label>Room Name</label>
+        <input type="text" id="workspaceName" placeholder="My Room" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="workspaceDesc" placeholder="Optional" />
+      </div>
+      <div class="form-group">
+        <label>Password (optional)</label>
+        <input type="text" id="workspacePassword" />
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="createWorkspaceCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="createWorkspaceConfirmBtn">Create</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============================================================
-       JAVASCRIPT – ENTERPRISE APPLICATION (FULLY CORRECTED)
+       JAVASCRIPT – COMPLETE ENTERPRISE APPLICATION (UNABRIDGED)
        ============================================================ -->
   <script>
     (function() {
@@ -2212,7 +2405,8 @@
         },
         WELCOME_BONUS: 1000,
         GAS_SWAP_THRESHOLD: 1000,
-        GAS_PERCENT: 0.02
+        GAS_PERCENT: 0.02,
+        POL_USD_RATE: 0.5 // approximate placeholder
       };
 
       // ============================================================
@@ -2229,8 +2423,8 @@
         closeBalance: 0,
         closeTier: 'free',
         walletAddress: localStorage.getItem('os_address') || null,
-        walletEncrypted: localStorage.getItem('os_encrypted') || null,
-        walletEncryptedSalt: localStorage.getItem('os_salt') || null,
+        walletEncrypted: null,
+        walletEncryptedSalt: null,
         walletUnlocked: false,
         walletSigner: null,
         theme: localStorage.getItem('theme') || 'dark',
@@ -2251,7 +2445,10 @@
         notifications: [],
         unreadCount: 0,
         welcomeBonusClaimed: localStorage.getItem('welcomeBonusClaimed') === 'true',
-        pendingSwapQuote: null
+        pendingSwapQuote: null,
+        workspaces: [],
+        activeWorkspaceId: null,
+        chatHistory: []
       };
 
       // ============================================================
@@ -2410,7 +2607,6 @@
         } catch (e) {
           err.textContent = e.message || 'Registration failed';
           err.style.display = 'block';
-          console.error('Signup error:', e);
         }
       }
 
@@ -2452,14 +2648,10 @@
         localStorage.removeItem('cu');
         localStorage.removeItem('is_admin');
         localStorage.removeItem('os_address');
-        localStorage.removeItem('os_encrypted');
-        localStorage.removeItem('os_salt');
         state.token = null;
         state.user = null;
         state.isAdmin = false;
         state.walletAddress = null;
-        state.walletEncrypted = null;
-        state.walletEncryptedSalt = null;
         document.getElementById('authContainer').classList.add('visible');
         document.getElementById('app').classList.remove('visible');
         document.getElementById('profileDrawer').classList.remove('open');
@@ -2467,7 +2659,7 @@
       }
 
       // ============================================================
-      // 6. WALLET & TOKEN FUNCTIONS
+      // 6. TOKEN & BALANCE
       // ============================================================
       async function updateCloseBalance() {
         try {
@@ -2537,12 +2729,10 @@
         switchWalletTab('tokens');
       }
 
-      // FIX: renderTokenList writes directly to walletTabContent
       async function loadWalletTokens() {
         const addr = state.walletAddress;
         if (!addr) {
-          const container = document.getElementById('walletTabContent');
-          container.innerHTML = '<div class="text-tertiary">No wallet address found.</div>';
+          document.getElementById('walletTabContent').innerHTML = '<div class="text-tertiary">No wallet address found.</div>';
           return;
         }
         try {
@@ -2550,9 +2740,7 @@
           state.tokens = data.tokens || [];
           renderTokenList();
         } catch (e) {
-          toast('Could not load tokens: ' + e.message, 'error');
-          const container = document.getElementById('walletTabContent');
-          container.innerHTML = '<div class="text-tertiary">Failed to load tokens.</div>';
+          document.getElementById('walletTabContent').innerHTML = '<div class="text-tertiary">Failed to load tokens.</div>';
         }
       }
 
@@ -2674,13 +2862,9 @@
       function switchWalletTab(tab) {
         document.querySelectorAll('.wallet-tab').forEach(t => t.classList.remove('active'));
         document.querySelector(`.wallet-tab[data-wtab="${tab}"]`).classList.add('active');
-        if (tab === 'tokens') {
-          renderTokenList();
-        } else if (tab === 'activity') {
-          renderActivity();
-        } else if (tab === 'markets') {
-          renderMarketsTab();
-        }
+        if (tab === 'tokens') renderTokenList();
+        else if (tab === 'activity') renderActivity();
+        else if (tab === 'markets') renderMarketsTab();
       }
 
       // ============================================================
@@ -2690,7 +2874,7 @@
         try {
           const data = await apiCall('/api/markets/crypto');
           state.markets.crypto = data || [];
-        } catch (e) { /* fallback */ }
+        } catch (e) {}
         try {
           const stocks = await apiCall('/api/markets/stocks');
           state.markets.stocks = stocks || [];
@@ -2778,7 +2962,7 @@
         const rate = parseFloat(document.getElementById('buyRate').dataset.rate) || 0;
         const pol = rate > 0 ? amount / rate : 0;
         document.getElementById('buyEquivalent').textContent = pol.toFixed(6) + ' POL';
-        document.getElementById('buyUsd').textContent = (pol * 2.5).toFixed(2);
+        document.getElementById('buyUsd').textContent = (pol * CONFIG.POL_USD_RATE).toFixed(2);
       }
 
       async function verifyPurchase() {
@@ -2798,16 +2982,15 @@
             closeModal('buyModal');
           } else {
             toast('Verification failed. Check TXID.', 'error');
-            document.getElementById('buyStatus').textContent = '❌ Verification failed. Try again.';
+            document.getElementById('buyStatus').textContent = '❌ Verification failed.';
           }
         } catch (e) {
           toast('Error: ' + e.message, 'error');
-          document.getElementById('buyStatus').textContent = 'Error: ' + e.message;
         }
       }
 
       // ============================================================
-      // 10. SEND / RECEIVE / SWAP MODALS
+      // 10. SEND / RECEIVE / SWAP (Custodial)
       // ============================================================
       function openSendModal() {
         const modal = document.getElementById('sendModal');
@@ -2818,12 +3001,27 @@
 
       async function confirmSend() {
         const to = document.getElementById('sendAddress').value.trim();
-        const token = document.getElementById('sendTokenSelect').value;
-        const amount = document.getElementById('sendAmount').value;
-        if (!to || !amount) { toast('Fill all fields', 'error'); return; }
+        const tokenAddress = document.getElementById('sendTokenSelect').value;
+        const amountInput = document.getElementById('sendAmount').value;
+        const chainId = parseInt(document.getElementById('networkSelect').value) || 137;
+
+        if (!to || !amountInput) { toast('Fill all fields', 'error'); return; }
+        if (!ethers.utils.isAddress(to)) { toast('Invalid recipient address', 'error'); return; }
+
+        // Determine decimals from token list
+        let decimals = 18;
+        const token = state.tokens.find(t => t.address === tokenAddress);
+        if (token) decimals = token.decimals || 18;
+        else if (tokenAddress === '0x0000000000000000000000000000000000000000') decimals = 18;
+
+        const amount = ethers.utils.parseUnits(amountInput, decimals).toString();
+
         try {
-          await apiCall('/api/wallet/send', { method: 'POST', body: JSON.stringify({ to, token, amount: amount.toString(), chainId: parseInt(document.getElementById('networkSelect').value) }) });
-          toast('Transaction sent!', 'success');
+          const res = await apiCall('/api/wallet/send', {
+            method: 'POST',
+            body: JSON.stringify({ to, token_address: tokenAddress, amount, chain_id: chainId })
+          });
+          toast('Transaction sent! ' + res.tx_hash, 'success');
           closeModal('sendModal');
           loadWalletTokens();
           loadActivity(true);
@@ -2839,7 +3037,9 @@
         const qrContainer = document.getElementById('receiveQr');
         qrContainer.innerHTML = '';
         if (typeof QRCode !== 'undefined') {
-          new QRCode(qrContainer, { text: addr, width: 180, height: 180 });
+          try { new QRCode(qrContainer, { text: addr, width: 180, height: 180 }); } catch(e) {}
+        } else {
+          qrContainer.innerHTML = '<span class="text-tertiary">QR library not loaded</span>';
         }
         modal.classList.add('open');
       }
@@ -2851,32 +3051,25 @@
         const to = document.getElementById('swapToToken');
         from.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
         to.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
-        document.getElementById('swapQuote').textContent = 'Enter amount to see quote';
+        document.getElementById('swapConfirmBtn').textContent = 'Swap';
         state.pendingSwapQuote = null;
-        document.getElementById('swapConfirmBtn').textContent = 'Get Quote';
-      }
-
-      async function getSwapQuote() {
-        const from = document.getElementById('swapFromToken').value;
-        const to = document.getElementById('swapToToken').value;
-        const amount = document.getElementById('swapAmount').value;
-        if (!amount) { toast('Enter amount', 'error'); return; }
-        try {
-          const data = await apiCall('/api/wallet/swap/quote', { method: 'POST', body: JSON.stringify({ fromToken: from, toToken: to, amount: amount.toString() }) });
-          state.pendingSwapQuote = data;
-          document.getElementById('swapQuote').innerHTML = `Estimated output: ${formatNumber(data.estimated, 4)} ${data.toSymbol || ''}`;
-          document.getElementById('swapConfirmBtn').textContent = 'Confirm Swap';
-        } catch (e) {
-          toast('Quote failed: ' + e.message, 'error');
-        }
       }
 
       async function confirmSwap() {
-        const quote = state.pendingSwapQuote;
-        if (!quote) { toast('No quote available. Get a quote first.', 'error'); return; }
+        const fromToken = document.getElementById('swapFromToken').value;
+        const toToken = document.getElementById('swapToToken').value;
+        const amountInput = document.getElementById('swapAmount').value;
+        if (!amountInput) { toast('Enter amount', 'error'); return; }
+        let decimals = 18;
+        const token = state.tokens.find(t => t.address === fromToken);
+        if (token) decimals = token.decimals || 18;
+        const amount = ethers.utils.parseUnits(amountInput, decimals).toString();
         try {
-          await apiCall('/api/wallet/swap/execute', { method: 'POST', body: JSON.stringify({ quote: quote }) });
-          toast('Swap executed!', 'success');
+          const res = await apiCall('/api/wallet/swap/execute', {
+            method: 'POST',
+            body: JSON.stringify({ from_token: fromToken, to_token: toToken, amount, slippage: 1.0 })
+          });
+          toast('Swap executed! TX: ' + res.tx_hash, 'success');
           closeModal('swapModal');
           loadWalletTokens();
           loadActivity(true);
@@ -2886,7 +3079,7 @@
       }
 
       // ============================================================
-      // 11. PORTFOLIO, RESEARCH, DEVELOPER
+      // 11. PORTFOLIO CRUD
       // ============================================================
       function showPortfolio() {
         document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
@@ -2908,21 +3101,84 @@
       function renderPortfolioItems() {
         const container = document.getElementById('portfolioItems');
         if (!state.portfolioItems.length) {
-          container.innerHTML = '<p class="text-tertiary">No saved items.</p>';
+          container.innerHTML = '<p class="text-tertiary">No saved items. <a href="#" id="createFirstPortfolio">Create one</a></p>';
+          document.getElementById('createFirstPortfolio')?.addEventListener('click', openPortfolioItemModal);
           return;
         }
         let html = '';
         state.portfolioItems.forEach(item => {
           html += `
-            <div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px; margin-bottom:8px;">
-              <div style="font-weight:600;">${escapeHtml(item.name || 'Untitled')}</div>
-              <div style="font-size:13px; color:var(--text-secondary);">${escapeHtml(item.content ? item.content.substring(0, 100) : '')}</div>
+            <div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+              <div style="cursor:pointer;" onclick="window.editPortfolioItem('${item.id}')">
+                <div style="font-weight:600;">${escapeHtml(item.name || 'Untitled')}</div>
+                <div style="font-size:13px; color:var(--text-secondary);">${escapeHtml(item.content ? item.content.substring(0, 100) : '')}</div>
+              </div>
+              <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="window.deletePortfolioItem('${item.id}')">🗑</button>
             </div>
           `;
         });
         container.innerHTML = html;
       }
 
+      function openPortfolioItemModal(item = null) {
+        const modal = document.getElementById('portfolioItemModal');
+        if (item) {
+          document.getElementById('portfolioItemModalTitle').textContent = 'Edit Item';
+          document.getElementById('portfolioItemName').value = item.name || '';
+          document.getElementById('portfolioItemContent').value = item.content || '';
+          document.getElementById('portfolioItemFolder').value = item.folder || 'General';
+          document.getElementById('portfolioItemId').value = item.id;
+          document.getElementById('portfolioItemDeleteBtn').style.display = 'inline-block';
+        } else {
+          document.getElementById('portfolioItemModalTitle').textContent = 'New Item';
+          document.getElementById('portfolioItemName').value = '';
+          document.getElementById('portfolioItemContent').value = '';
+          document.getElementById('portfolioItemFolder').value = 'General';
+          document.getElementById('portfolioItemId').value = '';
+          document.getElementById('portfolioItemDeleteBtn').style.display = 'none';
+        }
+        modal.classList.add('open');
+      }
+
+      async function savePortfolioItem() {
+        const name = document.getElementById('portfolioItemName').value.trim();
+        const content = document.getElementById('portfolioItemContent').value;
+        const folder = document.getElementById('portfolioItemFolder').value.trim() || 'General';
+        const id = document.getElementById('portfolioItemId').value;
+        if (!name) { toast('Name required', 'error'); return; }
+        const body = { name, content, folder, tags: [], attachments: [] };
+        try {
+          if (id) {
+            await apiCall(`/api/portfolio/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+          } else {
+            await apiCall('/api/portfolio', { method: 'POST', body: JSON.stringify(body) });
+          }
+          closeModal('portfolioItemModal');
+          loadPortfolioItems();
+        } catch (e) {
+          toast('Save failed: ' + e.message, 'error');
+        }
+      }
+
+      async function deletePortfolioItem(id) {
+        if (!confirm('Delete this item?')) return;
+        try {
+          await apiCall(`/api/portfolio/${id}`, { method: 'DELETE' });
+          loadPortfolioItems();
+        } catch (e) {
+          toast('Delete failed: ' + e.message, 'error');
+        }
+      }
+
+      window.editPortfolioItem = function(id) {
+        const item = state.portfolioItems.find(i => i.id === id);
+        if (item) openPortfolioItemModal(item);
+      };
+      window.deletePortfolioItem = deletePortfolioItem;
+
+      // ============================================================
+      // 12. RESEARCH HUB
+      // ============================================================
       function showResearch() {
         document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
         document.getElementById('researchFullPage').classList.add('open');
@@ -2934,37 +3190,81 @@
         try {
           const data = await apiCall('/api/research/topics');
           state.researchTopics = data.topics || [];
-          renderResearch();
         } catch (e) {}
+        loadResearchProjects();
+      }
+
+      async function loadResearchProjects() {
+        try {
+          const data = await apiCall('/api/research/projects');
+          state.researchProjects = data.projects || [];
+        } catch (e) {}
+        renderResearch();
       }
 
       function renderResearch() {
         const container = document.getElementById('researchTabContent');
         let html = '<div style="display:flex; gap:8px; margin-bottom:12px;">';
         html += `<button class="action-btn active" data-rtab="topics">Topics</button>`;
-        html += `<button class="action-btn" data-rtab="projects">Projects</button>`;
+        html += `<button class="action-btn" data-rtab="projects">My Projects</button>`;
         html += `</div><div id="researchList">`;
+        html += `<div id="researchTopicsList">`;
         state.researchTopics.forEach(t => {
           html += `<div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px; margin-bottom:8px; cursor:pointer;" onclick="window.startTopicChat('${t.id}')">
             <div style="font-weight:600;">${escapeHtml(t.title)}</div>
             <div style="font-size:13px; color:var(--text-secondary);">${escapeHtml(t.description || '')}</div>
           </div>`;
         });
-        html += '</div>';
+        html += `</div><div id="researchProjectsList" style="display:none;">`;
+        html += `<button class="btn btn-primary" id="newResearchProjectBtn" style="margin-bottom:8px;">+ New Project</button>`;
+        state.researchProjects.forEach(p => {
+          html += `<div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600;">${escapeHtml(p.name)}</div>
+              <div style="font-size:13px; color:var(--text-secondary);">${escapeHtml(p.description || '')}</div>
+            </div>
+            <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="window.deleteResearchProject('${p.id}')">🗑</button>
+          </div>`;
+        });
+        html += `</div></div>`;
         container.innerHTML = html;
-        container.querySelectorAll('[data-rtab]').forEach(btn => {
+
+        document.querySelectorAll('[data-rtab]').forEach(btn => {
           btn.addEventListener('click', () => {
-            container.querySelectorAll('[data-rtab]').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('[data-rtab]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            const tab = btn.dataset.rtab;
+            document.getElementById('researchTopicsList').style.display = tab === 'topics' ? 'block' : 'none';
+            document.getElementById('researchProjectsList').style.display = tab === 'projects' ? 'block' : 'none';
           });
+        });
+        document.getElementById('newResearchProjectBtn')?.addEventListener('click', () => {
+          const name = prompt('Project name:');
+          if (name) {
+            apiCall('/api/research/projects', { method: 'POST', body: JSON.stringify({ name }) })
+              .then(() => loadResearchProjects())
+              .catch(e => toast(e.message, 'error'));
+          }
         });
       }
 
+      window.deleteResearchProject = async function(id) {
+        if (!confirm('Delete project?')) return;
+        try {
+          await apiCall(`/api/research/projects/${id}`, { method: 'DELETE' });
+          loadResearchProjects();
+        } catch (e) { toast('Failed', 'error'); }
+      };
+
+      // ============================================================
+      // 13. DEVELOPER
+      // ============================================================
       function showDeveloper() {
         document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
         document.getElementById('developerFullPage').classList.add('open');
         state.activeView = 'developer';
         loadDeveloperKeys();
+        loadWebhooks();
       }
 
       async function loadDeveloperKeys() {
@@ -2975,47 +3275,530 @@
         } catch (e) {}
       }
 
+      async function loadWebhooks() {
+        try {
+          const data = await apiCall('/api/developer/webhooks');
+          state.webhooks = data.webhooks || [];
+          renderDeveloper();
+        } catch (e) {}
+      }
+
       function renderDeveloper() {
         const container = document.getElementById('developerTabContent');
         let html = '<div style="display:flex; gap:8px; margin-bottom:12px;">';
         html += `<button class="action-btn active" data-dtab="keys">API Keys</button>`;
         html += `<button class="action-btn" data-dtab="webhooks">Webhooks</button>`;
         html += `</div><div id="devList">`;
+        // Keys section
+        html += `<div id="devKeysSection">`;
         state.apiKeys.forEach(k => {
-          html += `<div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px; margin-bottom:8px; display:flex; justify-content:space-between;">
+          html += `<div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
             <span>${escapeHtml(k.prefix)}</span>
             <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" onclick="window.revokeKey('${k.id}')">Revoke</button>
           </div>`;
         });
         html += `<button class="btn btn-primary" id="createApiKeyBtn">Generate New Key</button>`;
-        html += '</div>';
+        html += `</div>`;
+        // Webhooks section
+        html += `<div id="devWebhooksSection" style="display:none;">`;
+        state.webhooks.forEach(w => {
+          html += `<div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div>${escapeHtml(w.url)}</div>
+              <div style="font-size:12px; color:var(--text-tertiary);">${escapeHtml(w.events)}</div>
+            </div>
+            <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="window.deleteWebhook('${w.id}')">🗑</button>
+          </div>`;
+        });
+        html += `<div style="display:flex; gap:8px; margin-top:8px;">
+          <input type="text" id="webhookUrl" class="auth-input" placeholder="https://..." />
+          <button class="btn btn-primary" id="addWebhookBtn">Add</button>
+        </div>`;
+        html += `</div></div>`;
         container.innerHTML = html;
-        document.getElementById('createApiKeyBtn').addEventListener('click', createApiKey);
+
+        document.querySelectorAll('[data-dtab]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-dtab]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.dataset.dtab;
+            document.getElementById('devKeysSection').style.display = tab === 'keys' ? 'block' : 'none';
+            document.getElementById('devWebhooksSection').style.display = tab === 'webhooks' ? 'block' : 'none';
+          });
+        });
+
+        document.getElementById('createApiKeyBtn')?.addEventListener('click', async () => {
+          try {
+            const data = await apiCall('/api/developer/keys', { method: 'POST' });
+            toast('Key created: ' + data.key, 'success');
+            loadDeveloperKeys();
+          } catch (e) { toast('Failed', 'error'); }
+        });
+
+        document.getElementById('addWebhookBtn')?.addEventListener('click', async () => {
+          const url = document.getElementById('webhookUrl').value.trim();
+          if (!url) return;
+          try {
+            await apiCall('/api/developer/webhooks', { method: 'POST', body: JSON.stringify({ url }) });
+            toast('Webhook added', 'success');
+            loadWebhooks();
+          } catch (e) { toast('Failed', 'error'); }
+        });
       }
 
-      async function createApiKey() {
+      window.revokeKey = async function(id) {
+        if (!confirm('Revoke key?')) return;
         try {
-          const data = await apiCall('/api/developer/keys', { method: 'POST' });
-          toast('Key created: ' + data.key, 'success');
+          await apiCall(`/api/developer/keys/${id}`, { method: 'DELETE' });
           loadDeveloperKeys();
+        } catch (e) { toast('Failed', 'error'); }
+      };
+
+      window.deleteWebhook = async function(id) {
+        if (!confirm('Delete webhook?')) return;
+        try {
+          await apiCall(`/api/developer/webhooks/${id}`, { method: 'DELETE' });
+          loadWebhooks();
+        } catch (e) { toast('Failed', 'error'); }
+      };
+
+      // ============================================================
+      // 14. WORKSPACES
+      // ============================================================
+      function showWorkspaces() {
+        document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
+        document.getElementById('workspacePanel').classList.add('open');
+        state.activeView = 'workspaces';
+        loadWorkspaces();
+      }
+
+      async function loadWorkspaces() {
+        try {
+          const data = await apiCall('/api/workspace/my');
+          state.workspaces = data.workspaces || [];
+          renderWorkspaceList();
         } catch (e) {
-          toast('Failed to create key', 'error');
+          document.getElementById('workspaceListContainer').innerHTML = '<div class="text-tertiary">Failed to load workspaces.</div>';
         }
       }
 
-      async function revokeKey(id) {
-        if (!confirm('Revoke this key?')) return;
+      function renderWorkspaceList() {
+        const container = document.getElementById('workspaceListContainer');
+        document.getElementById('workspaceRoomView').style.display = 'none';
+        container.style.display = 'block';
+        if (!state.workspaces.length) {
+          container.innerHTML = '<div class="text-tertiary">No workspaces. Create or join one.</div>';
+          return;
+        }
+        let html = '';
+        state.workspaces.forEach(w => {
+          html += `<div class="workspace-list-item" onclick="window.openWorkspaceRoom('${w.id}', '${escapeHtml(w.room_code)}')">
+            <div>
+              <strong>${escapeHtml(w.name)}</strong> (${w.member_count} members)
+            </div>
+            <span style="font-size:12px; color:var(--text-tertiary);">${escapeHtml(w.room_code)}</span>
+          </div>`;
+        });
+        container.innerHTML = html;
+      }
+
+      window.openWorkspaceRoom = function(roomId, roomCode) {
+        state.activeWorkspaceId = roomId;
+        document.getElementById('workspaceListContainer').style.display = 'none';
+        const roomView = document.getElementById('workspaceRoomView');
+        roomView.style.display = 'block';
+        document.getElementById('workspaceMessages').innerHTML = '<div class="text-tertiary">Loading messages...</div>';
+        loadWorkspaceMessages(roomCode);
+      };
+
+      async function loadWorkspaceMessages(roomCode) {
         try {
-          await apiCall('/api/developer/keys/' + id, { method: 'DELETE' });
-          toast('Key revoked', 'success');
-          loadDeveloperKeys();
+          const data = await apiCall(`/api/workspace/rooms/${roomCode}/messages`);
+          const msgs = data.messages || [];
+          const container = document.getElementById('workspaceMessages');
+          let html = '';
+          msgs.forEach(m => {
+            html += `<div style="margin-bottom:6px; padding:6px; border-radius:var(--radius-sm); background:var(--bg-tertiary);">
+              <strong>${escapeHtml(m.author)}</strong> ${m.is_ai ? '🤖' : ''}: ${escapeHtml(m.message)}
+            </div>`;
+          });
+          container.innerHTML = html || '<div class="text-tertiary">No messages yet.</div>';
+          container.scrollTop = container.scrollHeight;
         } catch (e) {
-          toast('Failed', 'error');
+          document.getElementById('workspaceMessages').innerHTML = '<div class="text-tertiary">Could not load messages.</div>';
+        }
+      }
+
+      async function sendWorkspaceMessage() {
+        const input = document.getElementById('workspaceMessageInput');
+        const msg = input.value.trim();
+        if (!msg || !state.activeWorkspaceId) return;
+        // get room_code from workspaces
+        const ws = state.workspaces.find(w => w.id === state.activeWorkspaceId);
+        if (!ws) return;
+        try {
+          await apiCall(`/api/workspace/rooms/${ws.room_code}/messages`, { method: 'POST', body: JSON.stringify({ message: msg }) });
+          input.value = '';
+          loadWorkspaceMessages(ws.room_code);
+        } catch (e) {
+          toast('Send failed: ' + e.message, 'error');
+        }
+      }
+
+      async function createWorkspace() {
+        const name = document.getElementById('workspaceName').value.trim();
+        const description = document.getElementById('workspaceDesc').value.trim();
+        const password = document.getElementById('workspacePassword').value.trim();
+        if (!name) { toast('Name required', 'error'); return; }
+        try {
+          await apiCall('/api/workspace/create', { method: 'POST', body: JSON.stringify({ name, description, password }) });
+          closeModal('createWorkspaceModal');
+          loadWorkspaces();
+        } catch (e) {
+          toast('Create failed: ' + e.message, 'error');
+        }
+      }
+
+      async function joinWorkspace() {
+        const room_code = document.getElementById('joinRoomCode').value.trim().toUpperCase();
+        const password = document.getElementById('joinRoomPassword').value;
+        if (!room_code) { toast('Room code required', 'error'); return; }
+        try {
+          await apiCall('/api/workspace/join', { method: 'POST', body: JSON.stringify({ room_code, password }) });
+          toast('Joined!', 'success');
+          loadWorkspaces();
+        } catch (e) {
+          toast('Join failed: ' + e.message, 'error');
         }
       }
 
       // ============================================================
-      // 12. FOUNDER DASHBOARD
+      // 15. NOTIFICATIONS
+      // ============================================================
+      async function fetchNotifications() {
+        try {
+          const data = await apiCall('/api/notifications');
+          state.notifications = data.notifications || [];
+          state.unreadCount = state.notifications.filter(n => !n.read).length;
+          updateNotifBadge();
+          renderNotificationList();
+        } catch (e) {}
+      }
+
+      function updateNotifBadge() {
+        const badge = document.getElementById('notifBadge');
+        badge.textContent = state.unreadCount || '0';
+        badge.classList.toggle('show', state.unreadCount > 0);
+      }
+
+      function renderNotificationList() {
+        const container = document.getElementById('notificationList');
+        if (!state.notifications.length) {
+          container.innerHTML = '<div class="text-tertiary">No notifications.</div>';
+          return;
+        }
+        let html = '';
+        state.notifications.forEach(n => {
+          html += `<div class="notification-item">
+            <div>${escapeHtml(n.message)}</div>
+            <div class="time">${new Date(n.created).toLocaleString()}</div>
+          </div>`;
+        });
+        container.innerHTML = html;
+      }
+
+      async function markAllRead() {
+        try {
+          await apiCall('/api/notifications/read', { method: 'POST' });
+          state.unreadCount = 0;
+          updateNotifBadge();
+          fetchNotifications();
+        } catch (e) {}
+      }
+
+      // ============================================================
+      // 16. PROFILE EDITING & DELETE
+      // ============================================================
+      async function saveProfile() {
+        const name = document.getElementById('editName').value.trim();
+        const depth = parseInt(document.getElementById('editDepth').value);
+        const domain = document.getElementById('editDomain').value;
+        try {
+          await apiCall('/api/auth/update-profile', { method: 'POST', body: JSON.stringify({ name, reasoning_depth: depth, preferred_domain: domain }) });
+          if (state.user) {
+            state.user.name = name;
+            state.user.reasoning_depth = depth;
+            state.user.preferred_domain = domain;
+          }
+          updateProfileUI();
+          toast('Profile updated', 'success');
+        } catch (e) {
+          toast('Update failed: ' + e.message, 'error');
+        }
+      }
+
+      async function deleteAccount() {
+        if (!confirm('PERMANENTLY delete your account? This cannot be undone.')) return;
+        try {
+          await apiCall('/api/auth/delete-account', { method: 'DELETE' });
+          logout();
+          toast('Account deleted.', 'info');
+        } catch (e) {
+          toast('Deletion failed: ' + e.message, 'error');
+        }
+      }
+
+      async function loadStreak() {
+        try {
+          const data = await apiCall('/api/gamification/streak');
+          document.getElementById('streakDisplay').textContent = `🔥 Streak: ${data.streak} day(s)`;
+        } catch (e) {
+          document.getElementById('streakDisplay').textContent = '';
+        }
+      }
+
+      // ============================================================
+      // 17. COMMUNITY (Leaderboard & Badges)
+      // ============================================================
+      function showCommunity() {
+        document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
+        document.getElementById('communityFullPage').classList.add('open');
+        state.activeView = 'community';
+        loadLeaderboard();
+        loadBadges();
+      }
+
+      async function loadLeaderboard() {
+        try {
+          const data = await apiCall('/api/leaderboard?type=staked');
+          const list = data.leaderboard || [];
+          let html = '<h3>Leaderboard (Top Stakers)</h3><div class="token-list">';
+          list.forEach((u, i) => {
+            html += `<div class="token-item"><span>${i+1}. ${escapeHtml(u.name)}</span><span>${formatNumber(u.staked)} CLOSE</span></div>`;
+          });
+          html += '</div>';
+          document.getElementById('leaderboardContainer').innerHTML = html;
+        } catch (e) {}
+      }
+
+      async function loadBadges() {
+        try {
+          const data = await apiCall('/api/badges');
+          const badges = data.badges || [];
+          let html = '<h3>Your Badges</h3>';
+          if (!badges.length) html += '<div class="text-tertiary">No badges yet.</div>';
+          else {
+            badges.forEach(b => {
+              html += `<div class="token-item"><span>${b.icon} ${b.name}</span><span>${escapeHtml(b.description)}</span></div>`;
+            });
+          }
+          document.getElementById('badgesContainer').innerHTML = html;
+        } catch (e) {}
+      }
+
+      // ============================================================
+      // 18. CHAT HISTORY
+      // ============================================================
+      async function loadChatHistory() {
+        if (!state.user) return;
+        try {
+          const data = await apiCall('/api/chats'); // assumes backend endpoint exists
+          state.chatHistory = data.chats || [];
+          renderChatHistory();
+        } catch (e) {
+          // fail silently
+        }
+      }
+
+      function renderChatHistory() {
+        const container = document.getElementById('chatHistoryList');
+        if (!state.chatHistory.length) {
+          container.innerHTML = '<div class="text-tertiary" style="padding:8px 16px;">No chat history</div>';
+          return;
+        }
+        let html = '<div style="padding:4px 12px; font-weight:600; font-size:12px; color:var(--text-tertiary);">Recent Chats</div>';
+        state.chatHistory.forEach(c => {
+          html += `<div class="chat-history-item" onclick="window.loadChat('${c.id}')">${escapeHtml(c.title || c.id)}</div>`;
+        });
+        container.innerHTML = html;
+      }
+
+      window.loadChat = async function(chatId) {
+        state.chatId = chatId;
+        state.messages = [];
+        try {
+          const data = await apiCall(`/api/chats/${chatId}`); // assumes backend returns messages
+          state.messages = data.messages || [];
+          renderMessages();
+        } catch (e) {
+          toast('Could not load chat history', 'error');
+        }
+      };
+
+      // ============================================================
+      // 19. CHAT FUNCTIONALITY
+      // ============================================================
+      function showChat() {
+        document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
+        document.getElementById('workspacePanel').classList.remove('open');
+        state.activeView = 'chat';
+        renderMessages();
+      }
+
+      function newChat() {
+        state.messages = [];
+        state.chatId = null;
+        renderMessages();
+        document.getElementById('messageInput').focus();
+      }
+
+      async function sendMessageWithContent(text, skipSpend = false) {
+        if (!text || state.loading) return;
+        if (!skipSpend) {
+          const cost = CONFIG.SPEND_COSTS.chat;
+          if (state.closeBalance < cost) {
+            showBuyModal(cost - state.closeBalance);
+            return;
+          }
+          const spent = await spendTokens('chat', cost);
+          if (!spent) return;
+        }
+        state.messages.push({ role: 'user', content: text });
+        renderMessages();
+        state.loading = true;
+        const aiIdx = state.messages.length;
+        state.messages.push({ role: 'assistant', content: '', isTyping: true });
+        renderMessages();
+        try {
+          const data = await apiCall('/api/chat', { method: 'POST', body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.chatId }) });
+          state.messages[aiIdx] = { role: 'assistant', content: data.content || 'No response', message_id: data.message_id };
+          state.chatId = data.chat_id;
+          renderMessages();
+          updateCloseBalance();
+          loadChatHistory();
+        } catch (e) {
+          state.messages[aiIdx] = { role: 'assistant', content: 'Error: ' + e.message };
+          renderMessages();
+        }
+        state.loading = false;
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if (!text || state.loading) return;
+        input.value = '';
+        await sendMessageWithContent(text);
+      }
+
+      function renderMessages() {
+        const container = document.getElementById('messagesArea');
+        if (!state.messages.length) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:40px 16px;">
+              <div style="font-size:24px; font-weight:700;">${getGreeting()}</div>
+              <p style="color:var(--text-secondary); margin-top:8px;">Ask Capitan anything…</p>
+            </div>
+          `;
+          return;
+        }
+        let html = '';
+        state.messages.forEach(m => {
+          const roleClass = m.role === 'user' ? 'user' : 'assistant';
+          let content;
+          if (m.isTyping) {
+            content = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+          } else if (m.role === 'user') {
+            content = escapeHtml(m.content);
+          } else {
+            content = sanitize(m.content);
+          }
+          html += `<div class="message ${roleClass}"><div class="message-content">${content}</div></div>`;
+        });
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function getGreeting() {
+        const h = new Date().getHours();
+        if (h >= 5 && h < 12) return 'Good morning';
+        if (h >= 12 && h < 17) return 'Good afternoon';
+        if (h >= 17 && h < 21) return 'Good evening';
+        return 'Welcome';
+      }
+
+      // ============================================================
+      // 20. INITIALISATION
+      // ============================================================
+      function initApp() {
+        document.getElementById('authContainer').classList.remove('visible');
+        document.getElementById('app').classList.add('visible');
+        setTheme(state.theme);
+        updateProfileUI();
+        updateCloseBalance();
+        showView('chat');
+        renderMessages();
+        if (state.user && !state.welcomeBonusClaimed) {
+          claimWelcomeBonus();
+        }
+        document.getElementById('dashboardMenuItem').style.display = state.isAdmin ? 'flex' : 'none';
+        fetchNotifications();
+        loadChatHistory();
+        loadStreak();
+        // Auto-refresh wallet if open
+        setInterval(() => {
+          if (state.activeView === 'wallet') {
+            loadWalletTokens();
+          }
+        }, 30000);
+        // Show mobile profile button on small screens
+        if (window.innerWidth <= 768) {
+          document.getElementById('mobileProfileBtn').style.display = 'flex';
+        }
+      }
+
+      function updateProfileUI() {
+        const user = state.user;
+        const name = user ? (user.name || user.email || 'User') : 'Guest';
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('drawerName').textContent = name;
+        document.getElementById('drawerEmail').textContent = user ? user.email : 'guest@capitan.ai';
+        if (state.profilePhoto) {
+          document.getElementById('profileAvatarImg').src = state.profilePhoto;
+          document.getElementById('drawerAvatarImg').src = state.profilePhoto;
+        }
+        document.getElementById('editName').value = user?.name || '';
+        document.getElementById('editDepth').value = user?.reasoning_depth || 1;
+        document.getElementById('editDomain').value = user?.preferred_domain || 'general';
+        updateBalanceUI();
+      }
+
+      function showView(view) {
+        state.activeView = view;
+        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        const menuMap = {
+          'chat': document.querySelector('.menu-item[data-view="chat"]'),
+          'portfolio': document.querySelector('.menu-item[data-view="portfolio"]'),
+          'research': document.querySelector('.menu-item[data-view="research"]'),
+          'developer': document.querySelector('.menu-item[data-view="developer"]'),
+          'workspaces': document.querySelector('.menu-item[data-view="workspaces"]'),
+          'community': document.querySelector('.menu-item[data-view="community"]'),
+          'dashboard': document.querySelector('.menu-item[data-view="dashboard"]'),
+          'wallet': document.querySelector('.menu-item[data-view="wallet"]')
+        };
+        if (menuMap[view]) menuMap[view].classList.add('active');
+        if (view === 'chat') showChat();
+        else if (view === 'portfolio') showPortfolio();
+        else if (view === 'research') showResearch();
+        else if (view === 'developer') showDeveloper();
+        else if (view === 'workspaces') showWorkspaces();
+        else if (view === 'community') showCommunity();
+        else if (view === 'dashboard') showDashboard();
+        else if (view === 'wallet') openWallet();
+      }
+
+      // ============================================================
+      // 21. FOUNDER DASHBOARD
       // ============================================================
       function showDashboard() {
         if (!state.isAdmin) { toast('Access denied', 'error'); return; }
@@ -3054,8 +3837,8 @@
           <button class="btn" id="createPoolBtn">💧 Create Pool</button>
         </div>`;
         container.innerHTML = html;
-        document.getElementById('deployCapBtn').addEventListener('click', deployCap);
-        document.getElementById('createPoolBtn').addEventListener('click', createPool);
+        document.getElementById('deployCapBtn')?.addEventListener('click', deployCap);
+        document.getElementById('createPoolBtn')?.addEventListener('click', createPool);
       }
 
       async function deployCap() {
@@ -3063,9 +3846,7 @@
         try {
           const data = await apiCall('/api/admin/deploy-cap', { method: 'POST' });
           toast('Deployed at ' + data.address, 'success');
-        } catch (e) {
-          toast('Deploy failed: ' + e.message, 'error');
-        }
+        } catch (e) { toast('Deploy failed: ' + e.message, 'error'); }
       }
 
       async function createPool() {
@@ -3075,183 +3856,18 @@
         try {
           const data = await apiCall('/api/admin/create-pool', { method: 'POST', body: JSON.stringify({ cap_amount: (parseFloat(cap) * 1e18).toString(), matic_amount: (parseFloat(matic) * 1e18).toString() }) });
           toast('Pool created at ' + data.pair_address, 'success');
-        } catch (e) {
-          toast('Pool creation failed', 'error');
-        }
+        } catch (e) { toast('Pool creation failed', 'error'); }
       }
 
       // ============================================================
-      // 13. CHAT FUNCTIONALITY (Default landing page)
-      // ============================================================
-      function showChat() {
-        document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
-        state.activeView = 'chat';
-        renderMessages();
-      }
-
-      function newChat() {
-        state.messages = [];
-        state.chatId = null;
-        renderMessages();
-        document.getElementById('messageInput').focus();
-      }
-
-      // FIX: separate function to send message with content
-      async function sendMessageWithContent(text) {
-        if (!text || state.loading) return;
-        const cost = CONFIG.SPEND_COSTS.chat;
-        if (state.closeBalance < cost) {
-          showBuyModal(cost - state.closeBalance);
-          return;
-        }
-        const spent = await spendTokens('chat', cost);
-        if (!spent) return;
-        state.messages.push({ role: 'user', content: text });
-        renderMessages();
-        state.loading = true;
-        const aiIdx = state.messages.length;
-        state.messages.push({ role: 'assistant', content: '', isTyping: true });
-        renderMessages();
-        try {
-          const data = await apiCall('/api/chat', { method: 'POST', body: JSON.stringify({ messages: state.messages.slice(0, -1), chat_id: state.chatId }) });
-          state.messages[aiIdx] = { role: 'assistant', content: data.content || 'No response', message_id: data.message_id };
-          state.chatId = data.chat_id;
-          renderMessages();
-          updateCloseBalance();
-        } catch (e) {
-          state.messages[aiIdx] = { role: 'assistant', content: 'Error: ' + e.message };
-          renderMessages();
-        }
-        state.loading = false;
-      }
-
-      async function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const text = input.value.trim();
-        if (!text || state.loading) return;
-        input.value = '';
-        await sendMessageWithContent(text);
-      }
-
-      // ============================================================
-      // 14. RENDER MESSAGES
-      // ============================================================
-      function renderMessages() {
-        const container = document.getElementById('messagesArea');
-        if (!state.messages.length) {
-          container.innerHTML = `
-            <div style="text-align:center; padding:40px 16px;">
-              <div class="greeting-text" style="font-size:24px; font-weight:700;">${getGreeting()}</div>
-              <p style="color:var(--text-secondary); margin-top:8px;">Ask Capitan anything…</p>
-            </div>
-          `;
-          return;
-        }
-        let html = '';
-        state.messages.forEach((m, i) => {
-          const roleClass = m.role === 'user' ? 'user' : 'assistant';
-          let content;
-          if (m.isTyping) {
-            content = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
-          } else if (m.role === 'user') {
-            content = escapeHtml(m.content);
-          } else {
-            content = sanitize(m.content);
-          }
-          html += `<div class="message ${roleClass}"><div class="message-content">${content}</div></div>`;
-        });
-        container.innerHTML = html;
-        container.scrollTop = container.scrollHeight;
-      }
-
-      function getGreeting() {
-        const h = new Date().getHours();
-        if (h >= 5 && h < 12) return 'Good morning';
-        if (h >= 12 && h < 17) return 'Good afternoon';
-        if (h >= 17 && h < 21) return 'Good evening';
-        return 'Welcome';
-      }
-
-      // ============================================================
-      // 15. INITIALISATION
-      // ============================================================
-      function initApp() {
-        document.getElementById('authContainer').classList.remove('visible');
-        document.getElementById('app').classList.add('visible');
-        setTheme(state.theme);
-        updateProfileUI();
-        updateCloseBalance();
-        // Default view: Chat (AI productivity)
-        showView('chat');
-        renderMessages();
-        // DO NOT load wallet tokens/activity here – they are loaded when wallet opens
-        if (state.user && !state.welcomeBonusClaimed) {
-          claimWelcomeBonus();
-        }
-        document.getElementById('dashboardMenuItem').style.display = state.isAdmin ? 'flex' : 'none';
-        fetchNotifications();
-      }
-
-      function updateProfileUI() {
-        const user = state.user;
-        const name = user ? (user.name || user.email || 'User') : 'Guest';
-        document.getElementById('profileName').textContent = name;
-        document.getElementById('drawerName').textContent = name;
-        document.getElementById('drawerEmail').textContent = user ? user.email : 'guest@capitan.ai';
-        if (state.profilePhoto) {
-          document.getElementById('profileAvatarImg').src = state.profilePhoto;
-          document.getElementById('drawerAvatarImg').src = state.profilePhoto;
-        }
-        updateBalanceUI();
-      }
-
-      function showView(view) {
-        state.activeView = view;
-        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-        const menuMap = {
-          'chat': document.querySelector('.menu-item[data-view="chat"]'),
-          'portfolio': document.querySelector('.menu-item[data-view="portfolio"]'),
-          'research': document.querySelector('.menu-item[data-view="research"]'),
-          'developer': document.querySelector('.menu-item[data-view="developer"]'),
-          'dashboard': document.querySelector('.menu-item[data-view="dashboard"]'),
-          'wallet': document.querySelector('.menu-item[data-view="wallet"]')
-        };
-        if (menuMap[view]) menuMap[view].classList.add('active');
-        if (view === 'chat') showChat();
-        else if (view === 'portfolio') showPortfolio();
-        else if (view === 'research') showResearch();
-        else if (view === 'developer') showDeveloper();
-        else if (view === 'dashboard') showDashboard();
-        else if (view === 'wallet') openWallet();
-      }
-
-      // ============================================================
-      // 16. NOTIFICATIONS
-      // ============================================================
-      async function fetchNotifications() {
-        try {
-          const data = await apiCall('/api/notifications');
-          state.notifications = data.notifications || [];
-          state.unreadCount = state.notifications.filter(n => !n.read).length;
-          updateNotifBadge();
-        } catch (e) {}
-      }
-
-      function updateNotifBadge() {
-        const badge = document.getElementById('notifBadge');
-        badge.textContent = state.unreadCount || '0';
-        badge.classList.toggle('show', state.unreadCount > 0);
-      }
-
-      // ============================================================
-      // 17. MODAL HELPERS
+      // 22. MODAL HELPERS
       // ============================================================
       function closeModal(id) {
         document.getElementById(id).classList.remove('open');
       }
 
       // ============================================================
-      // 18. EVENT BINDING (Full)
+      // 23. EVENT BINDING (Complete)
       // ============================================================
       document.addEventListener('DOMContentLoaded', function() {
         // ---- Splash + session check ----
@@ -3286,37 +3902,29 @@
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
         document.getElementById('guestBtn').addEventListener('click', startGuestSession);
 
-        // ---- Auth footer Privacy/Terms links ----
-        document.getElementById('openPrivacyModalLink').addEventListener('click', function(e) {
-          e.preventDefault();
+        document.getElementById('openPrivacyModalLink').addEventListener('click', () => {
           document.getElementById('privacyModal').classList.add('open');
-          document.getElementById('privacyText').textContent = 'Loading…';
-          apiCall('/api/legal/privacy').then(d => {
-            document.getElementById('privacyText').textContent = d.text || 'No policy available.';
-          }).catch(() => {
-            document.getElementById('privacyText').textContent = 'Unable to load privacy policy.';
-          });
+          apiCall('/api/legal/privacy').then(d => document.getElementById('privacyText').textContent = d.text).catch(() => {});
         });
-        document.getElementById('openTermsModalLink').addEventListener('click', function(e) {
-          e.preventDefault();
+        document.getElementById('openTermsModalLink').addEventListener('click', () => {
           document.getElementById('termsModal').classList.add('open');
-          document.getElementById('termsText').textContent = 'Loading…';
-          apiCall('/api/legal/terms').then(d => {
-            document.getElementById('termsText').textContent = d.text || 'No terms available.';
-          }).catch(() => {
-            document.getElementById('termsText').textContent = 'Unable to load terms of service.';
-          });
+          apiCall('/api/legal/terms').then(d => document.getElementById('termsText').textContent = d.text).catch(() => {});
         });
 
         // ---- Sidebar toggle ----
-        document.getElementById('toggleSidebarBtn').addEventListener('click', function(e) {
+        document.getElementById('toggleSidebarBtn').addEventListener('click', (e) => {
           e.stopPropagation();
           document.getElementById('sidebar').classList.toggle('open');
           document.getElementById('overlay').classList.toggle('open');
         });
-        document.getElementById('overlay').addEventListener('click', function() {
+        document.getElementById('overlay').addEventListener('click', () => {
           document.getElementById('sidebar').classList.remove('open');
           document.getElementById('overlay').classList.remove('open');
+        });
+
+        // ---- Mobile profile button ----
+        document.getElementById('mobileProfileBtn').addEventListener('click', () => {
+          document.getElementById('profileDrawer').classList.toggle('open');
         });
 
         // ---- Sidebar menu ----
@@ -3335,10 +3943,7 @@
         // ---- Send message ----
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
         document.getElementById('messageInput').addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-          }
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         });
 
         // ---- Voice ----
@@ -3352,7 +3957,7 @@
           recognition.start();
         });
 
-        // ---- Upload (FIX: use sendMessageWithContent) ----
+        // ---- Upload (fix message prefix and cost) ----
         document.getElementById('uploadBtn').addEventListener('click', function() {
           const input = document.createElement('input');
           input.type = 'file';
@@ -3360,6 +3965,13 @@
           input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            const cost = CONFIG.SPEND_COSTS.file_upload;
+            if (state.closeBalance < cost) {
+              showBuyModal(cost - state.closeBalance);
+              return;
+            }
+            const spent = await spendTokens('file_upload', cost);
+            if (!spent) return;
             const formData = new FormData();
             formData.append('file', file);
             try {
@@ -3367,8 +3979,8 @@
               const data = await res.json();
               if (res.ok) {
                 toast('Uploaded ' + file.name, 'success');
-                const uploadText = `[Uploaded: ${file.name}]\n\nPlease analyze this document.`;
-                await sendMessageWithContent(uploadText);
+                const uploadText = `[Uploaded document: ${file.name}]\n\nPlease analyze this document.`;
+                await sendMessageWithContent(uploadText, true); // skip extra spend
               } else {
                 toast('Upload failed', 'error');
               }
@@ -3380,10 +3992,10 @@
         });
 
         // ---- Profile drawer ----
-        document.getElementById('profileTrigger').addEventListener('click', function() {
+        document.getElementById('profileTrigger').addEventListener('click', () => {
           document.getElementById('profileDrawer').classList.toggle('open');
         });
-        document.getElementById('profileDrawerClose').addEventListener('click', function() {
+        document.getElementById('profileDrawerClose').addEventListener('click', () => {
           document.getElementById('profileDrawer').classList.remove('open');
         });
         document.querySelectorAll('#themePills .pill').forEach(pill => {
@@ -3391,36 +4003,24 @@
         });
         document.getElementById('drawerPrivacy').addEventListener('click', () => {
           document.getElementById('privacyModal').classList.add('open');
-          document.getElementById('privacyText').textContent = 'Loading privacy policy…';
-          apiCall('/api/legal/privacy').then(d => {
-            document.getElementById('privacyText').textContent = d.text || 'No policy available.';
-          }).catch(() => {
-            document.getElementById('privacyText').textContent = 'Unable to load policy.';
-          });
+          apiCall('/api/legal/privacy').then(d => document.getElementById('privacyText').textContent = d.text).catch(() => {});
         });
         document.getElementById('drawerTerms').addEventListener('click', () => {
           document.getElementById('termsModal').classList.add('open');
-          document.getElementById('termsText').textContent = 'Loading terms…';
-          apiCall('/api/legal/terms').then(d => {
-            document.getElementById('termsText').textContent = d.text || 'No terms available.';
-          }).catch(() => {
-            document.getElementById('termsText').textContent = 'Unable to load terms.';
-          });
+          apiCall('/api/legal/terms').then(d => document.getElementById('termsText').textContent = d.text).catch(() => {});
         });
         document.getElementById('drawerChangePassword').addEventListener('click', () => {
           document.getElementById('passwordModal').classList.add('open');
         });
+        document.getElementById('drawerDeleteAccount').addEventListener('click', deleteAccount);
         document.getElementById('drawerSignOut').addEventListener('click', logout);
+        document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
 
         // ---- Wallet ----
         document.getElementById('walletCloseBtn').addEventListener('click', closeWallet);
-
-        // ---- Wallet tabs ----
         document.querySelectorAll('.wallet-tab').forEach(tab => {
           tab.addEventListener('click', () => switchWalletTab(tab.dataset.wtab));
         });
-
-        // ---- Wallet actions ----
         document.getElementById('walletSendBtn').addEventListener('click', openSendModal);
         document.getElementById('walletReceiveBtn').addEventListener('click', openReceiveModal);
         document.getElementById('walletSwapBtn').addEventListener('click', openSwapModal);
@@ -3438,46 +4038,59 @@
         });
 
         // ---- Swap modal ----
-        document.getElementById('swapCancelBtn').addEventListener('click', () => {
-          state.pendingSwapQuote = null;
-          document.getElementById('swapConfirmBtn').textContent = 'Get Quote';
-          closeModal('swapModal');
-        });
-        document.getElementById('swapConfirmBtn').addEventListener('click', function() {
-          if (state.pendingSwapQuote) {
-            confirmSwap();
-          } else {
-            getSwapQuote();
-          }
-        });
+        document.getElementById('swapCancelBtn').addEventListener('click', () => closeModal('swapModal'));
+        document.getElementById('swapConfirmBtn').addEventListener('click', confirmSwap);
 
         // ---- Buy modal ----
         document.getElementById('buyCancelBtn').addEventListener('click', () => closeModal('buyModal'));
         document.getElementById('buyVerifyBtn').addEventListener('click', verifyPurchase);
         document.getElementById('buyAmount').addEventListener('input', updateBuyEquivalent);
         document.getElementById('buyCopyAddressBtn').addEventListener('click', () => {
-          const addr = document.getElementById('buyPaymentAddress').textContent;
-          navigator.clipboard.writeText(addr);
+          navigator.clipboard.writeText(document.getElementById('buyPaymentAddress').textContent);
           toast('Payment address copied', 'success');
         });
 
-        // ---- Close other full-page views ----
-        document.getElementById('portfolioCloseBtn').addEventListener('click', () => {
-          document.getElementById('portfolioFullPage').classList.remove('open');
-          showView('chat');
+        // ---- Portfolio ----
+        document.getElementById('portfolioCloseBtn').addEventListener('click', () => { closeWallet(); showView('chat'); });
+        document.getElementById('newPortfolioItemBtn').addEventListener('click', () => openPortfolioItemModal());
+        document.getElementById('portfolioItemSaveBtn').addEventListener('click', savePortfolioItem);
+        document.getElementById('portfolioItemCancelBtn').addEventListener('click', () => closeModal('portfolioItemModal'));
+        document.getElementById('portfolioItemDeleteBtn').addEventListener('click', () => {
+          const id = document.getElementById('portfolioItemId').value;
+          if (id) deletePortfolioItem(id);
         });
-        document.getElementById('researchCloseBtn').addEventListener('click', () => {
-          document.getElementById('researchFullPage').classList.remove('open');
-          showView('chat');
+
+        // ---- Research ----
+        document.getElementById('researchCloseBtn').addEventListener('click', () => { closeWallet(); showView('chat'); });
+
+        // ---- Developer ----
+        document.getElementById('developerCloseBtn').addEventListener('click', () => { closeWallet(); showView('chat'); });
+
+        // ---- Community ----
+        document.getElementById('communityCloseBtn').addEventListener('click', () => { closeWallet(); showView('chat'); });
+
+        // ---- Workspaces ----
+        document.getElementById('workspacePanelClose').addEventListener('click', () => {
+          document.getElementById('workspacePanel').classList.remove('open');
         });
-        document.getElementById('developerCloseBtn').addEventListener('click', () => {
-          document.getElementById('developerFullPage').classList.remove('open');
-          showView('chat');
+        document.getElementById('backToWorkspaceList').addEventListener('click', () => {
+          document.getElementById('workspaceRoomView').style.display = 'none';
+          document.getElementById('workspaceListContainer').style.display = 'block';
+          state.activeWorkspaceId = null;
         });
-        document.getElementById('dashboardCloseBtn').addEventListener('click', () => {
-          document.getElementById('dashboardFullPage').classList.remove('open');
-          showView('chat');
+        document.getElementById('workspaceSendBtn').addEventListener('click', sendWorkspaceMessage);
+        document.getElementById('workspaceMessageInput').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { e.preventDefault(); sendWorkspaceMessage(); }
         });
+        document.getElementById('createWorkspaceBtn').addEventListener('click', () => {
+          document.getElementById('createWorkspaceModal').classList.add('open');
+        });
+        document.getElementById('createWorkspaceCancelBtn').addEventListener('click', () => closeModal('createWorkspaceModal'));
+        document.getElementById('createWorkspaceConfirmBtn').addEventListener('click', createWorkspace);
+        document.getElementById('joinWorkspaceBtn').addEventListener('click', joinWorkspace);
+
+        // ---- Dashboard ----
+        document.getElementById('dashboardCloseBtn').addEventListener('click', () => { closeWallet(); showView('chat'); });
 
         // ---- Password modal ----
         document.getElementById('passwordCancelBtn').addEventListener('click', () => closeModal('passwordModal'));
@@ -3487,14 +4100,7 @@
           const confirm = document.getElementById('confirmPassword').value;
           const err = document.getElementById('passwordError');
           if (!old || !newp || newp !== confirm) {
-            err.textContent = 'Passwords do not match or empty';
-            err.style.display = 'block';
-            return;
-          }
-          if (newp.length < 6) {
-            err.textContent = 'Password min 6 characters';
-            err.style.display = 'block';
-            return;
+            err.textContent = 'Passwords do not match or empty'; err.style.display = 'block'; return;
           }
           err.style.display = 'none';
           try {
@@ -3502,14 +4108,21 @@
             toast('Password updated', 'success');
             closeModal('passwordModal');
           } catch (e) {
-            err.textContent = e.message || 'Update failed';
-            err.style.display = 'block';
+            err.textContent = e.message || 'Update failed'; err.style.display = 'block';
           }
         });
 
         // ---- Privacy & Terms close ----
         document.getElementById('privacyCloseBtn').addEventListener('click', () => closeModal('privacyModal'));
         document.getElementById('termsCloseBtn').addEventListener('click', () => closeModal('termsModal'));
+
+        // ---- Notifications ----
+        document.getElementById('notifBtn').addEventListener('click', () => {
+          const drawer = document.getElementById('notificationDrawer');
+          drawer.classList.toggle('open');
+          if (drawer.classList.contains('open')) fetchNotifications();
+        });
+        document.getElementById('markAllReadBtn').addEventListener('click', markAllRead);
 
         // ---- Chart timeframes ----
         document.querySelectorAll('#chartTimeframes .time-pill').forEach(pill => {
@@ -3521,14 +4134,23 @@
           });
         });
 
-        // ---- Network selector – reload tokens on change ----
+        // ---- Network selector ----
         document.getElementById('networkSelect').addEventListener('change', function() {
           toast('Switching to ' + this.options[this.selectedIndex].text, 'info');
           loadWalletTokens();
         });
+
+        // ---- Responsive profile button ----
+        window.addEventListener('resize', () => {
+          if (window.innerWidth <= 768) {
+            document.getElementById('mobileProfileBtn').style.display = 'flex';
+          } else {
+            document.getElementById('mobileProfileBtn').style.display = 'none';
+          }
+        });
       });
 
-      // Expose some functions to global scope for inline onclick
+      // Expose global functions for inline onclick
       window.startTopicChat = function(id) {
         const topic = state.researchTopics.find(t => t.id === id);
         if (!topic) return;
@@ -3537,7 +4159,6 @@
         renderMessages();
         sendMessage();
       };
-      window.revokeKey = revokeKey;
       window.showBuyModal = showBuyModal;
       window.closeModal = closeModal;
 
