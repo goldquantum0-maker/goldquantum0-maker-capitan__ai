@@ -1,8 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v44.2 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v44.3 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-Fully compatible with frontend v2.1 (all‑features).
-Includes: custodial send/swap, chat history, JWT fix, proper relayer integration.
++ Public wallet claim endpoint (no auth required)
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
@@ -64,7 +63,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
     FOUNDER_KEY: str
-    FRONTEND_URL: str = "https://capitanai.goldquantum0.workers.dev"
+    FRONTEND_URL: str = "https://capitanai.billionaireman35.workers.dev/"
     GROQ_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
     COINGECKO_KEY: str = ""
@@ -80,23 +79,23 @@ class Settings(BaseSettings):
     TERMS_CONDITIONS_TEXT: str = ""
 
     # Wallet addresses
-    CAP_HOT_WALLET: str = "0x4Fa0d106b31A2235DA599F5743D22da715f5bA6A"
+    CLOSE_HOT_WALLET: str = "0xae3e3f0c9243ba74b4fbeb38d120c773650aa003"
     CLOSEAI_TREASURY_ADDRESS: str = "0x5bD39AD3e8B1CB01e7385958160FD9b2675D02d1"
     FOUNDER_WALLET: str = "0xd043ecc5A45D808B93c8549aAe4Ec4Fa6ee3C221"
     REWARDS_WALLET: str = "0x89d9280c221Cc5F1a9272DE4DC8b7E021700aC6A"
-    LIQUIDITY_WALLET: str = "0x23f5d895e20eBb118168FB4901E12a3488DFf875"
+    LIQUIDITY_WALLET: str = "0xae3e3f0c9243ba74b4fbeb38d120c773650aa003"
 
     # $CAP on‑chain
-    CAP_CONTRACT_ADDRESS: str = "0xb1a1e6DE26897bb0E22710C6C30b6994F1F39666"
-    CAP_DEX_PAIR_ADDRESS: str = "0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6"
+    CLOSE_CONTRACT_ADDRESS: str = "0x3c6833cFDdED80fE76474a3Cb2Cc050Daec91fe8"
+    CLOSE_DEX_PAIR_ADDRESS: str = "0x643240847B313bfd4108084A2A85a16FA938b5A2"
     POLYGON_RPC_URL: str = "https://polygon-mainnet.g.alchemy.com/v2/demo"
-    CAP_DECIMALS: int = 18
-    CLOSEAI_TOTAL_ALLOCATION: int = 75_000_000_000_000
+    CLOSE_DECIMALS: int = 18
+    CLOSEAI_TOTAL_ALLOCATION: int = 480_000_000_000_000
 
     # Relayer
     RELAYER_PRIVATE_KEY: str = ""
     RELAYER_MIN_MATIC: float = 2.0
-    RELAYER_SWAP_CAP_AMOUNT: int = 100_000
+    RELAYER_SWAP_CLOSE_AMOUNT: int = 100_000
 
     # Deployer
     DEPLOYER_PRIVATE_KEY: str = ""
@@ -110,7 +109,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="44.2")
+app = FastAPI(title="CAPITAN AI API", version="44.3")
 
 app.add_middleware(
     CORSMiddleware,
@@ -175,9 +174,8 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     rate_store[store_key].append(now)
     return True
 
-# ==================== FIXED JWT HANDLING ====================
+# ==================== JWT (FIXED) ====================
 def base64url_decode(data: str) -> bytes:
-    # Add padding if necessary
     rem = len(data) % 4
     if rem:
         data += '=' * (4 - rem)
@@ -209,14 +207,12 @@ def verify_token(token: str):
         if len(parts) != 3:
             return None
         header_b64, payload_b64, signature_b64 = parts
-        # Recalculate signature with proper padding
         secret = settings.JWT_SECRET.strip()
         message = f"{header_b64}.{payload_b64}".encode()
         expected_sig = base64.urlsafe_b64encode(hmac.new(secret.encode(), message, hashlib.sha256).digest()).decode().rstrip("=")
         if not hmac.compare_digest(signature_b64, expected_sig):
             logger.warning(f"Signature mismatch for token: {token[:20]}...")
             return None
-        # Decode payload with padding
         payload_bytes = base64url_decode(payload_b64)
         data = json.loads(payload_bytes)
         if data.get("exp", 0) < now_utc().timestamp():
@@ -300,19 +296,19 @@ MAX_WORKSPACES = 30
 MAX_FILE_SIZE_MB = 60
 DEPTH_MULTIPLIERS = [1.0, 1.5, 2.0, 3.0, 4.0]
 
-CAP_BUILDER_THRESHOLD = 20_000_000
-CAP_PRO_THRESHOLD = 50_000_000
-CAP_ENTERPRISE_THRESHOLD = 100_000_000
+CLOSE_BUILDER_THRESHOLD = 20_000_000
+CLOSE_PRO_THRESHOLD = 50_000_000
+CLOSE_ENTERPRISE_THRESHOLD = 100_000_000
 
-TOTAL_SUPPLY = 500_000_000_000_000 * 10**18
-FOUNDER_AMOUNT = 10_000_000_000_000 * 10**18
-TREASURY_AMOUNT = 375_000_000_000_000 * 10**18
+TOTAL_SUPPLY = 800_000_000_000_000 * 10**18
+FOUNDER_AMOUNT = 12_000_000_000_000 * 10**18
+TREASURY_AMOUNT = 480_000_000_000_000 * 10**18
 HOT_AMOUNT = 50_000_000_000_000 * 10**18
-LIQUIDITY_AMOUNT = 15_000_000_000_000 * 10**18
+LIQUIDITY_AMOUNT = 64_000_000_000_000 * 10**18
 REWARDS_AMOUNT = 50_000_000_000_000 * 10**18
 
-STARTER_CAP_AMOUNT = 2500 * 10**18
-DEFAULT_CAP_MATIC_RATE = 10_000_000
+STARTER_CLOSE_AMOUNT = 2500 * 10**18
+DEFAULT_CLOSE_MATIC_RATE = 10_000_000
 WELCOME_BONUS_AMOUNT = 1000 * 10**18
 
 ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"}]')
@@ -541,7 +537,7 @@ def init_db():
                 c.execute("INSERT INTO platform_settings (key, value) VALUES ('cap_matic_rate', %s) ON CONFLICT (key) DO NOTHING",
                           (str(DEFAULT_CAP_MATIC_RATE),))
                 conn.commit()
-        logger.info("✅ Database initialized (v44.2)")
+        logger.info("✅ Database initialized (v44.3)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -1422,7 +1418,7 @@ async def get_withdrawals(user: dict = Depends(get_current_user)):
             rows = c.fetchall()
             return [{"id": r[0], "amount": r[1], "destination": r[2], "status": r[3], "tx_hash": r[4], "created": r[5].isoformat() if r[5] else None} for r in rows]
 
-# ==================== WALLET ENDPOINTS ====================
+# ==================== WALLET ENDPOINTS (CUSTODIAL) ====================
 def get_web3():
     if not WEB3_AVAILABLE:
         raise HTTPException(501, "web3 not installed")
@@ -1518,14 +1514,13 @@ async def custodial_swap(req: SwapExecuteRequest, user: dict = Depends(get_curre
         "slippage": req.slippage,
         "disableEstimate": True,
     }
-    headers = {"Authorization": f"Bearer {settings.ETHERSCAN_API_KEY}"}  # reuse Etherscan key or use 1inch key
+    headers = {"Authorization": f"Bearer {settings.ETHERSCAN_API_KEY}"}
     try:
         r = requests.get(url, params=params, headers=headers, timeout=15)
         if r.status_code != 200:
             raise Exception(f"1inch error: {r.text}")
         swap_data = r.json()
         tx = swap_data["tx"]
-        # adjust gas
         tx["from"] = relayer.address
         tx["gasPrice"] = w3.eth.gas_price
         tx["nonce"] = w3.eth.get_transaction_count(relayer.address)
@@ -1616,6 +1611,44 @@ async def get_activity(user: dict = Depends(get_current_user), page: int = 0, li
             total = c.fetchone()[0]
             has_more = total > (offset + limit)
             return {"items": items, "hasMore": has_more}
+
+# ==================== NEW: WALLET CLAIM (No Auth) ====================
+@app.post("/api/wallet/claim")
+async def claim_wallet():
+    user_id = str(uuid.uuid4())
+    email = f"wallet_{user_id[:8]}@capitan.ai"
+    password = secrets.token_urlsafe(16)
+    password_hash = hash_password(password)
+    name = "User"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""
+                    INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, last_active, created_at, updated_at, streak_count, starter_cap_claimed)
+                    VALUES (%s,%s,%s,%s,%s,%s,NOW(),NOW(),NOW(),0,TRUE)
+                """, (user_id, email, password_hash, name, 1, "general"))
+                # Credit welcome bonus
+                c.execute("""
+                    INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                    VALUES (%s, %s, 'free')
+                    ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+                """, (user_id, WELCOME_BONUS_AMOUNT))
+                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, status) VALUES (%s,%s,%s,%s,'completed')",
+                          (str(uuid.uuid4()), user_id, "welcome_bonus", WELCOME_BONUS_AMOUNT))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Wallet claim error: {e}")
+        raise HTTPException(500, "Could not create wallet")
+
+    token = create_token(user_id)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
+            conn.commit()
+
+    address = settings.CAP_HOT_WALLET  # shared custodial address
+    return {"token": token, "address": address, "balance": WELCOME_BONUS_AMOUNT}
 
 # ==================== CHAT ENDPOINT (with starter claim) ====================
 class ChatRequest(BaseModel):
@@ -1850,27 +1883,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         }
     else:
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
-
-# ==================== NEW: CHAT HISTORY ENDPOINTS ====================
-@app.get("/api/chats")
-async def get_user_chats(user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT id, title, updated FROM chats WHERE user_id = %s ORDER BY updated DESC LIMIT 100", (user["id"],))
-            chats = [{"id": r[0], "title": r[1], "updated": r[2].isoformat() if r[2] else None} for r in c.fetchall()]
-    return {"chats": chats}
-
-@app.get("/api/chats/{chat_id}")
-async def get_chat_messages(chat_id: str, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT role, content, model, confidence_score, created FROM chat_messages WHERE chat_id=%s AND user_id=%s ORDER BY created ASC", (chat_id, user["id"]))
-            messages = [{"role": r[0], "content": r[1], "model": r[2], "confidence": r[3], "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
-    if not messages:
-        raise HTTPException(404, "Chat not found")
-    return {"chat_id": chat_id, "messages": messages}
 
 # ==================== GAMIFICATION & LEADERBOARD ====================
 @app.get("/api/gamification/streak")
@@ -2814,7 +2826,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "44.2", "database": db_status}
+    return {"status": "ok", "version": "44.3", "database": db_status}
 
 def generate_png_icon(size: int) -> bytes:
     def create_png(width, height, pixels):
@@ -2896,7 +2908,7 @@ self.addEventListener('fetch', event => {
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "44.2"}
+    return {"name": "CAPITAN AI", "version": "44.3"}
 
 # ==================== MARKETS ENDPOINTS ====================
 @app.get("/api/markets/crypto")
