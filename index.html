@@ -25,7 +25,6 @@
     }
 
     :root {
-      /* Colours */
       --bg-primary: #0b1622;
       --bg-secondary: #0f1a2a;
       --bg-tertiary: #1a2a3a;
@@ -46,19 +45,13 @@
       --glass-border: rgba(255, 255, 255, 0.08);
       --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
       --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.1);
-
-      /* Typography */
       --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-size-base: 13px;
       --line-height-base: 1.55;
-
-      /* Radii */
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 20px;
       --radius-xl: 28px;
-
-      /* Transitions */
       --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
       --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
       --duration-fast: 150ms;
@@ -66,7 +59,6 @@
       --duration-slow: 500ms;
     }
 
-    /* Light theme overrides (optional) */
     body.light {
       --bg-primary: #f8fafc;
       --bg-secondary: #f1f5f9;
@@ -131,14 +123,10 @@
       animation: fillIn 0.8s 1.8s var(--ease-smooth) forwards;
     }
     @keyframes drawStroke {
-      to {
-        stroke-dashoffset: 0;
-      }
+      to { stroke-dashoffset: 0; }
     }
     @keyframes fillIn {
-      to {
-        opacity: 1;
-      }
+      to { opacity: 1; }
     }
     .splash-text {
       margin-top: 24px;
@@ -152,14 +140,8 @@
       animation: fadeUp 0.8s 1.8s var(--ease-smooth) forwards;
     }
     @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(16px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .splash-glow {
       position: absolute;
@@ -170,14 +152,8 @@
       animation: pulseGlow 2s ease-in-out infinite alternate;
     }
     @keyframes pulseGlow {
-      0% {
-        transform: scale(0.9);
-        opacity: 0.5;
-      }
-      100% {
-        transform: scale(1.1);
-        opacity: 1;
-      }
+      0% { transform: scale(0.9); opacity: 0.5; }
+      100% { transform: scale(1.1); opacity: 1; }
     }
 
     /* ============================================================
@@ -203,14 +179,8 @@
       animation: fadeSlideUp 0.6s var(--ease-spring);
     }
     @keyframes fadeSlideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .auth-card h1 {
       font-size: 26px;
@@ -420,8 +390,8 @@
     .new-chat-btn {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
+      gap: 8px;
+      padding: 6px 14px;
       margin: 4px 12px 12px;
       border-radius: var(--radius-lg);
       background: linear-gradient(135deg, #00d4ff, #7c3aed);
@@ -432,6 +402,7 @@
       transition: all var(--duration-fast) var(--ease-spring);
       box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
       border: none;
+      width: fit-content;
     }
     .new-chat-btn:hover {
       transform: translateY(-2px);
@@ -439,6 +410,13 @@
     }
     .new-chat-btn:active {
       transform: scale(0.97);
+    }
+    .new-chat-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
     }
     .sidebar-divider {
       border-top: 1px solid var(--border);
@@ -700,6 +678,7 @@
       color: var(--text-secondary);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       transition: all var(--duration-fast) var(--ease-smooth);
+      position: relative;
     }
     .top-bar-btn:hover {
       background: var(--bg-tertiary);
@@ -1227,14 +1206,8 @@
       animation: modalFadeIn 0.25s var(--ease-smooth);
     }
     @keyframes modalFadeIn {
-      from {
-        opacity: 0;
-        transform: scale(0.96);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
     }
     .modal {
       background: var(--surface);
@@ -1249,14 +1222,8 @@
       animation: modalSlideUp 0.3s var(--ease-spring);
     }
     @keyframes modalSlideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .modal h2 {
       font-size: 22px;
@@ -1672,7 +1639,6 @@
           <stop offset="100%" stop-color="#7c3aed" />
         </linearGradient>
       </defs>
-      <!-- Path for capital "C" with a distinct shape -->
       <path class="cls-1" d="M 30 60 Q 30 20, 60 20 Q 80 20, 85 35 L 70 45 Q 65 35, 60 35 Q 50 35, 50 60 Q 50 85, 60 85 Q 70 85, 75 75 L 90 85 Q 80 100, 60 100 Q 30 100, 30 60 Z" />
       <path class="cls-2" d="M 30 60 Q 30 20, 60 20 Q 80 20, 85 35 L 70 45 Q 65 35, 60 35 Q 50 35, 50 60 Q 50 85, 60 85 Q 70 85, 75 75 L 90 85 Q 80 100, 60 100 Q 30 100, 30 60 Z" />
     </svg>
@@ -2144,9 +2110,6 @@
     </div>
   </div>
 
-  <!-- Activity Modal (full tab content handled inside wallet) -->
-  <!-- but we also have a separate modal for quick view? we'll use the tab -->
-
   <!-- Privacy Modal -->
   <div class="modal-overlay" id="privacyModal">
     <div class="modal">
@@ -2190,7 +2153,7 @@
   </div>
 
   <!-- ============================================================
-       JAVASCRIPT – ENTERPRISE APPLICATION
+       JAVASCRIPT – ENTERPRISE APPLICATION (Full)
        ============================================================ -->
   <script>
     (function() {
@@ -2221,8 +2184,8 @@
           webhook: 100
         },
         WELCOME_BONUS: 1000,
-        GAS_SWAP_THRESHOLD: 1000, // CLOSE accumulated before swapping to POL
-        GAS_PERCENT: 0.02 // 2% of purchase amount converted to gas reserve
+        GAS_SWAP_THRESHOLD: 1000,
+        GAS_PERCENT: 0.02
       };
 
       // ============================================================
@@ -2232,7 +2195,7 @@
         token: localStorage.getItem('ct') || null,
         user: null,
         isAdmin: false,
-        activeView: 'chat', // chat | wallet | portfolio | research | developer | dashboard
+        activeView: 'chat',
         messages: [],
         chatId: null,
         loading: false,
@@ -2250,7 +2213,7 @@
         researchProjects: [],
         apiKeys: [],
         webhooks: [],
-        tokens: [], // token balances in wallet
+        tokens: [],
         activity: [],
         activityPage: 0,
         activityLoading: false,
@@ -2320,7 +2283,6 @@
         return fetch(CONFIG.API_BASE + endpoint, { ...opts, headers })
           .then(async res => {
             if (res.status === 401) {
-              // session expired
               localStorage.removeItem('ct');
               state.token = null;
               state.user = null;
@@ -2349,14 +2311,13 @@
         } else {
           document.body.className = theme;
         }
-        // update pill active states
         document.querySelectorAll('#themePills .pill').forEach(p => {
           p.classList.toggle('active', p.dataset.theme === theme);
         });
       }
 
       // ============================================================
-      // 5. AUTHENTICATION
+      // 5. AUTHENTICATION (with improved error handling)
       // ============================================================
       function switchAuthTab(tab) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -2411,17 +2372,20 @@
             localStorage.setItem('ct', data.token);
             localStorage.setItem('cu', JSON.stringify(data.user));
             localStorage.setItem('is_admin', 'false');
-            // Claim welcome bonus automatically
             await claimWelcomeBonus();
             initApp();
             toast('Account created! Welcome to Capitan AI.', 'success');
           } else {
+            // Show the exact error message from the server
             err.textContent = data.detail || 'Signup failed';
             err.style.display = 'block';
           }
         } catch (e) {
-          err.textContent = e.message || 'Signup failed';
+          // If the server returns a detailed error, display it; otherwise fallback
+          const msg = e.message || 'Registration failed';
+          err.textContent = msg;
           err.style.display = 'block';
+          console.error('Signup error:', e);
         }
       }
 
@@ -2501,7 +2465,6 @@
 
       async function spendTokens(action, amount) {
         if (state.closeBalance < amount) {
-          // Show buy modal with required amount
           showBuyModal(amount - state.closeBalance);
           return false;
         }
@@ -2517,7 +2480,7 @@
       }
 
       // ============================================================
-      // 7. OS WALLET (Full-page)
+      // 7. OS WALLET (Full-page) with fixed token loading
       // ============================================================
       let walletChart = null;
 
@@ -2525,7 +2488,6 @@
         document.querySelectorAll('.full-page-view').forEach(v => v.classList.remove('open'));
         document.getElementById('walletFullPage').classList.add('open');
         state.activeView = 'wallet';
-        // Update wallet UI
         renderWallet();
       }
 
@@ -2536,35 +2498,35 @@
       }
 
       async function renderWallet() {
-        // Address
         const addr = state.walletAddress || '0x0000000000000000000000000000000000000000';
         document.getElementById('walletAddressShort').textContent = formatAddress(addr);
         document.getElementById('walletAddressDisplay').onclick = () => {
           navigator.clipboard.writeText(addr);
           toast('Address copied', 'success');
         };
-        // Balance & change – we'll fetch from backend later
-        // Load tokens
+        // Load tokens – uses the new /api/wallet/balances endpoint
         await loadWalletTokens();
-        // Load activity
         await loadActivity(true);
-        // Load chart
         renderChart();
-        // Load markets
         loadMarkets();
-        // Update CLOSE balance
         updateCloseBalance();
-        // Set default tab
         switchWalletTab('tokens');
       }
 
+      // Fixed: uses the correct backend endpoint
       async function loadWalletTokens() {
+        const addr = state.walletAddress;
+        if (!addr) {
+          document.getElementById('tokenListContainer').innerHTML = '<div class="text-tertiary">No wallet address found.</div>';
+          return;
+        }
         try {
-          const data = await apiCall('/api/wallet/balances');
+          const data = await apiCall(`/api/wallet/balances?address=${addr}`);
           state.tokens = data.tokens || [];
           renderTokenList();
         } catch (e) {
-          toast('Could not load tokens', 'error');
+          toast('Could not load tokens: ' + e.message, 'error');
+          document.getElementById('tokenListContainer').innerHTML = '<div class="text-tertiary">Failed to load tokens.</div>';
         }
       }
 
@@ -2641,7 +2603,6 @@
           html += `<div class="activity-loader" id="activityLoader">Loading more…</div>`;
         }
         container.innerHTML = html;
-        // Infinite scroll trigger
         const loader = document.getElementById('activityLoader');
         if (loader) {
           const observer = new IntersectionObserver((entries) => {
@@ -2654,7 +2615,6 @@
       function renderChart() {
         const canvas = document.getElementById('walletChart');
         if (walletChart) { walletChart.destroy(); walletChart = null; }
-        // Dummy data – replace with backend historical data
         const labels = Array.from({ length: 24 }, (_, i) => i + 'h');
         const data = labels.map(() => Math.random() * 100 + 50);
         walletChart = new Chart(canvas, {
@@ -2727,7 +2687,6 @@
           <div id="marketsGrid"></div>
         `;
         container.innerHTML = html;
-        // Attach listeners
         container.querySelectorAll('[data-market]').forEach(btn => {
           btn.addEventListener('click', () => {
             container.querySelectorAll('[data-market]').forEach(b => b.classList.remove('active'));
@@ -2735,7 +2694,6 @@
             renderMarketList(btn.dataset.market);
           });
         });
-        // default crypto
         renderMarketList('crypto');
       }
 
@@ -2771,7 +2729,6 @@
       function showBuyModal(required = 0) {
         const modal = document.getElementById('buyModal');
         modal.classList.add('open');
-        // Set rate
         fetchRate();
         if (required > 0) {
           document.getElementById('buyAmount').value = Math.ceil(required);
@@ -2783,8 +2740,8 @@
         try {
           const data = await apiCall('/api/token/rate');
           document.getElementById('buyRate').textContent = `1 POL = ${formatNumber(data.rate, 0)} CLOSE`;
-          // store rate for calculation
           document.getElementById('buyRate').dataset.rate = data.rate;
+          document.getElementById('buyPaymentAddress').textContent = data.matic_payment_address || CONFIG.REVENUE_WALLET;
         } catch (e) {
           document.getElementById('buyRate').textContent = '1 POL = 0 CLOSE';
         }
@@ -2795,7 +2752,7 @@
         const rate = parseFloat(document.getElementById('buyRate').dataset.rate) || 0;
         const pol = rate > 0 ? amount / rate : 0;
         document.getElementById('buyEquivalent').textContent = pol.toFixed(6) + ' POL';
-        document.getElementById('buyUsd').textContent = (pol * 2.5).toFixed(2); // approximate USD
+        document.getElementById('buyUsd').textContent = (pol * 2.5).toFixed(2);
       }
 
       async function verifyPurchase() {
@@ -2829,7 +2786,6 @@
       function openSendModal() {
         const modal = document.getElementById('sendModal');
         modal.classList.add('open');
-        // populate token select
         const select = document.getElementById('sendTokenSelect');
         select.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
       }
@@ -2854,7 +2810,6 @@
         const modal = document.getElementById('receiveModal');
         const addr = state.walletAddress || '0x0000000000000000000000000000000000000000';
         document.getElementById('receiveAddressDisplay').textContent = addr;
-        // QR
         const qrContainer = document.getElementById('receiveQr');
         qrContainer.innerHTML = '';
         if (typeof QRCode !== 'undefined') {
@@ -2866,7 +2821,6 @@
       function openSwapModal() {
         const modal = document.getElementById('swapModal');
         modal.classList.add('open');
-        // populate selects with tokens
         const from = document.getElementById('swapFromToken');
         const to = document.getElementById('swapToToken');
         from.innerHTML = state.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
@@ -2968,12 +2922,10 @@
         });
         html += '</div>';
         container.innerHTML = html;
-        // attach listeners
         container.querySelectorAll('[data-rtab]').forEach(btn => {
           btn.addEventListener('click', () => {
             container.querySelectorAll('[data-rtab]').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            // reload projects if needed
           });
         });
       }
@@ -3118,13 +3070,11 @@
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
         if (!text || state.loading) return;
-        // Check CLOSE balance
         const cost = CONFIG.SPEND_COSTS.chat;
         if (state.closeBalance < cost) {
           showBuyModal(cost - state.closeBalance);
           return;
         }
-        // Deduct tokens
         const spent = await spendTokens('chat', cost);
         if (!spent) return;
         input.value = '';
@@ -3182,26 +3132,17 @@
       function initApp() {
         document.getElementById('authContainer').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
-        // Set theme
         setTheme(state.theme);
-        // Update profile UI
         updateProfileUI();
-        // Load balance
         updateCloseBalance();
-        // Show chat by default
         showView('chat');
-        // Render messages
         renderMessages();
-        // Load other data
         loadWalletTokens();
         loadActivity(true);
-        // Claim welcome bonus if applicable
         if (state.user && !state.welcomeBonusClaimed) {
           claimWelcomeBonus();
         }
-        // Admin menu visibility
         document.getElementById('dashboardMenuItem').style.display = state.isAdmin ? 'flex' : 'none';
-        // Listen for notifications
         fetchNotifications();
       }
 
@@ -3264,15 +3205,15 @@
       }
 
       // ============================================================
-      // 17. EVENT BINDING
+      // 17. EVENT BINDING (Full)
       // ============================================================
       document.addEventListener('DOMContentLoaded', function() {
-        // Splash screen
+        // Splash
         setTimeout(() => {
           document.getElementById('splashScreen').classList.add('hide');
         }, 2800);
 
-        // Auth tab switching
+        // Auth
         document.querySelectorAll('.auth-tab').forEach(tab => {
           tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
         });
@@ -3281,7 +3222,7 @@
         document.getElementById('signupBtn').addEventListener('click', handleSignup);
         document.getElementById('guestBtn').addEventListener('click', startGuestSession);
 
-        // Sidebar toggle (mobile)
+        // Sidebar toggle
         document.getElementById('toggleSidebarBtn').addEventListener('click', function(e) {
           e.stopPropagation();
           document.getElementById('sidebar').classList.toggle('open');
@@ -3292,12 +3233,11 @@
           document.getElementById('overlay').classList.remove('open');
         });
 
-        // Sidebar menu items
+        // Sidebar menu
         document.querySelectorAll('.menu-item[data-view]').forEach(item => {
           item.addEventListener('click', () => {
             const view = item.dataset.view;
             showView(view);
-            // close mobile sidebar
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('overlay').classList.remove('open');
           });
@@ -3326,7 +3266,7 @@
           recognition.start();
         });
 
-        // File upload
+        // Upload
         document.getElementById('uploadBtn').addEventListener('click', function() {
           const input = document.createElement('input');
           input.type = 'file';
@@ -3361,11 +3301,9 @@
         document.getElementById('profileDrawerClose').addEventListener('click', function() {
           document.getElementById('profileDrawer').classList.remove('open');
         });
-        // Theme pills
         document.querySelectorAll('#themePills .pill').forEach(pill => {
           pill.addEventListener('click', () => setTheme(pill.dataset.theme));
         });
-        // Drawer items
         document.getElementById('drawerPrivacy').addEventListener('click', () => {
           document.getElementById('privacyModal').classList.add('open');
           document.getElementById('privacyText').textContent = 'Loading privacy policy…';
@@ -3389,7 +3327,7 @@
         });
         document.getElementById('drawerSignOut').addEventListener('click', logout);
 
-        // Wallet full-page
+        // Wallet
         document.getElementById('walletCloseBtn').addEventListener('click', closeWallet);
         document.querySelector('.menu-item[data-view="wallet"]').addEventListener('click', openWallet);
 
@@ -3398,7 +3336,7 @@
           tab.addEventListener('click', () => switchWalletTab(tab.dataset.wtab));
         });
 
-        // Wallet action buttons
+        // Wallet actions
         document.getElementById('walletSendBtn').addEventListener('click', openSendModal);
         document.getElementById('walletReceiveBtn').addEventListener('click', openReceiveModal);
         document.getElementById('walletSwapBtn').addEventListener('click', openSwapModal);
@@ -3424,7 +3362,8 @@
         document.getElementById('buyVerifyBtn').addEventListener('click', verifyPurchase);
         document.getElementById('buyAmount').addEventListener('input', updateBuyEquivalent);
         document.getElementById('buyCopyAddressBtn').addEventListener('click', () => {
-          navigator.clipboard.writeText(CONFIG.REVENUE_WALLET);
+          const addr = document.getElementById('buyPaymentAddress').textContent;
+          navigator.clipboard.writeText(addr);
           toast('Payment address copied', 'success');
         });
 
@@ -3484,21 +3423,24 @@
             document.querySelectorAll('#chartTimeframes .time-pill').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             state.chartTimeframe = pill.dataset.time;
-            renderChart(); // refresh
+            renderChart();
           });
         });
 
-        // Check if already authenticated
+        // Network selector – reload tokens on change
+        document.getElementById('networkSelect').addEventListener('change', function() {
+          toast('Switching to ' + this.options[this.selectedIndex].text, 'info');
+          loadWalletTokens();
+        });
+
+        // Check session
         if (state.token) {
-          // verify and init
-          apiCall('/api/auth/verify').then(() => {
-            // token valid
+          apiCall('/api/auth/validate').then(() => {
             const storedUser = localStorage.getItem('cu');
             if (storedUser) state.user = JSON.parse(storedUser);
             state.isAdmin = localStorage.getItem('is_admin') === 'true';
             initApp();
           }).catch(() => {
-            // invalid session
             localStorage.removeItem('ct');
             state.token = null;
             document.getElementById('authContainer').style.display = 'flex';
@@ -3508,15 +3450,9 @@
           document.getElementById('authContainer').style.display = 'flex';
           document.getElementById('app').style.display = 'none';
         }
-
-        // Network selector – reload wallet on change
-        document.getElementById('networkSelect').addEventListener('change', function() {
-          toast('Switching to ' + this.options[this.selectedIndex].text, 'info');
-          loadWalletTokens();
-        });
       });
 
-      // expose some functions to global for inline onclick use
+      // Expose some functions to global scope for inline onclick
       window.startTopicChat = function(id) {
         const topic = state.researchTopics.find(t => t.id === id);
         if (!topic) return;
