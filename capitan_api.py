@@ -1,8 +1,8 @@
 """
-CAPITAN AI — Enterprise Backend v44.1 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v44.2 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-Fully compatible with frontend v2.0.
-Fixed: JWT secret stripping, session validation, token verification.
+Fully compatible with frontend v2.1 (all‑features).
+Includes: custodial send/swap, chat history, JWT fix, proper relayer integration.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
@@ -110,7 +110,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="44.1")
+app = FastAPI(title="CAPITAN AI API", version="44.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -175,13 +175,21 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     rate_store[store_key].append(now)
     return True
 
+# ==================== FIXED JWT HANDLING ====================
+def base64url_decode(data: str) -> bytes:
+    # Add padding if necessary
+    rem = len(data) % 4
+    if rem:
+        data += '=' * (4 - rem)
+    return base64.urlsafe_b64decode(data)
+
 def create_token(user_id: str) -> str:
     header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
         "user_id": user_id, "type": "user",
         "exp": int((now_utc() + timedelta(days=30)).timestamp())
     }).encode()).decode().rstrip("=")
-    secret = settings.JWT_SECRET.strip()  # Fix: strip whitespace/newlines
+    secret = settings.JWT_SECRET.strip()
     signature = base64.urlsafe_b64encode(hmac.new(secret.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
     return f"{header}.{payload}.{signature}"
 
@@ -200,18 +208,17 @@ def verify_token(token: str):
         parts = token.split(".")
         if len(parts) != 3:
             return None
-        header, payload, signature = parts
-        missing_padding = 4 - len(payload) % 4
-        if missing_padding != 4:
-            payload_padded = payload + "=" * missing_padding
-        else:
-            payload_padded = payload
+        header_b64, payload_b64, signature_b64 = parts
+        # Recalculate signature with proper padding
         secret = settings.JWT_SECRET.strip()
-        expected = base64.urlsafe_b64encode(hmac.new(secret.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
-        if not hmac.compare_digest(signature, expected):
+        message = f"{header_b64}.{payload_b64}".encode()
+        expected_sig = base64.urlsafe_b64encode(hmac.new(secret.encode(), message, hashlib.sha256).digest()).decode().rstrip("=")
+        if not hmac.compare_digest(signature_b64, expected_sig):
             logger.warning(f"Signature mismatch for token: {token[:20]}...")
             return None
-        data = json.loads(base64.urlsafe_b64decode(payload_padded))
+        # Decode payload with padding
+        payload_bytes = base64url_decode(payload_b64)
+        data = json.loads(payload_bytes)
         if data.get("exp", 0) < now_utc().timestamp():
             logger.warning(f"Token expired: {token[:20]}...")
             return None
@@ -220,6 +227,7 @@ def verify_token(token: str):
         logger.error(f"verify_token exception: {e}")
         return None
 
+# ==================== USER / SESSION DEPENDENCIES ====================
 def get_current_user(request: Request):
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
@@ -227,7 +235,6 @@ def get_current_user(request: Request):
     token = auth[7:]
     payload = verify_token(token)
     if not payload:
-        logger.warning(f"Invalid token payload: {token[:20]}...")
         return None
     user_id = payload.get("user_id")
     if not user_id:
@@ -236,9 +243,7 @@ def get_current_user(request: Request):
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
-                session_row = c.fetchone()
-                if not session_row:
-                    logger.warning(f"Session not found for token: {token[:20]}...")
+                if not c.fetchone():
                     return None
                 c.execute("SELECT id, email, name, reasoning_depth, preferred_domain, is_admin FROM users WHERE id = %s", (user_id,))
                 row = c.fetchone()
@@ -249,7 +254,6 @@ def get_current_user(request: Request):
                         "is_admin": row[5] or False
                     }
                 else:
-                    logger.warning(f"User not found for id: {user_id}")
                     return None
     except Exception as e:
         logger.error(f"get_current_user error: {e}")
@@ -290,7 +294,7 @@ def founder_only(user: dict = Depends(get_current_user)):
         raise HTTPException(403, "Founder access required")
     return user
 
-# Constants
+# ==================== CONSTANTS & ABIs ====================
 MAX_PROJECTS = 30
 MAX_WORKSPACES = 30
 MAX_FILE_SIZE_MB = 60
@@ -311,11 +315,8 @@ STARTER_CAP_AMOUNT = 2500 * 10**18
 DEFAULT_CAP_MATIC_RATE = 10_000_000
 WELCOME_BONUS_AMOUNT = 1000 * 10**18
 
-# ABIs
-ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
-
+ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"}]')
 DEX_PAIR_ABI = json.loads('[{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}]')
-
 V3_POOL_ABI = json.loads('[{"inputs":[],"name":"slot0","outputs":[{"internalType":"uint160","name":"sqrtPriceX96","type":"uint160"},{"internalType":"int24","name":"tick","type":"int24"},{"internalType":"uint16","name":"observationIndex","type":"uint16"},{"internalType":"uint16","name":"observationCardinality","type":"uint16"},{"internalType":"uint16","name":"observationCardinalityNext","type":"uint16"},{"internalType":"uint8","name":"feeProtocol","type":"uint8"},{"internalType":"bool","name":"unlocked","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]')
 
 def init_db():
@@ -323,27 +324,17 @@ def init_db():
         with get_db() as conn:
             with conn.cursor() as c:
                 # Users
-                c.execute('''
-                    CREATE TABLE IF NOT EXISTS users (
-                        id UUID PRIMARY KEY,
-                        email TEXT UNIQUE NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        name TEXT,
-                        reasoning_depth INTEGER DEFAULT 1,
-                        preferred_domain TEXT DEFAULT 'general',
-                        is_admin BOOLEAN DEFAULT FALSE,
-                        last_active TIMESTAMP DEFAULT NOW(),
-                        created_at TIMESTAMP DEFAULT NOW(),
-                        updated_at TIMESTAMP DEFAULT NOW(),
-                        streak_count INTEGER DEFAULT 0,
-                        last_streak_date DATE,
-                        starter_cap_claimed BOOLEAN DEFAULT FALSE
-                    )
-                ''')
+                c.execute('''CREATE TABLE IF NOT EXISTS users (
+                    id UUID PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
+                    name TEXT, reasoning_depth INTEGER DEFAULT 1, preferred_domain TEXT DEFAULT 'general',
+                    is_admin BOOLEAN DEFAULT FALSE, last_active TIMESTAMP DEFAULT NOW(),
+                    created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(),
+                    streak_count INTEGER DEFAULT 0, last_streak_date DATE,
+                    starter_cap_claimed BOOLEAN DEFAULT FALSE
+                )''')
                 # Sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
-                    id TEXT PRIMARY KEY,
-                    created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
+                    id TEXT PRIMARY KEY, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
                 # User sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
@@ -366,9 +357,7 @@ def init_db():
                     content TEXT, query TEXT, domain TEXT, importance INTEGER DEFAULT 1,
                     embedding vector(1536), created TIMESTAMP DEFAULT NOW()
                 )''')
-                try:
-                    c.execute("CREATE EXTENSION IF NOT EXISTS vector")
-                    c.execute("ALTER TABLE memories ADD COLUMN IF NOT EXISTS embedding vector(1536)")
+                try: c.execute("CREATE EXTENSION IF NOT EXISTS vector"); c.execute("ALTER TABLE memories ADD COLUMN IF NOT EXISTS embedding vector(1536)")
                 except: pass
                 # Portfolio
                 c.execute('''CREATE TABLE IF NOT EXISTS library_items (
@@ -551,17 +540,8 @@ def init_db():
                 )''')
                 c.execute("INSERT INTO platform_settings (key, value) VALUES ('cap_matic_rate', %s) ON CONFLICT (key) DO NOTHING",
                           (str(DEFAULT_CAP_MATIC_RATE),))
-
-                # Add columns if missing (safety)
-                try:
-                    c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS currency TEXT")
-                    c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS matic_amount REAL")
-                    c.execute("ALTER TABLE withdrawal_queue ADD COLUMN IF NOT EXISTS tx_hash TEXT")
-                except:
-                    pass
-
                 conn.commit()
-        logger.info("✅ Database initialized (v44.1)")
+        logger.info("✅ Database initialized (v44.2)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -819,9 +799,9 @@ def get_thread_context(chat_id: str, user_id: str = None, session_id: str = None
         with get_db() as conn:
             with conn.cursor() as c:
                 if user_id:
-                    c.execute("""SELECT role, content FROM chat_messages WHERE chat_id=%s AND user_id=%s ORDER BY created DESC LIMIT 20""", (chat_id, user_id))
+                    c.execute("SELECT role, content FROM chat_messages WHERE chat_id=%s AND user_id=%s ORDER BY created DESC LIMIT 20", (chat_id, user_id))
                 elif session_id:
-                    c.execute("""SELECT role, content FROM chat_messages WHERE chat_id=%s AND session_id=%s ORDER BY created DESC LIMIT 20""", (chat_id, session_id))
+                    c.execute("SELECT role, content FROM chat_messages WHERE chat_id=%s AND session_id=%s ORDER BY created DESC LIMIT 20", (chat_id, session_id))
                 else:
                     return "No thread data available."
                 rows = c.fetchall()
@@ -858,12 +838,7 @@ def get_relevant_memories(user_id: str, query: str, limit: int = 3) -> List[str]
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("""
-                    SELECT content FROM memories
-                    WHERE user_id = %s
-                    ORDER BY created DESC
-                    LIMIT 100
-                """, (user_id,))
+                c.execute("SELECT content FROM memories WHERE user_id = %s ORDER BY created DESC LIMIT 100", (user_id,))
                 rows = c.fetchall()
                 if not rows:
                     return []
@@ -1120,7 +1095,6 @@ async def login(req: LoginRequest, request: Request):
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
-                # Verify insertion
                 c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
                 if not c.fetchone():
                     raise Exception("Failed to store session token in database")
@@ -1361,14 +1335,12 @@ async def token_spend(req: dict, user: dict = Depends(get_current_user)):
 @app.post("/api/token/welcome-bonus")
 async def welcome_bonus(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    # Check if already claimed
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("SELECT starter_cap_claimed FROM users WHERE id = %s", (user["id"],))
             row = c.fetchone()
             if row and row[0]:
                 raise HTTPException(400, "Welcome bonus already claimed")
-            # Credit
             c.execute("UPDATE users SET starter_cap_claimed = TRUE WHERE id = %s", (user["id"],))
             c.execute("""
                 INSERT INTO cap_stakes (user_id, staked_amount, tier)
@@ -1393,7 +1365,6 @@ async def purchase_cap(req: dict, user: dict = Depends(get_current_user)):
     tx_hash = req.get("tx_hash")
     if not cap_amount or not tx_hash:
         raise HTTPException(400, "cap_amount and tx_hash required")
-    # Verify transaction
     rate = get_cap_matic_rate()
     cap_whole = cap_amount / 10**18
     expected_matic = cap_whole / rate
@@ -1473,16 +1444,104 @@ def verify_matic_payment(tx_hash: str, expected_matic: float) -> bool:
         logger.error(f"verify_matic_payment error: {e}")
     return False
 
-@app.get("/api/wallet/matic-balance")
-async def get_matic_balance(address: str):
-    if not WEB3_AVAILABLE:
-        raise HTTPException(501, "web3 not installed")
+class SendRequest(BaseModel):
+    to: str
+    token_address: str
+    amount: str
+    chain_id: int = 137
+
+@app.post("/api/wallet/send")
+async def custodial_send(req: SendRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401)
+    if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
+        raise HTTPException(501, "Wallet service unavailable")
+    w3 = get_web3()
+    relayer = w3.eth.account.from_key(settings.RELAYER_PRIVATE_KEY)
+    checksum_to = Web3.to_checksum_address(req.to)
+    amount = int(req.amount)
     try:
-        w3 = get_web3()
-        balance = w3.eth.get_balance(Web3.to_checksum_address(address))
-        return {"matic": float(w3.from_wei(balance, 'ether'))}
+        if req.token_address == "0x0000000000000000000000000000000000000000":
+            tx = {
+                'from': relayer.address,
+                'to': checksum_to,
+                'value': amount,
+                'nonce': w3.eth.get_transaction_count(relayer.address),
+                'gas': 21000,
+                'gasPrice': w3.eth.gas_price,
+                'chainId': req.chain_id,
+            }
+            signed = relayer.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+        else:
+            contract = w3.eth.contract(address=Web3.to_checksum_address(req.token_address), abi=ERC20_ABI)
+            tx = contract.functions.transfer(checksum_to, amount).build_transaction({
+                'from': relayer.address,
+                'nonce': w3.eth.get_transaction_count(relayer.address),
+                'gas': 100000,
+                'gasPrice': w3.eth.gas_price,
+                'chainId': req.chain_id,
+            })
+            signed = relayer.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, destination, status, currency) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user["id"], "send", amount, tx_hash.hex(), req.to, "completed", req.token_address))
+                conn.commit()
+        return {"tx_hash": tx_hash.hex()}
     except Exception as e:
-        raise HTTPException(400, str(e))
+        logger.error(f"Send error: {e}")
+        raise HTTPException(500, f"Transaction failed: {str(e)}")
+
+class SwapExecuteRequest(BaseModel):
+    from_token: str
+    to_token: str
+    amount: str
+    slippage: float = 1.0
+
+@app.post("/api/wallet/swap/execute")
+async def custodial_swap(req: SwapExecuteRequest, user: dict = Depends(get_current_user)):
+    if not user:
+        raise HTTPException(401)
+    if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
+        raise HTTPException(501, "Swap service unavailable")
+    w3 = get_web3()
+    relayer = w3.eth.account.from_key(settings.RELAYER_PRIVATE_KEY)
+    # 1inch Aggregation API v5.0
+    url = f"https://api.1inch.dev/swap/v5.2/137/swap"
+    params = {
+        "src": req.from_token,
+        "dst": req.to_token,
+        "amount": req.amount,
+        "from": relayer.address,
+        "slippage": req.slippage,
+        "disableEstimate": True,
+    }
+    headers = {"Authorization": f"Bearer {settings.ETHERSCAN_API_KEY}"}  # reuse Etherscan key or use 1inch key
+    try:
+        r = requests.get(url, params=params, headers=headers, timeout=15)
+        if r.status_code != 200:
+            raise Exception(f"1inch error: {r.text}")
+        swap_data = r.json()
+        tx = swap_data["tx"]
+        # adjust gas
+        tx["from"] = relayer.address
+        tx["gasPrice"] = w3.eth.gas_price
+        tx["nonce"] = w3.eth.get_transaction_count(relayer.address)
+        tx["chainId"] = 137
+        signed = relayer.sign_transaction(tx)
+        tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, destination, status, currency) VALUES (%s,%s,'swap',%s,%s,%s,'completed',%s)",
+                          (str(uuid.uuid4()), user["id"], int(req.amount), tx_hash.hex(), req.to_token, req.from_token))
+                conn.commit()
+        return {"tx_hash": tx_hash.hex()}
+    except Exception as e:
+        logger.error(f"Swap error: {e}")
+        raise HTTPException(500, f"Swap failed: {str(e)}")
 
 @app.get("/api/wallet/balances")
 async def get_wallet_balances(address: str, user: dict = Depends(get_current_user)):
@@ -1510,10 +1569,7 @@ async def get_wallet_balances(address: str, user: dict = Depends(get_current_use
                 balance = w3.eth.get_balance(checksum_addr)
                 balance_formatted = float(w3.from_wei(balance, 'ether'))
             else:
-                contract = w3.eth.contract(
-                    address=Web3.to_checksum_address(token["address"]),
-                    abi=ERC20_ABI
-                )
+                contract = w3.eth.contract(address=Web3.to_checksum_address(token["address"]), abi=ERC20_ABI)
                 balance = contract.functions.balanceOf(checksum_addr).call()
                 balance_formatted = balance / (10 ** token["decimals"])
             usd_value = balance_formatted * 0.01  # placeholder
@@ -1529,58 +1585,6 @@ async def get_wallet_balances(address: str, user: dict = Depends(get_current_use
         except Exception as e:
             logger.error(f"Error fetching {token['symbol']} balance: {e}")
     return {"tokens": tokens}
-
-@app.post("/api/wallet/relay")
-async def relay_transaction(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
-    signed_tx = req.get("signed_tx")
-    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
-    try:
-        w3 = get_web3()
-        tx_hash = w3.eth.send_raw_transaction(signed_tx)
-        return {"tx_hash": tx_hash.hex()}
-    except Exception as e:
-        logger.error(f"Relay error: {e}")
-        raise HTTPException(500, "Relay failed")
-
-@app.post("/api/wallet/swap/quote")
-async def swap_quote(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    from_token = req.get("fromToken")
-    to_token = req.get("toToken")
-    amount = req.get("amount")
-    if not from_token or not to_token or not amount:
-        raise HTTPException(400, "Missing parameters")
-    params = {
-        "src": from_token,
-        "dst": to_token,
-        "amount": amount,
-        "from": user.get("wallet_address") or "",
-        "slippage": "1"
-    }
-    try:
-        r = requests.get(f"https://api.1inch.dev/swap/v6.0/137/quote", params=params, timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            return {"estimated": data.get("toTokenAmount"), "toSymbol": "USDC"}  # placeholder
-    except Exception as e:
-        logger.error(f"1inch quote error: {e}")
-    raise HTTPException(502, "Could not fetch swap quote")
-
-@app.post("/api/wallet/swap/execute")
-async def swap_execute(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    signed_tx = req.get("signed_tx")
-    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
-    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
-    try:
-        w3 = get_web3()
-        tx_hash = w3.eth.send_raw_transaction(signed_tx)
-        return {"tx_hash": tx_hash.hex()}
-    except Exception as e:
-        logger.error(f"Swap relay error: {e}")
-        raise HTTPException(500, "Swap failed")
 
 @app.get("/api/wallet/activity")
 async def get_activity(user: dict = Depends(get_current_user), page: int = 0, limit: int = 20):
@@ -1608,7 +1612,6 @@ async def get_activity(user: dict = Depends(get_current_user), page: int = 0, li
                     "destination": r[4],
                     "tx_hash": r[5]
                 })
-            # Determine if more
             c.execute("SELECT COUNT(*) FROM (SELECT 1 FROM withdrawal_queue WHERE user_id = %s UNION ALL SELECT 1 FROM cap_transactions WHERE user_id = %s AND type != 'starter') t", (user["id"], user["id"]))
             total = c.fetchone()[0]
             has_more = total > (offset + limit)
@@ -1715,7 +1718,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         is_authenticated = False
 
     identifier = user_id if user else session["id"]
-
     tier = get_user_tier(user_id) if is_authenticated else "free"
     if tier == "enterprise": chat_rate_limit = 500
     elif tier == "pro": chat_rate_limit = 100
@@ -1849,6 +1851,27 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
     else:
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
 
+# ==================== NEW: CHAT HISTORY ENDPOINTS ====================
+@app.get("/api/chats")
+async def get_user_chats(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, title, updated FROM chats WHERE user_id = %s ORDER BY updated DESC LIMIT 100", (user["id"],))
+            chats = [{"id": r[0], "title": r[1], "updated": r[2].isoformat() if r[2] else None} for r in c.fetchall()]
+    return {"chats": chats}
+
+@app.get("/api/chats/{chat_id}")
+async def get_chat_messages(chat_id: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT role, content, model, confidence_score, created FROM chat_messages WHERE chat_id=%s AND user_id=%s ORDER BY created ASC", (chat_id, user["id"]))
+            messages = [{"role": r[0], "content": r[1], "model": r[2], "confidence": r[3], "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]
+    if not messages:
+        raise HTTPException(404, "Chat not found")
+    return {"chat_id": chat_id, "messages": messages}
+
 # ==================== GAMIFICATION & LEADERBOARD ====================
 @app.get("/api/gamification/streak")
 def get_streak(user: dict = Depends(get_current_user)):
@@ -1934,7 +1957,7 @@ class PortfolioItemCreate(BaseModel):
     chat_id: str = None
 
 @app.get("/api/portfolio")
-def get_portfolio(request: Request, user: dict = Depends(get_current_user)):
+def get_portfolio(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -2475,10 +2498,7 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
-# ---------------- $CAP HELPERS & ENDPOINTS (already defined) ----------------
-# (Some are duplicated but we keep them)
-
-# ==================== ADMIN: CAP DASHBOARD ====================
+# ---------------- $CAP HELPERS & ENDPOINTS ----------------
 def get_cap_price_from_dex() -> Optional[float]:
     if not WEB3_AVAILABLE or not settings.CAP_DEX_PAIR_ADDRESS:
         return None
@@ -2486,23 +2506,19 @@ def get_cap_price_from_dex() -> Optional[float]:
         w3 = get_web3()
         pool_address = Web3.to_checksum_address(settings.CAP_DEX_PAIR_ADDRESS)
         pool_contract = w3.eth.contract(address=pool_address, abi=V3_POOL_ABI)
-        
         slot0 = pool_contract.functions.slot0().call()
         sqrt_price_x96 = slot0[0]
         token0 = pool_contract.functions.token0().call()
         cap_address = Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS)
-        
         sqrt_price = sqrt_price_x96 / (2**96)
         spot_price = sqrt_price * sqrt_price
-        
         if token0.lower() == cap_address.lower():
             price = spot_price
         else:
             price = 1.0 / spot_price
-        
         return float(price)
     except Exception as e:
-        logger.error(f"get_cap_price_from_dex (v3) error: {e}")
+        logger.error(f"get_cap_price_from_dex error: {e}")
         return None
 
 def get_treasury_balance() -> Optional[float]:
@@ -2736,7 +2752,6 @@ def process_withdrawals():
     except Exception as e:
         logger.error(f"Withdrawal processing error: {e}")
 
-# ==================== GAS AUTO‑TOP‑UP RELAYER ====================
 def gas_auto_topup():
     if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
         return
@@ -2777,7 +2792,6 @@ def gas_auto_topup():
     except Exception as e:
         logger.error(f"Gas auto‑top‑up error: {e}")
 
-# ==================== BACKGROUND THREADS ====================
 @app.on_event("startup")
 async def startup_event():
     threading.Thread(target=lambda: run_periodically(process_withdrawals, 60), daemon=True).start()
@@ -2800,7 +2814,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "44.1", "database": db_status}
+    return {"status": "ok", "version": "44.2", "database": db_status}
 
 def generate_png_icon(size: int) -> bytes:
     def create_png(width, height, pixels):
@@ -2882,9 +2896,9 @@ self.addEventListener('fetch', event => {
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "44.1"}
+    return {"name": "CAPITAN AI", "version": "44.2"}
 
-# ==================== MARKETS ENDPOINTS (for wallet) ====================
+# ==================== MARKETS ENDPOINTS ====================
 @app.get("/api/markets/crypto")
 async def get_crypto_markets():
     if settings.COINGECKO_KEY:
@@ -2919,20 +2933,15 @@ async def get_stock_markets():
                 if r.status_code == 200:
                     data = r.json()
                     if data.get("c"):
-                        result.append({
-                            "symbol": sym,
-                            "price": data["c"],
-                            "change24h": data.get("dp", 0)
-                        })
-            except:
-                pass
+                        result.append({"symbol": sym, "price": data["c"], "change24h": data.get("dp", 0)})
+            except: pass
         return result
     return []
 
 @app.get("/api/markets/commodities")
 async def get_commodity_markets():
     if settings.FINNHUB_API_KEY:
-        symbols = ["GC=F", "SI=F", "CL=F", "HG=F"]  # Gold, Silver, Oil, Copper
+        symbols = ["GC=F", "SI=F", "CL=F", "HG=F"]
         result = []
         for sym in symbols:
             try:
@@ -2940,17 +2949,11 @@ async def get_commodity_markets():
                 if r.status_code == 200:
                     data = r.json()
                     if data.get("c"):
-                        result.append({
-                            "symbol": sym,
-                            "price": data["c"],
-                            "change24h": data.get("dp", 0)
-                        })
-            except:
-                pass
+                        result.append({"symbol": sym, "price": data["c"], "change24h": data.get("dp", 0)})
+            except: pass
         return result
     return []
 
-# ==================== RUN ====================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
