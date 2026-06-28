@@ -757,6 +757,21 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )
             """)
+            
+            # Fix: Add prefix column if table exists without it
+            c.execute("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'api_keys' AND column_name = 'prefix'
+                    ) THEN
+                        ALTER TABLE api_keys ADD COLUMN prefix TEXT;
+                    END IF;
+                END $$;
+            """)
+            
+            # Create index only after ensuring column exists
             c.execute("CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(prefix)")
 
             c.execute("""
@@ -1637,7 +1652,6 @@ def verify_transaction(txid: str, currency: str, expected_usd: float, use_token_
         except Exception as e:
             logger.error(f"BTC verification error: {e}")
     elif currency == "ETH":
-        # simplified, same as in previous versions
         return False, 0.0
     return False, 0.0
 
@@ -1979,7 +1993,6 @@ def swap_quote(fromToken: str, toToken: str, amount: str, user: dict = Depends(g
 @app.post("/api/swap/execute")
 def swap_execute(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    # Frontend signs and sends; backend only logs
     return {"message": "Swap executed by frontend"}
 
 # ------------------------------------------------------------------------------
@@ -2109,7 +2122,7 @@ def get_embed_token(user: dict = Depends(get_current_user)):
 @app.get("/api/developer/usage")
 def get_api_usage(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    return {"usage": []}  # placeholder
+    return {"usage": []}
 
 # ------------------------------------------------------------------------------
 # Admin / Founder Endpoints
@@ -2229,7 +2242,7 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
     return {"ok": True}
 
 # ------------------------------------------------------------------------------
-# Leaderboard (new)
+# Leaderboard
 # ------------------------------------------------------------------------------
 @app.get("/api/leaderboard")
 def leaderboard(type: str = "staked"):
