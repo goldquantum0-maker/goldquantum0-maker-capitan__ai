@@ -846,27 +846,257 @@ async function triggerFileUpload(){
 }
 
 // ==================== INIT ====================
+// ==================== REPLACE THE ENTIRE INIT FUNCTION ====================
 async function init(){
     document.getElementById('toggleSidebarBtn').addEventListener('click',toggleSidebar);
     document.addEventListener('click',e=>{
         if(window.innerWidth<=768&&document.getElementById('sidebar').classList.contains('open')&&!document.getElementById('sidebar').contains(e.target)&&!document.getElementById('toggleSidebarBtn').contains(e.target))closeSidebar();
     });
     document.getElementById('messageInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'});
+    
+    // Hide splash after animation
     setTimeout(()=>{document.getElementById('splashScreen')?.classList.add('hide')},1600);
-
-    if(state.token&&state.user){
+    
+    // Show app immediately (no blank screen)
+    document.getElementById('app').style.display='flex';
+    
+    if(state.token && state.user){
+        // User is logged in — validate token
         try{
-            let data=await apiCall('/api/auth/me');
-            state.user=data;state.closeBalance=data.close_balance||0;state.closeStaked=data.close_staked||0;state.stakeTier=data.stake_tier||'none';state.walletAddress=data.wallet_address||'';
-            localStorage.setItem('capitan_user',JSON.stringify(data));localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);localStorage.setItem('wallet_address',state.walletAddress);
-            state.isGuest=false;
-        }catch(e){logout()}
-    }else if(state.token&&!state.user){
-        state.isGuest=true;
-    }else{
-        await startGuestSession();
+            let data = await apiCall('/api/auth/me');
+            if(data){
+                state.user = data;
+                state.isGuest = false;
+                state.closeBalance = data.close_balance || 0;
+                state.closeStaked = data.close_staked || 0;
+                state.stakeTier = data.stake_tier || 'none';
+                state.walletAddress = data.wallet_address || '';
+                localStorage.setItem('capitan_user', JSON.stringify(data));
+                localStorage.setItem('close_balance', state.closeBalance);
+                localStorage.setItem('close_staked', state.closeStaked);
+                localStorage.setItem('stake_tier', state.stakeTier);
+                localStorage.setItem('wallet_address', state.walletAddress);
+            } else {
+                logout();
+                state.isGuest = true;
+            }
+        } catch(e) {
+            logout();
+            state.isGuest = true;
+        }
+    } else if(state.token && !state.user){
+        // Has token but no user data — session token (guest)
+        state.isGuest = true;
+        state.freeMessagesUsed = parseInt(localStorage.getItem('free_msgs_used')) || 0;
+    } else {
+        // No token at all — fresh visitor
+        state.isGuest = true;
+        state.token = null;
+        state.user = null;
+        state.freeMessagesUsed = 0;
+        // DON'T auto-start guest session — let user explore first
     }
-    updateUI();renderMessages();
+    
+    updateUI();
+    renderMessages();
+    
+    // If fresh visitor with no session, show the signup prompt after 8 seconds
+    if(!state.token && !state.user){
+        setTimeout(() => {
+            if(!state.token && !state.user && state.messages.length === 0){
+                showWelcomeSignupPrompt();
+            }
+        }, 8000);
+    }
+}
+
+// ==================== ADD THIS NEW FUNCTION ====================
+function showWelcomeSignupPrompt(){
+    let area = document.getElementById('messagesArea');
+    // Only show if user hasn't interacted yet
+    if(state.messages.length > 0 || state.token) return;
+    
+    let promptDiv = document.createElement('div');
+    promptDiv.className = 'wallet-prompt-inline';
+    promptDiv.id = 'welcomeSignupPrompt';
+    promptDiv.innerHTML = `
+        <h3>🪙 Welcome to CAPITAN AI</h3>
+        <p>I'm powered by <strong>CLOSE tokens</strong>. Create your OS Wallet to receive <strong>2,000 CLOSE</strong> (worth $${closeToUsd(2000)}) and unlock:</p>
+        <p style="font-size:11px;text-align:left;max-width:400px;margin:0 auto 12px;">
+            ✦ Unlimited AI conversations<br>
+            ✦ Multi-chain DeFi wallet<br>
+            ✦ CLOSE staking rewards<br>
+            ✦ Token swaps & trading
+        </p>
+        <button class="btn btn-gold" onclick="showSignupModal()" style="width:auto;display:inline-block;">🪙 Create OS Wallet — Get 2,000 CLOSE</button>
+        <button onclick="tryFreeFirst()" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;margin-left:12px;font-size:11px;">Try 3 free messages first</button>
+    `;
+    
+    // Insert after the greeting
+    let welcomeMsg = area.querySelector('#welcomeMessage, div');
+    if(welcomeMsg && welcomeMsg.nextSibling){
+        area.insertBefore(promptDiv, welcomeMsg.nextSibling);
+    } else {
+        area.appendChild(promptDiv);
+    }
+    scrollBottom();
+}
+
+// ==================== ADD THIS FUNCTION ====================
+async function tryFreeFirst(){
+    // Remove the signup prompt
+    let prompt = document.getElementById('welcomeSignupPrompt');
+    if(prompt) prompt.remove();
+    
+    // Start a guest session silently
+    if(!state.token){
+        try{
+            let r = await fetch(CFG.API+'/api/session');
+            let d = await r.json();
+            if(d.token){
+                state.token = d.token;
+                state.isGuest = true;
+                state.freeMessagesUsed = 0;
+                localStorage.setItem('capitan_token', d.token);
+                updateUI();
+                toast('3 free messages unlocked. Ask me anything!');
+            }
+        } catch(e) {
+            toast('Could not start session. Please try signing up.');
+        }
+    }
+}
+
+// ==================== REPLACE startGuestSession ====================
+async function startGuestSession(){
+    // This should only be called explicitly, not automatically
+    try{
+        let r = await fetch(CFG.API+'/api/session');
+        let d = await r.json();
+        if(d.token){
+            state.token = d.token;
+            state.isGuest = true;
+            state.user = null;
+            state.freeMessagesUsed = 0;
+            localStorage.setItem('capitan_token', d.token);
+            localStorage.removeItem('capitan_user');
+            updateUI();
+            renderMessages();
+            toast('Guest session started — 3 free messages!');
+        }
+    } catch(e) {
+        toast('Could not start session');
+    }
+}
+
+// ==================== UPDATE updateBalanceBar ====================
+function updateBalanceBar(){
+    let bar = document.getElementById('balanceBar');
+    
+    if(!state.token && !state.user){
+        // Fresh visitor — no session yet
+        bar.style.display = 'flex';
+        document.getElementById('closeBalanceDisplay').innerText = 'Sign up for 2,000 CLOSE';
+        document.getElementById('closeUsdDisplay').innerText = '';
+        bar.querySelector('button').innerText = 'Get CLOSE';
+        bar.querySelector('button').onclick = showSignupModal;
+        return;
+    }
+    
+    if(state.isGuest && !state.user){
+        // Guest with session token
+        bar.style.display = 'flex';
+        let remaining = CFG.FREE_MSGS - state.freeMessagesUsed;
+        document.getElementById('closeBalanceDisplay').innerText = remaining > 0 ? `${remaining} free messages left` : 'No free messages';
+        document.getElementById('closeUsdDisplay').innerText = '';
+        bar.querySelector('button').innerText = 'Get CLOSE';
+        bar.querySelector('button').onclick = showSignupModal;
+    } else if(state.user){
+        // Logged in user
+        bar.style.display = 'flex';
+        document.getElementById('closeBalanceDisplay').innerText = `${state.closeBalance.toLocaleString()} CLOSE`;
+        document.getElementById('closeUsdDisplay').innerText = `$${closeToUsd(state.closeBalance)}`;
+        bar.querySelector('button').innerText = 'Get CLOSE';
+        bar.querySelector('button').onclick = openBuyCloseModal;
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+// ==================== UPDATE sendMessage — TRACK FREE MESSAGES ====================
+async function sendMessage(){
+    let input = document.getElementById('messageInput'), text = input.value.trim();
+    if(!text||state.loading)return;
+    
+    // If no token at all and trying to chat, prompt signup
+    if(!state.token && !state.user){
+        showSignupModal();
+        return;
+    }
+    
+    input.value = '';
+    state.messages.push({role:'user', content:text});
+    renderMessages();
+    state.loading = true;
+    let aiIdx = state.messages.length;
+    state.messages.push({role:'assistant', content:'', isTyping:true});
+    renderMessages();
+    
+    try{
+        let body = {messages: state.messages.slice(0,-1), chat_id: state.activeChatId};
+        let res = await apiCall('/api/chat', {method:'POST', body:JSON.stringify(body)});
+        
+        state.messages[aiIdx] = {role:'assistant', content:res.content||'No response', message_id:res.message_id};
+        
+        if(res.close_balance !== undefined){
+            state.closeBalance = res.close_balance;
+            localStorage.setItem('close_balance', state.closeBalance);
+        }
+        
+        if(res.free_messages_remaining !== undefined){
+            state.freeMessagesUsed = CFG.FREE_MSGS - res.free_messages_remaining;
+            localStorage.setItem('free_msgs_used', state.freeMessagesUsed);
+        }
+        
+        if(res.wallet_prompt){
+            // Show the subtle wallet prompt in chat
+            let area = document.getElementById('messagesArea');
+            let promptDiv = document.createElement('div');
+            promptDiv.className = 'wallet-prompt-inline';
+            promptDiv.innerHTML = `
+                <h3>🪙 ${res.wallet_message || 'Create your OS Wallet to unlock unlimited AI.'}</h3>
+                <p>Create your OS Wallet in seconds and receive <strong>2,000 CLOSE</strong> (worth $${closeToUsd(2000)}) to power your AI experience.</p>
+                <button class="btn btn-gold" onclick="showSignupModal()" style="width:auto;display:inline-block;">Create OS Wallet — Get 2,000 CLOSE</button>
+                <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;margin-left:12px;font-size:11px;">Continue with limited access</button>
+            `;
+            area.appendChild(promptDiv);
+        }
+        
+        if(res.requires_purchase){
+            let area = document.getElementById('messagesArea');
+            let promptDiv = document.createElement('div');
+            promptDiv.className = 'wallet-prompt-inline';
+            promptDiv.innerHTML = `
+                <h3>🪙 ${res.wallet_message || 'You need CLOSE tokens to continue.'}</h3>
+                <p>Get more CLOSE — starting at <strong>$${CFG.MIN_PURCHASE.toFixed(2)}</strong> for ${usdToClose(CFG.MIN_PURCHASE).toLocaleString()} CLOSE.</p>
+                <button class="btn btn-gold" onclick="openBuyCloseModal()" style="width:auto;display:inline-block;">Get CLOSE — From $1</button>
+            `;
+            area.appendChild(promptDiv);
+        }
+        
+        if(res.low_balance_warning){
+            toast('⚠️ ' + (res.wallet_message || 'Running low on CLOSE'));
+        }
+        
+        state.activeChatId = res.chat_id;
+        state.loading = false;
+        renderMessages();
+        updateUI();
+    } catch(err) {
+        state.messages[aiIdx] = {role:'assistant', content:'Error: '+err.message};
+        state.loading = false;
+        renderMessages();
+    }
 }
 init();
 </script>
