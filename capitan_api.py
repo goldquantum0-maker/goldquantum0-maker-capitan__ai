@@ -1,7 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v43.0 (Full Unabridged)
+CAPITAN AI — Enterprise Backend v44.0 (Full Unabridged)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-V3 DEX price support, starter CAP, in‑app purchase, PWA, deploy‑time distribution.
+Fully compatible with frontend v2.0.
 """
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt, threading, struct, zlib
 from typing import Optional, List, Tuple, Dict, Any
@@ -109,7 +109,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="43.0")
+app = FastAPI(title="CAPITAN AI API", version="44.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -289,6 +289,7 @@ REWARDS_AMOUNT = 50_000_000_000_000 * 10**18
 
 STARTER_CAP_AMOUNT = 2500 * 10**18
 DEFAULT_CAP_MATIC_RATE = 10_000_000
+WELCOME_BONUS_AMOUNT = 1000 * 10**18
 
 # ABIs
 ERC20_ABI = json.loads('[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
@@ -313,29 +314,17 @@ def init_db():
                         is_admin BOOLEAN DEFAULT FALSE,
                         last_active TIMESTAMP DEFAULT NOW(),
                         created_at TIMESTAMP DEFAULT NOW(),
-                        updated_at TIMESTAMP DEFAULT NOW()
+                        updated_at TIMESTAMP DEFAULT NOW(),
+                        streak_count INTEGER DEFAULT 0,
+                        last_streak_date DATE,
+                        starter_cap_claimed BOOLEAN DEFAULT FALSE
                     )
                 ''')
-                c.execute("ALTER TABLE users DROP COLUMN IF EXISTS token_balance")
-                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active TIMESTAMP DEFAULT NOW()")
-                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE")
-                c.execute("ALTER TABLE users DROP COLUMN IF EXISTS tier")
-                c.execute("ALTER TABLE users DROP COLUMN IF EXISTS daily_msg_count")
-                c.execute("ALTER TABLE users DROP COLUMN IF EXISTS msg_reset_date")
-                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0")
-                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_streak_date DATE")
-                c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS starter_cap_claimed BOOLEAN DEFAULT FALSE")
-
                 # Sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
                     created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS token_balance")
-                c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS tier")
-                c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS daily_msg_count")
-                c.execute("ALTER TABLE sessions DROP COLUMN IF EXISTS msg_reset_date")
-
                 # User sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -346,14 +335,11 @@ def init_db():
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, title TEXT, topic_thread TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE chats ADD COLUMN IF NOT EXISTS topic_thread TEXT")
                 c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
                     id TEXT PRIMARY KEY, chat_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, role TEXT, content TEXT, model TEXT, reasoning_chain TEXT, confidence_score REAL,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reasoning_chain TEXT")
-                c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS confidence_score REAL")
                 # Memories
                 c.execute('''CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY, memory_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -371,17 +357,12 @@ def init_db():
                     attachments JSONB DEFAULT '[]', pinned BOOLEAN DEFAULT FALSE,
                     chat_id TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
-                for col, dtype in [("folder", "TEXT DEFAULT 'General'"), ("tags", "JSONB DEFAULT '[]'"),
-                                   ("attachments", "JSONB DEFAULT '[]'"), ("pinned", "BOOLEAN DEFAULT FALSE"),
-                                   ("updated", "TIMESTAMP DEFAULT NOW()"), ("chat_id", "TEXT")]:
-                    c.execute(f"ALTER TABLE library_items ADD COLUMN IF NOT EXISTS {col} {dtype}")
                 # Uploaded files
                 c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     workspace_id TEXT, filename TEXT, original_name TEXT, size INTEGER,
                     storage_path TEXT, extracted_text TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE uploaded_files ADD COLUMN IF NOT EXISTS workspace_id TEXT")
                 # Workspaces
                 c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
                     id TEXT PRIMARY KEY, name TEXT, description TEXT DEFAULT '', topic TEXT DEFAULT '',
@@ -389,9 +370,6 @@ def init_db():
                     password_hash TEXT, max_members INTEGER DEFAULT 30, is_active BOOLEAN DEFAULT TRUE,
                     created_at TIMESTAMP DEFAULT NOW()
                 )''')
-                for col, dtype in [("description", "TEXT DEFAULT ''"), ("topic", "TEXT DEFAULT ''"),
-                                   ("password_hash", "TEXT"), ("is_active", "BOOLEAN DEFAULT TRUE")]:
-                    c.execute(f"ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS {col} {dtype}")
                 c.execute('''CREATE TABLE IF NOT EXISTS workspace_members (
                     workspace_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     role TEXT DEFAULT 'member', joined_at TIMESTAMP DEFAULT NOW(),
@@ -402,15 +380,12 @@ def init_db():
                     author_name TEXT, message TEXT, is_ai INTEGER DEFAULT 0, pinned BOOLEAN DEFAULT FALSE,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE workspace_messages ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
                 # Payments
                 c.execute('''CREATE TABLE IF NOT EXISTS payments (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     txid TEXT UNIQUE, currency TEXT, amount REAL, status TEXT DEFAULT 'pending',
                     verified INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE payments DROP COLUMN IF EXISTS tier")
-                c.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending'")
                 # Notifications
                 c.execute('''CREATE TABLE IF NOT EXISTS notifications (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -480,7 +455,6 @@ def init_db():
                     scopes TEXT DEFAULT 'chat,research,portfolio', is_active BOOLEAN DEFAULT TRUE,
                     last_used TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS label TEXT DEFAULT 'Unlabelled'")
                 c.execute('''CREATE TABLE IF NOT EXISTS api_usage (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     api_key_id UUID REFERENCES api_keys(id) ON DELETE CASCADE,
@@ -491,7 +465,6 @@ def init_db():
                     url TEXT NOT NULL, events TEXT DEFAULT 'new_message',
                     is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("DROP TABLE IF EXISTS token_purchases")
 
                 # $CAP Tables
                 c.execute('''CREATE TABLE IF NOT EXISTS cap_stakes (
@@ -501,7 +474,6 @@ def init_db():
                     staked_at TIMESTAMP DEFAULT NOW(),
                     lock_until TIMESTAMP
                 )''')
-                c.execute("ALTER TABLE cap_stakes ADD COLUMN IF NOT EXISTS lock_until TIMESTAMP")
                 c.execute('''CREATE TABLE IF NOT EXISTS cap_transactions (
                     id UUID PRIMARY KEY,
                     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -510,10 +482,10 @@ def init_db():
                     tx_hash TEXT UNIQUE,
                     destination TEXT,
                     status TEXT DEFAULT 'pending',
+                    currency TEXT,
+                    matic_amount REAL,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS currency TEXT")
-                c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS matic_amount REAL")
                 # Withdrawal queue
                 c.execute('''CREATE TABLE IF NOT EXISTS withdrawal_queue (
                     id UUID PRIMARY KEY,
@@ -525,8 +497,6 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW(),
                     updated TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE withdrawal_queue ADD COLUMN IF NOT EXISTS tx_hash TEXT")
-
                 # Badges and user badges
                 c.execute('''CREATE TABLE IF NOT EXISTS badges (
                     id SERIAL PRIMARY KEY,
@@ -562,8 +532,16 @@ def init_db():
                 c.execute("INSERT INTO platform_settings (key, value) VALUES ('cap_matic_rate', %s) ON CONFLICT (key) DO NOTHING",
                           (str(DEFAULT_CAP_MATIC_RATE),))
 
+                # Add columns if missing (safety)
+                try:
+                    c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS currency TEXT")
+                    c.execute("ALTER TABLE cap_transactions ADD COLUMN IF NOT EXISTS matic_amount REAL")
+                    c.execute("ALTER TABLE withdrawal_queue ADD COLUMN IF NOT EXISTS tx_hash TEXT")
+                except:
+                    pass
+
                 conn.commit()
-        logger.info("✅ Database initialized (v43.0)")
+        logger.info("✅ Database initialized (v44.0)")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -1044,7 +1022,7 @@ def extract_text_from_file(file_path: str, original_name: str) -> str:
         logger.error(f"File extraction error: {e}")
         return ''
 
-# Legal endpoints
+# ==================== LEGAL ENDPOINTS ====================
 DEFAULT_PRIVACY = """<h2>Privacy Policy</h2><p>Effective July 1, 2026. CAPITAN AI is committed to protecting your privacy...</p>"""
 DEFAULT_TERMS = """<h2>Terms & Conditions</h2><p>Effective July 1, 2026. By using CAPITAN AI you agree to these terms...</p>"""
 
@@ -1075,16 +1053,25 @@ async def register(req: RegisterRequest):
                 password_hash = hash_password(req.password)
                 user_id = str(uuid.uuid4())
                 name = req.name or req.email.split('@')[0]
-                c.execute("""INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, last_active)
-                    VALUES (%s,%s,%s,%s,%s,%s,NOW())""",
-                    (user_id, req.email, password_hash, name, 1, "general"))
+                c.execute("""
+                    INSERT INTO users (id, email, password_hash, name, reasoning_depth, preferred_domain, last_active, created_at, updated_at, streak_count, starter_cap_claimed)
+                    VALUES (%s,%s,%s,%s,%s,%s,NOW(),NOW(),NOW(),0,FALSE)
+                """, (user_id, req.email, password_hash, name, 1, "general"))
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc()+timedelta(days=30)))
+                # Insert API key
                 raw_key = "cap_" + secrets.token_hex(32)
                 key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
-                c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, label, scopes) VALUES (%s,%s,%s,%s,%s,%s)",
-                          (str(uuid.uuid4()), user_id, key_hash, raw_key[:10]+"...", "CAPITAN Web App", "chat,research,portfolio"))
+                api_key_id = str(uuid.uuid4())
+                try:
+                    c.execute("""
+                        INSERT INTO api_keys (id, user_id, key_hash, prefix, label, scopes, is_active, created)
+                        VALUES (%s,%s,%s,%s,%s,%s,TRUE,NOW())
+                    """, (api_key_id, user_id, key_hash, raw_key[:10]+"...", "CAPITAN Web App", "chat,research,portfolio"))
+                except Exception as e:
+                    logger.error(f"API key insertion failed: {e}")
+                    # Continue without API key
                 conn.commit()
                 log_activity(user_id, "register")
                 return {
@@ -1098,8 +1085,8 @@ async def register(req: RegisterRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Register: {e}")
-        raise HTTPException(500, "Registration failed")
+        logger.error(f"Registration error: {e}", exc_info=True)
+        raise HTTPException(500, f"Registration failed: {str(e)}")
 
 @app.post("/api/auth/login")
 async def login(req: LoginRequest, request: Request):
@@ -1169,6 +1156,32 @@ async def validate_token(request: Request):
         "is_admin": user.get("is_admin", False),
         "reasoning_depth": user["reasoning_depth"]
     }
+
+@app.post("/api/auth/change-password")
+async def change_password(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    old = req.get("old_password")
+    new = req.get("new_password")
+    if not old or not new:
+        raise HTTPException(400, "Both passwords required")
+    if len(new) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT password_hash FROM users WHERE id = %s", (user["id"],))
+                row = c.fetchone()
+                if not row or not verify_password(old, row[0]):
+                    raise HTTPException(400, "Current password is incorrect")
+                new_hash = hash_password(new)
+                c.execute("UPDATE users SET password_hash = %s, updated_at = NOW() WHERE id = %s", (new_hash, user["id"]))
+                conn.commit()
+        return {"message": "Password updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Change password error: {e}")
+        raise HTTPException(500, "Password change failed")
 
 @app.post("/api/auth/update-profile")
 async def update_profile(req: dict, user: dict = Depends(get_current_user)):
@@ -1249,11 +1262,414 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# ==================== CHAT ENDPOINT (with starter CAP claim) ====================
+# ==================== TOKEN / CAP ENDPOINTS ====================
+def get_cap_matic_rate() -> int:
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT value FROM platform_settings WHERE key = 'cap_matic_rate'")
+                row = c.fetchone()
+                if row:
+                    return int(row[0])
+    except:
+        pass
+    return DEFAULT_CAP_MATIC_RATE
+
+def user_cap_balance(user_id: str) -> int:
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT staked_amount FROM cap_stakes WHERE user_id = %s", (user_id,))
+            row = c.fetchone()
+            return row[0] if row else 0
+
+def update_user_tier(user_id: str):
+    balance = user_cap_balance(user_id)
+    if balance >= CAP_ENTERPRISE_THRESHOLD:
+        tier = "enterprise"
+    elif balance >= CAP_PRO_THRESHOLD:
+        tier = "pro"
+    elif balance >= CAP_BUILDER_THRESHOLD:
+        tier = "builder"
+    else:
+        tier = "free"
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE cap_stakes SET tier = %s WHERE user_id = %s", (tier, user_id))
+            conn.commit()
+    return tier
+
+def get_user_tier(user_id: str) -> str:
+    if not user_id:
+        return "free"
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT tier FROM cap_stakes WHERE user_id = %s", (user_id,))
+            row = c.fetchone()
+            return row[0] if row else "free"
+
+@app.get("/api/token/balance")
+async def token_balance(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    staked = user_cap_balance(user["id"])
+    tier = get_user_tier(user["id"])
+    return {"balance": staked, "tier": tier}
+
+@app.post("/api/token/spend")
+async def token_spend(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    action = req.get("action")
+    amount = req.get("amount")
+    if not action or not amount:
+        raise HTTPException(400, "action and amount required")
+    if amount <= 0:
+        raise HTTPException(400, "amount must be positive")
+    bal = user_cap_balance(user["id"])
+    if bal < amount:
+        raise HTTPException(400, "Insufficient balance")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE cap_stakes SET staked_amount = staked_amount - %s WHERE user_id = %s", (amount, user["id"]))
+            c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, status) VALUES (%s,%s,%s,%s,'completed')",
+                      (str(uuid.uuid4()), user["id"], f"spend_{action}", amount))
+            conn.commit()
+    update_user_tier(user["id"])
+    return {"spent": amount, "new_balance": user_cap_balance(user["id"])}
+
+@app.post("/api/token/welcome-bonus")
+async def welcome_bonus(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    # Check if already claimed
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT starter_cap_claimed FROM users WHERE id = %s", (user["id"],))
+            row = c.fetchone()
+            if row and row[0]:
+                raise HTTPException(400, "Welcome bonus already claimed")
+            # Credit
+            c.execute("UPDATE users SET starter_cap_claimed = TRUE WHERE id = %s", (user["id"],))
+            c.execute("""
+                INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                VALUES (%s, %s, 'free')
+                ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+            """, (user["id"], WELCOME_BONUS_AMOUNT))
+            c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, status) VALUES (%s,%s,%s,%s,'completed')",
+                      (str(uuid.uuid4()), user["id"], "welcome_bonus", WELCOME_BONUS_AMOUNT))
+            conn.commit()
+    update_user_tier(user["id"])
+    return {"success": True, "amount": WELCOME_BONUS_AMOUNT, "new_balance": user_cap_balance(user["id"])}
+
+@app.get("/api/token/rate")
+async def cap_rate():
+    rate = get_cap_matic_rate()
+    return {"rate": rate, "matic_payment_address": settings.CAP_HOT_WALLET}
+
+@app.post("/api/cap/purchase")
+async def purchase_cap(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    cap_amount = req.get("cap_amount")
+    tx_hash = req.get("tx_hash")
+    if not cap_amount or not tx_hash:
+        raise HTTPException(400, "cap_amount and tx_hash required")
+    # Verify transaction
+    rate = get_cap_matic_rate()
+    cap_whole = cap_amount / 10**18
+    expected_matic = cap_whole / rate
+    if expected_matic < 0.0001:
+        raise HTTPException(400, "Amount too small.")
+    verified = verify_matic_payment(tx_hash.strip(), expected_matic)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            try:
+                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, currency, matic_amount, status) VALUES (%s,%s,'purchase',%s,%s,'MATIC',%s,%s)",
+                          (str(uuid.uuid4()), user["id"], cap_amount, tx_hash.strip(), expected_matic, 'completed' if verified else 'pending'))
+                if verified:
+                    c.execute("""
+                        INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                        VALUES (%s, %s, 'free')
+                        ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+                    """, (user["id"], cap_amount))
+                    update_user_tier(user["id"])
+                conn.commit()
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                raise HTTPException(400, "Transaction ID already claimed.")
+    if verified:
+        return {"verified": True, "cap_added": cap_whole, "new_staked": user_cap_balance(user["id"])}
+    else:
+        return {"verified": False, "message": "Payment could not be verified. Please check the TXID and try again."}
+
+@app.post("/api/cap/withdraw")
+async def withdraw_cap(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    amount = req.get("amount")
+    destination = req.get("address")
+    if not amount or not destination:
+        raise HTTPException(400, "amount and address required")
+    bal = user_cap_balance(user["id"])
+    if amount > bal:
+        raise HTTPException(400, "Insufficient staked balance")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE cap_stakes SET staked_amount = staked_amount - %s WHERE user_id = %s", (amount, user["id"]))
+            withdrawal_id = str(uuid.uuid4())
+            c.execute("INSERT INTO withdrawal_queue (id, user_id, amount, destination, status) VALUES (%s,%s,%s,%s,'pending')",
+                      (withdrawal_id, user["id"], amount, destination))
+            conn.commit()
+    update_user_tier(user["id"])
+    log_activity(user["id"], "cap_withdraw", f"Amount: {amount}, To: {destination}, ID: {withdrawal_id}")
+    return {"withdrawal_id": withdrawal_id, "status": "pending"}
+
+@app.get("/api/cap/withdrawals")
+async def get_withdrawals(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, amount, destination, status, tx_hash, created FROM withdrawal_queue WHERE user_id=%s ORDER BY created DESC", (user["id"],))
+            rows = c.fetchall()
+            return [{"id": r[0], "amount": r[1], "destination": r[2], "status": r[3], "tx_hash": r[4], "created": r[5].isoformat() if r[5] else None} for r in rows]
+
+# ==================== WALLET ENDPOINTS ====================
+def get_web3():
+    if not WEB3_AVAILABLE:
+        raise HTTPException(501, "web3 not installed")
+    return Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
+
+def verify_matic_payment(tx_hash: str, expected_matic: float) -> bool:
+    if not WEB3_AVAILABLE:
+        return False
+    try:
+        w3 = get_web3()
+        receipt = w3.eth.get_transaction_receipt(tx_hash)
+        if not receipt:
+            return False
+        if receipt['to'] and receipt['to'].lower() == settings.CAP_HOT_WALLET.lower():
+            value_matic = float(w3.from_wei(receipt['value'], 'ether'))
+            if value_matic >= expected_matic * 0.95:
+                return True
+    except Exception as e:
+        logger.error(f"verify_matic_payment error: {e}")
+    return False
+
+@app.get("/api/wallet/matic-balance")
+async def get_matic_balance(address: str):
+    if not WEB3_AVAILABLE:
+        raise HTTPException(501, "web3 not installed")
+    try:
+        w3 = get_web3()
+        balance = w3.eth.get_balance(Web3.to_checksum_address(address))
+        return {"matic": float(w3.from_wei(balance, 'ether'))}
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+@app.get("/api/wallet/balances")
+async def get_wallet_balances(address: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    if not address:
+        raise HTTPException(400, "Missing address")
+    if not WEB3_AVAILABLE:
+        raise HTTPException(501, "web3 not installed")
+    w3 = get_web3()
+    checksum_addr = Web3.to_checksum_address(address)
+    token_list = [
+        {"symbol": "MATIC", "address": "0x0000000000000000000000000000000000000000", "decimals": 18},
+        {"symbol": "CLOSE", "address": settings.CAP_CONTRACT_ADDRESS, "decimals": 18},
+        {"symbol": "USDT", "address": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "decimals": 6},
+        {"symbol": "USDC", "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", "decimals": 6},
+        {"symbol": "WETH", "address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", "decimals": 18},
+        {"symbol": "WBTC", "address": "0x1bfD67037B42CF73aC1bbDA0B9Eea6eF26B34D7A", "decimals": 8},
+        {"symbol": "DAI", "address": "0x8f3Cf7ad23Cd3CaDbD9735AFF958023239c6A063", "decimals": 18},
+        {"symbol": "LINK", "address": "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39", "decimals": 18},
+    ]
+    tokens = []
+    for token in token_list:
+        try:
+            if token["address"] == "0x0000000000000000000000000000000000000000":
+                balance = w3.eth.get_balance(checksum_addr)
+                balance_formatted = float(w3.from_wei(balance, 'ether'))
+            else:
+                contract = w3.eth.contract(
+                    address=Web3.to_checksum_address(token["address"]),
+                    abi=ERC20_ABI
+                )
+                balance = contract.functions.balanceOf(checksum_addr).call()
+                balance_formatted = balance / (10 ** token["decimals"])
+            usd_value = balance_formatted * 0.01  # placeholder
+            if balance_formatted > 0:
+                tokens.append({
+                    "symbol": token["symbol"],
+                    "name": token["symbol"],
+                    "balance": balance_formatted,
+                    "usdValue": usd_value,
+                    "address": token["address"],
+                    "decimals": token["decimals"]
+                })
+        except Exception as e:
+            logger.error(f"Error fetching {token['symbol']} balance: {e}")
+    return {"tokens": tokens}
+
+@app.post("/api/wallet/relay")
+async def relay_transaction(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
+    signed_tx = req.get("signed_tx")
+    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
+    try:
+        w3 = get_web3()
+        tx_hash = w3.eth.send_raw_transaction(signed_tx)
+        return {"tx_hash": tx_hash.hex()}
+    except Exception as e:
+        logger.error(f"Relay error: {e}")
+        raise HTTPException(500, "Relay failed")
+
+@app.post("/api/wallet/swap/quote")
+async def swap_quote(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    from_token = req.get("fromToken")
+    to_token = req.get("toToken")
+    amount = req.get("amount")
+    if not from_token or not to_token or not amount:
+        raise HTTPException(400, "Missing parameters")
+    params = {
+        "src": from_token,
+        "dst": to_token,
+        "amount": amount,
+        "from": user.get("wallet_address") or "",
+        "slippage": "1"
+    }
+    try:
+        r = requests.get(f"https://api.1inch.dev/swap/v6.0/137/quote", params=params, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            return {"estimated": data.get("toTokenAmount"), "toSymbol": "USDC"}  # placeholder
+    except Exception as e:
+        logger.error(f"1inch quote error: {e}")
+    raise HTTPException(502, "Could not fetch swap quote")
+
+@app.post("/api/wallet/swap/execute")
+async def swap_execute(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    signed_tx = req.get("signed_tx")
+    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
+    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
+    try:
+        w3 = get_web3()
+        tx_hash = w3.eth.send_raw_transaction(signed_tx)
+        return {"tx_hash": tx_hash.hex()}
+    except Exception as e:
+        logger.error(f"Swap relay error: {e}")
+        raise HTTPException(500, "Swap failed")
+
+@app.get("/api/wallet/activity")
+async def get_activity(user: dict = Depends(get_current_user), page: int = 0, limit: int = 20):
+    if not user: raise HTTPException(401)
+    offset = page * limit
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT type, amount, status, created, destination, tx_hash FROM (
+                    SELECT 'withdrawal' as type, amount, status, created, destination, tx_hash
+                    FROM withdrawal_queue WHERE user_id = %s
+                    UNION ALL
+                    SELECT type, amount, status, created, '' as destination, tx_hash
+                    FROM cap_transactions WHERE user_id = %s AND type != 'starter'
+                ) combined ORDER BY created DESC LIMIT %s OFFSET %s
+            """, (user["id"], user["id"], limit, offset))
+            rows = c.fetchall()
+            items = []
+            for r in rows:
+                items.append({
+                    "type": r[0],
+                    "amount": r[1],
+                    "status": r[2],
+                    "timestamp": r[3].isoformat() if r[3] else None,
+                    "destination": r[4],
+                    "tx_hash": r[5]
+                })
+            # Determine if more
+            c.execute("SELECT COUNT(*) FROM (SELECT 1 FROM withdrawal_queue WHERE user_id = %s UNION ALL SELECT 1 FROM cap_transactions WHERE user_id = %s AND type != 'starter') t", (user["id"], user["id"]))
+            total = c.fetchone()[0]
+            has_more = total > (offset + limit)
+            return {"items": items, "hasMore": has_more}
+
+# ==================== CHAT ENDPOINT (with starter claim) ====================
 class ChatRequest(BaseModel):
     messages: list
     chat_id: Optional[str] = None
     show_reasoning: bool = False
+
+def claim_starter_cap(user_id: str) -> bool:
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT starter_cap_claimed FROM users WHERE id = %s", (user_id,))
+                row = c.fetchone()
+                if row and not row[0]:
+                    c.execute("UPDATE users SET starter_cap_claimed = TRUE WHERE id = %s", (user_id,))
+                    c.execute("""
+                        INSERT INTO cap_stakes (user_id, staked_amount, tier)
+                        VALUES (%s, %s, 'free')
+                        ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
+                    """, (user_id, STARTER_CAP_AMOUNT))
+                    c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, status) VALUES (%s,%s,'starter',%s,'system','completed')",
+                              (str(uuid.uuid4()), user_id, STARTER_CAP_AMOUNT))
+                    conn.commit()
+                    return True
+    except Exception as e:
+        logger.error(f"claim_starter_cap error: {e}")
+    return False
+
+def update_streak(user_id: str, today: date):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT last_streak_date, streak_count FROM users WHERE id = %s", (user_id,))
+            row = c.fetchone()
+            if row:
+                last_date = row[0]
+                count = row[1] or 0
+                if last_date is None or last_date < today - timedelta(days=1):
+                    c.execute("UPDATE users SET streak_count = 1, last_streak_date = %s WHERE id = %s", (today, user_id))
+                elif last_date == today - timedelta(days=1):
+                    c.execute("UPDATE users SET streak_count = %s, last_streak_date = %s WHERE id = %s", (count + 1, today, user_id))
+                elif last_date == today:
+                    pass
+                else:
+                    c.execute("UPDATE users SET streak_count = 1, last_streak_date = %s WHERE id = %s", (today, user_id))
+                conn.commit()
+
+def check_and_award_badges(user_id: str, domain: str = None):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM chat_messages WHERE user_id = %s AND role = 'user'", (user_id,))
+            messages_count = c.fetchone()[0]
+            c.execute("SELECT staked_amount FROM cap_stakes WHERE user_id = %s", (user_id,))
+            stake_row = c.fetchone()
+            staked = stake_row[0] if stake_row else 0
+            coding_count = 0
+            if domain == 'coding':
+                c.execute("SELECT COUNT(*) FROM chat_messages WHERE user_id = %s AND role = 'user' AND content ILIKE '%code%'", (user_id,))
+                coding_count = c.fetchone()[0]
+            else:
+                c.execute("SELECT COUNT(*) FROM chat_messages m JOIN chats c ON m.chat_id = c.id WHERE m.user_id = %s AND c.topic_thread = 'coding'", (user_id,))
+                coding_count = c.fetchone()[0]
+
+            c.execute("SELECT id, condition_type, threshold FROM badges")
+            badges = c.fetchall()
+            for badge_id, cond_type, threshold in badges:
+                c.execute("SELECT 1 FROM user_badges WHERE user_id = %s AND badge_id = %s", (user_id, badge_id))
+                if c.fetchone():
+                    continue
+                awarded = False
+                if cond_type == "messages_count" and messages_count >= threshold:
+                    awarded = True
+                elif cond_type == "coding_messages" and coding_count >= threshold:
+                    awarded = True
+                elif cond_type == "stake_amount" and staked >= threshold:
+                    awarded = True
+                if awarded:
+                    c.execute("INSERT INTO user_badges (user_id, badge_id) VALUES (%s, %s)", (user_id, badge_id))
+                    c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)",
+                              (str(uuid.uuid4()), user_id, "badge", f"You earned the badge: {badge_id}"))
+            conn.commit()
 
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: BackgroundTasks):
@@ -1409,161 +1825,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         }
     else:
         return {"content": "I couldn't generate a response.", "chat_id": chat_id, "model": "fallback"}
-
-def claim_starter_cap(user_id: str) -> bool:
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT starter_cap_claimed FROM users WHERE id = %s", (user_id,))
-                row = c.fetchone()
-                if row and not row[0]:
-                    c.execute("UPDATE users SET starter_cap_claimed = TRUE WHERE id = %s", (user_id,))
-                    c.execute("""
-                        INSERT INTO cap_stakes (user_id, staked_amount, tier)
-                        VALUES (%s, %s, 'free')
-                        ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
-                    """, (user_id, STARTER_CAP_AMOUNT))
-                    c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, status) VALUES (%s,%s,'starter',%s,'system','completed')",
-                              (str(uuid.uuid4()), user_id, STARTER_CAP_AMOUNT))
-                    conn.commit()
-                    return True
-    except Exception as e:
-        logger.error(f"claim_starter_cap error: {e}")
-    return False
-
-def update_streak(user_id: str, today: date):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT last_streak_date, streak_count FROM users WHERE id = %s", (user_id,))
-            row = c.fetchone()
-            if row:
-                last_date = row[0]
-                count = row[1] or 0
-                if last_date is None or last_date < today - timedelta(days=1):
-                    c.execute("UPDATE users SET streak_count = 1, last_streak_date = %s WHERE id = %s", (today, user_id))
-                elif last_date == today - timedelta(days=1):
-                    c.execute("UPDATE users SET streak_count = %s, last_streak_date = %s WHERE id = %s", (count + 1, today, user_id))
-                elif last_date == today:
-                    pass
-                else:
-                    c.execute("UPDATE users SET streak_count = 1, last_streak_date = %s WHERE id = %s", (today, user_id))
-                conn.commit()
-
-def check_and_award_badges(user_id: str, domain: str = None):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT COUNT(*) FROM chat_messages WHERE user_id = %s AND role = 'user'", (user_id,))
-            messages_count = c.fetchone()[0]
-            c.execute("SELECT staked_amount FROM cap_stakes WHERE user_id = %s", (user_id,))
-            stake_row = c.fetchone()
-            staked = stake_row[0] if stake_row else 0
-            coding_count = 0
-            if domain == 'coding':
-                c.execute("SELECT COUNT(*) FROM chat_messages WHERE user_id = %s AND role = 'user' AND content ILIKE '%code%'", (user_id,))
-                coding_count = c.fetchone()[0]
-            else:
-                c.execute("SELECT COUNT(*) FROM chat_messages m JOIN chats c ON m.chat_id = c.id WHERE m.user_id = %s AND c.topic_thread = 'coding'", (user_id,))
-                coding_count = c.fetchone()[0]
-
-            c.execute("SELECT id, condition_type, threshold FROM badges")
-            badges = c.fetchall()
-            for badge_id, cond_type, threshold in badges:
-                c.execute("SELECT 1 FROM user_badges WHERE user_id = %s AND badge_id = %s", (user_id, badge_id))
-                if c.fetchone():
-                    continue
-                awarded = False
-                if cond_type == "messages_count" and messages_count >= threshold:
-                    awarded = True
-                elif cond_type == "coding_messages" and coding_count >= threshold:
-                    awarded = True
-                elif cond_type == "stake_amount" and staked >= threshold:
-                    awarded = True
-                if awarded:
-                    c.execute("INSERT INTO user_badges (user_id, badge_id) VALUES (%s, %s)", (user_id, badge_id))
-                    c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)",
-                              (str(uuid.uuid4()), user_id, "badge", f"You earned the badge: {badge_id}"))
-            conn.commit()
-
-# ==================== IN‑APP CAP PURCHASE ====================
-def get_cap_matic_rate() -> int:
-    try:
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT value FROM platform_settings WHERE key = 'cap_matic_rate'")
-                row = c.fetchone()
-                if row:
-                    return int(row[0])
-    except:
-        pass
-    return DEFAULT_CAP_MATIC_RATE
-
-def verify_matic_payment(tx_hash: str, expected_matic: float) -> bool:
-    if not WEB3_AVAILABLE:
-        return False
-    try:
-        w3 = Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
-        receipt = w3.eth.get_transaction(tx_hash)
-        if not receipt:
-            return False
-        if receipt['to'] and receipt['to'].lower() == settings.CAP_HOT_WALLET.lower():
-            value_matic = float(w3.from_wei(receipt['value'], 'ether'))
-            if value_matic >= expected_matic * 0.95:
-                return True
-    except Exception as e:
-        logger.error(f"verify_matic_payment error: {e}")
-    return False
-
-class PurchaseRequest(BaseModel):
-    cap_amount: int
-    tx_hash: str
-
-@app.post("/api/cap/purchase")
-def purchase_cap(req: PurchaseRequest, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    rate = get_cap_matic_rate()
-    cap_whole = req.cap_amount / 10**18
-    expected_matic = cap_whole / rate
-    if expected_matic < 0.0001:
-        raise HTTPException(400, "Amount too small.")
-    
-    verified = verify_matic_payment(req.tx_hash.strip(), expected_matic)
-    
-    with get_db() as conn:
-        with conn.cursor() as c:
-            try:
-                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, currency, matic_amount, status) VALUES (%s,%s,'purchase',%s,%s,'MATIC',%s,%s)",
-                          (str(uuid.uuid4()), user["id"], req.cap_amount, req.tx_hash.strip(), expected_matic, 'completed' if verified else 'pending'))
-                if verified:
-                    c.execute("""
-                        INSERT INTO cap_stakes (user_id, staked_amount, tier)
-                        VALUES (%s, %s, 'free')
-                        ON CONFLICT (user_id) DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
-                    """, (user["id"], req.cap_amount))
-                    update_user_tier(user["id"])
-                conn.commit()
-            except psycopg2.errors.UniqueViolation:
-                conn.rollback()
-                raise HTTPException(400, "Transaction ID already claimed.")
-    
-    if verified:
-        return {"verified": True, "cap_added": cap_whole, "new_staked": user_cap_balance(user["id"])}
-    else:
-        return {"verified": False, "message": "Payment could not be verified. Please check the TXID and try again."}
-
-@app.get("/api/cap/rate")
-def get_cap_rate():
-    return {"cap_per_matic": get_cap_matic_rate(), "matic_payment_address": settings.CAP_HOT_WALLET}
-
-@app.post("/api/admin/cap/rate")
-def set_cap_rate(req: dict, founder: dict = Depends(founder_only)):
-    new_rate = req.get("rate")
-    if not new_rate or int(new_rate) <= 0:
-        raise HTTPException(400, "Invalid rate")
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE platform_settings SET value = %s, updated = NOW() WHERE key = 'cap_matic_rate'", (str(new_rate),))
-            conn.commit()
-    return {"cap_matic_rate": int(new_rate)}
 
 # ==================== GAMIFICATION & LEADERBOARD ====================
 @app.get("/api/gamification/streak")
@@ -1965,7 +2226,7 @@ def create_api_key(req: dict, user: dict = Depends(get_current_user)):
         scopes = "chat,research,portfolio"
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, scopes) VALUES (%s,%s,%s,%s,%s)",
+                c.execute("INSERT INTO api_keys (id, user_id, key_hash, prefix, scopes) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user["id"], key_hash, prefix, scopes))
                 conn.commit()
         return {"key": raw_key, "prefix": prefix, "scopes": scopes}
@@ -2191,80 +2452,10 @@ def unblock_ip(ip: str, founder: dict = Depends(founder_only)):
             conn.commit()
     return {"ok": True}
 
-# ---------------- $CAP HELPERS & ENDPOINTS ----------------
-def get_web3():
-    if not WEB3_AVAILABLE:
-        raise HTTPException(501, "web3 not installed")
-    return Web3(Web3.HTTPProvider(settings.POLYGON_RPC_URL))
+# ---------------- $CAP HELPERS & ENDPOINTS (already defined) ----------------
+# (Some are duplicated but we keep them)
 
-def get_cap_contract():
-    w3 = get_web3()
-    return w3.eth.contract(
-        address=Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS),
-        abi=ERC20_ABI
-    )
-
-def verify_cap_deposit(tx_hash: str) -> Optional[Dict]:
-    if not WEB3_AVAILABLE:
-        return None
-    try:
-        w3 = get_web3()
-        receipt = w3.eth.get_transaction_receipt(tx_hash)
-        if not receipt or receipt['status'] != 1:
-            return None
-        contract = get_cap_contract()
-        transfer_event = None
-        for log in receipt['logs']:
-            try:
-                parsed = contract.events.Transfer().process_log(log)
-                if parsed['args']['to'].lower() == settings.CAP_HOT_WALLET.lower():
-                    transfer_event = parsed
-                    break
-            except:
-                continue
-        if not transfer_event:
-            return None
-        return {
-            "from": transfer_event['args']['from'],
-            "to": transfer_event['args']['to'],
-            "amount": float(w3.from_wei(transfer_event['args']['value'], 'ether'))
-        }
-    except Exception as e:
-        logger.error(f"verify_cap_deposit error: {e}")
-        return None
-
-def user_cap_balance(user_id: str) -> int:
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT staked_amount FROM cap_stakes WHERE user_id = %s", (user_id,))
-            row = c.fetchone()
-            return row[0] if row else 0
-
-def update_user_tier(user_id: str):
-    balance = user_cap_balance(user_id)
-    if balance >= CAP_ENTERPRISE_THRESHOLD:
-        tier = "enterprise"
-    elif balance >= CAP_PRO_THRESHOLD:
-        tier = "pro"
-    elif balance >= CAP_BUILDER_THRESHOLD:
-        tier = "builder"
-    else:
-        tier = "free"
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE cap_stakes SET tier = %s WHERE user_id = %s", (tier, user_id))
-            conn.commit()
-    return tier
-
-def get_user_tier(user_id: str) -> str:
-    if not user_id:
-        return "free"
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT tier FROM cap_stakes WHERE user_id = %s", (user_id,))
-            row = c.fetchone()
-            return row[0] if row else "free"
-
+# ==================== ADMIN: CAP DASHBOARD ====================
 def get_cap_price_from_dex() -> Optional[float]:
     if not WEB3_AVAILABLE or not settings.CAP_DEX_PAIR_ADDRESS:
         return None
@@ -2315,90 +2506,12 @@ def get_cap_total_supply() -> Optional[float]:
         logger.error(f"get_cap_total_supply error: {e}")
         return None
 
-@app.post("/api/cap/deposit")
-def deposit_cap(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    if not WEB3_AVAILABLE:
-        raise HTTPException(501, "web3 not installed")
-    tx_hash = req.get("tx_hash")
-    if not tx_hash:
-        raise HTTPException(400, "tx_hash required")
-    deposit = verify_cap_deposit(tx_hash)
-    if not deposit:
-        raise HTTPException(400, "Could not verify deposit. Check transaction hash and recipient.")
-    amount = int(deposit["amount"])
-    with get_db() as conn:
-        with conn.cursor() as c:
-            try:
-                c.execute("""
-                    INSERT INTO cap_stakes (user_id, staked_amount, tier)
-                    VALUES (%s, %s, 'free')
-                    ON CONFLICT (user_id)
-                    DO UPDATE SET staked_amount = cap_stakes.staked_amount + EXCLUDED.staked_amount
-                """, (user["id"], amount))
-                c.execute("INSERT INTO cap_transactions (id, user_id, type, amount, tx_hash, status) VALUES (%s,%s,%s,%s,%s,'completed')",
-                          (str(uuid.uuid4()), user["id"], "deposit", amount, tx_hash))
-                conn.commit()
-            except psycopg2.errors.UniqueViolation:
-                conn.rollback()
-                raise HTTPException(400, "Transaction hash already used")
-    tier = update_user_tier(user["id"])
-    new_balance = user_cap_balance(user["id"])
-    return {"staked": new_balance, "tier": tier, "deposited": amount}
-
-@app.post("/api/cap/withdraw")
-def withdraw_cap(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    amount = req.get("amount")
-    destination = req.get("address")
-    if not amount or not destination:
-        raise HTTPException(400, "amount and address required")
-    bal = user_cap_balance(user["id"])
-    if amount > bal:
-        raise HTTPException(400, "Insufficient staked balance")
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE cap_stakes SET staked_amount = staked_amount - %s WHERE user_id = %s", (amount, user["id"]))
-            withdrawal_id = str(uuid.uuid4())
-            c.execute("INSERT INTO withdrawal_queue (id, user_id, amount, destination, status) VALUES (%s,%s,%s,%s,'pending')",
-                      (withdrawal_id, user["id"], amount, destination))
-            conn.commit()
-    update_user_tier(user["id"])
-    log_activity(user["id"], "cap_withdraw", f"Amount: {amount}, To: {destination}, ID: {withdrawal_id}")
-    return {"withdrawal_id": withdrawal_id, "status": "pending"}
-
-@app.get("/api/cap/withdrawals")
-def get_withdrawals(user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT id, amount, destination, status, tx_hash, created FROM withdrawal_queue WHERE user_id=%s ORDER BY created DESC", (user["id"],))
-            rows = c.fetchall()
-            return [{"id": r[0], "amount": r[1], "destination": r[2], "status": r[3], "tx_hash": r[4], "created": r[5].isoformat() if r[5] else None} for r in rows]
-
-@app.get("/api/cap/balance")
-def get_cap_balance_endpoint(user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    staked = user_cap_balance(user["id"])
-    tier = get_user_tier(user["id"])
-    return {"staked": staked, "tier": tier}
-
-@app.get("/api/admin/ai/dashboard")
-def ai_dashboard(founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM chat_messages"); total_messages = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
-            return {
-                "total_users": total_users,
-                "active_today": active_today,
-                "total_messages": total_messages,
-                "pending_flags": pending_flags,
-                "threats_today": threats_today
-            }
+def get_cap_contract():
+    w3 = get_web3()
+    return w3.eth.contract(
+        address=Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS),
+        abi=ERC20_ABI
+    )
 
 @app.get("/api/admin/cap/dashboard")
 def cap_dashboard(founder: dict = Depends(founder_only)):
@@ -2449,156 +2562,24 @@ def cap_dashboard(founder: dict = Depends(founder_only)):
         "hot_wallet": settings.CAP_HOT_WALLET,
     }
 
-# ==================== OS WALLET ====================
-@app.get("/api/wallet/matic-balance")
-async def get_matic_balance(address: str):
-    if not WEB3_AVAILABLE:
-        raise HTTPException(501, "web3 not installed")
-    try:
-        w3 = get_web3()
-        balance = w3.eth.get_balance(Web3.to_checksum_address(address))
-        return {"matic": float(w3.from_wei(balance, 'ether'))}
-    except Exception as e:
-        raise HTTPException(400, str(e))
+@app.get("/api/admin/ai/dashboard")
+def ai_dashboard(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM chat_messages"); total_messages = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM content_flags WHERE reviewed=FALSE"); pending_flags = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM security_events WHERE created > NOW() - INTERVAL '24 hours'"); threats_today = c.fetchone()[0]
+            return {
+                "total_users": total_users,
+                "active_today": active_today,
+                "total_messages": total_messages,
+                "pending_flags": pending_flags,
+                "threats_today": threats_today
+            }
 
-@app.post("/api/wallet/relay")
-async def relay_transaction(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
-    signed_tx = req.get("signed_tx")
-    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
-    try:
-        w3 = get_web3()
-        tx_hash = w3.eth.send_raw_transaction(signed_tx)
-        return {"tx_hash": tx_hash.hex()}
-    except Exception as e:
-        logger.error(f"Relay error: {e}")
-        raise HTTPException(500, "Relay failed")
-
-ONEINCH_API = "https://api.1inch.dev/swap/v6.0/137"
-
-@app.post("/api/wallet/swap/quote")
-async def swap_quote(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    from_token = req.get("fromToken")
-    to_token = req.get("toToken")
-    amount = req.get("amount")
-    params = {
-        "src": from_token,
-        "dst": to_token,
-        "amount": amount,
-        "from": user.get("wallet_address") or "",
-        "slippage": "1"
-    }
-    try:
-        r = requests.get(f"{ONEINCH_API}/quote", params=params, timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            return {"estimatedAmount": data.get("toTokenAmount"), "slippage": data.get("estimatedGas")}
-    except Exception as e:
-        logger.error(f"1inch quote error: {e}")
-    raise HTTPException(502, "Could not fetch swap quote")
-
-@app.post("/api/wallet/swap/execute")
-async def swap_execute(req: dict, user: dict = Depends(get_current_user)):
-    if not user: raise HTTPException(401)
-    signed_tx = req.get("signed_tx")
-    if not signed_tx: raise HTTPException(400, "Missing signed_tx")
-    if not WEB3_AVAILABLE: raise HTTPException(501, "web3 not installed")
-    try:
-        w3 = get_web3()
-        tx_hash = w3.eth.send_raw_transaction(signed_tx)
-        return {"tx_hash": tx_hash.hex()}
-    except Exception as e:
-        logger.error(f"Swap relay error: {e}")
-        raise HTTPException(500, "Swap failed")
-
-# ==================== BACKGROUND WITHDRAWAL PROCESSOR ====================
-def process_withdrawals():
-    if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
-        return
-    try:
-        w3 = get_web3()
-        relayer = w3.eth.account.from_key(settings.RELAYER_PRIVATE_KEY)
-        contract = get_cap_contract()
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("SELECT id, user_id, amount, destination FROM withdrawal_queue WHERE status='pending' LIMIT 10")
-                batch = c.fetchall()
-                if not batch:
-                    return
-                for row in batch:
-                    tx = contract.functions.transfer(
-                        Web3.to_checksum_address(row[3]), row[2]
-                    ).build_transaction({
-                        'from': relayer.address,
-                        'nonce': w3.eth.get_transaction_count(relayer.address),
-                        'gas': 100000,
-                        'gasPrice': w3.eth.gas_price,
-                    })
-                    signed = relayer.sign_transaction(tx)
-                    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-                    c.execute("UPDATE withdrawal_queue SET status='completed', tx_hash=%s, updated=NOW() WHERE id=%s", (tx_hash.hex(), row[0]))
-                conn.commit()
-    except Exception as e:
-        logger.error(f"Withdrawal processing error: {e}")
-
-# ==================== GAS AUTO‑TOP‑UP RELAYER ====================
-def gas_auto_topup():
-    if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
-        return
-    try:
-        w3 = get_web3()
-        relayer = w3.eth.account.from_key(settings.RELAYER_PRIVATE_KEY)
-        balance = w3.eth.get_balance(relayer.address)
-        if balance < w3.to_wei(settings.RELAYER_MIN_MATIC, 'ether'):
-            router_address = "0xa5E0829CaCEd8fFDD4De3c43696ef1C7E60EF4c4"
-            cap_address = Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS)
-            wmatic = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
-            router_abi = json.loads('[{"name":"swapExactTokensForETH","type":"function","inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}]}]')
-            router = w3.eth.contract(address=router_address, abi=router_abi)
-            cap = w3.eth.contract(address=cap_address, abi=ERC20_ABI)
-            approve_tx = cap.functions.approve(router_address, settings.RELAYER_SWAP_CAP_AMOUNT).build_transaction({
-                'from': relayer.address,
-                'nonce': w3.eth.get_transaction_count(relayer.address),
-                'gas': 60000,
-                'gasPrice': w3.eth.gas_price,
-            })
-            signed_approve = relayer.sign_transaction(approve_tx)
-            w3.eth.send_raw_transaction(signed_approve.raw_transaction)
-            swap_tx = router.functions.swapExactTokensForETH(
-                settings.RELAYER_SWAP_CAP_AMOUNT,
-                0,
-                [cap_address, wmatic],
-                relayer.address,
-                int(time.time()) + 600
-            ).build_transaction({
-                'from': relayer.address,
-                'nonce': w3.eth.get_transaction_count(relayer.address),
-                'gas': 200000,
-                'gasPrice': w3.eth.gas_price,
-            })
-            signed_swap = relayer.sign_transaction(swap_tx)
-            w3.eth.send_raw_transaction(signed_swap.raw_transaction)
-            logger.info("Gas auto‑top‑up executed.")
-    except Exception as e:
-        logger.error(f"Gas auto‑top‑up error: {e}")
-
-# ==================== BACKGROUND THREADS ====================
-@app.on_event("startup")
-async def startup_event():
-    threading.Thread(target=lambda: run_periodically(process_withdrawals, 60), daemon=True).start()
-    threading.Thread(target=lambda: run_periodically(gas_auto_topup, 120), daemon=True).start()
-
-def run_periodically(func, interval):
-    while True:
-        time.sleep(interval)
-        try:
-            func()
-        except:
-            pass
-
-# ==================== ADMIN: DEPLOY CAP & DISTRIBUTE ====================
+# ==================== DEPLOY CAP & CREATE POOL ====================
 @app.post("/api/admin/deploy-cap")
 async def deploy_cap_token(founder: dict = Depends(founder_only)):
     if not WEB3_AVAILABLE or not settings.DEPLOYER_PRIVATE_KEY:
@@ -2702,7 +2683,92 @@ async def create_liquidity_pool(req: dict, founder: dict = Depends(founder_only)
     except Exception as e:
         raise HTTPException(500, f"Pool creation failed: {str(e)}")
 
-# Health, manifest, root
+# ==================== BACKGROUND WITHDRAWAL PROCESSOR ====================
+def process_withdrawals():
+    if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
+        return
+    try:
+        w3 = get_web3()
+        relayer = w3.eth.account.from_key(settings.RELAYER_PRIVATE_KEY)
+        contract = get_cap_contract()
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, user_id, amount, destination FROM withdrawal_queue WHERE status='pending' LIMIT 10")
+                batch = c.fetchall()
+                if not batch:
+                    return
+                for row in batch:
+                    tx = contract.functions.transfer(
+                        Web3.to_checksum_address(row[3]), row[2]
+                    ).build_transaction({
+                        'from': relayer.address,
+                        'nonce': w3.eth.get_transaction_count(relayer.address),
+                        'gas': 100000,
+                        'gasPrice': w3.eth.gas_price,
+                    })
+                    signed = relayer.sign_transaction(tx)
+                    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+                    c.execute("UPDATE withdrawal_queue SET status='completed', tx_hash=%s, updated=NOW() WHERE id=%s", (tx_hash.hex(), row[0]))
+                conn.commit()
+    except Exception as e:
+        logger.error(f"Withdrawal processing error: {e}")
+
+# ==================== GAS AUTO‑TOP‑UP RELAYER ====================
+def gas_auto_topup():
+    if not WEB3_AVAILABLE or not settings.RELAYER_PRIVATE_KEY:
+        return
+    try:
+        w3 = get_web3()
+        relayer = w3.eth.account.from_key(settings.RELAYER_PRIVATE_KEY)
+        balance = w3.eth.get_balance(relayer.address)
+        if balance < w3.to_wei(settings.RELAYER_MIN_MATIC, 'ether'):
+            router_address = "0xa5E0829CaCEd8fFDD4De3c43696ef1C7E60EF4c4"
+            cap_address = Web3.to_checksum_address(settings.CAP_CONTRACT_ADDRESS)
+            wmatic = "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+            router_abi = json.loads('[{"name":"swapExactTokensForETH","type":"function","inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}]}]')
+            router = w3.eth.contract(address=router_address, abi=router_abi)
+            cap = w3.eth.contract(address=cap_address, abi=ERC20_ABI)
+            approve_tx = cap.functions.approve(router_address, settings.RELAYER_SWAP_CAP_AMOUNT).build_transaction({
+                'from': relayer.address,
+                'nonce': w3.eth.get_transaction_count(relayer.address),
+                'gas': 60000,
+                'gasPrice': w3.eth.gas_price,
+            })
+            signed_approve = relayer.sign_transaction(approve_tx)
+            w3.eth.send_raw_transaction(signed_approve.raw_transaction)
+            swap_tx = router.functions.swapExactTokensForETH(
+                settings.RELAYER_SWAP_CAP_AMOUNT,
+                0,
+                [cap_address, wmatic],
+                relayer.address,
+                int(time.time()) + 600
+            ).build_transaction({
+                'from': relayer.address,
+                'nonce': w3.eth.get_transaction_count(relayer.address),
+                'gas': 200000,
+                'gasPrice': w3.eth.gas_price,
+            })
+            signed_swap = relayer.sign_transaction(swap_tx)
+            w3.eth.send_raw_transaction(signed_swap.raw_transaction)
+            logger.info("Gas auto‑top‑up executed.")
+    except Exception as e:
+        logger.error(f"Gas auto‑top‑up error: {e}")
+
+# ==================== BACKGROUND THREADS ====================
+@app.on_event("startup")
+async def startup_event():
+    threading.Thread(target=lambda: run_periodically(process_withdrawals, 60), daemon=True).start()
+    threading.Thread(target=lambda: run_periodically(gas_auto_topup, 120), daemon=True).start()
+
+def run_periodically(func, interval):
+    while True:
+        time.sleep(interval)
+        try:
+            func()
+        except:
+            pass
+
+# ==================== HEALTH, MANIFEST, ICON ====================
 @app.get("/health")
 def health_check():
     try:
@@ -2711,7 +2777,7 @@ def health_check():
                 c.execute("SELECT 1")
                 db_status = "connected"
     except: db_status = "disconnected"
-    return {"status": "ok", "version": "43.0", "database": db_status}
+    return {"status": "ok", "version": "44.0", "database": db_status}
 
 def generate_png_icon(size: int) -> bytes:
     def create_png(width, height, pixels):
@@ -2793,8 +2859,75 @@ self.addEventListener('fetch', event => {
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "43.0"}
+    return {"name": "CAPITAN AI", "version": "44.0"}
 
+# ==================== MARKETS ENDPOINTS (for wallet) ====================
+@app.get("/api/markets/crypto")
+async def get_crypto_markets():
+    if settings.COINGECKO_KEY:
+        try:
+            ids = "bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron"
+            r = requests.get("https://api.coingecko.com/api/v3/coins/markets",
+                             params={"vs_currency":"usd","ids":ids,"order":"market_cap_desc","per_page":100,"sparkline":"false","x_cg_demo_api_key":settings.COINGECKO_KEY},
+                             timeout=10)
+            if r.status_code == 200:
+                data = r.json()
+                result = []
+                for item in data:
+                    result.append({
+                        "symbol": item.get("symbol", "").upper(),
+                        "name": item.get("name", ""),
+                        "price": item.get("current_price", 0),
+                        "change24h": item.get("price_change_percentage_24h", 0)
+                    })
+                return result
+        except Exception as e:
+            logger.error(f"Crypto markets error: {e}")
+    return []
+
+@app.get("/api/markets/stocks")
+async def get_stock_markets():
+    if settings.FINNHUB_API_KEY:
+        symbols = ["AAPL","MSFT","NVDA","TSLA","GOOGL","META","AMZN","SPX","NDX","DJI"]
+        result = []
+        for sym in symbols:
+            try:
+                r = requests.get(f"https://finnhub.io/api/v1/quote?symbol={sym}&token={settings.FINNHUB_API_KEY}", timeout=5)
+                if r.status_code == 200:
+                    data = r.json()
+                    if data.get("c"):
+                        result.append({
+                            "symbol": sym,
+                            "price": data["c"],
+                            "change24h": data.get("dp", 0)
+                        })
+            except:
+                pass
+        return result
+    return []
+
+@app.get("/api/markets/commodities")
+async def get_commodity_markets():
+    if settings.FINNHUB_API_KEY:
+        symbols = ["GC=F", "SI=F", "CL=F", "HG=F"]  # Gold, Silver, Oil, Copper
+        result = []
+        for sym in symbols:
+            try:
+                r = requests.get(f"https://finnhub.io/api/v1/quote?symbol={sym}&token={settings.FINNHUB_API_KEY}", timeout=5)
+                if r.status_code == 200:
+                    data = r.json()
+                    if data.get("c"):
+                        result.append({
+                            "symbol": sym,
+                            "price": data["c"],
+                            "change24h": data.get("dp", 0)
+                        })
+            except:
+                pass
+        return result
+    return []
+
+# ==================== RUN ====================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
