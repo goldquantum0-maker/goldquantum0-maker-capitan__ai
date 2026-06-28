@@ -7,8 +7,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0b1622">
     <title>CAPITAN AI — Enterprise Intelligence</title>
+    <meta name="description" content="CAPITAN AI is a world-class general-purpose intelligence powered by CLOSE tokens. OS Wallets, DeFi, and enterprise AI.">
     <link rel="manifest" href="/manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
@@ -18,7 +19,8 @@
             --text-primary:#f8fafc;--text-secondary:#cbd5e1;--text-tertiary:#94a3b8;
             --sidebar-bg:rgba(10,10,10,0.98);--input-bg:#0a0a0a;
             --accent:#3b82f6;--accent-dark:#2563eb;--accent-glow:rgba(59,130,246,0.3);
-            --danger:#ef4444;--success:#10b981;
+            --danger:#ef4444;--success:#10b981;--warning:#f59e0b;
+            --close-gold:#f0b90b;--close-teal:#0e6e8e;
             --font-size:13px;--line-height:1.55;
             --shadow-sm:0 1px 2px rgba(0,0,0,0.05);--shadow-md:0 4px 6px -1px rgba(0,0,0,0.1);
             --shadow-lg:0 10px 15px -3px rgba(0,0,0,0.1);
@@ -44,35 +46,21 @@
             --sidebar-bg:#000;--input-bg:#111;
             --glass-bg:rgba(0,0,0,0.9);--glass-border:rgba(30,41,59,0.5);
         }
-        @media(prefers-color-scheme:dark){body.system{
-            --bg-primary:#000;--bg-secondary:#0a0a0a;--bg-tertiary:#111;--surface:#0a0a0a;--border:#1e293b;
-            --text-primary:#f8fafc;--text-secondary:#cbd5e1;--text-tertiary:#94a3b8;
-            --sidebar-bg:rgba(10,10,10,0.98);--input-bg:#0a0a0a;
-            --glass-bg:rgba(0,0,0,0.7);--glass-border:rgba(30,41,59,0.5);
-        }}
-        @media(prefers-color-scheme:light){body.system{
-            --bg-primary:#ffffff;--bg-secondary:#f8fafc;--bg-tertiary:#e2e8f0;
-            --surface:#ffffff;--border:#cbd5e1;--text-primary:#0f172a;
-            --text-secondary:#334155;--text-tertiary:#64748b;
-            --sidebar-bg:#f1f5f9;--input-bg:#f1f5f9;
-            --glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(203,213,225,0.5);
-        }}
         body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-primary);color:var(--text-primary);font-size:var(--font-size);line-height:var(--line-height);height:100vh;overflow:hidden;transition:background 0.2s,color 0.2s}
-        .splash{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0f172a,#0284c7);display:flex;align-items:center;justify-content:center;transition:opacity 0.6s,visibility 0.6s}
+        .splash{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0f172a,#0e6e8e);display:flex;align-items:center;justify-content:center;transition:opacity 0.6s,visibility 0.6s}
         .splash.hide{opacity:0;visibility:hidden}
         .splash-logo{width:80px;height:80px;animation:splashPulse 1.2s ease-in-out infinite}
         @keyframes splashPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.9}}
         .app{display:flex;height:100%;width:100%;position:relative}
-        .sidebar{width:290px;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform 0.3s;flex-shrink:0;z-index:30;overflow-y:auto;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+        .sidebar{width:290px;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform 0.3s;flex-shrink:0;z-index:30;overflow-y:auto;backdrop-filter:blur(20px)}
         @media(min-width:769px){.sidebar.collapsed{transform:translateX(-290px);position:fixed;height:100%}}
-        @media(max-width:768px){.sidebar{position:fixed;left:0;top:0;height:100%;width:100%;max-width:320px;transform:translateX(-100%);z-index:40;box-shadow:20px 0 40px rgba(0,0,0,0.3)}.sidebar.open{transform:translateX(0)}.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:35;display:none}.overlay.open{display:block}}
+        @media(max-width:768px){.sidebar{position:fixed;left:0;top:0;height:100%;width:100%;max-width:320px;transform:translateX(-100%);z-index:40}.sidebar.open{transform:translateX(0)}.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:35;display:none}.overlay.open{display:block}}
         .sidebar-brand{padding:16px;display:flex;align-items:center;gap:8px;user-select:none}
         .sidebar-brand .logo-icon{width:26px;height:26px;cursor:pointer}
         .sidebar-brand .logo-text{font-weight:800;font-size:18px;letter-spacing:2px;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%200%;animation:logoShift 4s ease infinite}
         @keyframes logoShift{0%,100%{background-position:0%50%}50%{background-position:100%50%}}
         .top-bar{position:fixed;top:12px;right:12px;z-index:45;display:flex;justify-content:flex-end;align-items:center;gap:12px}
-        .toggle-sidebar{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:40px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);box-shadow:var(--shadow-sm);backdrop-filter:blur(10px)}
-        .toggle-sidebar:hover{background:var(--bg-tertiary)}
+        .toggle-sidebar{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:40px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);backdrop-filter:blur(10px)}
         .notif-bell{position:relative;width:40px;height:40px;border-radius:40px;background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);backdrop-filter:blur(10px)}
         .notif-bell .badge{position:absolute;top:-2px;right:-2px;background:var(--danger);color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -83,70 +71,64 @@
         .messages-area::-webkit-scrollbar-thumb{background:var(--accent);border-radius:10px}
         .greeting-container{text-align:center;margin-bottom:24px;animation:fadeSlideUp 0.5s ease}
         @keyframes fadeSlideUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
-        .greeting-text{font-size:26px;font-weight:700;transition:color 0.5s}
-        .greeting-text.morning{color:#f59e0b;background:linear-gradient(135deg,#fbbf24,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .greeting-text.afternoon{color:#3b82f6;background:linear-gradient(135deg,#60a5fa,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .greeting-text.evening{color:#8b5cf6;background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .greeting-text.night{color:#06b6d4;background:linear-gradient(135deg,#22d3ee,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .suggestion-pills{display:flex;gap:10px;justify-content:center;margin:20px 0 30px;flex-wrap:wrap;animation:fadeSlideUp 0.5s ease}
+        .greeting-text{font-size:26px;font-weight:700}
+        .greeting-text.morning{color:#f59e0b}.greeting-text.afternoon{color:#3b82f6}.greeting-text.evening{color:#8b5cf6}.greeting-text.night{color:#06b6d4}
+        .suggestion-pills{display:flex;gap:10px;justify-content:center;margin:20px 0 30px;flex-wrap:wrap}
         .suggestion-pill{display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:24px;border:1px solid var(--glass-border);background:var(--glass-bg);cursor:pointer;transition:0.2s;font-size:13px;color:var(--text-secondary);white-space:nowrap;backdrop-filter:blur(10px)}
-        .suggestion-pill:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+        .suggestion-pill:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-1px)}
         .message{margin-bottom:18px;animation:messageSlideIn 0.25s ease}
         @keyframes messageSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .message.user{display:flex;justify-content:flex-end}
-        .message.user .message-content{background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border-radius:18px 18px 4px 18px;padding:11px 16px;max-width:78%;box-shadow:var(--shadow-sm);font-size:var(--font-size)}
+        .message.user .message-content{background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border-radius:18px 18px 4px 18px;padding:11px 16px;max-width:78%;font-size:var(--font-size)}
         .message.assistant{display:flex;flex-direction:column;align-items:flex-start}
-        .message.assistant .message-content{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px 18px 18px 18px;padding:11px 16px;max-width:88%;box-shadow:var(--shadow-sm);font-size:var(--font-size);position:relative;backdrop-filter:blur(12px)}
-        .message.assistant .message-content::before{content:'';position:absolute;left:-4px;top:12px;width:2px;height:calc(100% - 24px);background:var(--accent);border-radius:2px}
+        .message.assistant .message-content{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px 18px 18px 18px;padding:11px 16px;max-width:88%;font-size:var(--font-size);position:relative;backdrop-filter:blur(12px)}
         .action-icons{display:flex;gap:4px;margin-top:4px;opacity:0;transition:opacity 0.2s}
         .message.assistant:hover .action-icons{opacity:1}
-        .action-icons button{background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:3px;border-radius:6px;display:flex;align-items:center}
+        .action-icons button{background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:3px;border-radius:6px}
         .action-icons button:hover{color:var(--accent);background:var(--accent-glow)}
-        .typing-indicator{display:flex;align-items:center;gap:8px;padding:11px 16px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px 18px 18px 18px;width:fit-content;box-shadow:var(--shadow-sm);backdrop-filter:blur(12px)}
-        .typing-dots{display:flex;gap:4px;align-items:center}
-        .typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:dotBounce 1.4s infinite}
+        .typing-indicator{display:flex;align-items:center;gap:8px;padding:11px 16px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px 18px 18px 18px;width:fit-content;backdrop-filter:blur(12px)}
+        .typing-dots{display:flex;gap:4px}.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:dotBounce 1.4s infinite}
         .typing-dots span:nth-child(1){animation-delay:0s}.typing-dots span:nth-child(2){animation-delay:0.2s}.typing-dots span:nth-child(3){animation-delay:0.4s}
         @keyframes dotBounce{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-8px);opacity:1}}
-        .streaming-text{display:inline}
-        .stream-cursor{display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;animation:cursorBlink 1s step-end infinite;vertical-align:middle;border-radius:2px}
-        @keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
+        .wallet-prompt-inline{background:linear-gradient(135deg,rgba(240,185,11,0.1),rgba(14,110,142,0.1));border:1.5px solid var(--close-gold);border-radius:var(--radius);padding:16px;margin:12px 0;text-align:center;animation:fadeSlideUp 0.5s ease}
+        .wallet-prompt-inline h3{color:var(--close-gold);margin-bottom:8px}
+        .wallet-prompt-inline p{color:var(--text-secondary);margin-bottom:12px;font-size:12px}
+        .balance-bar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;margin-bottom:8px;font-size:11px;backdrop-filter:blur(10px)}
+        .balance-bar .close-icon{font-size:18px}
+        .balance-bar .close-amount{font-weight:700;color:var(--close-gold)}
+        .balance-bar .close-usd{color:var(--text-tertiary)}
         .input-area{padding:0 0 18px}
-        .input-wrapper{display:flex;align-items:flex-end;gap:8px;background:var(--glass-bg);border:1.5px solid var(--glass-border);border-radius:24px;padding:4px 6px 4px 16px;transition:border 0.2s,box-shadow 0.2s;box-shadow:var(--shadow-sm);backdrop-filter:blur(12px)}
+        .input-wrapper{display:flex;align-items:flex-end;gap:8px;background:var(--glass-bg);border:1.5px solid var(--glass-border);border-radius:24px;padding:4px 6px 4px 16px;transition:border 0.2s;backdrop-filter:blur(12px)}
         .input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
         .upload-btn,.send-btn,.voice-btn{background:transparent;border:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;flex-shrink:0;color:var(--text-secondary)}
         .upload-btn:hover,.voice-btn:hover{background:var(--bg-tertiary)}
-        .send-btn{background:var(--accent);color:white;box-shadow:0 2px 6px var(--accent-glow)}
+        .send-btn{background:var(--accent);color:white}
         .send-btn:hover{background:var(--accent-dark)}
         .input-field{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:var(--font-size);padding:10px 0;color:var(--text-primary);resize:none;max-height:100px}
         .input-field::placeholder{color:var(--text-tertiary)}
-        /* Sidebar items */
-        .sidebar .new-chat-btn,.sidebar .menu-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:4px 12px;border-radius:var(--radius);cursor:pointer;transition:0.2s;font-weight:500;font-size:12px;color:var(--text-secondary)}
+        .new-chat-btn,.menu-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:4px 12px;border-radius:var(--radius);cursor:pointer;transition:0.2s;font-weight:500;font-size:12px;color:var(--text-secondary)}
         .new-chat-btn{background:var(--accent);color:white;margin-top:8px}
-        .new-chat-btn:hover,.menu-item:hover{transform:translateX(4px);background:var(--accent-glow);color:var(--accent)}
-        .collapsible-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin:4px 12px;border-radius:var(--radius);cursor:pointer;font-weight:500;font-size:12px;color:var(--text-secondary);transition:0.2s}
+        .menu-item:hover{transform:translateX(4px);background:var(--accent-glow);color:var(--accent)}
+        .collapsible-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin:4px 12px;border-radius:var(--radius);cursor:pointer;font-weight:500;font-size:12px;color:var(--text-secondary)}
         .collapsible-header:hover{background:var(--bg-tertiary)}
         .collapsible-content{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
         .collapsible-content.open{max-height:none}
-        .theme-option{display:flex;justify-content:space-between;padding:8px 16px 8px 42px;cursor:pointer;border-radius:10px;font-size:12px;transition:0.2s}
+        .theme-option{display:flex;justify-content:space-between;padding:8px 16px 8px 42px;cursor:pointer;border-radius:10px;font-size:12px}
         .theme-option:hover{background:var(--bg-tertiary)}
         .about-content{padding:8px 16px 16px 42px;font-size:12px;color:var(--text-secondary);line-height:1.5}
         .profile-section{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto;cursor:pointer;transition:0.2s;display:flex;align-items:center;justify-content:space-between}
         .profile-section:hover{background:var(--bg-tertiary)}
         .profile-info{display:flex;align-items:center;gap:10px}
-        .profile-avatar-img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--accent-glow);border:2px solid var(--accent)}
+        .profile-avatar-img{width:36px;height:36px;border-radius:50%;background:var(--accent-glow);border:2px solid var(--accent)}
         .profile-name{font-weight:600;font-size:13px}
         .profile-tier{font-size:10px;color:var(--accent)}
         .profile-tokens{font-size:11px;color:var(--text-secondary);margin-top:2px}
         .sidebar-footer{padding:10px;text-align:center;font-size:9px;color:var(--text-tertiary);border-top:1px solid var(--border)}
-        .guest-action-btn{display:block;margin:4px 14px;padding:8px 12px;background:transparent;border:1.5px solid var(--accent);border-radius:18px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;text-align:center}
-        .guest-action-btn:hover{background:var(--accent-glow)}
-        /* Full page views */
         .full-page-view{position:fixed;inset:0;background:var(--bg-primary);z-index:100;display:none;flex-direction:column;overflow-y:auto;padding:20px}
         .full-page-view.open{display:flex}
         .full-page-view .close-btn{align-self:flex-end;background:var(--accent);color:white;border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
-        /* Wallet styles */
         .wallet-container{max-width:900px;width:100%;margin:0 auto}
-        .elite-wallet{background:linear-gradient(145deg,#0f172a 0%,#1e293b 100%);border-radius:var(--radius);padding:24px;margin-bottom:20px;color:#f1f5f9;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid var(--glass-border);backdrop-filter:blur(10px)}
+        .elite-wallet{background:linear-gradient(145deg,#0f172a 0%,#1e293b 100%);border-radius:var(--radius);padding:24px;margin-bottom:20px;color:#f1f5f9;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid var(--glass-border)}
         .elite-wallet h2{font-size:1.8rem;font-weight:700;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:24px}
         .balance-card{background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(148,163,184,0.2);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
         .balance-card .balance-label{font-size:0.8rem;color:#94a3b8}
@@ -154,22 +136,6 @@
         .action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-top:16px}
         .action-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px;cursor:pointer;text-align:center;font-size:0.85rem;color:#cbd5e1;transition:0.2s}
         .action-btn:hover{background:rgba(59,130,246,0.15);border-color:#3b82f6;color:white}
-        .ticker-marquee{width:100%;overflow:hidden;white-space:nowrap;background:var(--glass-bg);border-radius:var(--radius);padding:6px 0;margin:8px 0;position:relative;border:1px solid var(--glass-border)}
-        .ticker-track{display:inline-flex;animation:marquee 40s linear infinite}
-        .ticker-track:hover{animation-play-state:paused}
-        @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-        .ticker-item{display:inline-block;padding:0 20px;font-size:12px;color:var(--text-primary)}
-        .ticker-price{font-weight:600}
-        .ticker-change.positive{color:var(--success)}
-        .ticker-change.negative{color:var(--danger)}
-        .news-list{max-height:200px;overflow-y:auto;transition:max-height 0.3s ease}
-        .news-list.collapsed{max-height:0}
-        .news-item{padding:6px 0;font-size:12px;border-bottom:1px solid var(--border)}
-        .news-item a{color:var(--accent);text-decoration:none}
-        .swap-panel{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;margin-top:12px;backdrop-filter:blur(10px)}
-        .swap-panel select,.swap-panel input{width:100%;padding:10px;margin:6px 0;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-primary)}
-        .token-list{margin-top:16px}
-        .token-list-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
         .dashboard-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;margin-bottom:12px;backdrop-filter:blur(10px)}
         .dashboard-card h3{font-size:14px;margin-bottom:8px}
         .dashboard-card .big-number{font-size:2rem;font-weight:700;color:var(--accent)}
@@ -187,49 +153,13 @@
         .btn:hover{background:var(--accent-dark);transform:translateY(-1px);box-shadow:var(--shadow-md)}
         .btn-outline{background:transparent;border:1.5px solid var(--glass-border);color:var(--text-primary)}
         .btn-outline:hover{background:var(--bg-tertiary)}
-        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--glass-bg);color:var(--text-primary);padding:10px 20px;border-radius:36px;font-size:12px;z-index:1100;box-shadow:var(--shadow-lg);border:1px solid var(--glass-border);backdrop-filter:blur(20px);animation:toastIn 0.3s ease;display:flex;align-items:center;gap:5px}
+        .btn-gold{background:linear-gradient(135deg,#f0b90b,#d4a30a);color:#000;font-weight:700}
+        .btn-gold:hover{background:linear-gradient(135deg,#f5c518,#e0b00e)}
+        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--glass-bg);color:var(--text-primary);padding:10px 20px;border-radius:36px;font-size:12px;z-index:1100;box-shadow:var(--shadow-lg);border:1px solid var(--glass-border);backdrop-filter:blur(20px);animation:toastIn 0.3s ease}
         @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-        .auth-container{display:flex;justify-content:center;align-items:center;height:100vh;background:linear-gradient(135deg,#0f172a,#0284c7);padding:20px}
-        .auth-card{background:var(--glass-bg);border:1px solid var(--glass-border);padding:32px;border-radius:28px;width:380px;max-width:90%;box-shadow:var(--shadow-lg);backdrop-filter:blur(20px);animation:fadeSlideUp 0.5s ease}
-        .auth-card h1{font-size:24px;margin-bottom:8px}
-        .auth-tab{flex:1;padding:10px;text-align:center;background:transparent;border:none;font-size:14px;font-weight:600;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;transition:0.2s}
-        .auth-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-        .auth-input{width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:12px;font-size:13px;transition:0.2s}
-        .auth-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-        .auth-btn{width:100%;padding:12px;background:var(--accent);color:white;border:none;border-radius:36px;font-size:14px;font-weight:600;cursor:pointer;transition:0.2s}
-        .auth-btn:hover{background:var(--accent-dark);transform:translateY(-1px)}
-        .auth-btn.ghost{background:transparent;border:2px solid var(--accent);color:var(--accent)}
-        .auth-switch{text-align:center;margin-top:14px;font-size:12px;color:var(--text-secondary)}
-        .auth-switch a{color:var(--accent);text-decoration:none;cursor:pointer;font-weight:500}
-        .error-msg{color:#ef4444;font-size:11px;margin:-6px 0 8px;display:none}
-        .success-msg{color:#10b981;font-size:11px;margin:-6px 0 8px;display:none}
         .notif-panel{position:fixed;top:0;right:-360px;width:320px;max-width:90%;height:100vh;background:var(--glass-bg);border-left:1px solid var(--glass-border);box-shadow:-10px 0 30px rgba(0,0,0,0.2);z-index:200;transition:right 0.3s ease;display:flex;flex-direction:column;padding:16px;overflow-y:auto;backdrop-filter:blur(20px)}
         .notif-panel.open{right:0}
-        .notif-panel h3{margin-bottom:12px;font-size:16px;display:flex;justify-content:space-between;align-items:center}
-        .notif-item{display:flex;align-items:flex-start;gap:8px;padding:8px;border-bottom:1px solid var(--border);font-size:12px;border-radius:6px;margin-bottom:4px}
-        .notif-item.unread{background:var(--accent-glow);border-left:3px solid var(--accent)}
-        .notif-message{flex:1;line-height:1.4}
-        .notif-time{font-size:9px;color:var(--text-tertiary);margin-top:2px}
-        .scroll-to-bottom{position:fixed;bottom:80px;right:26px;width:36px;height:36px;border-radius:50%;background:var(--accent-glow);border:1.5px solid var(--accent);color:var(--accent);box-shadow:0 2px 8px rgba(156,163,175,0.3);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:50}
-        .scroll-to-bottom:hover{transform:scale(1.05);background:var(--accent);color:white}
-        .pulse-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;border:2px solid var(--accent);animation:pulseRing 1.8s ease-out infinite;pointer-events:none;display:none}
-        @keyframes pulseRing{0%{transform:translate(-50%,-50%) scale(0.95);opacity:1}100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}}
-        .saved-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(10px)}
-        .saved-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md);transform:translateY(-1px)}
-        .saved-card-title{font-weight:600;font-size:13px;margin-bottom:3px;color:var(--text-primary);display:flex;justify-content:space-between;align-items:center}
-        .saved-card-preview{font-size:11px;color:var(--text-tertiary);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:5px}
-        .badge-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-        .badge{background:var(--accent-glow);border-radius:20px;padding:4px 10px;font-size:12px;display:flex;align-items:center;gap:4px}
-        .streak-badge{display:flex;align-items:center;gap:4px;font-weight:600;color:#f59e0b}
-        .admin-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
-        .admin-table th,.admin-table td{padding:8px 5px;text-align:left;border-bottom:1px solid var(--border)}
-        .admin-table th{font-weight:600;color:var(--text-secondary)}
-        .admin-delete-btn{background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;padding:1px 5px;border-radius:7px}
-        .admin-delete-btn:hover{background:rgba(239,68,68,0.1)}
-        .reasoning-slider{width:100%;margin:10px 0}
-        .token-info{font-size:11px;color:var(--text-tertiary);margin-top:4px}
-        .signout-icon{background:none;border:none;color:var(--text-tertiary);cursor:pointer;padding:4px;border-radius:6px}
-        .signout-icon:hover{color:var(--danger);background:rgba(239,68,68,0.1)}
+        .scroll-to-bottom{position:fixed;bottom:80px;right:26px;width:36px;height:36px;border-radius:50%;background:var(--accent-glow);border:1.5px solid var(--accent);color:var(--accent);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:50}
         .closeai-footer{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-tertiary);z-index:10;pointer-events:none}
         @media(max-width:768px){.closeai-footer{display:none}}
     </style>
@@ -243,47 +173,10 @@
     </svg>
 </div>
 
-<!-- Auth Container -->
-<div id="authContainer" class="auth-container">
-    <div class="auth-card">
-        <h1>CAPITAN AI</h1>
-        <p style="margin-bottom:20px;font-size:14px;">Enterprise Intelligence</p>
-        <div id="sessionExpiredMsg" style="display:none;color:var(--danger);margin-bottom:10px;">Session expired. Please sign in.</div>
-        <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
-            <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
-            <button id="tabSignup" class="auth-tab" onclick="switchAuthTab('signup')">Create Account</button>
-        </div>
-        <div id="loginForm">
-            <input type="email" id="loginEmail" class="auth-input" placeholder="Email">
-            <input type="password" id="loginPassword" class="auth-input" placeholder="Password">
-            <div id="loginError" class="error-msg"></div>
-            <button class="auth-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
-            <div class="auth-switch"><a href="mailto:support@capitan.ai">Contact Support</a></div>
-        </div>
-        <div id="signupForm" style="display:none;">
-            <input type="text" id="signupName" class="auth-input" placeholder="Full Name (optional)">
-            <input type="email" id="signupEmail" class="auth-input" placeholder="Email">
-            <input type="password" id="signupPassword" class="auth-input" placeholder="Password (min 6 chars)">
-            <div id="signupError" class="error-msg"></div>
-            <div id="signupSuccess" class="success-msg"></div>
-            <button class="auth-btn" id="signupBtn" onclick="handleSignup()">Create Account</button>
-            <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Sign In</a></div>
-        </div>
-        <div style="text-align:center;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
-            <button class="auth-btn ghost" onclick="startGuestSession()">Try CAPITAN for Free</button>
-        </div>
-        <div style="text-align:center;margin-top:16px;font-size:10px;color:var(--text-tertiary);">
-            <a onclick="openPrivacyModal()" style="cursor:pointer;margin:0 8px;">Privacy Policy</a>
-            <a onclick="openTermsModal()" style="cursor:pointer;margin:0 8px;">Terms of Service</a>
-        </div>
-    </div>
-</div>
-
-<!-- Main App -->
 <div id="app" class="app" style="display:none;">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <svg class="logo-icon" id="logoIcon" viewBox="0 0 100 100">
+            <svg class="logo-icon" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="none" stroke="#60a5fa" stroke-width="4"/>
                 <circle cx="50" cy="50" r="38" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="20 10"/>
                 <text x="50" y="58" text-anchor="middle" font-family="Arial,sans-serif" font-size="40" fill="#60a5fa" font-weight="bold">C</text>
@@ -295,55 +188,31 @@
             <span>New chat</span>
         </div>
         <div class="menu-item" onclick="openWallet()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-            <span>OS Wallets</span>
+            <span>💳</span><span>OS Wallets</span>
         </div>
         <div class="menu-item" onclick="openPortfolio()" id="portfolioMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-            <span>Portfolio</span>
+            <span>📁</span><span>Portfolio</span>
         </div>
-        <div class="menu-item" onclick="openResearchHub()" id="hubMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            <span>Research Hub</span>
+        <div class="menu-item" onclick="openWorkspaceCreateModal()" id="workspaceMenuItem" style="display:none;">
+            <span>🏢</span><span>Work Areas</span>
         </div>
         <div class="menu-item" onclick="openDeveloperPage()" id="developerMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            <span>Developer</span>
+            <span>⚙️</span><span>Developer</span>
         </div>
         <div class="menu-item" onclick="openFounderDashboard()" id="dashboardMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-            <span>Dashboard</span>
+            <span>📊</span><span>Dashboard</span>
         </div>
-        <div class="menu-item" onclick="openLeaderboardModal()" id="leaderboardMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-            <span>Leaderboard</span>
-        </div>
-        <div id="workspaceSection" style="display:none;">
-            <div class="sidebar-divider"></div>
-            <div class="collapsible-header" onclick="toggleCollapsible('workspace')">
-                <span>Work Areas</span>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="workspaceArrow"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="collapsible-content" id="workspaceContent">
-                <div style="padding:6px 14px 6px 42px;display:flex;gap:7px;">
-                    <button class="guest-action-btn" style="flex:1;margin:0;" onclick="openWorkspaceCreateModal()">+ Create</button>
-                    <button class="guest-action-btn" style="flex:1;margin:0;" onclick="openWorkspaceJoinModal()">Join</button>
-                </div>
-                <div id="workspaceList"></div>
-            </div>
-        </div>
-        <div class="sidebar-divider"></div>
+        <div class="sidebar-divider" style="height:1px;background:var(--border);margin:8px 12px;"></div>
         <div>
             <div class="collapsible-header" onclick="toggleCollapsible('appearance')">
                 <span>Appearance</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="appearanceArrow"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="collapsible-content" id="appearanceContent">
-                <div class="theme-option" onclick="setTheme('light')"><span>Light</span><span id="themeLightCheck">&#10003;</span></div>
-                <div class="theme-option" onclick="setTheme('dark')"><span>Dark</span><span id="themeDarkCheck" style="display:none;">&#10003;</span></div>
-                <div class="theme-option" onclick="setTheme('system')"><span>System</span><span id="themeSystemCheck" style="display:none;">&#10003;</span></div>
-                <div class="theme-option" onclick="setTheme('oled')"><span>OLED Dark</span><span id="themeOLEDCheck" style="display:none;">&#10003;</span></div>
-                <div class="theme-option" onclick="setTheme('auto')"><span>Auto (time-based)</span><span id="themeAutoCheck" style="display:none;">&#10003;</span></div>
+                <div class="theme-option" onclick="setTheme('light')"><span>Light</span><span id="themeLightCheck">✓</span></div>
+                <div class="theme-option" onclick="setTheme('dark')"><span>Dark</span><span id="themeDarkCheck" style="display:none;">✓</span></div>
+                <div class="theme-option" onclick="setTheme('system')"><span>System</span><span id="themeSystemCheck" style="display:none;">✓</span></div>
+                <div class="theme-option" onclick="setTheme('oled')"><span>OLED Dark</span><span id="themeOLEDCheck" style="display:none;">✓</span></div>
             </div>
         </div>
         <div>
@@ -352,27 +221,23 @@
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="aboutArrow"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="collapsible-content" id="aboutContent">
-                <div class="about-content"><strong>CAPITAN AI — Enterprise Intelligence</strong><br>A world‑class AI assistant spanning finance, technology, science, geopolitics, arts, and everyday life.<br>Built with advanced reasoning, document analysis, real‑time web search, and live markets.<br><em>Democratising elite intelligence.</em></div>
+                <div class="about-content"><strong>CAPITAN AI — Enterprise Intelligence</strong><br>Powered by CLOSE tokens. Self-custody OS Wallets. Multi-chain DeFi. Advanced AI reasoning.<br><em>Democratising elite intelligence.</em></div>
             </div>
         </div>
         <div id="guestButtons" style="display:none;">
-            <button class="guest-action-btn" onclick="openGuestLoginModal()">Sign in</button>
-            <button class="guest-action-btn" onclick="openGuestSignupModal()">Create account</button>
+            <button class="new-chat-btn" onclick="showSignupModal()" style="margin:8px 14px;width:auto;">🪙 Create Wallet — Get 2,000 CLOSE</button>
         </div>
-        <div class="sidebar-divider"></div>
         <div class="profile-section" onclick="openProfileModal()">
             <div class="profile-info">
                 <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%239ca3af'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%239ca3af'/%3E%3C/svg%3E">
-                <div class="profile-details">
+                <div>
                     <div class="profile-name" id="profileName">Guest</div>
-                    <div class="profile-tokens" id="profileStakedInfo">0 $CLOSE staked</div>
+                    <div class="profile-tokens" id="profileTokens">Sign up for 2,000 CLOSE</div>
                 </div>
             </div>
-            <button class="signout-icon" id="signoutIcon" onclick="event.stopPropagation();logout()" title="Sign Out" style="display:none;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-            </button>
+            <button class="signout-icon" id="signoutIcon" onclick="event.stopPropagation();logout()" title="Sign Out" style="display:none;">→</button>
         </div>
-        <div class="sidebar-footer">CAPITAN AI &copy; 2026</div>
+        <div class="sidebar-footer">CAPITAN AI © 2026 · CLOSEAI Technologies</div>
     </aside>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
     <div class="top-bar">
@@ -386,22 +251,17 @@
     </div>
     <main class="main" id="chatView">
         <div class="chat-container">
-            <div class="messages-area" id="messagesArea">
-                <div style="text-align:center;padding:50px 16px;" id="welcomeMessage">
-                    <div class="greeting-container"><div class="greeting-text" id="greetingText">Welcome</div></div>
-                    <p id="capitanIntro" style="color:var(--text-secondary);margin-top:6px;font-size:14px;max-width:600px;margin-left:auto;margin-right:auto;"></p>
-                    <div id="suggestionPills" class="suggestion-pills">
-                        <button class="suggestion-pill" onclick="useSuggestion('Give me today\'s top business headlines')">Business</button>
-                        <button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">Tech</button>
-                        <button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">Everyday</button>
-                    </div>
-                    <p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything...</p>
-                </div>
-            </div>
+            <div class="messages-area" id="messagesArea"></div>
             <div class="input-area">
+                <div id="balanceBar" class="balance-bar" style="display:none;">
+                    <span class="close-icon">🪙</span>
+                    <span class="close-amount" id="closeBalanceDisplay">0 CLOSE</span>
+                    <span class="close-usd" id="closeUsdDisplay"></span>
+                    <button onclick="openBuyCloseModal()" style="margin-left:auto;background:var(--close-gold);color:#000;border:none;padding:4px 12px;border-radius:16px;cursor:pointer;font-size:10px;font-weight:600;">Get CLOSE</button>
+                </div>
                 <div class="input-wrapper">
-                    <button class="voice-btn" onclick="startVoice()" title="Voice input">🎤</button>
-                    <button class="upload-btn" onclick="triggerFileUpload()" title="Upload file">📎</button>
+                    <button class="voice-btn" onclick="startVoice()" title="Voice">🎤</button>
+                    <button class="upload-btn" onclick="triggerFileUpload()" title="Upload">📎</button>
                     <textarea class="input-field" id="messageInput" rows="1" placeholder="Ask Capitan anything…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
                     <button class="send-btn" onclick="sendMessage()">➤</button>
                 </div>
@@ -414,18 +274,13 @@
         <div id="notifList"></div>
         <button class="btn btn-outline" onclick="closeNotifPanel()" style="margin-top:12px;">Close</button>
     </div>
-    <!-- Full page views -->
     <div class="full-page-view" id="walletFullPage">
         <button class="close-btn" onclick="closeWallet()">&times;</button>
         <div class="wallet-container" id="walletContainer"></div>
     </div>
     <div class="full-page-view" id="portfolioFullPage">
-        <button class="close-btn" onclick="closePortfolioFullPage()">&times;</button>
+        <button class="close-btn" onclick="closePortfolio()">&times;</button>
         <div id="portfolioFullContent" style="max-width:800px;margin:0 auto;width:100%;"></div>
-    </div>
-    <div class="full-page-view" id="researchHubFullPage">
-        <button class="close-btn" onclick="closeResearchHub()">&times;</button>
-        <div id="researchHubContent" style="max-width:900px;margin:0 auto;width:100%;"></div>
     </div>
     <div class="full-page-view" id="developerFullPage">
         <button class="close-btn" onclick="closeDeveloperPage()">&times;</button>
@@ -439,72 +294,53 @@
 </div>
 
 <!-- Modals -->
+<div id="signupModal" class="modal-overlay"><div class="modal" id="signupModalContent"></div></div>
+<div id="loginModal" class="modal-overlay"><div class="modal" id="loginModalContent"></div></div>
+<div id="walletPromptModal" class="modal-overlay"><div class="modal" id="walletPromptModalContent"></div></div>
+<div id="buyCloseModal" class="modal-overlay"><div class="modal" id="buyCloseModalContent"></div></div>
+<div id="stakeModal" class="modal-overlay"><div class="modal" id="stakeModalContent"></div></div>
+<div id="swapModal" class="modal-overlay"><div class="modal" id="swapModalContent"></div></div>
 <div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
 <div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
 <div id="termsModal" class="modal-overlay"><div class="modal" id="termsModalContent"></div></div>
-<div id="guestSignupModal" class="modal-overlay"><div class="modal" id="guestSignupModalContent"></div></div>
-<div id="guestLoginModal" class="modal-overlay"><div class="modal" id="guestLoginModalContent"></div></div>
 <div id="workspaceCreateModal" class="modal-overlay"><div class="modal" id="workspaceCreateModalContent"></div></div>
 <div id="workspaceJoinModal" class="modal-overlay"><div class="modal" id="workspaceJoinModalContent"></div></div>
-<div id="workspaceMessagesModal" class="modal-overlay"><div class="modal" id="workspaceMessagesModalContent" style="max-width:650px;"></div></div>
-<div id="leaderboardModal" class="modal-overlay"><div class="modal" id="leaderboardModalContent"></div></div>
-<div id="apiKeyModal" class="modal-overlay"><div class="modal" id="apiKeyModalContent"></div></div>
-<div id="buyCapModal" class="modal-overlay"><div class="modal" id="buyCapModalContent"></div></div>
-<div id="swapModal" class="modal-overlay"><div class="modal" id="swapModalContent"></div></div>
-<div id="activityModal" class="modal-overlay"><div class="modal" id="activityModalContent"></div></div>
 
 <script>
-// ==================== SERVICE WORKER ====================
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(r => console.log('SW registered')).catch(e => console.log('SW fail'));
-    });
-}
-
-// ==================== CONFIG (with auto URL) ====================
+// ==================== CONFIG ====================
 const CFG = {
-    API: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:8000'
-        : 'https://capitan-ai-jxu8.onrender.com',   // change if your Render URL differs
-    POLYGON_RPC: 'https://polygon-rpc.com',
-    CLOSE_ADDRESS: '',
-    HOT_WALLET: ''
+    API: window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://capitan-ai-jxu8.onrender.com',
+    CLOSE_PRICE: 0.00009776,
+    BURN_PER_MSG: 25,
+    FREE_MSGS: 3,
+    MIN_PURCHASE: 1.00,
+    STAKE_BUILDER: 4000000,
+    STAKE_PRO: 15000000,
+    STAKE_ENTERPRISE: 35000000,
+    CHAINS: {
+        polygon: { name: 'Polygon', symbol: 'POL', rpc: 'https://polygon-rpc.com', chainId: 137, explorer: 'https://polygonscan.com' },
+        ethereum: { name: 'Ethereum', symbol: 'ETH', rpc: 'https://eth.llamarpc.com', chainId: 1, explorer: 'https://etherscan.io' },
+        bsc: { name: 'BSC', symbol: 'BNB', rpc: 'https://bsc-dataseed.binance.org', chainId: 56, explorer: 'https://bscscan.com' },
+        arbitrum: { name: 'Arbitrum', symbol: 'ETH', rpc: 'https://arb1.arbitrum.io/rpc', chainId: 42161, explorer: 'https://arbiscan.io' },
+        base: { name: 'Base', symbol: 'ETH', rpc: 'https://mainnet.base.org', chainId: 8453, explorer: 'https://basescan.org' }
+    }
 };
 
-// ==================== FETCH WITH TIMEOUT ====================
-function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    return fetch(url, { ...options, signal: controller.signal })
-        .finally(() => clearTimeout(timeout));
-}
-
-// ==================== STATE ====================
 let state = {
-    accessToken: localStorage.getItem('access_token') || null,
-    refreshToken: localStorage.getItem('refresh_token') || null,
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    is_admin: localStorage.getItem('is_admin') === 'true',
+    token: localStorage.getItem('capitan_token') || null,
+    user: JSON.parse(localStorage.getItem('capitan_user') || 'null'),
     activeChatId: null,
     messages: [],
     loading: false,
-    portfolio: [],
-    workspaces: [],
-    theme: localStorage.getItem('theme') || 'dark',
-    profilePhoto: localStorage.getItem('profilePhoto') || null,
+    theme: localStorage.getItem('capitan_theme') || 'dark',
+    closeBalance: parseInt(localStorage.getItem('close_balance')) || 0,
+    closeStaked: parseInt(localStorage.getItem('close_staked')) || 0,
+    stakeTier: localStorage.getItem('stake_tier') || 'none',
+    walletAddress: localStorage.getItem('wallet_address') || '',
+    freeMessagesUsed: parseInt(localStorage.getItem('free_msgs_used')) || 0,
+    isGuest: !localStorage.getItem('capitan_token'),
     notifications: [],
-    unreadCount: 0,
-    reasoningDepth: parseInt(localStorage.getItem('reasoningDepth')) || 1,
-    capStaked: 0,
-    capTier: 'free',
-    walletEncrypted: localStorage.getItem('os_encrypted') || null,
-    walletSalt: localStorage.getItem('os_salt') || null,
-    walletAddress: localStorage.getItem('os_address') || null,
-    walletSigner: null,
-    addressVisible: false,
-    customTokens: JSON.parse(localStorage.getItem('custom_tokens') || '[]'),
-    capMaticRate: 10000000,
-    currentStreamer: null,
+    unreadCount: 0
 };
 
 // ==================== UTILS ====================
@@ -512,267 +348,147 @@ function toast(msg, icon=''){let t=document.createElement('div');t.className='to
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function escapeHtml(s){return s?.replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m)||''}
 function formatMarkdown(t){return t?.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre><code>$2</code></pre>').replace(/\n/g,'<br>')}
+function closeToUsd(amount){return (amount * CFG.CLOSE_PRICE).toFixed(4)}
+function usdToClose(usd){return Math.floor(usd / CFG.CLOSE_PRICE)}
 
-// ==================== API CALLS (with timeout & improved error) ====================
+// ==================== API ====================
 async function apiCall(endpoint, opts={}){
     let headers={'Content-Type':'application/json'};
-    if(state.accessToken) headers['Authorization']='Bearer '+state.accessToken;
-
-    let res;
-    try {
-        res = await fetchWithTimeout(CFG.API+endpoint,{...opts,headers});
-    } catch(e) {
-        if(e.name==='AbortError') throw new Error('Request timed out – backend may be waking up (Render free tier) or unreachable.');
-        throw new Error('Network error – cannot reach server. Is the backend running?');
-    }
-
-    if(res.status===401 && state.refreshToken){
-        const refreshed = await refreshAccessToken();
-        if(refreshed){
-            headers['Authorization']='Bearer '+state.accessToken;
-            res=await fetchWithTimeout(CFG.API+endpoint,{...opts,headers});
-        }else{
-            forceLogout();
-            throw new Error('Session expired');
-        }
-    }
-    if(!res.ok){
-        let err=await res.text();
-        try{err=JSON.parse(err).detail||err}catch(e){}
-        throw new Error(err);
-    }
+    if(state.token) headers['Authorization']='Bearer '+state.token;
+    let res=await fetch(CFG.API+endpoint,{...opts,headers});
+    if(!res.ok){let err=await res.text();try{err=JSON.parse(err).detail||err}catch(e){}throw new Error(err)}
     return res.json();
-}
-
-async function refreshAccessToken(){
-    try{
-        let r=await fetchWithTimeout(CFG.API+'/api/auth/refresh',{
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({refresh_token:state.refreshToken})
-        });
-        if(r.ok){
-            let d=await r.json();
-            state.accessToken=d.access_token; state.refreshToken=d.refresh_token;
-            localStorage.setItem('access_token',d.access_token); localStorage.setItem('refresh_token',d.refresh_token);
-            return true;
-        }
-    }catch(e){}
-    return false;
-}
-
-function forceLogout(){
-    state.accessToken=null; state.refreshToken=null; state.user=null; state.is_admin=false;
-    localStorage.removeItem('access_token'); localStorage.removeItem('refresh_token'); localStorage.removeItem('user'); localStorage.removeItem('is_admin');
-    document.getElementById('app').style.display='none'; document.getElementById('authContainer').style.display='flex';
 }
 
 // ==================== THEME ====================
 function setTheme(theme){
-    state.theme = theme;
-    document.body.className = '';
-    if(theme==='auto'){ applyAutoTheme(); return; }
-    document.body.classList.add(theme);
-    localStorage.setItem('theme', theme);
-    updateThemeChecks();
-}
-function applyAutoTheme(){
-    const hour = new Date().getHours();
-    document.body.classList.add(hour>=6 && hour<18 ? 'light' : 'dark');
-    localStorage.setItem('theme', 'auto');
-    updateThemeChecks();
-}
-function updateThemeChecks(){
-    ['light','dark','system','oled','auto'].forEach(t=>{
-        const el = document.getElementById('theme'+t.charAt(0).toUpperCase()+t.slice(1)+'Check');
-        if(el) el.style.display = state.theme === t ? 'inline' : 'none';
+    state.theme=theme;document.body.className=theme;
+    localStorage.setItem('capitan_theme',theme);
+    ['light','dark','system','oled'].forEach(t=>{
+        let el=document.getElementById('theme'+t.charAt(0).toUpperCase()+t.slice(1)+'Check');
+        if(el) el.style.display=theme===t?'inline':'none';
     });
 }
 setTheme(state.theme);
 
 // ==================== AUTH ====================
-function switchAuthTab(tab){
-    document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
-    document.getElementById('signupForm').style.display = tab==='signup'?'block':'none';
-    document.getElementById('tabLogin').classList.toggle('active', tab==='login');
-    document.getElementById('tabSignup').classList.toggle('active', tab==='signup');
+function showSignupModal(){
+    document.getElementById('signupModalContent').innerHTML=`
+        <h2>🪙 Create Your OS Wallet</h2>
+        <p style="color:var(--close-gold);font-weight:600;">Get <strong>2,000 CLOSE</strong> free — worth $${closeToUsd(2000)}</p>
+        <input type="email" id="signupEmail" placeholder="Email" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="text" id="signupName" placeholder="Name (optional)" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <div id="signupError" style="color:var(--danger);font-size:11px;margin-bottom:8px;display:none;"></div>
+        <button class="btn btn-gold" onclick="handleSignup()">Create Wallet & Get 2,000 CLOSE</button>
+        <p style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-tertiary);">Already have an account? <a onclick="closeModal('signupModal');showLoginModal()" style="color:var(--accent);cursor:pointer;">Sign In</a></p>
+        <p style="text-align:center;margin-top:8px;font-size:9px;color:var(--text-tertiary);">By creating an account, you agree to our <a onclick="openPrivacyModal()" style="color:var(--accent);cursor:pointer;">Privacy Policy</a> and <a onclick="openTermsModal()" style="color:var(--accent);cursor:pointer;">Terms of Service</a>.</p>
+    `;
+    document.getElementById('signupModal').classList.add('open');
 }
 
-async function handleLogin(){
-    let e=document.getElementById('loginEmail').value.trim(), p=document.getElementById('loginPassword').value,
-        err=document.getElementById('loginError'), btn=document.getElementById('loginBtn');
-    if(!e||!p){err.innerText='Email and password required';err.style.display='block';return}
-    err.style.display='none'; btn.disabled=true; btn.innerText='Signing in…';
-    try{
-        let r=await fetchWithTimeout(CFG.API+'/api/auth/login',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({email:e,password:p})
-        });
-        if(!r.ok){
-            let msg = await r.text();
-            try{ msg = JSON.parse(msg).detail || msg } catch(ex){}
-            throw new Error(msg);
-        }
-        let d=await r.json();
-        if(d.access_token){
-            state.accessToken=d.access_token; state.refreshToken=d.refresh_token; state.user=d.user; state.is_admin=d.user.is_admin||false;
-            state.reasoningDepth=d.user.reasoning_depth||1;
-            localStorage.setItem('access_token',d.access_token); localStorage.setItem('refresh_token',d.refresh_token);
-            localStorage.setItem('user',JSON.stringify(d.user)); localStorage.setItem('is_admin',state.is_admin.toString());
-            localStorage.setItem('reasoningDepth',state.reasoningDepth.toString());
-            document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
-            updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications(); fetchWalletStatus();
-            toast('Welcome back, '+(state.user.name||e.split('@')[0]));
-        }else{err.innerText=d.detail||'Login failed';err.style.display='block'}
-    }catch(e){
-        if(e.name==='AbortError') err.innerText='Request timed out. Backend might be starting up.';
-        else if(e.message.includes('Network error')||e.message.includes('Failed to fetch')) err.innerText='Cannot connect to server. Is the backend running?';
-        else err.innerText='Login failed: '+e.message;
-        err.style.display='block';
-    }
-    btn.disabled=false; btn.innerText='Sign In';
+function showLoginModal(){
+    document.getElementById('loginModalContent').innerHTML=`
+        <h2>Sign In</h2>
+        <input type="email" id="loginEmail" placeholder="Email" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="password" id="loginPassword" placeholder="Password" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <div id="loginError" style="color:var(--danger);font-size:11px;margin-bottom:8px;display:none;"></div>
+        <button class="btn" onclick="handleLogin()">Sign In</button>
+        <p style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-tertiary);">Don't have an account? <a onclick="closeModal('loginModal');showSignupModal()" style="color:var(--accent);cursor:pointer;">Create one</a></p>
+    `;
+    document.getElementById('loginModal').classList.add('open');
 }
 
 async function handleSignup(){
-    let n=document.getElementById('signupName').value.trim(), e=document.getElementById('signupEmail').value.trim(), p=document.getElementById('signupPassword').value,
-        err=document.getElementById('signupError'), suc=document.getElementById('signupSuccess'), btn=document.getElementById('signupBtn');
-    if(!e||!p){err.innerText='Email and password required';err.style.display='block';return}
-    if(p.length<6){err.innerText='Password min 6 characters';err.style.display='block';return}
-    err.style.display='none'; btn.disabled=true; btn.innerText='Creating…';
+    let email=document.getElementById('signupEmail').value.trim();
+    let password=document.getElementById('signupPassword').value;
+    let name=document.getElementById('signupName').value.trim();
+    let err=document.getElementById('signupError');
+    if(!email||!password){err.innerText='Email and password required';err.style.display='block';return}
+    if(password.length<6){err.innerText='Password min 6 characters';err.style.display='block';return}
+    err.style.display='none';
     try{
-        let r=await fetchWithTimeout(CFG.API+'/api/auth/register',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({email:e,password:p,name:n})
-        }, 15000);
-        if(!r.ok){
-            let msg = await r.text();
-            try{ msg = JSON.parse(msg).detail || msg } catch(ex){}
-            throw new Error(msg);
-        }
+        let r=await fetch(CFG.API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,name})});
         let d=await r.json();
-        if(d.access_token){
-            suc.innerText='Account created! Redirecting...'; suc.style.display='block';
-            state.accessToken=d.access_token; state.refreshToken=d.refresh_token; state.user=d.user; state.is_admin=false;
-            state.reasoningDepth=1;
-            localStorage.setItem('access_token',d.access_token); localStorage.setItem('refresh_token',d.refresh_token);
-            localStorage.setItem('user',JSON.stringify(d.user)); localStorage.setItem('is_admin','false'); localStorage.setItem('reasoningDepth','1');
-            setTimeout(()=>{document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex'; updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications(); fetchWalletStatus(); toast('Welcome to CAPITAN AI!');},1200);
+        if(d.token){
+            state.token=d.token;state.user=d.user;state.isGuest=false;
+            state.closeBalance=d.user.close_balance||2000;state.closeStaked=d.user.close_staked||0;state.stakeTier=d.user.stake_tier||'none';
+            localStorage.setItem('capitan_token',d.token);localStorage.setItem('capitan_user',JSON.stringify(d.user));
+            localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);
+            closeModal('signupModal');updateUI();toast('🪙 2,000 CLOSE credited! Welcome to CAPITAN AI.');
+            renderMessages();
         }else{err.innerText=d.detail||'Signup failed';err.style.display='block'}
-    }catch(e){
-        if(e.name==='AbortError') err.innerText='Request timed out. Backend may be starting.';
-        else if(e.message.includes('Network error')||e.message.includes('Failed to fetch')) err.innerText='Cannot connect to server. Is the backend running?';
-        else err.innerText='Signup failed: '+e.message;
-        err.style.display='block';
-    }
-    btn.disabled=false; btn.innerText='Create Account';
+    }catch(e){err.innerText='Signup failed: '+e.message;err.style.display='block'}
+}
+
+async function handleLogin(){
+    let email=document.getElementById('loginEmail').value.trim();
+    let password=document.getElementById('loginPassword').value;
+    let err=document.getElementById('loginError');
+    if(!email||!password){err.innerText='Email and password required';err.style.display='block';return}
+    err.style.display='none';
+    try{
+        let r=await fetch(CFG.API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+        let d=await r.json();
+        if(d.token){
+            state.token=d.token;state.user=d.user;state.isGuest=false;
+            state.closeBalance=d.user.close_balance||0;state.closeStaked=d.user.close_staked||0;state.stakeTier=d.user.stake_tier||'none';state.walletAddress=d.user.wallet_address||'';
+            localStorage.setItem('capitan_token',d.token);localStorage.setItem('capitan_user',JSON.stringify(d.user));
+            localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);localStorage.setItem('wallet_address',state.walletAddress);
+            closeModal('loginModal');updateUI();toast('Welcome back!');
+            renderMessages();
+        }else{err.innerText=d.detail||'Login failed';err.style.display='block'}
+    }catch(e){err.innerText='Login failed: '+e.message;err.style.display='block'}
+}
+
+function logout(){
+    state.token=null;state.user=null;state.isGuest=true;state.closeBalance=0;state.closeStaked=0;state.stakeTier='none';state.walletAddress='';
+    localStorage.removeItem('capitan_token');localStorage.removeItem('capitan_user');localStorage.removeItem('close_balance');localStorage.removeItem('close_staked');localStorage.removeItem('stake_tier');localStorage.removeItem('wallet_address');
+    updateUI();renderMessages();toast('Signed out');
 }
 
 async function startGuestSession(){
     try{
-        let r=await fetchWithTimeout(CFG.API+'/api/session',{},10000);
-        let d=await r.json();
+        let r=await fetch(CFG.API+'/api/session');let d=await r.json();
         if(d.token){
-            state.accessToken=d.token; state.refreshToken=null; state.user=null; state.is_admin=false;
-            state.reasoningDepth=1;
-            localStorage.setItem('access_token',d.token); localStorage.removeItem('refresh_token'); localStorage.removeItem('user'); localStorage.removeItem('is_admin');
-            document.getElementById('authContainer').style.display='none'; document.getElementById('app').style.display='flex';
-            updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications();
-            toast('Guest session started!');
-        }else toast('Could not start session: no token received');
-    }catch(e){
-        if(e.name==='AbortError') toast('Request timed out – backend may be waking up.');
-        else if(e.message.includes('Network error')||e.message.includes('Failed to fetch')) toast('Cannot reach server – is the backend running?');
-        else toast('Could not start session: '+e.message);
-    }
-}
-function logout(){forceLogout();}
-
-// ==================== CHAT ====================
-class SmoothStreamer{
-    constructor(content, container, onDone){
-        this.content=content; this.container=container; this.onDone=onDone;
-        this.idx=0; this.running=true; this.speed=7; this.accum=0; this.lastT=0;
-        this.container.innerHTML='';
-        this.streamDiv=document.createElement('div'); this.streamDiv.className='streaming-text';
-        this.container.appendChild(this.streamDiv);
-        this.cursor=document.createElement('span'); this.cursor.className='stream-cursor';
-        this.container.appendChild(this.cursor);
-        if(state.currentStreamer) state.currentStreamer.stop();
-        state.currentStreamer=this;
-        requestAnimationFrame(this.anim.bind(this));
-    }
-    anim(ts){
-        if(!this.running||this.idx>=this.content.length){this.finish();return}
-        if(this.lastT===0)this.lastT=ts;
-        let dt=ts-this.lastT; this.lastT=ts; this.accum+=dt;
-        while(this.accum>=this.speed&&this.idx<this.content.length){
-            let span=document.createElement('span'); span.textContent=this.content[this.idx];
-            this.streamDiv.appendChild(span); this.idx++; this.accum-=this.speed;
+            state.token=d.token;state.isGuest=true;state.user=null;state.freeMessagesUsed=0;
+            localStorage.setItem('capitan_token',d.token);localStorage.removeItem('capitan_user');
+            updateUI();renderMessages();toast('Guest session started — 3 free messages!');
         }
-        scrollBottom(); requestAnimationFrame(this.anim.bind(this));
-    }
-    stop(){this.running=false;if(this.idx<this.content.length)this.streamDiv.textContent+=this.content.slice(this.idx);this.finish()}
-    finish(){if(this.cursor)this.cursor.remove();this.container.innerHTML=formatMarkdown(this.content);if(state.currentStreamer===this)state.currentStreamer=null;if(this.onDone)this.onDone();scrollBottom()}
+    }catch(e){toast('Could not start session')}
 }
 
-function newChat(){if(state.currentStreamer)state.currentStreamer.stop();state.activeChatId=null;state.messages=[];renderMessages();document.getElementById('messageInput').focus()}
-async function sendMessage(){
-    let input=document.getElementById('messageInput'), text=input.value.trim();
-    if(!text||state.loading)return;
-    input.value=''; state.messages.push({role:'user',content:text}); renderMessages();
-    state.loading=true; let aiIdx=state.messages.length;
-    state.messages.push({role:'assistant',content:'',isTyping:true}); renderMessages();
-    try{
-        let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify({messages:state.messages.slice(0,-1),chat_id:state.activeChatId})});
-        const content=res.content||'No response';
-        state.messages[aiIdx]={role:'assistant',content:content,message_id:res.message_id};
-        renderMessages(); updateProfileUI();
-        let streamTarget=document.getElementById('msg-'+aiIdx);
-        if(streamTarget)new SmoothStreamer(content,streamTarget,()=>{state.loading=false});
-        else state.loading=false;
-        state.activeChatId=res.chat_id;
-        if(res.starter_claimed) toast('🎉 Your starter $CLOSE is now active!');
-        fetchCapBalance();
-    }catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};renderMessages();state.loading=false;}
-}
-function renderMessages(){
-    let c=document.getElementById('messagesArea');
-    if(!state.messages.length){
-        c.innerHTML=`<div style="text-align:center;padding:50px 16px;" id="welcomeMessage"><div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div><p id="capitanIntro" style="color:var(--text-secondary);margin-top:6px;font-size:14px;max-width:600px;margin-left:auto;margin-right:auto;">I'm Capitan AI, your enterprise intelligence companion. I can analyze markets, answer deep questions, manage your OS Wallet, and connect you to decentralized finance.</p><div class="suggestion-pills"><button class="suggestion-pill" onclick="useSuggestion('Give me today\\'s top business headlines')">Business</button><button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">Tech</button><button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">Everyday</button></div><p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything...</p></div>`;
-        updateGreeting(); updateScrollButton(); return;
-    }
-    c.innerHTML=state.messages.map((m,i)=>{
-        if(m.isTyping)return'<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-text">CAPITAN is thinking</span></div></div>';
-        let html=m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content);
-        let actions='';
-        if(m.role==='assistant'&&!m.isTyping)actions=`<div class="action-icons"><button onclick="copyMessage(${i})">📋</button><button onclick="likeMessage(${i})">👍</button><button onclick="dislikeMessage(${i})">👎</button><button onclick="saveToPortfolio(${i})">📌</button></div>`;
-        return'<div class="message '+m.role+'"><div class="message-content" id="msg-'+i+'">'+html+'</div>'+actions+'</div>';
-    }).join('');
-    updateScrollButton(); scrollBottom();
-}
-function copyMessage(idx){let m=state.messages[idx];if(m){navigator.clipboard.writeText(m.content);toast('Copied!')}}
-async function likeMessage(idx){let m=state.messages[idx];if(m?.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:5})});toast('Thanks! 👍')}catch(e){}}}
-async function dislikeMessage(idx){let m=state.messages[idx];if(m?.message_id){try{await apiCall('/api/feedback',{method:'POST',body:JSON.stringify({message_id:m.message_id,rating:1})});toast('Feedback noted.')}catch(e){}}}
-async function saveToPortfolio(idx){let m=state.messages[idx];if(!m||!state.user){toast('Sign in to save');return}const title=m.content.split('\n')[0]?.trim().substring(0,80)||'Saved note';try{await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name:title,content:m.content,folder:'General',tags:[],attachments:[],chat_id:state.activeChatId})});toast('Saved to Portfolio 📌')}catch(e){toast('Could not save')}}
-function useSuggestion(text){document.getElementById('messageInput').value=text;sendMessage()}
-
-// ==================== UI HELPERS ====================
-function updateProfileUI(){
-    let n=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
-    document.getElementById('profileName').innerText=n;
-    document.getElementById('profileStakedInfo').innerHTML=`${state.capStaked||0} $CLOSE staked`;
-    if(state.profilePhoto)document.getElementById('profileAvatar').src=state.profilePhoto;
-    document.getElementById('signoutIcon').style.display=state.user?'block':'none';
-}
-function updateUIBasedOnTier(){
+// ==================== UI UPDATES ====================
+function updateUI(){
     let logged=!!state.user;
-    document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';
-    document.getElementById('hubMenuItem').style.display=logged?'flex':'none';
-    document.getElementById('developerMenuItem').style.display=(logged&&(state.capTier==='pro'||state.capTier==='enterprise'||state.is_admin))?'flex':'none';
-    document.getElementById('dashboardMenuItem').style.display=(logged&&state.is_admin)?'flex':'none';
-    document.getElementById('leaderboardMenuItem').style.display=logged?'flex':'none';
+    document.getElementById('profileName').innerText=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
+    document.getElementById('profileTokens').innerText=logged?`${state.closeBalance.toLocaleString()} CLOSE`:'Sign up for 2,000 CLOSE';
+    document.getElementById('signoutIcon').style.display=logged?'block':'none';
     document.getElementById('guestButtons').style.display=logged?'none':'block';
-    document.getElementById('workspaceSection').style.display=logged?'block':'none';
+    document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';
+    document.getElementById('workspaceMenuItem').style.display=logged?'flex':'none';
+    document.getElementById('developerMenuItem').style.display=(logged&&(state.stakeTier==='pro'||state.stakeTier==='enterprise'||state.user?.stake_tier==='founder'))?'flex':'none';
+    document.getElementById('dashboardMenuItem').style.display=(logged&&state.user?.stake_tier==='founder')?'flex':'none';
+    updateBalanceBar();
 }
+
+function updateBalanceBar(){
+    let bar=document.getElementById('balanceBar');
+    if(state.isGuest){
+        bar.style.display='flex';
+        document.getElementById('closeBalanceDisplay').innerText=`${CFG.FREE_MSGS - state.freeMessagesUsed} free messages left`;
+        document.getElementById('closeUsdDisplay').innerText='';
+        bar.querySelector('button').innerText='Get CLOSE';
+        bar.querySelector('button').onclick=showSignupModal;
+    }else if(state.user){
+        bar.style.display='flex';
+        document.getElementById('closeBalanceDisplay').innerText=`${state.closeBalance.toLocaleString()} CLOSE`;
+        document.getElementById('closeUsdDisplay').innerText=`$${closeToUsd(state.closeBalance)}`;
+        bar.querySelector('button').innerText='Get CLOSE';
+        bar.querySelector('button').onclick=openBuyCloseModal;
+    }
+}
+
 function getDynamicGreeting(){
     let h=new Date().getHours();
     if(h>=5&&h<12)return'Good morning';
@@ -780,635 +496,377 @@ function getDynamicGreeting(){
     if(h>=17&&h<21)return'Good evening';
     return'Welcome';
 }
-function updateGreeting(){
-    let e=document.getElementById('greetingText');if(e){e.textContent=getDynamicGreeting();e.className='greeting-text '+getGreetingClass(new Date().getHours())}
+
+// ==================== CHAT ====================
+function newChat(){state.activeChatId=null;state.messages=[];renderMessages();document.getElementById('messageInput').focus()}
+
+async function sendMessage(){
+    let input=document.getElementById('messageInput'),text=input.value.trim();
+    if(!text||state.loading)return;
+    input.value='';state.messages.push({role:'user',content:text});renderMessages();
+    state.loading=true;let aiIdx=state.messages.length;
+    state.messages.push({role:'assistant',content:'',isTyping:true});renderMessages();
+    try{
+        let body={messages:state.messages.slice(0,-1),chat_id:state.activeChatId};
+        let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify(body)});
+        state.messages[aiIdx]={role:'assistant',content:res.content||'No response',message_id:res.message_id};
+        if(res.close_balance!==undefined){state.closeBalance=res.close_balance;localStorage.setItem('close_balance',state.closeBalance)}
+        if(res.free_messages_remaining!==undefined)state.freeMessagesUsed=CFG.FREE_MSGS-res.free_messages_remaining;
+        if(res.wallet_prompt)showWalletPrompt(res.wallet_message||'Create your OS Wallet to unlock unlimited AI.');
+        if(res.requires_purchase)showWalletPrompt(res.wallet_message||'You need CLOSE tokens to continue.');
+        if(res.low_balance_warning)toast('⚠️ '+res.wallet_message);
+        state.activeChatId=res.chat_id;state.loading=false;
+        renderMessages();updateUI();
+    }catch(err){state.messages[aiIdx]={role:'assistant',content:'Error: '+err.message};state.loading=false;renderMessages()}
 }
-function getGreetingClass(h){if(h>=5&&h<12)return'morning';if(h>=12&&h<17)return'afternoon';if(h>=17&&h<21)return'evening';return'night'}
-setInterval(updateGreeting,60000);updateGreeting();
-function scrollBottom(){let a=document.getElementById('messagesArea');if(a)a.scrollTo({top:a.scrollHeight,behavior:'smooth'});updateScrollButton()}
-function updateScrollButton(){let area=document.getElementById('messagesArea'),btn=document.getElementById('scrollToBottomBtn');let atBottom=area.scrollHeight-area.scrollTop-area.clientHeight<100;btn.style.display=atBottom?'none':'flex'}
+
+function showWalletPrompt(message){
+    let area=document.getElementById('messagesArea');
+    let promptDiv=document.createElement('div');
+    promptDiv.className='wallet-prompt-inline';
+    promptDiv.innerHTML=`
+        <h3>🪙 ${message}</h3>
+        <p>Create your OS Wallet in seconds and receive <strong>2,000 CLOSE</strong> (worth $${closeToUsd(2000)}) to power your AI experience.</p>
+        <button class="btn btn-gold" onclick="showSignupModal()" style="width:auto;display:inline-block;">Create OS Wallet — Get 2,000 CLOSE</button>
+        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;margin-left:12px;font-size:11px;">Continue with limited access</button>
+    `;
+    area.appendChild(promptDiv);
+    scrollBottom();
+}
+
+function renderMessages(){
+    let c=document.getElementById('messagesArea');
+    if(!state.messages.length){
+        c.innerHTML=`
+            <div style="text-align:center;padding:50px 16px;">
+                <div class="greeting-container"><div class="greeting-text" id="greetingText">${getDynamicGreeting()}</div></div>
+                <p style="color:var(--text-secondary);margin-top:6px;font-size:14px;max-width:600px;margin-left:auto;margin-right:auto;">I'm Capitan AI, your enterprise intelligence companion. I analyze markets, write code, explain science, and help with everyday life.</p>
+                <div class="suggestion-pills">
+                    <button class="suggestion-pill" onclick="useSuggestion('Give me today\\'s top business headlines')">📈 Business</button>
+                    <button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing in simple terms')">💻 Tech</button>
+                    <button class="suggestion-pill" onclick="useSuggestion('What are three easy recipes for dinner tonight?')">🍳 Everyday</button>
+                </div>
+                <p style="color:var(--text-secondary);margin-top:6px;font-size:13px;">Ask Capitan anything…</p>
+            </div>`;
+        return;
+    }
+    c.innerHTML=state.messages.map((m,i)=>{
+        if(m.isTyping)return'<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div>CAPITAN is thinking</div></div>';
+        let html=m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content);
+        let actions='';
+        if(m.role==='assistant'&&!m.isTyping)actions=`<div class="action-icons"><button onclick="copyMessage(${i})">📋</button><button onclick="saveToPortfolio(${i})">📌</button></div>`;
+        return'<div class="message '+m.role+'"><div class="message-content" id="msg-'+i+'">'+html+'</div>'+actions+'</div>';
+    }).join('');
+    scrollBottom();
+}
+
+function copyMessage(idx){let m=state.messages[idx];if(m){navigator.clipboard.writeText(m.content);toast('Copied!')}}
+async function saveToPortfolio(idx){let m=state.messages[idx];if(!m||!state.user){toast('Sign in to save');return}const title=m.content.split('\n')[0]?.trim().substring(0,80)||'Saved note';try{await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name:title,content:m.content,folder:'General',tags:[],attachments:[],chat_id:state.activeChatId})});toast('Saved to Portfolio 📌')}catch(e){toast('Could not save')}}
+function useSuggestion(text){document.getElementById('messageInput').value=text;sendMessage()}
+function scrollBottom(){let a=document.getElementById('messagesArea');if(a)a.scrollTo({top:a.scrollHeight,behavior:'smooth'})}
+
+// ==================== OS WALLETS ====================
+function openWallet(){
+    hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('walletFullPage').classList.add('open');
+    renderWallet();
+}
+function closeWallet(){document.getElementById('walletFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
+async function renderWallet(){
+    let container=document.getElementById('walletContainer');
+    if(!state.user){container.innerHTML='<div class="elite-wallet"><h2>💳 OS Wallets</h2><p>Sign in to access your OS Wallet.</p><button class="btn btn-gold" onclick="showSignupModal()">Create Wallet — Get 2,000 CLOSE</button></div>';return}
+    try{
+        let bal=await apiCall('/api/wallet/balance');
+        state.closeBalance=bal.close_balance;state.closeStaked=bal.close_staked;state.stakeTier=bal.stake_tier;
+        localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);
+        let stakes=await apiCall('/api/wallet/stakes');
+        let txs=await apiCall('/api/wallet/transactions');
+        container.innerHTML=`
+            <div class="elite-wallet">
+                <h2>💳 OS Wallets</h2>
+                <div class="balance-card"><div><div class="balance-label">CLOSE Balance</div><div class="balance-amount">${state.closeBalance.toLocaleString()} CLOSE</div><div style="font-size:12px;color:#94a3b8;">$${closeToUsd(state.closeBalance)}</div></div></div>
+                <div class="balance-card"><div><div class="balance-label">CLOSE Staked</div><div class="balance-amount">${state.closeStaked.toLocaleString()} CLOSE</div><div style="font-size:12px;color:#94a3b8;">Tier: ${state.stakeTier.toUpperCase()}</div></div></div>
+                <div class="action-grid">
+                    <button class="action-btn" onclick="openBuyCloseModal()">🛒 Buy CLOSE</button>
+                    <button class="action-btn" onclick="openStakeModal()">🔒 Stake</button>
+                    <button class="action-btn" onclick="openUnstakeModal()">🔓 Unstake</button>
+                    <button class="action-btn" onclick="openSwapModal()">🔄 Swap</button>
+                    <button class="action-btn" onclick="createOSWallet()">➕ New Wallet</button>
+                </div>
+                <div class="dashboard-card" style="margin-top:16px;"><h3>Recent Transactions</h3>${txs.transactions.length?txs.transactions.slice(0,10).map(t=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px;"><span>${t.type.toUpperCase()}</span><span>${t.amount.toLocaleString()} CLOSE</span><span style="color:var(--text-tertiary);">${new Date(t.created).toLocaleDateString()}</span></div>`).join(''):'<p style="font-size:11px;color:var(--text-tertiary);">No transactions yet.</p>'}</div>
+                <div class="dashboard-card"><h3>Stakes</h3>${stakes.stakes.length?stakes.stakes.map(s=>`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;"><span>${s.amount.toLocaleString()} CLOSE</span><span style="color:${s.status==='active'?'var(--success)':'var(--text-tertiary)'};">${s.status}</span></div>`).join(''):'<p style="font-size:11px;color:var(--text-tertiary);">No stakes yet.</p>'}</div>
+            </div>`;
+    }catch(e){container.innerHTML='<div class="elite-wallet"><h2>💳 OS Wallets</h2><p>Failed to load wallet data.</p></div>'}
+}
+
+function openBuyCloseModal(){
+    document.getElementById('buyCloseModalContent').innerHTML=`
+        <h2>🛒 Get CLOSE Tokens</h2>
+        <p style="color:var(--close-gold);">Minimum purchase: <strong>$${CFG.MIN_PURCHASE.toFixed(2)}</strong> = ${usdToClose(CFG.MIN_PURCHASE).toLocaleString()} CLOSE</p>
+        <p style="font-size:11px;color:var(--text-tertiary);">Price: $${CFG.CLOSE_PRICE} per CLOSE</p>
+        <input type="number" id="purchaseUsd" placeholder="USD amount (min $1)" min="1" step="1" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;" value="1">
+        <p id="purchasePreview" style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">You'll receive: <strong>${usdToClose(1).toLocaleString()} CLOSE</strong></p>
+        <button class="btn btn-gold" onclick="purchaseClose()">Buy CLOSE</button>
+        <button class="btn btn-outline" onclick="closeModal('buyCloseModal')">Cancel</button>
+    `;
+    document.getElementById('purchaseUsd').addEventListener('input',function(){
+        document.getElementById('purchasePreview').innerHTML='You\'ll receive: <strong>'+usdToClose(parseFloat(this.value)||1).toLocaleString()+' CLOSE</strong>';
+    });
+    document.getElementById('buyCloseModal').classList.add('open');
+}
+
+async function purchaseClose(){
+    let usd=parseFloat(document.getElementById('purchaseUsd').value)||1;
+    try{
+        let res=await apiCall('/api/wallet/purchase',{method:'POST',body:JSON.stringify({usd_amount:usd})});
+        state.closeBalance+=res.purchased;localStorage.setItem('close_balance',state.closeBalance);
+        closeModal('buyCloseModal');updateUI();toast(`🪙 Purchased ${res.purchased.toLocaleString()} CLOSE!`);
+    }catch(e){toast('Purchase failed: '+e.message)}
+}
+
+function openStakeModal(){
+    document.getElementById('stakeModalContent').innerHTML=`
+        <h2>🔒 Stake CLOSE</h2>
+        <p style="font-size:11px;color:var(--text-tertiary);">Staking unlocks tier benefits and earns rewards.</p>
+        <p style="font-size:11px;">Builder: ${CFG.STAKE_BUILDER.toLocaleString()} CLOSE | Pro: ${CFG.STAKE_PRO.toLocaleString()} CLOSE | Enterprise: ${CFG.STAKE_ENTERPRISE.toLocaleString()} CLOSE</p>
+        <input type="number" id="stakeAmount" placeholder="Amount to stake" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <button class="btn btn-gold" onclick="stakeClose()">Stake CLOSE</button>
+        <button class="btn btn-outline" onclick="closeModal('stakeModal')">Cancel</button>
+    `;
+    document.getElementById('stakeModal').classList.add('open');
+}
+
+async function stakeClose(){
+    let amount=parseInt(document.getElementById('stakeAmount').value);
+    if(!amount||amount<=0)return toast('Enter valid amount');
+    try{
+        let res=await apiCall('/api/wallet/stake',{method:'POST',body:JSON.stringify({amount})});
+        state.closeBalance-=amount;state.closeStaked+=amount;state.stakeTier=res.tier;
+        localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);
+        closeModal('stakeModal');updateUI();toast(`🔒 Staked ${amount.toLocaleString()} CLOSE! Tier: ${res.tier.toUpperCase()}`);
+    }catch(e){toast('Stake failed: '+e.message)}
+}
+
+function openUnstakeModal(){
+    document.getElementById('stakeModalContent').innerHTML=`
+        <h2>🔓 Unstake CLOSE</h2>
+        <p style="font-size:11px;color:var(--text-tertiary);">Unstake your CLOSE tokens. 30-day lock period applies.</p>
+        <button class="btn" onclick="unstakeClose()">Unstake All Available</button>
+        <button class="btn btn-outline" onclick="closeModal('stakeModal')">Cancel</button>
+    `;
+    document.getElementById('stakeModal').classList.add('open');
+}
+
+async function unstakeClose(){
+    try{
+        let res=await apiCall('/api/wallet/unstake',{method:'POST',body:JSON.stringify({})});
+        state.closeBalance+=res.unstaked;state.closeStaked-=res.unstaked;state.stakeTier=res.tier;
+        localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);
+        closeModal('stakeModal');updateUI();toast(`🔓 Unstaked ${res.unstaked.toLocaleString()} CLOSE!`);
+    }catch(e){toast('Unstake failed: '+e.message)}
+}
+
+function openSwapModal(){
+    document.getElementById('swapModalContent').innerHTML=`
+        <h2>🔄 Swap Tokens</h2>
+        <select id="swapChain" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+            ${Object.entries(CFG.CHAINS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}
+        </select>
+        <input type="text" id="swapFrom" placeholder="From token address" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="text" id="swapTo" placeholder="To token address" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="text" id="swapAmount" placeholder="Amount" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <button class="btn" onclick="getSwapQuote()">Get Quote</button>
+        <div id="swapQuoteResult" style="margin-top:10px;"></div>
+        <button class="btn btn-outline" onclick="closeModal('swapModal')">Cancel</button>
+    `;
+    document.getElementById('swapModal').classList.add('open');
+}
+
+async function getSwapQuote(){
+    let chain=document.getElementById('swapChain').value;
+    let from=document.getElementById('swapFrom').value.trim();
+    let to=document.getElementById('swapTo').value.trim();
+    let amount=document.getElementById('swapAmount').value.trim();
+    if(!from||!to||!amount)return toast('Fill all fields');
+    try{
+        let res=await apiCall(`/api/swap/quote?chain=${chain}&from_token=${from}&to_token=${to}&amount=${amount}`);
+        document.getElementById('swapQuoteResult').innerHTML=`<p>Estimated output: <strong>${res.to_amount}</strong> ${res.to_token}</p><p style="font-size:10px;">Gas: ${res.estimated_gas}</p>`;
+    }catch(e){document.getElementById('swapQuoteResult').innerHTML='<p style="color:var(--danger);">Quote failed</p>'}
+}
+
+async function createOSWallet(){
+    try{
+        let res=await apiCall('/api/wallet/create',{method:'POST',body:JSON.stringify({chain:'polygon',label:'Primary Wallet'})});
+        state.walletAddress=res.address;localStorage.setItem('wallet_address',res.address);
+        toast('💳 Wallet created: '+res.address.slice(0,6)+'...'+res.address.slice(-4));
+        renderWallet();
+    }catch(e){toast('Wallet creation failed')}
+}
+
+// ==================== PORTFOLIO ====================
+function openPortfolio(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.add('open');loadPortfolio()}
+function closePortfolio(){document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
+async function loadPortfolio(){
+    try{
+        let d=await apiCall('/api/portfolio');
+        let html='<h2>📁 Portfolio</h2><button class="btn" onclick="showPortfolioCreate()">+ New Note</button><div style="margin-top:16px;">';
+        d.items.forEach(i=>{html+=`<div class="dashboard-card" onclick="openPortfolioItem('${i.id}')"><div style="font-weight:600;">${escapeHtml(i.name||'Untitled')}</div><div style="font-size:11px;color:var(--text-tertiary);">${escapeHtml((i.content||'').substring(0,120))}</div></div>`;});
+        html+='</div>';
+        document.getElementById('portfolioFullContent').innerHTML=html;
+    }catch(e){document.getElementById('portfolioFullContent').innerHTML='<p>Failed to load portfolio.</p>'}
+}
+function showPortfolioCreate(){
+    document.getElementById('portfolioFullContent').innerHTML=`<input type="text" id="portName" placeholder="Title" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"><textarea id="portContent" placeholder="Content" class="auth-input" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"></textarea><button class="btn" onclick="savePortfolioItem()">Save</button><button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
+}
+async function savePortfolioItem(){
+    let name=document.getElementById('portName').value.trim(),content=document.getElementById('portContent').value;
+    if(!name||!content){toast('Title and content required');return}
+    await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name,folder:'General',tags:[],attachments:[],content,chat_id:null})});
+    toast('Saved');loadPortfolio();
+}
+function openPortfolioItem(id){/* View single item */}
+
+// ==================== WORKSPACES ====================
+function openWorkspaceCreateModal(){
+    document.getElementById('workspaceCreateModalContent').innerHTML=`
+        <h2>Create Work Area</h2>
+        <input type="text" id="wsName" placeholder="Name" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="text" id="wsCode" placeholder="Room code" class="auth-input" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <button class="btn" onclick="createWorkspace()">Create</button>
+        <button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>
+    `;
+    document.getElementById('workspaceCreateModal').classList.add('open');
+}
+async function createWorkspace(){
+    let name=document.getElementById('wsName').value.trim(),code=document.getElementById('wsCode').value.trim();
+    if(!name){toast('Name required');return}
+    try{await apiCall('/api/hub/rooms',{method:'POST',body:JSON.stringify({name,room_code:code})});toast('Created');closeModal('workspaceCreateModal')}catch(e){toast('Failed')}
+}
+
+// ==================== DEVELOPER ====================
+function openDeveloperPage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('developerFullPage').classList.add('open');document.getElementById('developerContent').innerHTML='<h2>⚙️ Developer</h2><p>API access for Pro and Enterprise tiers.</p>'}
+function closeDeveloperPage(){document.getElementById('developerFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
+
+// ==================== FOUNDER DASHBOARD ====================
+async function openFounderDashboard(){
+    hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('founderDashboardPage').classList.add('open');
+    try{
+        let d=await apiCall('/api/admin/dashboard');
+        document.getElementById('founderDashboardContent').innerHTML=`
+            <h2>📊 Dashboard</h2>
+            <div class="grid-2">
+                <div class="dashboard-card"><h3>Total Users</h3><div class="big-number">${d.total_users}</div></div>
+                <div class="dashboard-card"><h3>Active Today</h3><div class="big-number">${d.active_today}</div></div>
+                <div class="dashboard-card"><h3>CLOSE Circulating</h3><div class="big-number">${(d.close_circulating||0).toLocaleString()}</div></div>
+                <div class="dashboard-card"><h3>CLOSE Staked</h3><div class="big-number">${(d.close_staked||0).toLocaleString()}</div></div>
+                <div class="dashboard-card"><h3>CLOSE Burned</h3><div class="big-number">${(d.close_burned||0).toLocaleString()}</div></div>
+                <div class="dashboard-card"><h3>Revenue (USD)</h3><div class="big-number">$${(d.total_revenue_usd||0).toFixed(2)}</div></div>
+            </div>`;
+    }catch(e){document.getElementById('founderDashboardContent').innerHTML='<p>Access denied.</p>'}
+}
+function closeFounderDashboard(){document.getElementById('founderDashboardPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
+
+// ==================== PROFILE ====================
+function openProfileModal(){
+    document.getElementById('profileModalContent').innerHTML=`
+        <h2>Account Settings</h2>
+        <p><strong>${state.user?.name||state.user?.email||'Guest'}</strong></p>
+        <p>CLOSE Balance: <strong>${state.closeBalance.toLocaleString()}</strong> ($${closeToUsd(state.closeBalance)})</p>
+        <p>Staked: <strong>${state.closeStaked.toLocaleString()}</strong> | Tier: <strong>${state.stakeTier.toUpperCase()}</strong></p>
+        ${state.user?`<button class="btn btn-outline" onclick="logout()">Sign Out</button>`:`<button class="btn btn-gold" onclick="closeModal('profileModal');showSignupModal()">Create Wallet — Get 2,000 CLOSE</button>`}
+        <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>
+    `;
+    document.getElementById('profileModal').classList.add('open');
+}
+
+// ==================== LEGAL ====================
+async function openPrivacyModal(){
+    try{
+        let d=await apiCall('/api/legal/privacy');
+        document.getElementById('privacyModalContent').innerHTML=`<h2>Privacy Policy</h2><div>${d.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
+        document.getElementById('privacyModal').classList.add('open');
+    }catch(e){}
+}
+async function openTermsModal(){
+    try{
+        let d=await apiCall('/api/legal/terms');
+        document.getElementById('termsModalContent').innerHTML=`<h2>Terms of Service</h2><div>${d.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
+        document.getElementById('termsModal').classList.add('open');
+    }catch(e){}
+}
+
+// ==================== HELPERS ====================
 function hideAllViews(){
-    ['walletFullPage','portfolioFullPage','researchHubFullPage','developerFullPage','founderDashboardPage'].forEach(id=>{
+    ['walletFullPage','portfolioFullPage','developerFullPage','founderDashboardPage'].forEach(id=>{
         document.getElementById(id).classList.remove('open');
     });
     document.getElementById('chatView').style.display='flex';
 }
 
-// ==================== NOTIFICATIONS ====================
-async function fetchNotifications(){
-    if(!state.user)return;
-    try{let d=await apiCall('/api/notifications');state.notifications=d.notifications||[];state.unreadCount=state.notifications.filter(n=>!n.read).length;updateNotifBadge();renderNotifList()}catch(e){}
-}
-function updateNotifBadge(){
-    let badge=document.getElementById('notifBadge');
-    badge.textContent=state.unreadCount||'0';
-    badge.style.display=state.unreadCount?'flex':'none';
-}
-function openNotifPanel(){document.getElementById('notifPanel').classList.toggle('open')}
-function closeNotifPanel(){document.getElementById('notifPanel').classList.remove('open')}
-function renderNotifList(){
-    let list=document.getElementById('notifList');
-    if(state.notifications.length===0){list.innerHTML='<div class="notif-empty">No notifications</div>';return}
-    list.innerHTML=state.notifications.map(n=>'<div class="notif-item '+(n.read?'':'unread')+'"><div class="notif-message">'+n.message+'<div class="notif-time">'+new Date(n.created).toLocaleString()+'</div></div></div>').join('');
-}
-async function markAllRead(){
-    try{await apiCall('/api/notifications/read',{method:'POST'});state.notifications.forEach(n=>n.read=true);state.unreadCount=0;updateNotifBadge();renderNotifList()}catch(e){}
+function toggleCollapsible(key){
+    let content=document.getElementById(key+'Content');
+    let arrow=document.getElementById(key+'Arrow');
+    content.classList.toggle('open');
+    arrow.style.transform=content.classList.contains('open')?'rotate(180deg)':'rotate(0deg)';
 }
 
-// ==================== VOICE ====================
+function toggleSidebar(){
+    let s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    if(window.innerWidth<=768){s.classList.toggle('open');o.classList.toggle('open')}else{s.classList.toggle('collapsed')}
+}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
+
+function openNotifPanel(){document.getElementById('notifPanel').classList.toggle('open')}
+function closeNotifPanel(){document.getElementById('notifPanel').classList.remove('open')}
+
 function startVoice(){
     if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){toast('Voice not supported');return}
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     const rec=new SR();rec.lang='en-US';rec.interimResults=false;
-    rec.start(); toast('🎤 Listening...');
+    rec.start();toast('🎤 Listening...');
     rec.onresult=e=>{document.getElementById('messageInput').value=e.results[0][0].transcript;toast('Voice captured!')};
     rec.onerror=e=>toast('Voice error: '+e.error);
 }
 
-// ==================== FILE UPLOAD ====================
 async function triggerFileUpload(){
     if(!state.user){toast('Sign in to upload files');return}
-    let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
+    let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
     inp.onchange=async e=>{
         let file=e.target.files[0];if(!file)return;
         if(file.size/(1024*1024)>60){toast('Max 60MB');return}
         let fd=new FormData();fd.append('file',file);
         try{
-            let res=await fetchWithTimeout(CFG.API+'/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+state.accessToken},body:fd},30000);
+            let res=await fetch(CFG.API+'/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+state.token},body:fd});
             let data=await res.json();
             toast('Uploaded: '+file.name);
             state.messages.push({role:'user',content:`[Uploaded document: ${file.name}]\n\nPlease analyze this document.`});
-            renderMessages(); sendMessage();
+            renderMessages();sendMessage();
         }catch(e){toast('Upload failed')}
     };
     inp.click();
 }
 
-// ==================== COLLAPSIBLES ====================
-let collapsibleState = {appearance:false,about:false,workspace:false};
-function toggleCollapsible(key){
-    collapsibleState[key]=!collapsibleState[key];
-    document.getElementById(key+'Content').classList.toggle('open',collapsibleState[key]);
-    document.getElementById(key+'Arrow').style.transform=collapsibleState[key]?'rotate(180deg)':'rotate(0deg)';
-}
-
-// ==================== WALLET ====================
-function openWallet(){
-    if(!state.user){toast('Sign in to access OS Wallet');return}
-    hideAllViews(); document.getElementById('chatView').style.display='none'; document.getElementById('walletFullPage').classList.add('open');
-    renderWallet();
-}
-function closeWallet(){document.getElementById('walletFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
-async function renderWallet(){
-    const container=document.getElementById('walletContainer');
-    const hasWallet=state.walletEncrypted&&state.walletSalt!==undefined;
-    let address=state.walletAddress||'';
-    let html='<div class="elite-wallet"><h2>💳 OS Wallets</h2>';
-    if(!hasWallet){
-        html+=`
-        <div class="dashboard-card"><h3>Create OS Wallet</h3><p>Generate a new seed phrase and secure it with a password.</p>
-        <input type="password" id="osWalletPassword" class="auth-input" placeholder="Password (min 10 chars)">
-        <button class="btn" onclick="createOSWallet()">Create OS Wallet</button>
-        <p style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">Already have a seed? <a onclick="importOSWallet()">Import</a></p>
-        <div style="margin-top:12px;"><button class="btn btn-outline" onclick="connectMetaMask()">Connect MetaMask</button></div></div>`;
-    }else{
-        html+=`
-        <div class="balance-card"><div><div class="balance-label">Wallet $CLOSE</div><div class="balance-amount" id="osCapOnChain">...</div></div>
-        <div><div class="balance-label">Wallet POL</div><div class="balance-amount" id="osMaticBalance">...</div></div>
-        <div><div class="balance-label">Staked $CLOSE</div><div class="balance-amount" id="osCapStaked">${state.capStaked.toLocaleString()}</div></div></div>
-        <div style="margin:16px 0;"><span id="addressDisplay">${address?(state.addressVisible?address:address.slice(0,6)+'...'+address.slice(-4)):'Locked'}</span>
-        <button onclick="copyAddress()" style="background:none;border:none;color:var(--accent);cursor:pointer;">📋</button>
-        <button onclick="toggleAddressVisibility()">👁️</button></div>
-        <div class="action-grid">
-            <button class="action-btn" onclick="unlockOSWallet()">🔓 Unlock</button>
-            <button class="action-btn" onclick="walletSend()">Send</button>
-            <button class="action-btn" onclick="walletReceive()">Receive</button>
-            <button class="action-btn" onclick="walletStake()">Stake</button>
-            <button class="action-btn" onclick="walletUnstake()">Unstake</button>
-            <button class="action-btn" onclick="openTradeModal()">Swap</button>
-            <button class="action-btn" onclick="openBuyCapModal()">🛒 Buy $CLOSE</button>
-        </div>
-        <div style="margin-top:16px;"><button class="btn btn-outline" onclick="openActivityModal()">Activity</button></div>
-        <div class="token-list" id="tokenBalancesList">Loading tokens...</div>
-        <div style="margin-top:8px;display:flex;gap:8px;"><input type="text" id="customTokenAddress" class="auth-input" placeholder="Add token address"><button class="btn" style="width:auto;" onclick="addCustomToken()">+</button></div>
-        <div style="margin-top:12px;"><button class="btn btn-outline" onclick="openAIScanner()">AI Token Scanner</button></div>
-        </div>`;
-        html+=`<div class="dashboard-card"><h3>Markets</h3><div class="research-hub-tabs">
-            <div class="research-hub-tab active" onclick="switchMarketTab('crypto')">Crypto</div>
-            <div class="research-hub-tab" onclick="switchMarketTab('stocks')">Stocks</div>
-            <div class="research-hub-tab" onclick="switchMarketTab('commodities')">Commodities</div>
-        </div><div id="marketContent">Loading...</div></div>`;
-        if(hasWallet&&address){fetchMaticBalance(address);fetchAllTokenBalances(address);fetchCapBalance();startTicker();}
-    }
-    container.innerHTML=html;
-    if(hasWallet&&address) switchMarketTab('crypto');
-}
-
-async function createOSWallet(){
-    let password=document.getElementById('osWalletPassword').value;
-    if(!password||password.length<10) return toast('Password min 10 chars');
-    try{
-        let wallet=ethers.Wallet.createRandom();
-        let encrypted=await wallet.encrypt(password);
-        state.walletEncrypted=encrypted; state.walletSalt=''; state.walletAddress=wallet.address;
-        localStorage.setItem('os_encrypted',encrypted); localStorage.setItem('os_salt',''); localStorage.setItem('os_address',wallet.address);
-        await apiCall('/api/wallet/create',{method:'POST',body:JSON.stringify({password})});
-        toast('OS Wallet created! Save your seed: '+wallet.mnemonic.phrase);
-        renderWallet();
-    }catch(e){toast('Creation failed: '+e.message)}
-}
-async function importOSWallet(){
-    let seed=prompt('Enter your seed phrase:');
-    if(!seed)return;
-    let password=prompt('Set a password to encrypt this wallet:');
-    if(!password||password.length<10) return toast('Password min 10 chars');
-    try{
-        let wallet=ethers.Wallet.fromMnemonic(seed);
-        let encrypted=await wallet.encrypt(password);
-        state.walletEncrypted=encrypted; state.walletSalt=''; state.walletAddress=wallet.address;
-        localStorage.setItem('os_encrypted',encrypted); localStorage.setItem('os_salt',''); localStorage.setItem('os_address',wallet.address);
-        await apiCall('/api/wallet/import',{method:'POST',body:JSON.stringify({seed,password})});
-        toast('Wallet imported!');
-        renderWallet();
-    }catch(e){toast('Import failed: '+e.message)}
-}
-async function unlockOSWallet(){
-    let password=prompt('Wallet password:');
-    if(!password)return;
-    try{
-        let wallet=await ethers.Wallet.fromEncryptedJson(state.walletEncrypted,password);
-        state.walletSigner=wallet.connect(new ethers.providers.JsonRpcProvider(CFG.POLYGON_RPC));
-        state.walletAddress=wallet.address;
-        toast('Wallet unlocked');
-    }catch(e){toast('Wrong password');}
-}
-async function fetchMaticBalance(address){
-    try{
-        let provider=new ethers.providers.JsonRpcProvider(CFG.POLYGON_RPC);
-        let bal=await provider.getBalance(address);
-        document.getElementById('osMaticBalance').innerText=ethers.utils.formatEther(bal)+' POL';
-    }catch(e){document.getElementById('osMaticBalance').innerText='POL unavailable';}
-}
-async function fetchAllTokenBalances(address){
-    const tokens=[{symbol:'USDT',address:'0xc2132D05D31c914a87C6611C10748AEb04B58e8F'},{symbol:'USDC',address:'0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'},{symbol:'WETH',address:'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'}];
-    let html='';
-    try{
-        if(CFG.CLOSE_ADDRESS){
-            let capContract=new ethers.Contract(CFG.CLOSE_ADDRESS,['function balanceOf(address) view returns (uint256)'],new ethers.providers.JsonRpcProvider(CFG.POLYGON_RPC));
-            let capBal=await capContract.balanceOf(address);
-            document.getElementById('osCapOnChain').innerText=ethers.utils.formatEther(capBal)+' $CLOSE';
-        }
-        for(let token of tokens){
-            let contract=new ethers.Contract(token.address,['function balanceOf(address) view returns (uint256)'],new ethers.providers.JsonRpcProvider(CFG.POLYGON_RPC));
-            let bal=await contract.balanceOf(address);
-            html+=`<div class="token-list-item"><span>${token.symbol}</span><span>${ethers.utils.formatUnits(bal,6)}</span></div>`;
-        }
-        document.getElementById('tokenBalancesList').innerHTML=html||'No tokens found.';
-    }catch(e){document.getElementById('tokenBalancesList').innerHTML='Error loading tokens';}
-}
-function addCustomToken(){
-    let addr=document.getElementById('customTokenAddress').value.trim();
-    if(!addr)return;
-    state.customTokens.push(addr);
-    localStorage.setItem('custom_tokens',JSON.stringify(state.customTokens));
-    fetchAllTokenBalances(state.walletAddress);
-}
-function copyAddress(){if(state.walletAddress){navigator.clipboard.writeText(state.walletAddress);toast('Address copied!')}}
-function toggleAddressVisibility(){state.addressVisible=!state.addressVisible;renderWallet();}
-function walletSend(){
-    if(!state.walletSigner) return unlockOSWallet().then(()=>walletSend());
-    let to=prompt('Recipient address:'), amount=prompt('Amount ($CLOSE):');
-    if(!to||!amount)return;
-    let contract=new ethers.Contract(CFG.CLOSE_ADDRESS,['function transfer(address,uint256)'],state.walletSigner);
-    contract.transfer(to,ethers.utils.parseUnits(amount,18)).then(tx=>toast('Sent: '+tx.hash)).catch(e=>toast('Send failed: '+e.message));
-}
-function walletReceive(){prompt('Your Polygon address:', state.walletAddress||'Unlock wallet first');}
-async function walletStake(){toast('Stake by sending $CLOSE to the deposit address, then verify.');}
-async function walletUnstake(){
-    let amount=prompt('Amount to unstake:');
-    if(!amount)return;
-    let dest=state.walletAddress||prompt('Your Polygon address to receive $CLOSE:');
-    if(!dest)return;
-    try{let res=await apiCall('/api/wallet/withdraw',{method:'POST',body:JSON.stringify({amount:parseInt(amount),address:dest})});toast('Withdrawal requested.');fetchCapBalance();}catch(e){toast('Unstake failed: '+e.message)}
-}
-async function fetchCapBalance(){
-    try{
-        let res=await apiCall('/api/wallet/stake');
-        state.capStaked=parseInt(res.staked); state.capTier=res.tier;
-        updateProfileUI(); updateUIBasedOnTier();
-        if(document.getElementById('osCapStaked')) document.getElementById('osCapStaked').innerText=state.capStaked.toLocaleString();
-    }catch(e){}
-}
-async function fetchWalletStatus(){
-    if(state.walletEncrypted&&state.walletSalt!==undefined){
-        state.walletAddress=localStorage.getItem('os_address')||'';
-        if(state.walletAddress){fetchCapBalance();if(document.getElementById('osMaticBalance')) fetchMaticBalance(state.walletAddress);}
-    }
-}
-function startTicker(){
-    const tickerEl=document.getElementById('tickerMarquee');
-    if(!tickerEl)return;
-    const update=async()=>{
-        try{
-            let r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron&vs_currencies=usd&include_24hr_change=true');
-            let data=await r.json();
-            let names={bitcoin:'BTC',ethereum:'ETH',ripple:'XRP',solana:'SOL',cardano:'ADA',dogecoin:'DOGE','avalanche-2':'AVAX',chainlink:'LINK',polkadot:'DOT',tron:'TRX'};
-            let items='';
-            for(let[k,v] of Object.entries(data)){
-                let sym=names[k]||k.toUpperCase(), change=v.usd_24h_change?.toFixed(2)||'0', cls=change>=0?'positive':'negative';
-                items+=`<span class="ticker-item"><span class="ticker-price">${sym} $${v.usd}</span> <span class="ticker-change ${cls}">${change}%</span></span>`;
-            }
-            tickerEl.innerHTML=`<div class="ticker-track">${items}${items}</div>`;
-        }catch(e){}
-    };
-    update(); setInterval(update,30000);
-}
-
-async function switchMarketTab(tab){
-    let content=document.getElementById('marketContent');
-    content.innerHTML='Loading...';
-    try{
-        if(tab==='crypto'){
-            let data=await apiCall('/api/market/crypto');
-            let html='<div class="ticker-marquee" id="tickerMarquee"></div>';
-            html+='<div style="max-height:400px;overflow-y:auto;">'+data.map(c=>`<div class="token-list-item"><span>${c.name} (${c.symbol})</span><span>$${c.current_price}</span></div>`).join('')+'</div>';
-            content.innerHTML=html; startTicker();
-        }else if(tab==='stocks'){
-            let data=await apiCall('/api/market/stocks');
-            content.innerHTML=data.map(s=>`<div class="token-list-item"><span>${s.symbol}</span><span>$${s.c}</span></div>`).join('');
-        }else if(tab==='commodities'){
-            let data=await apiCall('/api/market/commodities');
-            content.innerHTML=JSON.stringify(data);
-        }
-    }catch(e){content.innerHTML='Failed to load market data.';}
-}
-
-function openTradeModal(){
-    let modal=document.getElementById('swapModalContent');
-    modal.innerHTML=`<h2>Swap Tokens</h2><select id="swapFromToken"><option value="CLOSE">$CLOSE</option></select><select id="swapToToken"><option value="MATIC">MATIC</option><option value="USDT">USDT</option><option value="WETH">WETH</option></select><input type="number" id="swapAmount" placeholder="Amount"><button class="btn" onclick="getSwapQuote()">Get Quote</button><div id="swapQuoteResult"></div><button class="btn btn-outline" onclick="closeModal('swapModal')">Cancel</button>`;
-    document.getElementById('swapModal').classList.add('open');
-}
-async function getSwapQuote(){
-    let from=document.getElementById('swapFromToken').value, to=document.getElementById('swapToToken').value, amount=document.getElementById('swapAmount').value;
-    if(!amount)return;
-    let res=await apiCall(`/api/swap/quote?fromToken=${from}&toToken=${to}&amount=${ethers.utils.parseEther(amount).toString()}`);
-    document.getElementById('swapQuoteResult').innerHTML=`Estimated: ${ethers.utils.formatEther(res.estimatedAmount)} ${to}. <button class="btn" onclick="executeSwap('${res.tx.to}','${res.tx.data}','${res.tx.value}')">Confirm Swap</button>`;
-}
-async function executeSwap(to,data,value){
-    if(!state.walletSigner) return unlockOSWallet().then(()=>executeSwap(to,data,value));
-    try{let tx=await state.walletSigner.sendTransaction({to,data,value:value||'0x0'});toast('Swap sent: '+tx.hash);}catch(e){toast('Swap failed: '+e.message)}
-}
-
-function openBuyCapModal(){
-    let modal=document.getElementById('buyCapModalContent');
-    modal.innerHTML=`<h2>🛒 Buy $CLOSE</h2><p>Send POL to the address below, then paste TXID.</p><p>Rate: <strong>${state.capMaticRate.toLocaleString()}</strong> per 1 POL</p><input type="number" id="buyCapAmount" class="auth-input" placeholder="Amount of $CLOSE"><p>Equivalent: <span id="maticNeeded">0</span> POL</p><p>Payment address: <strong>${CFG.HOT_WALLET}</strong></p><button class="btn" onclick="navigator.clipboard.writeText('${CFG.HOT_WALLET}');toast('Address copied!')">Copy Address</button><input type="text" id="buyTxHash" class="auth-input" placeholder="TXID"><button class="btn" onclick="verifyPurchase()">Verify Payment</button><button class="btn btn-outline" onclick="closeModal('buyCapModal')">Cancel</button>`;
-    document.getElementById('buyCapAmount').addEventListener('input',function(){document.getElementById('maticNeeded').innerText=(parseFloat(this.value)/state.capMaticRate).toFixed(6)});
-    document.getElementById('buyCapModal').classList.add('open');
-}
-async function verifyPurchase(){
-    let cap=document.getElementById('buyCapAmount').value, tx=document.getElementById('buyTxHash').value;
-    if(!cap||!tx)return toast('Fill all fields');
-    try{await apiCall('/api/wallet/deposit',{method:'POST',body:JSON.stringify({tx_hash:tx,signed_message:'dummy'})});toast('Deposit verified!');fetchCapBalance();closeModal('buyCapModal');}catch(e){toast('Verification failed')}
-}
-
-async function openActivityModal(){
-    let modal=document.getElementById('activityModalContent');
-    modal.innerHTML='<h2>Activity</h2><div id="activityList">Loading...</div><button class="btn btn-outline" onclick="closeModal(\'activityModal\')">Close</button>';
-    document.getElementById('activityModal').classList.add('open');
-    try{
-        let data=await apiCall('/api/wallet/activity');
-        let html=data.transactions.length?'<table class="admin-table"><tr><th>Type</th><th>Amount</th><th>Tx</th><th>Status</th></tr>'+data.transactions.map(tx=>`<tr><td>${tx.type}</td><td>${tx.amount}</td><td>${tx.tx_hash?.substring(0,10)||''}</td><td>${tx.status}</td></tr>`).join('')+'</table>':'<p>No transactions.</p>';
-        document.getElementById('activityList').innerHTML=html;
-    }catch(e){document.getElementById('activityList').innerHTML='Failed to load.';}
-}
-
-function openAIScanner(){
-    let addr=prompt('Enter Polygon token address:');
-    if(!addr)return;
-    apiCall(`/api/scanner/analyze?address=${addr}`).then(data=>{
-        state.messages.push({role:'user',content:`Analyze token ${addr}`});
-        state.messages.push({role:'assistant',content:data.ai_analysis});
-        hideAllViews(); document.getElementById('chatView').style.display='flex'; renderMessages();
-        toast(`Token: ${data.name} (${data.symbol}) scanned.`);
-    }).catch(e=>toast('Scanner error'));
-}
-
-// ==================== PORTFOLIO ====================
-let portfolioActiveChat=null;
-function openPortfolio(){if(!state.user){toast('Sign in');return}hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.add('open');loadPortfolioFull()}
-function closePortfolioFullPage(){document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
-async function loadPortfolioFull(){try{let d=await apiCall('/api/portfolio');state.portfolio=d.items||[];renderPortfolioFullPage()}catch(e){toast('Could not load Portfolio')}}
-function renderPortfolioFullPage(){
-    let chatIds=[...new Set(state.portfolio.map(i=>i.chat_id).filter(id=>id))];
-    if(!portfolioActiveChat||!chatIds.includes(portfolioActiveChat))portfolioActiveChat=chatIds.length>0?chatIds[0]:'General';
-    let tabsHtml='<div class="research-hub-tabs">';
-    tabsHtml+=`<div class="research-hub-tab${portfolioActiveChat==='General'?' active':''}" onclick="switchPortfolioTab('General')">General</div>`;
-    chatIds.forEach(cid=>{tabsHtml+=`<div class="research-hub-tab${portfolioActiveChat===cid?' active':''}" onclick="switchPortfolioTab('${cid}')">Chat</div>`});
-    tabsHtml+='</div>';
-    let filtered=portfolioActiveChat==='General'?state.portfolio.filter(i=>!i.chat_id):state.portfolio.filter(i=>i.chat_id===portfolioActiveChat);
-    let itemsHtml=filtered.length?filtered.map(i=>`<div class="saved-card" onclick="openPortfolioItem('${i.id}')"><div class="saved-card-title">${escapeHtml(i.name||'Untitled')}</div><div class="saved-card-preview">${escapeHtml((i.content||'').substring(0,120))}</div></div>`).join(''):'<p style="text-align:center;color:var(--text-tertiary);">No items.</p>';
-    document.getElementById('portfolioFullContent').innerHTML=`${tabsHtml}<div style="margin-top:16px;">${itemsHtml}</div><div style="display:flex;gap:10px;margin-top:16px;"><button class="btn" onclick="showPortfolioCreate()">+ New Note</button><button class="btn btn-outline" onclick="deleteAllInView('${portfolioActiveChat}')">Delete all in tab</button></div>`;
-}
-function switchPortfolioTab(tabId){portfolioActiveChat=tabId;renderPortfolioFullPage()}
-function showPortfolioCreate(){document.getElementById('portfolioFullContent').innerHTML=`<input type="text" id="portNameFull" class="auth-input" placeholder="Title"><textarea id="portContentFull" class="auth-input" rows="6" placeholder="Content"></textarea><button class="btn" onclick="savePortfolioItemFull()">Save</button><button class="btn btn-outline" onclick="renderPortfolioFullPage()">Cancel</button>`}
-async function savePortfolioItemFull(){
-    let name=document.getElementById('portNameFull').value.trim(), content=document.getElementById('portContentFull').value;
-    if(!name||!content){toast('Title and content required');return}
-    await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name,folder:'General',tags:[],attachments:[],content,chat_id:null})});
-    toast('Saved'); loadPortfolioFull();
-}
-function openPortfolioItem(id){let item=state.portfolio.find(i=>i.id===id);if(!item)return;document.getElementById('portfolioFullContent').innerHTML=`<h3>${escapeHtml(item.name||'Untitled')}</h3><div style="white-space:pre-wrap;margin:16px 0;">${escapeHtml(item.content||'')}</div><button class="btn btn-outline" onclick="renderPortfolioFullPage()">Back</button>`}
-async function deleteAllInView(tab){let ids=tab==='General'?state.portfolio.filter(i=>!i.chat_id).map(i=>i.id):state.portfolio.filter(i=>i.chat_id===tab).map(i=>i.id);if(!confirm('Delete all items in this tab?'))return;for(let id of ids)try{await apiCall('/api/portfolio/'+id,{method:'DELETE'})}catch(e){}toast('Deleted');loadPortfolioFull()}
-
-// ==================== RESEARCH HUB ====================
-function openResearchHub(){if(!state.user){toast('Sign in');return}hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('researchHubFullPage').classList.add('open');loadResearchHub('topics')}
-function closeResearchHub(){document.getElementById('researchHubFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
-async function loadResearchHub(tab){
-    let content=document.getElementById('researchHubContent');
-    if(tab==='topics'){
-        let data=await apiCall('/api/research/topics');
-        let domains=[...new Set(data.topics.map(t=>t.domain))];
-        content.innerHTML=`<h2>Research Hub</h2><div class="research-hub-tabs"><div class="research-hub-tab active" onclick="loadResearchHub('topics')">Topics</div><div class="research-hub-tab" onclick="loadResearchHub('projects')">My Projects</div></div><select id="topicDomainFilter" onchange="filterTopics()" class="auth-input"><option value="">All Domains</option>${domains.map(d=>`<option value="${d}">${d}</option>`).join('')}</select><div id="topicList">${data.topics.map(t=>`<div class="saved-card" onclick="startTopicChat('${t.id}')"><div class="saved-card-title">${t.title}</div><div class="saved-card-preview">${t.description||''}</div></div>`).join('')}</div>`;
-    }else{
-        let proj=await apiCall('/api/research/projects');
-        content.innerHTML=`<h2>Research Hub</h2><div class="research-hub-tabs"><div class="research-hub-tab" onclick="loadResearchHub('topics')">Topics</div><div class="research-hub-tab active" onclick="loadResearchHub('projects')">My Projects</div></div><button class="btn" onclick="createResearchProject()">+ New Project</button><div>${proj.projects.map(p=>`<div class="saved-card" onclick="newChat();closeResearchHub();state.messages=[{role:'user',content:'Let\\'s explore ${p.name}'}];sendMessage()"><div class="saved-card-title">${p.name}</div></div>`).join('')||'No projects yet.'}</div>`;
-    }
-}
-function filterTopics(){}
-async function createResearchProject(){let name=prompt('Project name:');if(!name)return;await apiCall('/api/research/projects',{method:'POST',body:JSON.stringify({name})});loadResearchHub('projects');}
-function startTopicChat(topicId){}
-
-// ==================== WORKSPACES ====================
-async function loadWorkspaces(){
-    if(!state.user)return;
-    try{let d=await apiCall('/api/workspace/my');state.workspaces=d.workspaces||[];renderWorkspaceList()}catch(e){}
-}
-function renderWorkspaceList(){
-    let list=document.getElementById('workspaceList');
-    list.innerHTML=state.workspaces.map(w=>`<div class="workspace-item" onclick="openWorkspaceMessages('${w.room_code}')"><span>${w.name}</span><span style="font-size:9px;">${w.room_code}</span></div>`).join('')||'<div style="padding:6px 14px 6px 42px;font-size:10px;">No workspaces</div>';
-}
-function openWorkspaceCreateModal(){
-    document.getElementById('workspaceCreateModalContent').innerHTML=`<h2>Create Work Area</h2><input type="text" id="wsName" class="auth-input" placeholder="Name"><input type="text" id="wsCode" class="auth-input" placeholder="Room code"><button class="btn" onclick="createWorkspace()">Create</button><button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;
-    document.getElementById('workspaceCreateModal').classList.add('open');
-}
-async function createWorkspace(){
-    let name=document.getElementById('wsName').value.trim(), code=document.getElementById('wsCode').value.trim();
-    if(!name){toast('Name required');return}
-    try{await apiCall('/api/workspace/create',{method:'POST',body:JSON.stringify({name,room_code:code})});toast('Created');closeModal('workspaceCreateModal');loadWorkspaces()}catch(e){toast('Failed')}
-}
-function openWorkspaceJoinModal(){
-    document.getElementById('workspaceJoinModalContent').innerHTML=`<h2>Join Work Area</h2><input type="text" id="joinRoomCode" class="auth-input" placeholder="Room code"><button class="btn" onclick="joinWorkspace()">Join</button><button class="btn btn-outline" onclick="closeModal('workspaceJoinModal')">Cancel</button>`;
-    document.getElementById('workspaceJoinModal').classList.add('open');
-}
-async function joinWorkspace(){
-    let code=document.getElementById('joinRoomCode').value.trim().toUpperCase();
-    try{await apiCall('/api/workspace/join',{method:'POST',body:JSON.stringify({room_code:code})});toast('Joined');closeModal('workspaceJoinModal');loadWorkspaces()}catch(e){toast('Failed')}
-}
-function openWorkspaceMessages(roomCode){
-    document.getElementById('workspaceMessagesModalContent').innerHTML=`<h2>Work Area: ${roomCode}</h2><div id="workspaceMessageList" style="max-height:50vh;overflow-y:auto;">Loading...</div><div style="display:flex;gap:8px;"><input type="text" id="workspaceMessageInput" class="auth-input" placeholder="Type @CAPITAN for AI..."><button class="btn" style="width:auto;" onclick="sendWorkspaceMessage('${roomCode}')">Send</button></div><button class="btn btn-outline" onclick="closeModal('workspaceMessagesModal')">Close</button>`;
-    document.getElementById('workspaceMessagesModal').classList.add('open');
-    loadWorkspaceMessages(roomCode);
-}
-async function loadWorkspaceMessages(roomCode){
-    try{
-        let d=await apiCall('/api/workspace/rooms/'+roomCode+'/messages');
-        let html=d.messages.map(m=>`<div style="margin-bottom:6px;"><strong>${escapeHtml(m.author)}</strong>${m.is_ai?' (AI)':''}: ${escapeHtml(m.message)}</div>`).join('');
-        document.getElementById('workspaceMessageList').innerHTML=html||'No messages';
-    }catch(e){document.getElementById('workspaceMessageList').innerHTML='Failed to load';}
-}
-async function sendWorkspaceMessage(roomCode){
-    let input=document.getElementById('workspaceMessageInput'), msg=input.value.trim();
-    if(!msg)return;
-    await apiCall('/api/workspace/rooms/'+roomCode+'/messages',{method:'POST',body:JSON.stringify({message:msg})});
-    input.value=''; loadWorkspaceMessages(roomCode);
-}
-
-// ==================== DEVELOPER ====================
-function openDeveloperPage(){if(!state.user||(state.capTier!=='pro'&&state.capTier!=='enterprise'&&!state.is_admin)){toast('Upgrade to Pro');return}hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('developerFullPage').classList.add('open');loadDeveloperTab('keys')}
-function closeDeveloperPage(){document.getElementById('developerFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
-async function loadDeveloperTab(tab){
-    let content=document.getElementById('developerContent');
-    if(tab==='keys'){
-        let keys=await apiCall('/api/developer/keys');
-        content.innerHTML=`<h2>API Keys</h2><button class="btn" onclick="createApiKey()">+ Generate Key</button><div>${keys.keys.map(k=>`<div class="developer-key-card"><span>${k.prefix}</span><button onclick="revokeApiKey('${k.id}')">Revoke</button></div>`).join('')||'No keys'}</div>`;
-    }else if(tab==='webhooks'){
-        let hooks=await apiCall('/api/developer/webhooks');
-        content.innerHTML=`<h2>Webhooks</h2><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div>${hooks.webhooks.map(w=>`<div>${w.url} (${w.events}) <button onclick="deleteWebhook('${w.id}')">Delete</button></div>`).join('')}</div>`;
-    }else if(tab==='embed'){
-        let embed=await apiCall('/api/developer/embed');
-        content.innerHTML=`<h2>Embed</h2><pre>&lt;script src="${embed.script_url}" data-token="${embed.embed_token}"&gt;&lt;/script&gt;</pre>`;
-    }else if(tab==='tokens'){
-        content.innerHTML=`<h2>Stake $CLOSE</h2><p>Staked: ${state.capStaked} (Tier: ${state.capTier})</p><button class="btn" onclick="openWallet()">Open OS Wallet</button>`;
-    }else if(tab==='enterprise'){
-        content.innerHTML=`<h2>Enterprise</h2><p>Contact support.</p>`;
-    }else if(tab==='usage'){
-        content.innerHTML=`<h2>API Usage</h2><p>Coming soon.</p>`;
-    }
-}
-async function createApiKey(){
-    let res=await apiCall('/api/developer/keys',{method:'POST',body:JSON.stringify({})});
-    document.getElementById('apiKeyModalContent').innerHTML=`<div><strong>Your new API key:</strong><pre>${res.key}</pre><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');toast('Copied!');closeModal('apiKeyModal')">Copy</button></div>`;
-    document.getElementById('apiKeyModal').classList.add('open');
-}
-async function revokeApiKey(id){if(confirm('Revoke?')){await apiCall('/api/developer/keys/'+id,{method:'DELETE'});loadDeveloperTab('keys')}}
-function showCreateWebhook(){let url=prompt('Webhook URL:');if(!url)return;let events=prompt('Events:','new_message');if(!events)return;createWebhook(url,events)}
-async function createWebhook(url,events){await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});loadDeveloperTab('webhooks')}
-async function deleteWebhook(id){if(confirm('Delete?')){await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});loadDeveloperTab('webhooks')}}
-
-// ==================== FOUNDER DASHBOARD ====================
-function openFounderDashboard(){
-    if(!state.user?.is_admin){toast('Founder access required');return}
-    hideAllViews(); document.getElementById('chatView').style.display='none'; document.getElementById('founderDashboardPage').classList.add('open');
-    loadFounderDashboard('cap');
-}
-function closeFounderDashboard(){document.getElementById('founderDashboardPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
-async function loadFounderDashboard(tab){
-    let content=document.getElementById('founderDashboardContent');
-    if(tab==='cap'){
-        try{
-            let data=await apiCall('/api/admin/cap/dashboard');
-            content.innerHTML=`<div class="grid-2">
-                <div class="dashboard-card"><h3>Total Staked</h3><div class="big-number">${data.total_staked.toLocaleString()}</div></div>
-                <div class="dashboard-card"><h3>Stakers</h3><div class="big-number">${data.stakers_count}</div></div>
-                <div class="dashboard-card"><h3>DEX Price</h3><div class="big-number">${data.dex_price?data.dex_price.toFixed(6):'N/A'}</div></div>
-                <div class="dashboard-card"><h3>Treasury Balance</h3><div class="big-number">${data.treasury_balance?.toLocaleString()||'N/A'}</div></div>
-            </div>`;
-        }catch(e){content.innerHTML='Failed to load.'}
-    }else{
-        let data=await apiCall('/api/admin/dashboard');
-        content.innerHTML=`<div class="grid-2"><div class="dashboard-card"><h3>Users</h3><div class="big-number">${data.total_users}</div></div><div class="dashboard-card"><h3>Active Today</h3><div class="big-number">${data.active_today}</div></div><div class="dashboard-card"><h3>Total Messages</h3><div class="big-number">${data.total_messages}</div></div></div>`;
-    }
-}
-
-// ==================== LEADERBOARD ====================
-function openLeaderboardModal(){
-    document.getElementById('leaderboardModalContent').innerHTML=`<h2>Leaderboard</h2><div id="lbContent">Loading...</div><button class="btn btn-outline" onclick="closeModal('leaderboardModal')">Close</button>`;
-    document.getElementById('leaderboardModal').classList.add('open');
-    loadLeaderboard('staked');
-}
-async function loadLeaderboard(type){
-    try{
-        let res=await apiCall('/api/leaderboard?type='+type);
-        let html='<div style="display:flex;gap:8px;"><button class="btn btn-outline" onclick="loadLeaderboard(\'staked\')">Staked</button><button class="btn btn-outline" onclick="loadLeaderboard(\'messages\')">Messages</button></div>';
-        html+='<table class="admin-table"><tr><th>Rank</th><th>Name</th><th>'+type+'</th></tr>';
-        res.leaderboard.forEach((u,i)=>{html+=`<tr><td>${i+1}</td><td>${u.name}</td><td>${type==='staked'?u.staked.toLocaleString():u.messages}</td></tr>`;});
-        html+='</table>';
-        document.getElementById('lbContent').innerHTML=html;
-    }catch(e){document.getElementById('lbContent').innerHTML='Failed to load.';}
-}
-
-// ==================== PROFILE ====================
-function openProfileModal(){
-    let modal=document.getElementById('profileModalContent');
-    modal.innerHTML=`
-    <h2>Account Settings</h2>
-    <div style="text-align:center;"><img id="modalAvatar" width="50" height="50" style="border-radius:50%;" src="${state.profilePhoto||document.getElementById('profileAvatar').src}">
-    ${state.user?'<button class="btn" style="width:auto;padding:4px 12px;font-size:11px;margin-top:8px;" onclick="uploadProfilePhoto()">Change</button>':''}</div>
-    <div style="font-weight:600;margin-top:8px;">${state.user?state.user.name||state.user.email:'Guest'}</div>
-    <div style="color:var(--accent);font-size:12px;margin-bottom:12px;">Staked: ${state.capStaked} $CLOSE (Tier: ${state.capTier})</div>
-    ${state.user?`<label>Reasoning Depth</label><input type="range" min="1" max="5" value="${state.reasoningDepth}" class="reasoning-slider" id="depthSlider" oninput="updateDepthCost()"><div class="token-info" id="depthCostInfo">~${Math.round(50*[1,1.5,2,3,4][state.reasoningDepth-1])} tokens / message</div><button class="btn" onclick="saveReasoningDepth()">Save Depth</button>`:''}
-    <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>
-    `;
-    document.getElementById('profileModal').classList.add('open');
-}
-function updateDepthCost(){let d=parseInt(document.getElementById('depthSlider').value);document.getElementById('depthCostInfo').innerText=`~${Math.round(50*[1,1.5,2,3,4][d-1])} tokens / message`;}
-async function saveReasoningDepth(){let d=parseInt(document.getElementById('depthSlider').value);state.reasoningDepth=d;if(state.user){await apiCall('/api/auth/update-profile',{method:'POST',body:JSON.stringify({reasoning_depth:d})});toast('Saved');closeModal('profileModal');}}
-function uploadProfilePhoto(){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=ev=>{state.profilePhoto=ev.target.result;localStorage.setItem('profilePhoto',state.profilePhoto);document.getElementById('profileAvatar').src=state.profilePhoto;document.getElementById('modalAvatar').src=state.profilePhoto;};r.readAsDataURL(f)};inp.click();}
-
-// ==================== PRIVACY / TERMS ====================
-function openPrivacyModal(){fetchWithTimeout(CFG.API+'/api/legal/privacy',{},10000).then(r=>r.json()).then(d=>{document.getElementById('privacyModalContent').innerHTML=`<h2>Privacy Policy</h2><div>${d.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;document.getElementById('privacyModal').classList.add('open');}).catch(e=>toast('Could not load privacy policy'));}
-function openTermsModal(){fetchWithTimeout(CFG.API+'/api/legal/terms',{},10000).then(r=>r.json()).then(d=>{document.getElementById('termsModalContent').innerHTML=`<h2>Terms & Conditions</h2><div>${d.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;document.getElementById('termsModal').classList.add('open');}).catch(e=>toast('Could not load terms'));}
-
-// ==================== GUEST MODALS ====================
-function openGuestSignupModal(){
-    document.getElementById('guestSignupModalContent').innerHTML=`<h2>Create Account</h2><input type="text" id="gsName" class="auth-input" placeholder="Full Name"><input type="email" id="gsEmail" class="auth-input" placeholder="Email"><input type="password" id="gsPassword" class="auth-input" placeholder="Password"><div id="gsError" class="error-msg"></div><button class="btn" onclick="handleGuestSignup()">Create</button><button class="btn btn-outline" onclick="closeModal('guestSignupModal')">Cancel</button>`;
-    document.getElementById('guestSignupModal').classList.add('open');
-}
-function openGuestLoginModal(){
-    document.getElementById('guestLoginModalContent').innerHTML=`<h2>Sign In</h2><input type="email" id="glEmail" class="auth-input" placeholder="Email"><input type="password" id="glPassword" class="auth-input" placeholder="Password"><div id="glError" class="error-msg"></div><button class="btn" onclick="handleGuestLogin()">Sign In</button><button class="btn btn-outline" onclick="closeModal('guestLoginModal')">Cancel</button>`;
-    document.getElementById('guestLoginModal').classList.add('open');
-}
-async function handleGuestSignup(){
-    let n=document.getElementById('gsName').value.trim(),e=document.getElementById('gsEmail').value.trim(),p=document.getElementById('gsPassword').value,err=document.getElementById('gsError');
-    if(!e||!p){err.innerText='Email and password required';err.style.display='block';return}
-    err.style.display='none';
-    try{
-        let r=await fetchWithTimeout(CFG.API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p,name:n})});
-        let d=await r.json();
-        if(d.access_token){
-            state.accessToken=d.access_token; state.refreshToken=d.refresh_token; state.user=d.user; state.is_admin=false;
-            localStorage.setItem('access_token',d.access_token); localStorage.setItem('refresh_token',d.refresh_token); localStorage.setItem('user',JSON.stringify(d.user));
-            closeModal('guestSignupModal'); updateProfileUI(); updateUIBasedOnTier(); fetchNotifications(); fetchWalletStatus(); toast('Account created!');
-        }else{err.innerText=d.detail||'Signup failed';err.style.display='block'}
-    }catch(e){
-        if(e.name==='AbortError') err.innerText='Request timed out.';
-        else err.innerText='Signup failed: '+e.message;
-        err.style.display='block';
-    }
-}
-async function handleGuestLogin(){
-    let e=document.getElementById('glEmail').value.trim(),p=document.getElementById('glPassword').value,err=document.getElementById('glError');
-    if(!e||!p){err.innerText='Email and password required';err.style.display='block';return}
-    err.style.display='none';
-    try{
-        let r=await fetchWithTimeout(CFG.API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});
-        let d=await r.json();
-        if(d.access_token){
-            state.accessToken=d.access_token; state.refreshToken=d.refresh_token; state.user=d.user; state.is_admin=d.user.is_admin||false;
-            localStorage.setItem('access_token',d.access_token); localStorage.setItem('refresh_token',d.refresh_token); localStorage.setItem('user',JSON.stringify(d.user));
-            closeModal('guestLoginModal'); updateProfileUI(); updateUIBasedOnTier(); fetchNotifications(); fetchWalletStatus(); toast('Welcome back!');
-        }else{err.innerText=d.detail||'Login failed';err.style.display='block'}
-    }catch(e){
-        if(e.name==='AbortError') err.innerText='Request timed out.';
-        else err.innerText='Login failed: '+e.message;
-        err.style.display='block';
-    }
-}
-
-// ==================== CONNECT METAMASK ====================
-async function connectMetaMask(){
-    if(!window.ethereum) return toast('MetaMask not installed');
-    try{
-        const accounts=await window.ethereum.request({method:'eth_requestAccounts'});
-        state.walletAddress=accounts[0];
-        state.walletSigner=new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        localStorage.setItem('os_address',accounts[0]);
-        toast('MetaMask connected: '+accounts[0]);
-        renderWallet();
-    }catch(e){toast('Connection rejected');}
-}
-
-// ==================== PUSH NOTIFICATIONS ====================
-async function requestPushPermission(){
-    if(!('Notification' in window)) return toast('Notifications not supported');
-    const perm=await Notification.requestPermission();
-    if(perm==='granted'){
-        const reg=await navigator.serviceWorker.ready;
-        const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')});
-        await apiCall('/api/push/subscribe',{method:'POST',body:JSON.stringify({subscription:sub.toJSON()})});
-        toast('Push notifications enabled!');
-    }
-}
-function urlBase64ToUint8Array(b){const p='='.repeat((4-b.length%4)%4);b=(b+p).replace(/-/g,'+').replace(/_/g,'/');const r=window.atob(b),o=new Uint8Array(r.length);for(let i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o}
-
-// ==================== SIDEBAR ====================
-function toggleSidebar(){
-    let s=document.getElementById('sidebar'), o=document.getElementById('overlay');
-    if(window.innerWidth<=768){s.classList.toggle('open');o.classList.toggle('open');}else{s.classList.toggle('collapsed');}
-}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
-
-function setupScrollButton(){let area=document.getElementById('messagesArea');if(area)area.addEventListener('scroll',updateScrollButton);updateScrollButton();}
-
-// ==================== INIT (GRACEFUL STARTUP) ====================
+// ==================== INIT ====================
 async function init(){
-    try{
-        document.getElementById('toggleSidebarBtn').addEventListener('click', toggleSidebar);
-        document.addEventListener('click', e => {
-            if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open') &&
-                !document.getElementById('sidebar').contains(e.target) &&
-                !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar();
-        });
-        document.getElementById('messageInput').addEventListener('input', function() {
-            this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 100) + 'px';
-        });
+    document.getElementById('toggleSidebarBtn').addEventListener('click',toggleSidebar);
+    document.addEventListener('click',e=>{
+        if(window.innerWidth<=768&&document.getElementById('sidebar').classList.contains('open')&&!document.getElementById('sidebar').contains(e.target)&&!document.getElementById('toggleSidebarBtn').contains(e.target))closeSidebar();
+    });
+    document.getElementById('messageInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'});
+    setTimeout(()=>{document.getElementById('splashScreen')?.classList.add('hide')},1600);
 
-        setTimeout(() => { document.getElementById('splashScreen')?.classList.add('hide'); }, 1600);
-
-        // Check backend health before trying to validate session
-        let backendAlive = false;
-        try {
-            await fetchWithTimeout(CFG.API + '/health', {}, 5000);
-            backendAlive = true;
-        } catch(e) {
-            console.warn('Backend health check failed, will attempt direct validation');
-        }
-
-        if (state.accessToken) {
-            try {
-                let data = await apiCall('/api/auth/validate');
-                if (data.user) {
-                    state.user = data.user; state.is_admin = data.is_admin; state.reasoningDepth = data.reasoning_depth || 1;
-                    localStorage.setItem('user', JSON.stringify(data.user)); localStorage.setItem('is_admin', data.is_admin.toString());
-                    document.getElementById('authContainer').style.display = 'none'; document.getElementById('app').style.display = 'flex';
-                    updateProfileUI(); updateUIBasedOnTier(); renderMessages(); fetchNotifications(); fetchWalletStatus(); loadWorkspaces();
-                } else forceLogout();
-            } catch (e) {
-                if (!backendAlive) {
-                    document.getElementById('sessionExpiredMsg').style.display = 'block';
-                    document.getElementById('sessionExpiredMsg').innerText = 'Backend unreachable. Please sign in again once the service is available.';
-                }
-                forceLogout();
-            }
-        } else {
-            document.getElementById('authContainer').style.display = 'flex'; document.getElementById('app').style.display = 'none';
-        }
-    } catch (err) {
-        document.getElementById('splashScreen')?.classList.add('hide');
-        document.getElementById('authContainer').style.display = 'flex'; document.getElementById('app').style.display = 'none';
+    if(state.token&&state.user){
+        try{
+            let data=await apiCall('/api/auth/me');
+            state.user=data;state.closeBalance=data.close_balance||0;state.closeStaked=data.close_staked||0;state.stakeTier=data.stake_tier||'none';state.walletAddress=data.wallet_address||'';
+            localStorage.setItem('capitan_user',JSON.stringify(data));localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);localStorage.setItem('wallet_address',state.walletAddress);
+            state.isGuest=false;
+        }catch(e){logout()}
+    }else if(state.token&&!state.user){
+        state.isGuest=true;
+    }else{
+        await startGuestSession();
     }
-    setupScrollButton();
-    setInterval(() => { if (state.theme === 'auto') applyAutoTheme(); }, 60000);
+    updateUI();renderMessages();
 }
 init();
 </script>
