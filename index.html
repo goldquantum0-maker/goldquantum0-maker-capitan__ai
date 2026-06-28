@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#0b1622" />
+  <meta name="theme-color" content="#000000" />
   <title>CAPITAN AI — Enterprise Intelligence</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7/dist/ethers.umd.min.js"></script>
@@ -14,34 +14,34 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <style>
     :root {
-      --bg-primary: #0b1622;
-      --bg-secondary: #0f1a2a;
-      --bg-tertiary: #1a2a3a;
-      --surface: #0f1a2a;
-      --surface-float: rgba(15, 26, 42, 0.75);
-      --border: #1e2d3d;
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-tertiary: #64748b;
+      --bg-primary: #000000;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #2a2a2a;
+      --surface: #1a1a1a;
+      --surface-float: rgba(26, 26, 26, 0.85);
+      --border: #3a3a3a;
+      --text-primary: #f5f5f5;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #707070;
       --accent-cyan: #00d4ff;
       --accent-violet: #7c3aed;
-      --accent-glow-cyan: rgba(0, 212, 255, 0.15);
-      --accent-glow-violet: rgba(124, 58, 237, 0.15);
+      --accent-glow-cyan: rgba(0, 212, 255, 0.12);
+      --accent-glow-violet: rgba(124, 58, 237, 0.12);
       --danger: #ef4444;
       --success: #10b981;
       --warning: #f59e0b;
-      --glass-bg: rgba(15, 26, 42, 0.6);
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --glass-blur: blur(20px);
-      --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-      --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.1);
+      --glass-bg: rgba(26, 26, 26, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-blur: blur(24px);
+      --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.08);
       --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-size-base: 13px;
       --line-height-base: 1.55;
       --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 20px;
-      --radius-xl: 28px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --radius-xl: 30px;
       --radius-pill: 9999px;
       --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
       --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
@@ -49,21 +49,19 @@
       --duration-med: 300ms;
       --duration-slow: 500ms;
     }
-
     body.light {
-      --bg-primary: #f8fafc;
-      --bg-secondary: #f1f5f9;
-      --bg-tertiary: #e2e8f0;
+      --bg-primary: #f5f5f5;
+      --bg-secondary: #eeeeee;
+      --bg-tertiary: #e0e0e0;
       --surface: #ffffff;
-      --surface-float: rgba(255, 255, 255, 0.75);
-      --border: #cbd5e1;
-      --text-primary: #0f172a;
-      --text-secondary: #334155;
-      --text-tertiary: #64748b;
-      --glass-bg: rgba(255, 255, 255, 0.6);
+      --surface-float: rgba(255, 255, 255, 0.85);
+      --border: #d0d0d0;
+      --text-primary: #0a0a0a;
+      --text-secondary: #555555;
+      --text-tertiary: #888888;
+      --glass-bg: rgba(255, 255, 255, 0.7);
       --glass-border: rgba(0, 0, 0, 0.06);
     }
-
     body {
       margin: 0; padding: 0; height: 100vh; overflow: hidden;
       font-family: var(--font-family); font-size: var(--font-size-base);
@@ -71,7 +69,6 @@
       color: var(--text-primary);
       transition: background var(--duration-med) var(--ease-smooth), color var(--duration-med) var(--ease-smooth);
     }
-
     capitan-app-shell { display: block; height: 100vh; width: 100%; }
   </style>
 </head>
@@ -138,6 +135,7 @@
         const token = localStorage.getItem('ct');
         if (token) {
           this.set('auth.token', token);
+          this.set('auth.tokenType', 'user');
           const user = localStorage.getItem('cu');
           if (user) { try { this.set('auth.user', JSON.parse(user)); } catch(e){} }
         }
@@ -146,11 +144,12 @@
     }
 
     const initialState = {
-      auth: { token: null, user: null, isAdmin: false, isGuest: false, loading: false, error: null },
-      ui: { theme: 'dark', sidebarOpen: false, activeView: 'chat', openDrawer: null, modals: [], toasts: [], walletTab: 'tokens', showClaimModal: false },
+      auth: { token: null, tokenType: null, user: null, isAdmin: false, isGuest: true, loading: false, error: null },
+      ui: { theme: 'dark', sidebarOpen: false, activeView: 'chat', openDrawer: null, modals: [], toasts: [], walletTab: 'tokens' },
       tokens: { balance: 0, tier: 'free', rate: 0, loading: false },
       wallet: {
         address: localStorage.getItem('os_address') || null,
+        encryptedPrivateKey: localStorage.getItem('os_encrypted_key') || null,
         network: parseInt(localStorage.getItem('network') || '137'),
         balances: [],
         activity: [],
@@ -193,10 +192,13 @@
       }
       const res = await fetch(BASE_URL + endpoint, config);
       if (res.status === 401) {
-        store.set('auth.token', null);
-        store.set('auth.user', null);
-        localStorage.removeItem('ct');
-        localStorage.removeItem('cu');
+        if (store.get('auth.tokenType') === 'user') {
+          store.set('auth.token', null);
+          store.set('auth.user', null);
+          localStorage.removeItem('ct');
+          localStorage.removeItem('cu');
+          store.set('auth.tokenType', null);
+        }
         throw new ApiError('Session expired', 401);
       }
       if (!res.ok) {
@@ -220,8 +222,7 @@
       post: (endpoint, body) => request(endpoint, { method: 'POST', body }),
       put: (endpoint, body) => request(endpoint, { method: 'PUT', body }),
       delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
-      // NEW: claim wallet (backend must implement /api/wallet/claim)
-      claimWallet: () => request('/api/wallet/claim', { method: 'POST' }),
+      registerWallet: (address) => request('/api/wallet/register', { method: 'POST', body: { address } }),
     };
 
     // ==================== BASE ELEMENT ====================
@@ -256,7 +257,7 @@
             const toasts = s.get('ui.toasts');
             s.set('ui.toasts', toasts.filter(t => t.id !== id));
           });
-        }, 3000);
+        }, 5000);
       }
       static define(tag) {
         if (!customElements.get(tag)) customElements.define(tag, this);
@@ -271,11 +272,12 @@
         if (toasts.length === 0) { this.shadowRoot.innerHTML = ''; return; }
         this.shadowRoot.innerHTML = `
           <style>
-            .toast-container { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; }
-            .toast { background:var(--glass-bg); backdrop-filter:var(--glass-blur); color:var(--text-primary); padding:10px 20px; border-radius:40px; font-size:13px; box-shadow:var(--shadow-lg); border:1px solid var(--glass-border); animation:slideUp 0.3s var(--ease-spring); }
+            .toast-container { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:10px; }
+            .toast { background:var(--glass-bg); backdrop-filter:var(--glass-blur); color:var(--text-primary); padding:12px 24px; border-radius:40px; font-size:14px; box-shadow:var(--shadow-lg); border:1px solid var(--glass-border); animation:slideUp 0.35s var(--ease-spring); max-width:420px; text-align:center; }
             .toast-success { border-left:4px solid var(--success); }
             .toast-error { border-left:4px solid var(--danger); }
-            @keyframes slideUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+            .toast-info { border-left:4px solid var(--accent-cyan); }
+            @keyframes slideUp { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
           </style>
           <div class="toast-container">${toasts.map(t => `<div class="toast toast-${t.type}">${t.msg}</div>`).join('')}</div>
         `;
@@ -297,72 +299,48 @@
         this.shadowRoot.innerHTML = `
           <style>
             :host { display:block; height:100%; width:100%; }
+            .greeting {
+              position: fixed;
+              top: 16px;
+              left: 50%;
+              transform: translateX(-50%);
+              z-index: 1000;
+              font-weight: 700;
+              font-size: 20px;
+              padding: 8px 24px;
+              border-radius: var(--radius-pill);
+              background: var(--glass-bg);
+              backdrop-filter: var(--glass-blur);
+              border: 1px solid var(--glass-border);
+              pointer-events: none;
+              transition: color 1s ease, text-shadow 1s ease;
+            }
+            .greeting.morning { color: #fbbf24; text-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
+            .greeting.afternoon { color: #00d4ff; text-shadow: 0 0 20px rgba(0, 212, 255, 0.4); }
+            .greeting.evening { color: #7c3aed; text-shadow: 0 0 20px rgba(124, 58, 237, 0.4); }
           </style>
+          <div class="greeting" id="greeting"></div>
           <capitan-main-layout></capitan-main-layout>
           <capitan-toast-container></capitan-toast-container>
           <capitan-modals></capitan-modals>
-          <capitan-claim-modal></capitan-claim-modal>
+          <capitan-create-wallet-modal></capitan-create-wallet-modal>
         `;
+        this._updateGreeting();
+        setInterval(() => this._updateGreeting(), 60000);
+      }
+      _updateGreeting() {
+        const hour = new Date().getHours();
+        const greetingEl = this.shadowRoot.getElementById('greeting');
+        if (!greetingEl) return;
+        let text, cls;
+        if (hour < 12) { text = 'Good morning ☀️'; cls = 'morning'; }
+        else if (hour < 18) { text = 'Good afternoon 🌤️'; cls = 'afternoon'; }
+        else { text = 'Good evening 🌙'; cls = 'evening'; }
+        greetingEl.textContent = text;
+        greetingEl.className = 'greeting ' + cls;
       }
     }
     AppShell.define('capitan-app-shell');
-
-    // ==================== CLAIM MODAL (shown if no wallet) ====================
-    class ClaimModal extends CapitanElement {
-      subscribe() {
-        return [this.observe('ui.showClaimModal', (val) => {
-          if (val) this.render();
-          else this.shadowRoot.innerHTML = '';
-        })];
-      }
-      render() {
-        if (!store.get('ui.showClaimModal')) { this.shadowRoot.innerHTML = ''; return; }
-        this.shadowRoot.innerHTML = `
-          <style>
-            .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(16px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px; }
-            .modal { background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-xl); max-width:440px; width:100%; padding:32px 24px; text-align:center; box-shadow:0 25px 60px rgba(0,0,0,0.7); }
-            h2 { font-size:24px; font-weight:700; margin-bottom:12px; background:linear-gradient(135deg,var(--accent-cyan),var(--accent-violet)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-            p { color:var(--text-secondary); font-size:14px; margin-bottom:24px; line-height:1.6; }
-            .pill-btn {
-              padding: 14px 28px; border-radius: var(--radius-pill); border: none;
-              background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
-              color: white; font-weight: 700; font-size: 16px; cursor: pointer;
-              box-shadow: 0 4px 20px rgba(0,212,255,0.3); transition: transform 0.2s, box-shadow 0.2s;
-            }
-            .pill-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,0.4); }
-          </style>
-          <div class="overlay">
-            <div class="modal">
-              <h2>Welcome to CAPITAN AI</h2>
-              <p>To unlock the full power of Capitan, you need an OS Wallet.<br/>
-                 Create yours now and receive <strong>1,000 CLOSE tokens</strong> for free.</p>
-              <button class="pill-btn" id="claimBtn">Create OS Wallet</button>
-            </div>
-          </div>
-        `;
-        this.shadowRoot.getElementById('claimBtn').addEventListener('click', () => {
-          this._claimWallet();
-        });
-      }
-      async _claimWallet() {
-        try {
-          const data = await api.claimWallet(); // { token, address, balance }
-          store.set('auth.token', data.token);
-          store.set('auth.user', data.user || { name: 'User' }); // minimal user
-          store.set('auth.isAdmin', false);
-          localStorage.setItem('ct', data.token);
-          if (data.user) localStorage.setItem('cu', JSON.stringify(data.user));
-          store.set('wallet.address', data.address);
-          localStorage.setItem('os_address', data.address);
-          store.set('tokens.balance', data.balance || 1000);
-          store.set('ui.showClaimModal', false);
-          this.toast('Wallet created! 1,000 CLOSE added.', 'success');
-        } catch (e) {
-          alert('Failed to create wallet: ' + e.message);
-        }
-      }
-    }
-    ClaimModal.define('capitan-claim-modal');
 
     // ==================== MAIN LAYOUT ====================
     class MainLayout extends CapitanElement {
@@ -412,7 +390,6 @@
         const user = store.get('auth.user');
         const balance = store.get('tokens.balance');
         const tier = store.get('tokens.tier');
-        const hasWallet = !!store.get('wallet.address') && !!store.get('auth.token');
         this.shadowRoot.innerHTML = `
           <style>
             :host { display:flex; flex-direction:column; height:100%; background:var(--surface); border-right:1px solid var(--border); }
@@ -422,7 +399,6 @@
             .nav-item { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:var(--radius-md); cursor:pointer; font-weight:500; font-size:13px; color:var(--text-secondary); transition:all var(--duration-fast); margin-bottom:2px; }
             .nav-item:hover { background:var(--bg-tertiary); color:var(--text-primary); }
             .nav-item.active { background:var(--accent-glow-cyan); color:var(--accent-cyan); }
-            .nav-item.locked { opacity:0.4; cursor:not-allowed; }
             .nav-item svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; flex-shrink:0; }
             .footer { padding:12px 16px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
             .profile { display:flex; align-items:center; gap:10px; cursor:pointer; }
@@ -433,18 +409,18 @@
           </style>
           <div class="brand"><span class="logo-text">CAPITAN AI</span></div>
           <div class="nav">
-            ${this._navItem('chat', 'Chat', 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', activeView, hasWallet)}
-            ${this._navItem('wallet', 'OS Wallets', 'M20 21V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v16 M20 17h-5a3 3 0 0 1 0-6h5 M4 10h4v4H4z', activeView, true)}
-            ${this._navItem('portfolio', 'Portfolio', 'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z', activeView, hasWallet)}
-            ${this._navItem('research', 'Research', 'M12 2a10 10 0 1 0 10 10 M12 8v8 M8 12h8', activeView, hasWallet)}
-            ${this._navItem('developer', 'Developer', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 16h8 M8 12h8', activeView, hasWallet)}
-            ${this._navItem('workspaces', 'Workspaces', 'M12 2a10 10 0 1 0 10 10 M12 8v8 M8 12h8', activeView, hasWallet)}
-            ${this._navItem('community', 'Community', 'M17 21v-2a4 4 0 0 0-3-3.87 M7 21v-2a4 4 0 0 1 3-3.87 M12 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', activeView, hasWallet)}
-            ${store.get('auth.isAdmin') ? this._navItem('dashboard', 'Dashboard', 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', activeView, true) : ''}
+            ${this._navItem('chat', 'Chat', 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', activeView)}
+            ${this._navItem('wallet', 'OS Wallets', 'M20 21V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v16 M20 17h-5a3 3 0 0 1 0-6h5 M4 10h4v4H4z', activeView)}
+            ${this._navItem('portfolio', 'Portfolio', 'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z', activeView)}
+            ${this._navItem('research', 'Research', 'M12 2a10 10 0 1 0 10 10 M12 8v8 M8 12h8', activeView)}
+            ${this._navItem('developer', 'Developer', 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 16h8 M8 12h8', activeView)}
+            ${this._navItem('workspaces', 'Workspaces', 'M12 2a10 10 0 1 0 10 10 M12 8v8 M8 12h8', activeView)}
+            ${this._navItem('community', 'Community', 'M17 21v-2a4 4 0 0 0-3-3.87 M7 21v-2a4 4 0 0 1 3-3.87 M12 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', activeView)}
+            ${store.get('auth.isAdmin') ? this._navItem('dashboard', 'Dashboard', 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', activeView) : ''}
           </div>
           <div class="footer">
             <div class="profile">
-              <div class="avatar">${user?.name?.charAt(0) || '?'}</div>
+              <div class="avatar">${user?.name?.charAt(0) || '👤'}</div>
               <div><div class="name">${user?.name || 'Guest'}</div><div class="tier">${tier || 'free'}</div></div>
             </div>
             <div class="balance">${Math.floor(balance).toLocaleString()} CLOSE</div>
@@ -452,13 +428,13 @@
         `;
         this._attachListeners();
       }
-      _navItem(view, label, svgPath, activeView, enabled = true) {
-        const cls = `nav-item ${view === activeView ? 'active' : ''} ${!enabled ? 'locked' : ''}`;
-        return `<div class="${cls}" data-view="${view}" ${!enabled ? 'title="Requires OS Wallet"' : ''}><svg viewBox="0 0 24 24"><path d="${svgPath}"/></svg>${label}</div>`;
+      _navItem(view, label, svgPath, activeView) {
+        const cls = `nav-item ${view === activeView ? 'active' : ''}`;
+        return `<div class="${cls}" data-view="${view}"><svg viewBox="0 0 24 24"><path d="${svgPath}"/></svg>${label}</div>`;
       }
       _attachListeners() {
         setTimeout(() => {
-          this.shadowRoot.querySelectorAll('.nav-item:not(.locked)').forEach(item => {
+          this.shadowRoot.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
               store.set('ui.activeView', item.dataset.view);
               store.set('ui.sidebarOpen', false);
@@ -469,44 +445,127 @@
     }
     Sidebar.define('capitan-sidebar');
 
-    // ==================== CHAT VIEW (simplified, locked without wallet) ====================
+    // ==================== CHAT VIEW ====================
     class ChatView extends CapitanElement {
-      subscribe() {
-        return [this.observe('auth.token', () => this.render())];
-      }
       render() {
-        const hasWallet = !!store.get('wallet.address') && !!store.get('auth.token');
         this.shadowRoot.innerHTML = `
           <style>
             :host { display:flex; align-items:center; justify-content:center; height:100%; background:var(--bg-primary); }
-            .chat-locked { text-align:center; color:var(--text-secondary); max-width:400px; }
-            .pill-btn {
-              padding: 10px 20px; border-radius: var(--radius-pill); border: none;
-              background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
-              color: white; font-weight: 600; font-size: 14px; cursor: pointer;
-              box-shadow: 0 4px 15px rgba(0,212,255,0.3); margin-top: 16px;
-            }
+            .placeholder { text-align:center; color:var(--text-secondary); }
+            .placeholder h2 { font-weight:700; margin-bottom:8px; }
           </style>
-          ${!hasWallet ? `
-            <div class="chat-locked">
-              <h2>Unlock Capitan AI</h2>
-              <p>You need an OS Wallet with CLOSE tokens to start chatting. Create one now – it’s free and instant.</p>
-              <button class="pill-btn" id="createWalletChatBtn">Create OS Wallet</button>
-            </div>
-          ` : `
-            <div style="padding:40px;">Chat interface coming soon</div>
-          `}
+          <div class="placeholder">
+            <h2>Chat Coming Soon</h2>
+            <p>Your AI partner is almost ready. Stay tuned.</p>
+          </div>
         `;
-        if (!hasWallet) {
-          this.shadowRoot.getElementById('createWalletChatBtn')?.addEventListener('click', () => {
-            store.set('ui.showClaimModal', true);
-          });
-        }
       }
     }
     ChatView.define('capitan-chat-view');
 
-    // ==================== WALLET VIEW (same as before, with create wallet if no address) ====================
+    // ==================== WALLET CREATE MODAL ====================
+    class CreateWalletModal extends CapitanElement {
+      constructor() {
+        super();
+        this._step = 1;
+        this._mnemonic = '';
+      }
+      subscribe() { return [this.observe('ui.modals', () => this.render())]; }
+      render() {
+        if (!store.get('ui.modals').includes('createWallet')) { this.shadowRoot.innerHTML = ''; return; }
+        const step = this._step;
+        this.shadowRoot.innerHTML = `
+          <style>
+            .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(16px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px; }
+            .modal { background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-xl); max-width:480px; width:100%; padding:32px 24px; text-align:center; color:var(--text-primary); }
+            h2 { font-size:22px; font-weight:700; margin-bottom:8px; }
+            .sub { color:var(--text-secondary); margin-bottom:24px; }
+            .seed-box { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px; margin:16px 0; font-family:monospace; font-size:16px; line-height:1.8; word-break:break-word; text-align:left; }
+            .warning { color:var(--warning); font-size:12px; margin-bottom:12px; }
+            .checkbox { display:flex; align-items:center; gap:8px; justify-content:center; margin:16px 0; color:var(--text-secondary); }
+            .pill-btn { padding:12px 28px; border-radius:var(--radius-pill); border:none; background:linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color:white; font-weight:700; font-size:15px; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; }
+            .pill-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,212,255,0.4); }
+            .pill-btn:disabled { opacity:0.4; cursor:default; }
+            .secondary { background:transparent; border:1px solid var(--border); color:var(--text-primary); margin-top:12px; }
+            input[type="password"] { width:100%; padding:12px; margin:12px 0; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); color:var(--text-primary); }
+          </style>
+          <div class="overlay">
+            <div class="modal">
+              ${step === 1 ? this._renderStep1() : this._renderStep2()}
+            </div>
+          </div>
+        `;
+        this._attachModalListeners();
+      }
+      _renderStep1() {
+        return `
+          <h2>Create Your OS Wallet</h2>
+          <div class="sub">Write down this 12‑word recovery phrase. Keep it safe — it's the only way to restore your wallet.</div>
+          <div class="seed-box">${this._mnemonic}</div>
+          <div class="warning">⚠️ Never share this phrase. CAPITAN AI will never ask for it.</div>
+          <label class="checkbox"><input type="checkbox" id="savedCheck"> I have saved my recovery phrase safely.</label>
+          <button class="pill-btn" id="continueBtn" disabled>Continue</button>
+          <button class="pill-btn secondary" id="closeBtn">Cancel</button>
+        `;
+      }
+      _renderStep2() {
+        return `
+          <h2>Secure Your Wallet (Optional)</h2>
+          <div class="sub">Set a password to encrypt your private key locally. You'll need it to sign transactions.</div>
+          <input type="password" id="passwordInput" placeholder="Password (optional)">
+          <button class="pill-btn" id="finishBtn">Create Wallet</button>
+          <button class="pill-btn secondary" id="backBtn">Back</button>
+        `;
+      }
+      async _attachModalListeners() {
+        if (this._step === 1) {
+          const check = this.shadowRoot.getElementById('savedCheck');
+          const continueBtn = this.shadowRoot.getElementById('continueBtn');
+          check?.addEventListener('change', () => { continueBtn.disabled = !check.checked; });
+          continueBtn?.addEventListener('click', () => { this._step = 2; this.render(); });
+          this.shadowRoot.getElementById('closeBtn')?.addEventListener('click', () => {
+            store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'createWallet'));
+            this._step = 1;
+          });
+        } else {
+          this.shadowRoot.getElementById('finishBtn')?.addEventListener('click', async () => {
+            const password = this.shadowRoot.getElementById('passwordInput')?.value || '';
+            const wallet = ethers.Wallet.fromMnemonic(this._mnemonic);
+            const address = wallet.address;
+            let encryptedKey = null;
+            if (password) {
+              encryptedKey = await wallet.encrypt(password);
+            }
+            // Store in localStorage and state
+            store.set('wallet.address', address);
+            store.set('wallet.encryptedPrivateKey', encryptedKey || wallet.privateKey);
+            localStorage.setItem('os_address', address);
+            localStorage.setItem('os_encrypted_key', encryptedKey || wallet.privateKey);
+            // Register with backend
+            try {
+              const res = await api.registerWallet(address);
+              store.set('auth.token', res.token);
+              store.set('auth.tokenType', 'user');
+              store.set('auth.user', res.user || { name: 'User' });
+              localStorage.setItem('ct', res.token);
+              store.set('tokens.balance', res.balance || 1000);
+              store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'createWallet'));
+              this._step = 1;
+              this.toast('OS Wallet created! 1,000 CLOSE added.', 'success');
+              // Reload wallet data if wallet view is active
+              const walletView = document.querySelector('capitan-wallet-view');
+              if (walletView) walletView._loadData();
+            } catch (e) {
+              alert('Registration failed: ' + e.message);
+            }
+          });
+          this.shadowRoot.getElementById('backBtn')?.addEventListener('click', () => { this._step = 1; this.render(); });
+        }
+      }
+    }
+    CreateWalletModal.define('capitan-create-wallet-modal');
+
+    // ==================== WALLET VIEW ====================
     class WalletView extends CapitanElement {
       constructor() {
         super();
@@ -519,12 +578,14 @@
           this.observe('wallet.markets', () => this._updateMarkets()),
           this.observe('wallet.loadingBalances', () => this._updateLoading()),
           this.observe('wallet.address', () => this._updateAddress()),
+          this.observe('auth.token', () => this.render()),
         ];
       }
       connectedCallback() {
         super.connectedCallback();
-        const hasWallet = !!store.get('wallet.address') && !!store.get('auth.token');
-        if (hasWallet) this._loadData();
+        const address = store.get('wallet.address');
+        const token = store.get('auth.token');
+        if (address && token) this._loadData();
       }
       disconnectedCallback() {
         super.disconnectedCallback();
@@ -570,27 +631,37 @@
         } catch (e) {}
       }
       render() {
-        const hasWallet = !!store.get('wallet.address') && !!store.get('auth.token');
-        if (!hasWallet) {
+        const address = store.get('wallet.address');
+        if (!address) {
           this.shadowRoot.innerHTML = `
             <style>
               :host { display:flex; align-items:center; justify-content:center; height:100%; background:var(--bg-primary); }
-              .create-wallet { text-align:center; color:var(--text-secondary); max-width:400px; }
+              .onboard-card { text-align:center; max-width:460px; padding:32px; background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-xl); }
+              h2 { font-size:22px; font-weight:700; margin-bottom:12px; }
+              p { color:var(--text-secondary); line-height:1.6; margin:8px 0; }
               .pill-btn {
-                padding: 10px 20px; border-radius: var(--radius-pill); border: none;
-                background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
-                color: white; font-weight: 600; font-size: 14px; cursor: pointer;
-                box-shadow: 0 4px 15px rgba(0,212,255,0.3); margin-top: 16px;
+                padding:12px 28px; border-radius:var(--radius-pill); border:none;
+                background:linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+                color:white; font-weight:700; font-size:15px; cursor:pointer;
+                transition:transform 0.2s, box-shadow 0.2s; margin-top:20px;
               }
+              .pill-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,212,255,0.4); }
             </style>
-            <div class="create-wallet">
-              <h2>OS Wallet</h2>
-              <p>Create your OS Wallet to receive 1,000 CLOSE and start using Capitan AI.</p>
-              <button class="pill-btn" id="createWalletBtn">Create OS Wallet</button>
+            <div class="onboard-card">
+              <h2>Welcome to Your OS Wallet</h2>
+              <p>A non‑custodial, decentralized wallet. Create it now and receive <strong>1,000 CLOSE</strong> to power your AI experience.</p>
+              <p>Each token burned adds value to the entire CLOSE ecosystem.</p>
+              <button class="pill-btn" id="createWalletBtn">Create My Secure Wallet</button>
             </div>
           `;
           this.shadowRoot.getElementById('createWalletBtn')?.addEventListener('click', () => {
-            store.set('ui.showClaimModal', true);
+            const wallet = ethers.Wallet.createRandom();
+            const modal = document.querySelector('capitan-create-wallet-modal');
+            if (modal) {
+              modal._mnemonic = wallet.mnemonic.phrase;
+              modal._step = 1;
+              store.set('ui.modals', [...store.get('ui.modals'), 'createWallet']);
+            }
           });
           return;
         }
@@ -647,7 +718,7 @@
               </div>
             </div>
             <div class="address-pill" id="addressDisplay">
-              <span id="addrText">${this._fmtAddr(store.get('wallet.address'))}</span>
+              <span id="addrText">${this._fmtAddr(address)}</span>
               <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </div>
           </div>
@@ -679,6 +750,10 @@
             <div class="tab ${tab==='ai'?'active':''}" data-tab="ai">AI Advisor</div>
           </div>
           <div id="tabContent">${this._renderTabContent(tab)}</div>
+          <div style="margin-top:24px; padding:12px; background:var(--bg-secondary); border-radius:var(--radius-md); color:var(--text-tertiary); font-size:12px;">
+            Gas fees for sends/swaps are sponsored by CLOSEAI, but your transactions are executed via a shared relayer wallet. <br/>
+            To use these features, you may need to deposit a small amount of POL into the hot wallet (${this._fmtAddr('0xae3e3f0c9243ba74b4fbeb38d120c773650aa003')}). Your OS Wallet remains fully under your control.
+          </div>
         `;
         this._attachListeners();
         this._renderChart();
@@ -840,9 +915,7 @@
     }
     WalletView.define('capitan-wallet-view');
 
-    // ==================== MODALS (Send, Receive, Swap, Buy) (identical to previous) ====================
-    // (Omitted for brevity but included in the actual file – they are the same as before, with pill‑btn styles inside.)
-    // I'll add a placeholder here; in the final file they are present.
+    // ==================== MODALS (Send, Receive, Swap, Buy) ====================
     class ModalsContainer extends CapitanElement {
       subscribe() { return [this.observe('ui.modals', () => this.render())]; }
       render() {
@@ -988,45 +1061,77 @@
     ModalsContainer.define('capitan-modals');
 
     // ==================== PLACEHOLDER VIEWS ====================
-    class PortfolioView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Portfolio</div>'; } }
+    class PortfolioView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;color:var(--text-secondary);">Portfolio</div>'; } }
     PortfolioView.define('capitan-portfolio-view');
-    class ResearchView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Research Hub</div>'; } }
+    class ResearchView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;color:var(--text-secondary);">Research Hub</div>'; } }
     ResearchView.define('capitan-research-view');
-    class DeveloperView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Developer</div>'; } }
+    class DeveloperView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;color:var(--text-secondary);">Developer</div>'; } }
     DeveloperView.define('capitan-developer-view');
-    class WorkspacesView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Workspaces</div>'; } }
+    class WorkspacesView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;color:var(--text-secondary);">Workspaces</div>'; } }
     WorkspacesView.define('capitan-workspaces-view');
-    class CommunityView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Community</div>'; } }
+    class CommunityView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;color:var(--text-secondary);">Community</div>'; } }
     CommunityView.define('capitan-community-view');
-    class DashboardView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Admin Dashboard</div>'; } }
+    class DashboardView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;color:var(--text-secondary);">Admin Dashboard</div>'; } }
     DashboardView.define('capitan-dashboard-view');
 
-    // ==================== GRACEFUL AUTH CHECK ====================
+    // ==================== AUTH & ONBOARDING ====================
     (async () => {
       const token = store.get('auth.token');
       if (!token) {
-        // No token at all – show claim modal
-        store.set('ui.showClaimModal', true);
-        return;
-      }
-      try {
-        const res = await fetch(BASE_URL + '/api/auth/validate', { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) {
+        try {
+          const res = await fetch(BASE_URL + '/api/session');
           const data = await res.json();
-          store.set('auth.user', data.user);
-          store.set('auth.isAdmin', data.is_admin);
-          // Wallet exists? If not, we may still need to show claim modal? Actually if they have a valid token, they have a user, but maybe no wallet address yet? We'll assume wallet exists.
-        } else {
-          // Token invalid – clear and show claim
-          store.set('auth.token', null); store.set('auth.user', null);
-          localStorage.removeItem('ct'); localStorage.removeItem('cu');
-          store.set('ui.showClaimModal', true);
+          store.set('auth.token', data.token);
+          store.set('auth.tokenType', 'session');
+        } catch (e) {
+          console.warn('Could not obtain session token.');
         }
-      } catch (e) {
-        store.set('auth.token', null); store.set('auth.user', null);
-        localStorage.removeItem('ct'); localStorage.removeItem('cu');
-        store.set('ui.showClaimModal', true);
+      } else {
+        try {
+          const res = await fetch(BASE_URL + '/api/auth/validate', { headers: { Authorization: `Bearer ${token}` } });
+          if (res.ok) {
+            const data = await res.json();
+            store.set('auth.user', data.user);
+            store.set('auth.isAdmin', data.is_admin);
+            store.set('auth.tokenType', 'user');
+          } else {
+            store.set('auth.token', null);
+            store.set('auth.user', null);
+            store.set('auth.tokenType', null);
+            localStorage.removeItem('ct');
+            localStorage.removeItem('cu');
+            const sessionRes = await fetch(BASE_URL + '/api/session');
+            const sessionData = await sessionRes.json();
+            store.set('auth.token', sessionData.token);
+            store.set('auth.tokenType', 'session');
+          }
+        } catch (e) {
+          try {
+            store.set('auth.token', null);
+            const sessionRes = await fetch(BASE_URL + '/api/session');
+            const sessionData = await sessionRes.json();
+            store.set('auth.token', sessionData.token);
+            store.set('auth.tokenType', 'session');
+          } catch {}
+        }
       }
+
+      // Show onboarding toast if first visit and no wallet
+      if (!localStorage.getItem('capitan_visited') && !store.get('wallet.address')) {
+        setTimeout(() => {
+          const toastContainer = document.querySelector('capitan-toast-container');
+          if (toastContainer) {
+            toastContainer.toast('🎉 Welcome! Create your OS Wallet in the Wallet tab to claim 1,000 free CLOSE.', 'info');
+          } else {
+            store.transaction(s => {
+              const toasts = s.get('ui.toasts') || [];
+              s.set('ui.toasts', [...toasts, { id: Date.now(), msg: '🎉 Welcome! Create your OS Wallet in the Wallet tab to claim 1,000 free CLOSE.', type: 'info' }]);
+            });
+          }
+          localStorage.setItem('capitan_visited', '1');
+        }, 1500);
+      }
+
       const theme = store.get('ui.theme');
       document.body.className = theme === 'auto' ? (new Date().getHours() >= 6 && new Date().getHours() < 18 ? 'light' : 'dark') : theme;
     })();
