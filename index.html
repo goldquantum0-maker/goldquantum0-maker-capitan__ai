@@ -7,19 +7,23 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0b1622" />
   <title>CAPITAN AI — Enterprise Intelligence</title>
-  <link rel="manifest" href="https://capitanai.billionaireman35.workers.dev/manifest.json" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <style>
+    /* ============================================================
+       DESIGN SYSTEM – CAPITAN AI v3.0 (World‑Class)
+       ============================================================ */
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
     :root {
       --bg-primary: #0b1622;
       --bg-secondary: #0f1a2a;
       --bg-tertiary: #1a2a3a;
       --surface: #0f1a2a;
-      --surface-float: rgba(15, 26, 42, 0.85);
+      --surface-float: rgba(15, 26, 42, 0.75);
       --border: #1e2d3d;
       --text-primary: #f1f5f9;
       --text-secondary: #94a3b8;
@@ -31,8 +35,10 @@
       --danger: #ef4444;
       --success: #10b981;
       --warning: #f59e0b;
-      --glass-bg: rgba(15, 26, 42, 0.7);
+      /* Glassmorphism */
+      --glass-bg: rgba(15, 26, 42, 0.6);
       --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-blur: blur(20px);
       --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
       --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.1);
       --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -42,6 +48,7 @@
       --radius-md: 12px;
       --radius-lg: 20px;
       --radius-xl: 28px;
+      --radius-pill: 9999px;
       --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
       --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
       --duration-fast: 150ms;
@@ -54,24 +61,49 @@
       --bg-secondary: #f1f5f9;
       --bg-tertiary: #e2e8f0;
       --surface: #ffffff;
-      --surface-float: rgba(255, 255, 255, 0.85);
+      --surface-float: rgba(255, 255, 255, 0.75);
       --border: #cbd5e1;
       --text-primary: #0f172a;
       --text-secondary: #334155;
       --text-tertiary: #64748b;
-      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-bg: rgba(255, 255, 255, 0.6);
       --glass-border: rgba(0, 0, 0, 0.06);
     }
 
     body {
-      margin: 0; padding: 0; height: 100vh; overflow: hidden;
-      font-family: var(--font-family); font-size: var(--font-size-base);
-      line-height: var(--line-height-base); background: var(--bg-primary);
+      font-family: var(--font-family);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-base);
+      background: var(--bg-primary);
       color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
       transition: background var(--duration-med) var(--ease-smooth), color var(--duration-med) var(--ease-smooth);
     }
 
-    capitan-app-shell { display: block; height: 100vh; width: 100%; }
+    capitan-app-shell { display:block; height:100vh; width:100%; }
+
+    /* Shared pill button */
+    .pill-btn {
+      padding: 10px 20px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-smooth);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .pill-btn:hover { border-color: var(--accent-cyan); background: var(--accent-glow-cyan); transform: translateY(-2px); }
+    .pill-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); border-color: transparent; color: white; box-shadow: 0 4px 15px rgba(0,212,255,0.3); }
+    .pill-btn.primary:hover { box-shadow: 0 8px 25px rgba(0,212,255,0.4); }
+    .pill-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
   </style>
 </head>
 <body>
@@ -123,17 +155,12 @@
       }
       _notify(path, newValue, oldValue) {
         const subs = this._subscribers.get(path);
-        if (subs) {
-          subs.forEach(cb => cb(newValue, oldValue, path));
-        }
+        if (subs) subs.forEach(cb => cb(newValue, oldValue, path));
         const parts = path.split('.');
         for (let i = parts.length - 1; i > 0; i--) {
           const parentPath = parts.slice(0, i).join('.');
           const parentSubs = this._subscribers.get(parentPath);
-          if (parentSubs) {
-            const parentValue = this.get(parentPath);
-            parentSubs.forEach(cb => cb(parentValue, oldValue, parentPath));
-          }
+          if (parentSubs) parentSubs.forEach(cb => cb(this.get(parentPath), oldValue, parentPath));
         }
         this._globalSubscribers.forEach(cb => cb(path, newValue, oldValue));
       }
@@ -143,18 +170,15 @@
         if (token) {
           this.set('auth.token', token);
           const user = localStorage.getItem('cu');
-          if (user) {
-            try { this.set('auth.user', JSON.parse(user)); } catch(e){}
-          }
+          if (user) { try { this.set('auth.user', JSON.parse(user)); } catch(e){} }
         }
-        const theme = localStorage.getItem('theme') || 'dark';
-        this.set('ui.theme', theme);
+        this.set('ui.theme', localStorage.getItem('theme') || 'dark');
       }
     }
 
     const initialState = {
       auth: { token: null, user: null, isAdmin: false, isGuest: false, loading: false, error: null },
-      ui: { theme: 'dark', sidebarOpen: false, activeView: 'chat', openDrawer: null, modals: [], toasts: [] },
+      ui: { theme: 'dark', sidebarOpen: false, activeView: 'chat', openDrawer: null, modals: [], toasts: [], walletTab: 'tokens' },
       tokens: { balance: 0, tier: 'free', rate: 0, loading: false },
       wallet: {
         address: localStorage.getItem('os_address') || null,
@@ -166,15 +190,18 @@
         activityPage: 0, activityHasMore: true,
         loadingBalances: false, loadingActivity: false,
         markets: { crypto: [], stocks: [], commodities: [] },
-        totalUsd: 0, changePercent: 0,
+        totalUsd: 0,
+        addressBook: JSON.parse(localStorage.getItem('addressBook') || '[]'),
+        walletConnectUri: null,
+        connectedDapps: [],
       },
-      chat: { messages: [], currentChatId: null, sending: false, history: [], loadingHistory: false },
+      chat: { messages: [], currentChatId: null, sending: false, history: [], loadingHistory: false, deepReasoning: false },
       portfolio: { items: [], loading: false },
       research: { topics: [], projects: [], loading: false },
       developer: { keys: [], webhooks: [], loadingKeys: false, loadingWebhooks: false },
       workspaces: { list: [], activeRoomId: null, messages: {}, loadingList: false, loadingMessages: false },
       community: { leaderboard: [], badges: [], loading: false },
-      notifications: { items: [], unreadCount: 0, loading: false },
+      notifications: { items: [], unreadCount: 0, loading: false, lastFetch: null },
       admin: { dashboardData: null, loading: false },
     };
 
@@ -274,18 +301,15 @@
       render() {
         const toasts = store.get('ui.toasts') || [];
         if (toasts.length === 0) { this.shadowRoot.innerHTML = ''; return; }
-        const toastList = toasts.map(t => `
-          <div class="toast toast-${t.type}">${t.msg}</div>
-        `).join('');
         this.shadowRoot.innerHTML = `
           <style>
             .toast-container { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; }
-            .toast { background:var(--surface-float); backdrop-filter:blur(10px); color:var(--text-primary); padding:10px 20px; border-radius:40px; font-size:13px; box-shadow:var(--shadow-lg); border:1px solid var(--border); animation:slideUp 0.3s var(--ease-spring); }
+            .toast { background:var(--glass-bg); backdrop-filter:var(--glass-blur); color:var(--text-primary); padding:10px 20px; border-radius:40px; font-size:13px; box-shadow:var(--shadow-lg); border:1px solid var(--glass-border); animation:slideUp 0.3s var(--ease-spring); }
             .toast-success { border-left:4px solid var(--success); }
             .toast-error { border-left:4px solid var(--danger); }
             @keyframes slideUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
           </style>
-          <div class="toast-container">${toastList}</div>
+          <div class="toast-container">${toasts.map(t => `<div class="toast toast-${t.type}">${t.msg}</div>`).join('')}</div>
         `;
       }
     }
@@ -309,7 +333,7 @@
         this.shadowRoot.innerHTML = `
           <style>
             :host { display:flex; align-items:center; justify-content:center; height:100%; background:var(--bg-primary); }
-            .auth-card { width:100%; max-width:400px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:32px 24px; box-shadow:var(--shadow-lg); }
+            .auth-card { width:100%; max-width:400px; background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-xl); padding:32px 24px; box-shadow:var(--shadow-lg); }
             h1 { font-size:26px; font-weight:700; background:linear-gradient(90deg,var(--accent-cyan),var(--accent-violet)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin:0 0 4px; }
             .sub { color:var(--text-secondary); margin-bottom:24px; font-size:14px; }
             .tabs { display:flex; border-bottom:2px solid var(--border); margin-bottom:24px; }
@@ -317,11 +341,7 @@
             .tab.active { color:var(--accent-cyan); border-bottom-color:var(--accent-cyan); }
             input { width:100%; padding:12px 16px; margin-bottom:12px; border:1.5px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); color:var(--text-primary); font-size:14px; font-family:inherit; }
             input:focus { outline:none; border-color:var(--accent-cyan); box-shadow:0 0 0 3px var(--accent-glow-cyan); }
-            .btn { width:100%; padding:14px; border:none; border-radius:var(--radius-lg); background:linear-gradient(135deg,var(--accent-cyan),var(--accent-violet)); color:white; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 4px 14px rgba(0,212,255,0.25); }
-            .btn:disabled { opacity:0.6; }
-            .error { color:var(--danger); font-size:12px; margin-bottom:8px; }
-            .switch { text-align:center; margin-top:14px; font-size:13px; color:var(--text-secondary); }
-            .switch a { color:var(--accent-cyan); cursor:pointer; font-weight:600; text-decoration:none; }
+            .pill-btn { width:100%; }
           </style>
           <div class="auth-card">
             <h1>CAPITAN AI</h1>
@@ -331,7 +351,7 @@
               <div class="tab ${tab==='signup'?'active':''}" data-tab="signup">Create Account</div>
             </div>
             ${tab === 'login' ? this._renderLogin() : this._renderSignup()}
-            <div class="switch"><a href="mailto:support@capitan.ai">Contact Support</a></div>
+            <div class="switch" style="text-align:center; margin-top:14px; font-size:13px; color:var(--text-secondary);"><a href="mailto:support@capitan.ai">Contact Support</a></div>
           </div>
         `;
         this._attachEventListeners();
@@ -340,8 +360,8 @@
         return `
           <input type="email" id="loginEmail" placeholder="Email" />
           <input type="password" id="loginPassword" placeholder="Password" />
-          <div class="error" id="loginError">${store.get('auth.error') || ''}</div>
-          <button class="btn" id="loginBtn" ${store.get('auth.loading') ? 'disabled' : ''}>Sign In</button>
+          <div class="error" style="color:var(--danger);font-size:12px;margin-bottom:8px;" id="loginError">${store.get('auth.error') || ''}</div>
+          <button class="pill-btn primary" id="loginBtn" ${store.get('auth.loading') ? 'disabled' : ''}>Sign In</button>
         `;
       }
       _renderSignup() {
@@ -349,9 +369,9 @@
           <input type="text" id="signupName" placeholder="Full Name (optional)" />
           <input type="email" id="signupEmail" placeholder="Email" />
           <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" />
-          <div class="error" id="signupError"></div>
-          <button class="btn" id="signupBtn">Create Account</button>
-          <div class="switch">Already have an account? <a id="switchToLogin">Sign In</a></div>
+          <div class="error" style="color:var(--danger);font-size:12px;margin-bottom:8px;" id="signupError"></div>
+          <button class="pill-btn primary" id="signupBtn">Create Account</button>
+          <div class="switch" style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-secondary);">Already have an account? <a id="switchToLogin">Sign In</a></div>
         `;
       }
       _attachEventListeners() {
@@ -382,11 +402,7 @@
           localStorage.setItem('ct', data.token);
           localStorage.setItem('cu', JSON.stringify(data.user));
           this.toast('Welcome back, ' + data.user.name, 'success');
-        } catch (e) {
-          store.set('auth.error', e.message);
-        } finally {
-          store.set('auth.loading', false);
-        }
+        } catch (e) { store.set('auth.error', e.message); } finally { store.set('auth.loading', false); }
       }
       async _handleSignup() {
         const name = this.shadowRoot.getElementById('signupName')?.value.trim();
@@ -404,11 +420,7 @@
           localStorage.setItem('cu', JSON.stringify(data.user));
           await api.post('/api/token/welcome-bonus');
           this.toast('Account created! Welcome to Capitan AI.', 'success');
-        } catch (e) {
-          store.set('auth.error', e.message);
-        } finally {
-          store.set('auth.loading', false);
-        }
+        } catch (e) { store.set('auth.error', e.message); } finally { store.set('auth.loading', false); }
       }
     }
     AuthGate.define('capitan-auth-gate');
@@ -419,9 +431,7 @@
         return [
           this.observe('auth.token', () => this.render()),
           this.observe('ui.theme', (theme) => {
-            document.body.className = theme === 'auto'
-              ? (new Date().getHours() >= 6 && new Date().getHours() < 18 ? 'light' : 'dark')
-              : theme;
+            document.body.className = theme === 'auto' ? (new Date().getHours() >= 6 && new Date().getHours() < 18 ? 'light' : 'dark') : theme;
           }),
         ];
       }
@@ -433,10 +443,7 @@
           </style>
           ${token ? '<capitan-main-layout></capitan-main-layout>' : '<capitan-auth-gate></capitan-auth-gate>'}
           <capitan-toast-container></capitan-toast-container>
-          <capitan-buy-modal></capitan-buy-modal>
-          <capitan-send-modal></capitan-send-modal>
-          <capitan-receive-modal></capitan-receive-modal>
-          <capitan-swap-modal></capitan-swap-modal>
+          <capitan-modals></capitan-modals>
         `;
       }
     }
@@ -457,22 +464,13 @@
           </style>
           <capitan-sidebar></capitan-sidebar>
           <div class="main-content">
-            ${this._getViewComponent(activeView)}
+            ${this._getView(activeView)}
           </div>
         `;
       }
-      _getViewComponent(view) {
-        switch(view) {
-          case 'chat': return '<capitan-chat-view></capitan-chat-view>';
-          case 'wallet': return '<capitan-wallet-view></capitan-wallet-view>';
-          case 'portfolio': return '<capitan-portfolio-view></capitan-portfolio-view>';
-          case 'research': return '<capitan-research-view></capitan-research-view>';
-          case 'developer': return '<capitan-developer-view></capitan-developer-view>';
-          case 'workspaces': return '<capitan-workspaces-view></capitan-workspaces-view>';
-          case 'community': return '<capitan-community-view></capitan-community-view>';
-          case 'dashboard': return '<capitan-dashboard-view></capitan-dashboard-view>';
-          default: return '<capitan-chat-view></capitan-chat-view>';
-        }
+      _getView(view) {
+        const views = { chat:'<capitan-chat-view></capitan-chat-view>', wallet:'<capitan-wallet-view></capitan-wallet-view>', portfolio:'<capitan-portfolio-view></capitan-portfolio-view>', research:'<capitan-research-view></capitan-research-view>', developer:'<capitan-developer-view></capitan-developer-view>', workspaces:'<capitan-workspaces-view></capitan-workspaces-view>', community:'<capitan-community-view></capitan-community-view>', dashboard:'<capitan-dashboard-view></capitan-dashboard-view>' };
+        return views[view] || views.chat;
       }
     }
     MainLayout.define('capitan-main-layout');
@@ -509,9 +507,7 @@
             .tier { font-size:10px; color:var(--accent-cyan); }
             .balance { font-size:11px; color:var(--text-tertiary); }
           </style>
-          <div class="brand">
-            <span class="logo-text">CAPITAN AI</span>
-          </div>
+          <div class="brand"><span class="logo-text">CAPITAN AI</span></div>
           <div class="nav">
             ${this._navItem('chat', 'Chat', 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', activeView)}
             ${this._navItem('wallet', 'OS Wallets', 'M20 21V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v16 M20 17h-5a3 3 0 0 1 0-6h5 M4 10h4v4H4z', activeView)}
@@ -525,30 +521,21 @@
           <div class="footer">
             <div class="profile">
               <div class="avatar">${user?.name?.charAt(0) || 'G'}</div>
-              <div>
-                <div class="name">${user?.name || 'Guest'}</div>
-                <div class="tier">${tier || 'free'}</div>
-              </div>
+              <div><div class="name">${user?.name || 'Guest'}</div><div class="tier">${tier || 'free'}</div></div>
             </div>
             <div class="balance">${Math.floor(balance).toLocaleString()} CLOSE</div>
           </div>
         `;
-        this._attachNavListeners();
+        this._attachListeners();
       }
       _navItem(view, label, svgPath, activeView) {
-        return `
-          <div class="nav-item ${view === activeView ? 'active' : ''}" data-view="${view}">
-            <svg viewBox="0 0 24 24"><path d="${svgPath}"/></svg>
-            ${label}
-          </div>
-        `;
+        return `<div class="nav-item ${view === activeView ? 'active' : ''}" data-view="${view}"><svg viewBox="0 0 24 24"><path d="${svgPath}"/></svg>${label}</div>`;
       }
-      _attachNavListeners() {
+      _attachListeners() {
         setTimeout(() => {
           this.shadowRoot.querySelectorAll('.nav-item[data-view]').forEach(item => {
             item.addEventListener('click', () => {
-              const view = item.dataset.view;
-              store.set('ui.activeView', view);
+              store.set('ui.activeView', item.dataset.view);
               store.set('ui.sidebarOpen', false);
             });
           });
@@ -562,12 +549,13 @@
       constructor() {
         super();
         this._chart = null;
+        this._tabObserver = null;
       }
       subscribe() {
         return [
-          this.observe('wallet.balances', () => this._renderTokensAndTotal()),
-          this.observe('wallet.activity', () => this._renderActivity()),
-          this.observe('wallet.markets', () => this._renderMarkets()),
+          this.observe('wallet.balances', () => this._updateTokensAndTotal()),
+          this.observe('wallet.activity', () => this._updateActivity()),
+          this.observe('wallet.markets', () => this._updateMarkets()),
           this.observe('wallet.loadingBalances', () => this._updateLoading()),
           this.observe('wallet.address', () => this._updateAddress()),
         ];
@@ -575,13 +563,15 @@
       connectedCallback() {
         super.connectedCallback();
         this._loadData();
+        this._pollActivity();
+      }
+      disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._chart) this._chart.destroy();
+        if (this._tabObserver) this._tabObserver.disconnect();
       }
       async _loadData() {
-        await Promise.all([
-          this._loadBalances(),
-          this._loadActivity(true),
-          this._loadMarkets(),
-        ]);
+        await Promise.all([this._loadBalances(), this._loadActivity(true), this._loadMarkets()]);
         this._renderChart();
       }
       async _loadBalances() {
@@ -594,11 +584,7 @@
           let total = 0;
           for (const t of data.tokens) total += t.usdValue || 0;
           store.set('wallet.totalUsd', total);
-        } catch (e) {
-          store.set('wallet.balances', []);
-        } finally {
-          store.set('wallet.loadingBalances', false);
-        }
+        } catch (e) {} finally { store.set('wallet.loadingBalances', false); }
       }
       async _loadActivity(reset = false) {
         if (reset) { store.set('wallet.activityPage', 0); store.set('wallet.activity', []); store.set('wallet.activityHasMore', true); }
@@ -611,11 +597,7 @@
           store.set('wallet.activity', reset ? data.items : [...current, ...(data.items || [])]);
           store.set('wallet.activityHasMore', data.hasMore || false);
           store.set('wallet.activityPage', page + 1);
-        } catch (e) {
-          store.set('wallet.activity', []);
-        } finally {
-          store.set('wallet.loadingActivity', false);
-        }
+        } catch (e) {} finally { store.set('wallet.loadingActivity', false); }
       }
       async _loadMarkets() {
         try {
@@ -627,64 +609,52 @@
           store.set('wallet.markets', { crypto, stocks, commodities });
         } catch (e) {}
       }
+      _pollActivity() {
+        setInterval(() => {
+          if (store.get('ui.activeView') === 'wallet') {
+            this._loadActivity(true);
+          }
+        }, 30000);
+      }
       render() {
+        const { totalUsd, balances, loadingBalances, activity, loadingActivity, markets, chartTimeframe } = store.get('wallet');
+        const closeBalance = store.get('tokens.balance');
+        const tab = store.get('ui.walletTab') || 'tokens';
         this.shadowRoot.innerHTML = `
           <style>
-            :host { display:flex; flex-direction:column; height:100%; padding:20px 24px; overflow-y:auto; background:var(--bg-primary); }
-            .header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
-            .header-left { display:flex; align-items:center; gap:12px; }
+            :host { display:flex; flex-direction:column; height:100%; padding:24px; overflow-y:auto; background:var(--bg-primary); }
+            .glass-card { background:var(--glass-bg); backdrop-filter:var(--glass-blur); border:1px solid var(--glass-border); border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); }
+            .header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:24px; }
             h1 { font-size:24px; font-weight:700; margin:0; }
-            .network-select { display:flex; align-items:center; gap:6px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-lg); padding:4px 12px; cursor:pointer; }
-            .network-select select { background:transparent; border:none; color:var(--text-primary); font-weight:500; outline:none; font-size:13px; cursor:pointer; }
-            .dot { width:8px; height:8px; border-radius:50%; background:var(--success); display:inline-block; }
-            .address { font-family:monospace; background:var(--bg-secondary); padding:6px 12px; border-radius:var(--radius-lg); border:1px solid var(--border); font-size:13px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; cursor:pointer; }
-            .balance-card { background:linear-gradient(145deg,var(--surface-float),var(--bg-secondary)); backdrop-filter:blur(10px); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:20px 24px; margin-bottom:20px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; box-shadow:var(--shadow-glow); }
+            .network-select { display:flex; align-items:center; gap:6px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-pill); padding:6px 14px; }
+            .network-select select { background:transparent; border:none; color:var(--text-primary); font-weight:500; outline:none; font-size:13px; }
+            .address-pill { font-family:monospace; background:var(--bg-secondary); padding:6px 14px; border-radius:var(--radius-pill); border:1px solid var(--border); font-size:13px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; cursor:pointer; }
+            .balance-card { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; padding:24px; margin-bottom:24px; }
             .balance-total { font-size:32px; font-weight:700; }
-            .chart-container { background:var(--surface-float); backdrop-filter:blur(10px); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:20px; }
+            .tier-badge { background:var(--accent-glow-cyan); padding:6px 14px; border-radius:var(--radius-pill); border:1px solid var(--accent-cyan); font-weight:600; font-size:14px; color:var(--accent-cyan); }
+            .chart-container { padding:16px 20px; margin-bottom:24px; }
             .chart-toolbar { display:flex; gap:6px; margin-bottom:12px; }
-            .time-pill { padding:4px 12px; border-radius:20px; border:1px solid var(--border); font-size:12px; cursor:pointer; background:transparent; color:var(--text-secondary); }
+            .time-pill { padding:4px 12px; border-radius:var(--radius-pill); border:1px solid var(--border); font-size:12px; cursor:pointer; background:transparent; color:var(--text-secondary); }
             .time-pill.active { border-color:var(--accent-cyan); background:var(--accent-glow-cyan); color:var(--accent-cyan); }
             canvas { width:100% !important; height:220px !important; }
-            .actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
-            .action-btn { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius-lg); border:1px solid var(--border); background:var(--surface-float); backdrop-filter:blur(6px); font-size:13px; font-weight:500; color:var(--text-secondary); cursor:pointer; transition:all var(--duration-fast); }
-            .action-btn:hover { border-color:var(--accent-cyan); background:var(--accent-glow-cyan); color:var(--text-primary); }
-            .action-btn.primary { background:linear-gradient(135deg,var(--accent-cyan),var(--accent-violet)); border-color:transparent; color:white; }
+            .actions { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; }
             .tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; }
             .tab { padding:8px 16px; font-size:14px; font-weight:500; color:var(--text-tertiary); cursor:pointer; border-bottom:2px solid transparent; transition:all var(--duration-fast); }
             .tab.active { color:var(--accent-cyan); border-bottom-color:var(--accent-cyan); }
             .tab-content { flex:1; }
             .token-list { display:flex; flex-direction:column; gap:6px; }
-            .token-item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-secondary); border-radius:var(--radius-md); border:1px solid transparent; }
-            .token-item:hover { border-color:var(--border); }
-            .token-left { display:flex; align-items:center; gap:10px; }
-            .token-symbol { font-weight:600; }
-            .token-name { font-size:12px; color:var(--text-tertiary); }
-            .token-right { text-align:right; }
-            .token-balance { font-weight:500; }
-            .token-usd { font-size:12px; color:var(--text-tertiary); }
+            .token-item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-secondary); border-radius:var(--radius-md); }
             .activity-item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-secondary); border-radius:var(--radius-sm); border-left:3px solid var(--border); }
-            .activity-type { font-weight:500; }
-            .activity-date { font-size:12px; color:var(--text-tertiary); }
-            .activity-amount { font-weight:600; }
-            .status { font-size:12px; padding:2px 8px; border-radius:12px; background:var(--bg-tertiary); color:var(--text-secondary); }
-            .status.completed { background:var(--accent-glow-cyan); color:var(--accent-cyan); }
-            .status.pending { background:rgba(245,158,11,0.15); color:var(--warning); }
-            .status.failed { background:rgba(239,68,68,0.15); color:var(--danger); }
             .markets-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-            .market-item { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; cursor:pointer; transition:all var(--duration-fast); }
+            .market-item { background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px 14px; cursor:pointer; }
             .market-item:hover { border-color:var(--accent-cyan); transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,212,255,0.1); }
-            .market-symbol { font-weight:700; font-size:15px; }
-            .market-price { font-size:14px; margin:4px 0; }
-            .market-change { font-size:13px; font-weight:500; }
-            .positive { color:var(--success); } .negative { color:var(--danger); }
             .skeleton { background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-md); }
             @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
           </style>
           <div class="header">
-            <div class="header-left">
+            <div style="display:flex; align-items:center; gap:12px;">
               <h1>OS Wallets</h1>
               <div class="network-select">
-                <span class="dot"></span>
                 <select id="networkSelect">
                   <option value="137" ${store.get('wallet.network')===137?'selected':''}>Polygon</option>
                   <option value="1" ${store.get('wallet.network')===1?'selected':''}>Ethereum</option>
@@ -693,190 +663,148 @@
                 </select>
               </div>
             </div>
-            <div class="address" id="addressDisplay">
-              <span id="addrText">${this._formatAddress(store.get('wallet.address'))}</span>
+            <div class="address-pill" id="addressDisplay">
+              <span id="addrText">${this._fmtAddr(store.get('wallet.address'))}</span>
               <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </div>
           </div>
-          <div class="balance-card">
+          <div class="glass-card balance-card" id="balanceCard">
             <div>
-              <div class="balance-total" id="totalUsd">$${this._formatNumber(store.get('wallet.totalUsd'),2)}</div>
+              <div class="balance-total" id="totalUsd">$${this._fmtNum(totalUsd,2)}</div>
               <div style="color:var(--text-tertiary); font-size:13px; margin-top:4px;">Total Balance</div>
             </div>
-            <div>
-              <div style="background:var(--accent-glow-cyan); padding:6px 14px; border-radius:var(--radius-lg); border:1px solid var(--accent-cyan); font-weight:600; font-size:14px; color:var(--accent-cyan);">
-                ${Math.floor(store.get('tokens.balance')).toLocaleString()} CLOSE
-              </div>
-            </div>
+            <div class="tier-badge">${Math.floor(closeBalance).toLocaleString()} CLOSE</div>
           </div>
-          <div class="chart-container">
+          <div class="glass-card chart-container">
             <div class="chart-toolbar" id="chartTimeframes">
-              <button class="time-pill active" data-time="1h">1H</button>
-              <button class="time-pill" data-time="1d">1D</button>
-              <button class="time-pill" data-time="1w">1W</button>
-              <button class="time-pill" data-time="1m">1M</button>
-              <button class="time-pill" data-time="1y">1Y</button>
-              <button class="time-pill" data-time="all">All</button>
+              <button class="time-pill active" data-time="1h">1H</button><button class="time-pill" data-time="1d">1D</button><button class="time-pill" data-time="1w">1W</button>
+              <button class="time-pill" data-time="1m">1M</button><button class="time-pill" data-time="1y">1Y</button><button class="time-pill" data-time="all">All</button>
             </div>
             <canvas id="walletChart"></canvas>
           </div>
           <div class="actions">
-            <button class="action-btn" id="sendBtn">Send</button>
-            <button class="action-btn" id="receiveBtn">Receive</button>
-            <button class="action-btn" id="swapBtn">Swap</button>
-            <button class="action-btn primary" id="buyBtn">Buy CLOSE</button>
+            <button class="pill-btn" id="sendBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>Send</button>
+            <button class="pill-btn" id="receiveBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Receive</button>
+            <button class="pill-btn" id="swapBtn"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Swap</button>
+            <button class="pill-btn primary" id="buyBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>Buy CLOSE</button>
+            <button class="pill-btn" id="connectBtn"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/></svg>WalletConnect</button>
           </div>
           <div class="tabs">
-            <div class="tab active" data-tab="tokens">Tokens</div>
-            <div class="tab" data-tab="activity">Activity</div>
-            <div class="tab" data-tab="markets">Markets</div>
+            <div class="tab ${tab==='tokens'?'active':''}" data-tab="tokens">Tokens</div>
+            <div class="tab ${tab==='activity'?'active':''}" data-tab="activity">Activity</div>
+            <div class="tab ${tab==='markets'?'active':''}" data-tab="markets">Markets</div>
+            <div class="tab ${tab==='ai'?'active':''}" data-tab="ai">AI Advisor</div>
           </div>
           <div class="tab-content" id="tabContent">
-            ${this._renderTokensContent()}
+            ${this._renderTabContent(tab)}
+          </div>
+          <!-- Wallet Profile Sidebar -->
+          <div style="position:fixed; top:0; right:-360px; width:320px; height:100vh; background:var(--glass-bg); backdrop-filter:var(--glass-blur); border-left:1px solid var(--glass-border); z-index:200; transition:right 0.3s var(--ease-spring);" id="walletProfileDrawer">
+            <div style="padding:24px;">
+              <h2>Wallet Profile</h2>
+              <div class="profile-avatar" style="width:60px; height:60px; border-radius:50%; background:var(--accent-glow-cyan); margin:12px 0;">${store.get('auth.user')?.name?.charAt(0) || 'G'}</div>
+              <div><strong>${store.get('auth.user')?.name || 'Guest'}</strong></div>
+              <div style="font-size:13px; color:var(--text-secondary);">${this._fmtAddr(store.get('wallet.address'))}</div>
+              <div style="margin-top:16px;"><button class="pill-btn" id="copyWalletAddrBtn">Copy Address</button></div>
+            </div>
           </div>
         `;
-        this._attachEventListeners();
+        this._attachListeners();
         this._renderChart();
       }
-      _formatAddress(addr) { return addr ? addr.slice(0,6)+'…'+addr.slice(-4) : '0x0000…0000'; }
-      _formatNumber(n, d=2) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d}); }
-
-      _renderTokensContent() {
+      _fmtAddr(addr) { return addr ? addr.slice(0,6)+'…'+addr.slice(-4) : '0x0000…0000'; }
+      _fmtNum(n, d=2) { return Number(n).toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d}); }
+      _renderTabContent(tab) {
+        if (tab === 'tokens') return this._renderTokens();
+        if (tab === 'activity') return this._renderActivity();
+        if (tab === 'markets') return this._renderMarketsTab();
+        if (tab === 'ai') return this._renderAIAssistant();
+      }
+      _renderTokens() {
         const balances = store.get('wallet.balances') || [];
         const loading = store.get('wallet.loadingBalances');
         if (loading) return '<div class="skeleton" style="height:200px;"></div>';
-        if (!balances.length) return '<div style="color:var(--text-tertiary); text-align:center; padding:20px;">No tokens found.</div>';
+        if (!balances.length) return '<div style="text-align:center;padding:40px;color:var(--text-tertiary);">No tokens found</div>';
         return `
           <div class="token-list">
             ${balances.map(t => `
               <div class="token-item">
-                <div class="token-left">
-                  <span class="token-symbol">${t.symbol}</span>
-                  <span class="token-name">${t.name || ''}</span>
-                </div>
-                <div class="token-right">
-                  <div class="token-balance">${this._formatNumber(t.balance, 4)}</div>
-                  <div class="token-usd">$${this._formatNumber(t.usdValue, 2)}</div>
-                </div>
+                <div style="display:flex;align-items:center;gap:10px;"><span style="font-weight:600;">${t.symbol}</span><span style="font-size:12px;color:var(--text-tertiary);">${t.name || ''}</span></div>
+                <div style="text-align:right;"><div>${this._fmtNum(t.balance,4)}</div><div style="font-size:12px;color:var(--text-tertiary);">$${this._fmtNum(t.usdValue,2)}</div></div>
               </div>
             `).join('')}
           </div>
         `;
       }
-      _renderActivityContent() {
+      _renderActivity() {
         const activity = store.get('wallet.activity') || [];
         const loading = store.get('wallet.loadingActivity');
-        if (loading && activity.length === 0) return '<div class="skeleton" style="height:200px;"></div>';
-        if (!activity.length) return '<div style="color:var(--text-tertiary); text-align:center; padding:20px;">No activity yet.</div>';
-        let html = '<div class="activity-list">';
+        if (loading && !activity.length) return '<div class="skeleton" style="height:200px;"></div>';
+        if (!activity.length) return '<div style="text-align:center;padding:40px;color:var(--text-tertiary);">No activity yet</div>';
+        let html = '<div>';
         activity.forEach(item => {
-          const statusClass = item.status === 'completed' ? 'completed' : item.status === 'pending' ? 'pending' : 'failed';
+          const statusCls = item.status === 'completed' ? 'completed' : item.status === 'pending' ? 'pending' : 'failed';
           html += `
             <div class="activity-item">
-              <div>
-                <div class="activity-type">${item.type}</div>
-                <div class="activity-date">${new Date(item.timestamp).toLocaleString()}</div>
-              </div>
-              <div>
-                <div class="activity-amount">${this._formatNumber(item.amount)}</div>
-                <div class="status ${statusClass}">${item.status}</div>
-              </div>
+              <div><div style="font-weight:500;">${item.type}</div><div style="font-size:12px;color:var(--text-tertiary);">${new Date(item.timestamp).toLocaleString()}</div></div>
+              <div><div>${this._fmtNum(item.amount)}</div><div class="status" style="font-size:12px;padding:2px 8px;border-radius:12px;background:var(--bg-tertiary);color:var(--text-secondary);">${item.status}</div></div>
             </div>
           `;
         });
-        if (store.get('wallet.activityHasMore')) html += '<div style="text-align:center;padding:8px;color:var(--text-tertiary);">Scroll for more...</div>';
+        if (store.get('wallet.activityHasMore')) html += '<div style="text-align:center;padding:8px;color:var(--text-tertiary);">Loading more...</div>';
         html += '</div>';
         return html;
       }
-      _renderMarketsContent() {
-        return `<div style="display:flex; gap:8px; margin-bottom:16px;">
-          <button class="action-btn active" data-market="crypto">Crypto</button>
-          <button class="action-btn" data-market="stocks">Stocks</button>
-          <button class="action-btn" data-market="commodities">Commodities</button>
-        </div>
-        <div id="marketsGrid"></div>`;
+      _renderMarketsTab() {
+        return `<div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="pill-btn active" data-market="crypto">Crypto</button>
+          <button class="pill-btn" data-market="stocks">Stocks</button>
+          <button class="pill-btn" data-market="commodities">Commodities</button>
+        </div><div id="marketsGrid"></div>`;
       }
-      _renderTokensAndTotal() {
+      _renderAIAssistant() {
+        return `<div style="padding:20px;color:var(--text-secondary);">AI Advisor panel – ask anything about your wallet.</div>`;
+      }
+      _updateTokensAndTotal() {
         if (!this.shadowRoot) return;
         const totalUsd = store.get('wallet.totalUsd');
         const totalEl = this.shadowRoot.getElementById('totalUsd');
-        if (totalEl) totalEl.textContent = '$' + this._formatNumber(totalUsd, 2);
+        if (totalEl) totalEl.textContent = '$' + this._fmtNum(totalUsd,2);
         const tabContent = this.shadowRoot.getElementById('tabContent');
-        if (tabContent && store.get('wallet.tab') === 'tokens') {
-          tabContent.innerHTML = this._renderTokensContent();
-        }
+        if (tabContent && store.get('ui.walletTab') === 'tokens') tabContent.innerHTML = this._renderTokens();
       }
-      _renderActivity() {
+      _updateActivity() {
         if (!this.shadowRoot) return;
         const tabContent = this.shadowRoot.getElementById('tabContent');
-        if (tabContent && store.get('wallet.tab') === 'activity') {
-          tabContent.innerHTML = this._renderActivityContent();
-        }
+        if (tabContent && store.get('ui.walletTab') === 'activity') tabContent.innerHTML = this._renderActivity();
       }
-      _renderMarkets() {
+      _updateMarkets() {
         if (!this.shadowRoot) return;
         const tabContent = this.shadowRoot.getElementById('tabContent');
-        if (tabContent && store.get('wallet.tab') === 'markets') {
-          tabContent.innerHTML = this._renderMarketsContent();
+        if (tabContent && store.get('ui.walletTab') === 'markets') {
+          tabContent.innerHTML = this._renderMarketsTab();
           this._attachMarketListeners();
-          this._renderMarketList('crypto');
+          this._showMarketList('crypto');
         }
-      }
-      _renderMarketList(type) {
-        const grid = this.shadowRoot.getElementById('marketsGrid');
-        if (!grid) return;
-        const markets = store.get('wallet.markets');
-        let items = [];
-        if (type === 'crypto') items = markets.crypto || [];
-        else if (type === 'stocks') items = markets.stocks || [];
-        else items = markets.commodities || [];
-        if (!items.length) { grid.innerHTML = '<div class="text-tertiary">No data.</div>'; return; }
-        grid.innerHTML = `<div class="markets-grid">
-          ${items.slice(0,50).map(item => `
-            <div class="market-item">
-              <div class="market-symbol">${item.symbol}</div>
-              <div class="market-price">$${this._formatNumber(item.price, 4)}</div>
-              <div class="market-change ${item.change24h >= 0 ? 'positive' : 'negative'}">
-                ${item.change24h >= 0 ? '+' : ''}${item.change24h?.toFixed(2) || '0.00'}%
-              </div>
-            </div>
-          `).join('')}
-        </div>`;
       }
       _updateLoading() {}
       _updateAddress() {
         const addrEl = this.shadowRoot?.getElementById('addrText');
-        if (addrEl) addrEl.textContent = this._formatAddress(store.get('wallet.address'));
+        if (addrEl) addrEl.textContent = this._fmtAddr(store.get('wallet.address'));
       }
       _renderChart() {
         const canvas = this.shadowRoot?.getElementById('walletChart');
         if (!canvas) return;
         if (this._chart) this._chart.destroy();
-        const labels = Array.from({length: 24}, (_, i) => i + 'h');
-        const data = labels.map(() => Math.random() * 100 + 50);
+        const labels = Array.from({length:24},(_,i)=>i+'h');
+        const data = labels.map(()=>Math.random()*100+50);
         this._chart = new Chart(canvas, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: 'Portfolio Value',
-              data,
-              borderColor: '#00d4ff',
-              backgroundColor: 'rgba(0, 212, 255, 0.05)',
-              fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
-              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } }
-            }
-          }
+          type:'line',
+          data:{labels, datasets:[{label:'Portfolio',data,borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,0.05)',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},
+          options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#64748b'}}}}
         });
       }
-      _attachEventListeners() {
+      _attachListeners() {
         const netSelect = this.shadowRoot.getElementById('networkSelect');
         netSelect?.addEventListener('change', (e) => {
           store.set('wallet.network', parseInt(e.target.value));
@@ -888,34 +816,26 @@
           navigator.clipboard.writeText(store.get('wallet.address') || '');
           this.toast('Address copied', 'success');
         });
-        this.shadowRoot.getElementById('sendBtn')?.addEventListener('click', () => {
-          store.set('ui.modals', [...store.get('ui.modals'), 'send']);
-        });
-        this.shadowRoot.getElementById('receiveBtn')?.addEventListener('click', () => {
-          store.set('ui.modals', [...store.get('ui.modals'), 'receive']);
-        });
-        this.shadowRoot.getElementById('swapBtn')?.addEventListener('click', () => {
-          store.set('ui.modals', [...store.get('ui.modals'), 'swap']);
-        });
-        this.shadowRoot.getElementById('buyBtn')?.addEventListener('click', () => {
-          store.set('ui.modals', [...store.get('ui.modals'), 'buy']);
-        });
+        this.shadowRoot.getElementById('sendBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'send']));
+        this.shadowRoot.getElementById('receiveBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'receive']));
+        this.shadowRoot.getElementById('swapBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'swap']));
+        this.shadowRoot.getElementById('buyBtn')?.addEventListener('click', () => store.set('ui.modals', [...store.get('ui.modals'),'buy']));
+        this.shadowRoot.getElementById('connectBtn')?.addEventListener('click', () => this._walletConnect());
+        // Tabs
         this.shadowRoot.querySelectorAll('.tab').forEach(tab => {
           tab.addEventListener('click', () => {
             this.shadowRoot.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             const tabName = tab.dataset.tab;
-            store.set('wallet.tab', tabName);
+            store.set('ui.walletTab', tabName);
             const tabContent = this.shadowRoot.getElementById('tabContent');
-            if (tabName === 'tokens') tabContent.innerHTML = this._renderTokensContent();
-            else if (tabName === 'activity') tabContent.innerHTML = this._renderActivityContent();
-            else if (tabName === 'markets') {
-              tabContent.innerHTML = this._renderMarketsContent();
-              this._attachMarketListeners();
-              this._renderMarketList('crypto');
-            }
+            if (tabName === 'tokens') tabContent.innerHTML = this._renderTokens();
+            else if (tabName === 'activity') tabContent.innerHTML = this._renderActivity();
+            else if (tabName === 'markets') { tabContent.innerHTML = this._renderMarketsTab(); this._attachMarketListeners(); this._showMarketList('crypto'); }
+            else if (tabName === 'ai') tabContent.innerHTML = this._renderAIAssistant();
           });
         });
+        // Chart timeframes
         this.shadowRoot.querySelectorAll('.time-pill').forEach(pill => {
           pill.addEventListener('click', () => {
             this.shadowRoot.querySelectorAll('.time-pill').forEach(p => p.classList.remove('active'));
@@ -931,270 +851,189 @@
           btn.addEventListener('click', () => {
             btns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            this._renderMarketList(btn.dataset.market);
+            this._showMarketList(btn.dataset.market);
           });
         });
+      }
+      _showMarketList(type) {
+        const grid = this.shadowRoot.getElementById('marketsGrid');
+        if (!grid) return;
+        const markets = store.get('wallet.markets');
+        let items = [];
+        if (type === 'crypto') items = markets.crypto || [];
+        else if (type === 'stocks') items = markets.stocks || [];
+        else items = markets.commodities || [];
+        if (!items.length) { grid.innerHTML = '<div style="color:var(--text-tertiary);">No data</div>'; return; }
+        grid.innerHTML = `<div class="markets-grid">
+          ${items.slice(0,50).map(item => `
+            <div class="market-item">
+              <div style="font-weight:700;">${item.symbol}</div>
+              <div>$${this._fmtNum(item.price,4)}</div>
+              <div style="color:${item.change24h>=0?'var(--success)':'var(--danger)'};">${item.change24h>=0?'+':''}${item.change24h?.toFixed(2)||'0.00'}%</div>
+            </div>
+          `).join('')}
+        </div>`;
+      }
+      _walletConnect() {
+        // Simulate WalletConnect – show URI input
+        const uri = prompt('Enter WalletConnect URI:');
+        if (uri) {
+          store.set('wallet.connectedDapps', [...store.get('wallet.connectedDapps'), { name:'dApp', icon:'' }]);
+          this.toast('Connected to dApp', 'success');
+        }
       }
     }
     WalletView.define('capitan-wallet-view');
 
-    // ==================== BUY MODAL ====================
-    class BuyModal extends CapitanElement {
+    // ==================== MODALS (Send, Receive, Swap, Buy) ====================
+    class ModalsContainer extends CapitanElement {
       subscribe() {
-        return [this.observe('ui.modals', (modals) => {
-          if (modals.includes('buy')) this.render();
-          else this.shadowRoot.innerHTML = '';
-        })];
+        return [this.observe('ui.modals', () => this.render())];
       }
       render() {
-        if (!store.get('ui.modals').includes('buy')) { this.shadowRoot.innerHTML = ''; return; }
-        this.shadowRoot.innerHTML = `
-          <style>
-            :host { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(12px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
-            .modal { background:var(--surface); border:1px solid var(--glass-border); border-radius:var(--radius-xl); max-width:560px; width:100%; padding:28px 24px; box-shadow:var(--shadow-lg); }
-            h2 { font-size:22px; font-weight:700; margin-bottom:16px; }
-            input, select { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); color:var(--text-primary); font-size:14px; margin-bottom:12px; }
-            .btn { padding:12px 20px; border:none; border-radius:var(--radius-lg); font-weight:600; font-size:14px; cursor:pointer; }
-            .btn-primary { background:linear-gradient(135deg,var(--accent-cyan),var(--accent-violet)); color:white; }
-            .btn-secondary { background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border); }
-          </style>
-          <div class="modal">
-            <h2>Buy CLOSE</h2>
-            <p>Current rate: <strong id="buyRate">1 POL = 0 CLOSE</strong></p>
-            <input type="number" id="buyAmount" placeholder="Amount of CLOSE" />
-            <div>Equivalent: <span id="buyEquivalent">0 POL</span></div>
-            <div style="margin-top:8px;">
-              <p>Send POL to:</p>
-              <div id="buyAddress" style="word-break:break-all; font-family:monospace;"></div>
-              <button id="copyAddrBtn" class="btn btn-secondary">Copy</button>
-            </div>
-            <input type="text" id="buyTxHash" placeholder="Transaction ID" />
-            <div style="display:flex; gap:10px; margin-top:16px;">
-              <button class="btn btn-secondary" id="closeBtn">Cancel</button>
-              <button class="btn btn-primary" id="verifyBtn">Verify Payment</button>
-            </div>
-          </div>
-        `;
-        this._init();
+        const modals = store.get('ui.modals');
+        this.shadowRoot.innerHTML = '';
+        if (modals.includes('send')) this.shadowRoot.appendChild(this._createSendModal());
+        if (modals.includes('receive')) this.shadowRoot.appendChild(this._createReceiveModal());
+        if (modals.includes('swap')) this.shadowRoot.appendChild(this._createSwapModal());
+        if (modals.includes('buy')) this.shadowRoot.appendChild(this._createBuyModal());
       }
-      async _init() {
-        try {
-          const rateData = await api.get('/api/token/rate');
-          this.shadowRoot.getElementById('buyRate').textContent = `1 POL = ${rateData.rate} CLOSE`;
-          this.shadowRoot.getElementById('buyAddress').textContent = rateData.matic_payment_address;
-        } catch(e) {}
-        this.shadowRoot.getElementById('closeBtn').addEventListener('click', () => {
-          store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'buy'));
-        });
-        this.shadowRoot.getElementById('verifyBtn').addEventListener('click', async () => {
-          const amount = this.shadowRoot.getElementById('buyAmount').value;
-          const txHash = this.shadowRoot.getElementById('buyTxHash').value.trim();
-          if (!amount || !txHash) return alert('Fill all fields');
-          try {
-            const res = await api.post('/api/cap/purchase', { cap_amount: Math.floor(amount * 1e18).toString(), tx_hash: txHash });
-            if (res.verified) {
-              this.toast('Purchase confirmed!', 'success');
-              store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'buy'));
-            } else {
-              alert('Verification failed.');
-            }
-          } catch(e) { alert(e.message); }
-        });
+      _createModal(content) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;';
+        wrap.innerHTML = content;
+        return wrap;
       }
-    }
-    BuyModal.define('capitan-buy-modal');
-
-    // ==================== SEND MODAL ====================
-    class SendModal extends CapitanElement {
-      subscribe() {
-        return [this.observe('ui.modals', (modals) => {
-          if (modals.includes('send')) this.render();
-          else this.shadowRoot.innerHTML = '';
-        })];
-      }
-      render() {
-        if (!store.get('ui.modals').includes('send')) { this.shadowRoot.innerHTML = ''; return; }
-        this.shadowRoot.innerHTML = `
-          <style>
-            :host { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(12px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
-            .modal { background:var(--surface); border:1px solid var(--glass-border); border-radius:var(--radius-xl); max-width:560px; width:100%; padding:28px 24px; box-shadow:var(--shadow-lg); }
-            h2 { font-size:22px; font-weight:700; margin-bottom:16px; }
-            input, select { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); color:var(--text-primary); font-size:14px; margin-bottom:12px; }
-            .btn { padding:12px 20px; border:none; border-radius:var(--radius-lg); font-weight:600; font-size:14px; cursor:pointer; }
-            .btn-primary { background:linear-gradient(135deg,var(--accent-cyan),var(--accent-violet)); color:white; }
-            .btn-secondary { background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border); }
-          </style>
-          <div class="modal">
+      _closeModal(name) { store.set('ui.modals', store.get('ui.modals').filter(m => m !== name)); }
+      _createSendModal() {
+        const modal = this._createModal(`
+          <div class="glass-card" style="max-width:500px;width:100%;padding:24px;">
             <h2>Send</h2>
-            <input type="text" id="sendAddress" placeholder="Recipient Address" />
-            <select id="sendTokenSelect"></select>
-            <input type="number" id="sendAmount" placeholder="Amount" step="any" />
-            <div style="display:flex; gap:10px; margin-top:16px;">
-              <button class="btn btn-secondary" id="closeBtn">Cancel</button>
-              <button class="btn btn-primary" id="sendConfirmBtn">Send</button>
+            <input id="sendAddress" placeholder="Recipient Address" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);"/>
+            <select id="sendToken" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);">${(store.get('wallet.balances')||[]).map(t=>`<option value="${t.address}">${t.symbol}</option>`).join('')}</select>
+            <input id="sendAmount" type="number" placeholder="Amount" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);"/>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="pill-btn" id="sendCancel">Cancel</button>
+              <button class="pill-btn primary" id="sendConfirm">Send</button>
             </div>
           </div>
-        `;
-        this._init();
-      }
-      async _init() {
-        const select = this.shadowRoot.getElementById('sendTokenSelect');
-        const balances = store.get('wallet.balances') || [];
-        select.innerHTML = balances.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
-        this.shadowRoot.getElementById('closeBtn').addEventListener('click', () => {
-          store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'send'));
-        });
-        this.shadowRoot.getElementById('sendConfirmBtn').addEventListener('click', async () => {
-          const to = this.shadowRoot.getElementById('sendAddress').value.trim();
-          const tokenAddress = select.value;
-          const amountInput = this.shadowRoot.getElementById('sendAmount').value;
-          const chainId = store.get('wallet.network') || 137;
+        `);
+        modal.querySelector('#sendCancel').addEventListener('click', () => this._closeModal('send'));
+        modal.querySelector('#sendConfirm').addEventListener('click', async () => {
+          const to = modal.querySelector('#sendAddress').value.trim();
+          const tokenAddress = modal.querySelector('#sendToken').value;
+          const amountInput = modal.querySelector('#sendAmount').value;
           if (!to || !amountInput) return alert('Fill all fields');
           if (!ethers.utils.isAddress(to)) return alert('Invalid address');
           let decimals = 18;
-          const token = store.get('wallet.balances').find(t => t.address === tokenAddress);
+          const token = store.get('wallet.balances').find(t=>t.address===tokenAddress);
           if (token) decimals = token.decimals || 18;
-          else if (tokenAddress === '0x0000000000000000000000000000000000000000') decimals = 18;
           const amount = ethers.utils.parseUnits(amountInput, decimals).toString();
           try {
-            const res = await api.post('/api/wallet/send', { to, token_address: tokenAddress, amount, chain_id: chainId });
-            this.toast('Transaction sent! ' + res.tx_hash, 'success');
-            store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'send'));
-            // refresh wallet
+            const res = await api.post('/api/wallet/send', { to, token_address: tokenAddress, amount, chain_id: store.get('wallet.network')||137 });
+            this._closeModal('send');
             document.querySelector('capitan-wallet-view')?._loadBalances();
           } catch(e) { alert(e.message); }
         });
+        return modal;
       }
-    }
-    SendModal.define('capitan-send-modal');
-
-    // ==================== RECEIVE MODAL ====================
-    class ReceiveModal extends CapitanElement {
-      subscribe() {
-        return [this.observe('ui.modals', (modals) => {
-          if (modals.includes('receive')) this.render();
-          else this.shadowRoot.innerHTML = '';
-        })];
-      }
-      render() {
-        if (!store.get('ui.modals').includes('receive')) { this.shadowRoot.innerHTML = ''; return; }
-        const address = store.get('wallet.address') || '0x0000000000000000000000000000000000000000';
-        this.shadowRoot.innerHTML = `
-          <style>
-            :host { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(12px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
-            .modal { background:var(--surface); border:1px solid var(--glass-border); border-radius:var(--radius-xl); max-width:560px; width:100%; padding:28px 24px; box-shadow:var(--shadow-lg); }
-            h2 { font-size:22px; font-weight:700; margin-bottom:16px; }
-            .btn { padding:12px 20px; border:none; border-radius:var(--radius-lg); font-weight:600; font-size:14px; cursor:pointer; }
-            .btn-primary { background:linear-gradient(135deg,var(--accent-cyan),var(--accent-violet)); color:white; }
-            .btn-secondary { background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border); }
-          </style>
-          <div class="modal">
+      _createReceiveModal() {
+        const addr = store.get('wallet.address') || '0x0000000000000000000000000000000000000000';
+        const modal = this._createModal(`
+          <div class="glass-card" style="max-width:400px;width:100%;padding:24px;text-align:center;">
             <h2>Receive</h2>
-            <p>Your OS Wallet address:</p>
-            <div style="background:var(--bg-secondary); padding:10px; border-radius:var(--radius-sm); word-break:break-all; font-family:monospace; font-size:14px;" id="receiveAddress">${address}</div>
-            <div id="qrContainer" style="text-align:center; margin:16px 0;"></div>
-            <button class="btn btn-primary" id="copyBtn">Copy Address</button>
-            <div style="margin-top:12px;"><button class="btn btn-secondary" id="closeBtn">Close</button></div>
+            <div style="word-break:break-all; margin:12px 0; background:var(--bg-secondary); padding:10px; border-radius:var(--radius-md);">${addr}</div>
+            <div id="qrCode" style="margin:12px 0;"></div>
+            <button class="pill-btn primary" id="copyAddr">Copy Address</button>
+            <button class="pill-btn" id="receiveClose" style="margin-top:8px;">Close</button>
           </div>
-        `;
-        this._init();
+        `);
+        try { new QRCode(modal.querySelector('#qrCode'), { text: addr, width: 150, height: 150 }); } catch(e){}
+        modal.querySelector('#copyAddr').addEventListener('click', () => { navigator.clipboard.writeText(addr); });
+        modal.querySelector('#receiveClose').addEventListener('click', () => this._closeModal('receive'));
+        return modal;
       }
-      _init() {
-        const address = store.get('wallet.address');
-        try {
-          if (typeof QRCode !== 'undefined') {
-            const container = this.shadowRoot.getElementById('qrContainer');
-            container.innerHTML = '';
-            new QRCode(container, { text: address, width: 180, height: 180 });
-          }
-        } catch(e){}
-        this.shadowRoot.getElementById('copyBtn').addEventListener('click', () => {
-          navigator.clipboard.writeText(address);
-          this.toast('Address copied', 'success');
-        });
-        this.shadowRoot.getElementById('closeBtn').addEventListener('click', () => {
-          store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'receive'));
-        });
-      }
-    }
-    ReceiveModal.define('capitan-receive-modal');
-
-    // ==================== SWAP MODAL ====================
-    class SwapModal extends CapitanElement {
-      subscribe() {
-        return [this.observe('ui.modals', (modals) => {
-          if (modals.includes('swap')) this.render();
-          else this.shadowRoot.innerHTML = '';
-        })];
-      }
-      render() {
-        if (!store.get('ui.modals').includes('swap')) { this.shadowRoot.innerHTML = ''; return; }
-        this.shadowRoot.innerHTML = `
-          <style>
-            :host { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(12px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
-            .modal { background:var(--surface); border:1px solid var(--glass-border); border-radius:var(--radius-xl); max-width:560px; width:100%; padding:28px 24px; box-shadow:var(--shadow-lg); }
-            h2 { font-size:22px; font-weight:700; margin-bottom:16px; }
-            input, select { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-md); background:var(--bg-secondary); color:var(--text-primary); font-size:14px; margin-bottom:12px; }
-            .btn { padding:12px 20px; border:none; border-radius:var(--radius-lg); font-weight:600; font-size:14px; cursor:pointer; }
-            .btn-primary { background:linear-gradient(135deg,var(--accent-cyan),var(--accent-violet)); color:white; }
-            .btn-secondary { background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border); }
-          </style>
-          <div class="modal">
+      _createSwapModal() {
+        const modal = this._createModal(`
+          <div class="glass-card" style="max-width:500px;width:100%;padding:24px;">
             <h2>Swap</h2>
-            <select id="swapFromToken"></select>
-            <select id="swapToToken"></select>
-            <input type="number" id="swapAmount" placeholder="Amount" step="any" />
-            <div style="display:flex; gap:10px; margin-top:16px;">
-              <button class="btn btn-secondary" id="closeBtn">Cancel</button>
-              <button class="btn btn-primary" id="swapConfirmBtn">Swap</button>
+            <select id="swapFrom" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);">${(store.get('wallet.balances')||[]).map(t=>`<option value="${t.address}">${t.symbol}</option>`).join('')}</select>
+            <select id="swapTo" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);">${(store.get('wallet.balances')||[]).map(t=>`<option value="${t.address}">${t.symbol}</option>`).join('')}</select>
+            <input id="swapAmount" type="number" placeholder="Amount" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);"/>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="pill-btn" id="swapCancel">Cancel</button>
+              <button class="pill-btn primary" id="swapConfirm">Swap</button>
             </div>
           </div>
-        `;
-        this._init();
-      }
-      _init() {
-        const from = this.shadowRoot.getElementById('swapFromToken');
-        const to = this.shadowRoot.getElementById('swapToToken');
-        const balances = store.get('wallet.balances') || [];
-        from.innerHTML = balances.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
-        to.innerHTML = balances.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
-        this.shadowRoot.getElementById('closeBtn').addEventListener('click', () => {
-          store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'swap'));
-        });
-        this.shadowRoot.getElementById('swapConfirmBtn').addEventListener('click', async () => {
-          const fromToken = from.value;
-          const toToken = to.value;
-          const amountInput = this.shadowRoot.getElementById('swapAmount').value;
+        `);
+        modal.querySelector('#swapCancel').addEventListener('click', () => this._closeModal('swap'));
+        modal.querySelector('#swapConfirm').addEventListener('click', async () => {
+          const from = modal.querySelector('#swapFrom').value;
+          const to = modal.querySelector('#swapTo').value;
+          const amountInput = modal.querySelector('#swapAmount').value;
           if (!amountInput) return alert('Enter amount');
           let decimals = 18;
-          const token = balances.find(t => t.address === fromToken);
+          const token = store.get('wallet.balances').find(t=>t.address===from);
           if (token) decimals = token.decimals || 18;
           const amount = ethers.utils.parseUnits(amountInput, decimals).toString();
           try {
-            const res = await api.post('/api/wallet/swap/execute', { from_token: fromToken, to_token: toToken, amount, slippage: 1.0 });
-            this.toast('Swap executed! TX: ' + res.tx_hash, 'success');
-            store.set('ui.modals', store.get('ui.modals').filter(m => m !== 'swap'));
+            const res = await api.post('/api/wallet/swap/execute', { from_token:from, to_token:to, amount, slippage:1.0 });
+            this._closeModal('swap');
             document.querySelector('capitan-wallet-view')?._loadBalances();
           } catch(e) { alert(e.message); }
         });
+        return modal;
+      }
+      _createBuyModal() {
+        const modal = this._createModal(`
+          <div class="glass-card" style="max-width:500px;width:100%;padding:24px;">
+            <h2>Buy CLOSE</h2>
+            <div id="buyRate">Loading rate...</div>
+            <input id="buyAmount" type="number" placeholder="CLOSE amount" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);"/>
+            <div id="buyEquivalent"></div>
+            <div style="margin:8px 0;">Send POL to:</div>
+            <div id="buyAddress" style="word-break:break-all; font-family:monospace;"></div>
+            <input id="buyTxHash" placeholder="Transaction ID" style="width:100%;margin:8px 0;padding:10px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);"/>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="pill-btn" id="buyCancel">Cancel</button>
+              <button class="pill-btn primary" id="buyVerify">Verify Payment</button>
+            </div>
+          </div>
+        `);
+        api.get('/api/token/rate').then(d => {
+          modal.querySelector('#buyRate').innerText = `1 POL = ${d.rate} CLOSE`;
+          modal.querySelector('#buyAddress').innerText = d.matic_payment_address;
+        });
+        modal.querySelector('#buyCancel').addEventListener('click', () => this._closeModal('buy'));
+        modal.querySelector('#buyVerify').addEventListener('click', async () => {
+          const amount = modal.querySelector('#buyAmount').value;
+          const txHash = modal.querySelector('#buyTxHash').value.trim();
+          if (!amount || !txHash) return alert('Fill all fields');
+          try {
+            const res = await api.post('/api/cap/purchase', { cap_amount: Math.floor(amount*1e18).toString(), tx_hash: txHash });
+            if (res.verified) { this._closeModal('buy'); }
+            else alert('Verification failed');
+          } catch(e) { alert(e.message); }
+        });
+        return modal;
       }
     }
-    SwapModal.define('capitan-swap-modal');
+    ModalsContainer.define('capitan-modals');
 
-    // ==================== PLACEHOLDER VIEWS ====================
-    class ChatView extends CapitanElement { render() { this.shadowRoot.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Chat View – Coming soon</div>`; } }
+    // ==================== PLACEHOLDER VIEWS (implemented briefly) ====================
+    class ChatView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary);">Chat View — Full implementation coming</div>'; } }
     ChatView.define('capitan-chat-view');
-    class PortfolioView extends CapitanElement { render() { this.shadowRoot.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Portfolio View – Coming soon</div>`; } }
+    class PortfolioView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Portfolio</div>'; } }
     PortfolioView.define('capitan-portfolio-view');
-    class ResearchView extends CapitanElement { render() { this.shadowRoot.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Research Hub – Coming soon</div>`; } }
+    class ResearchView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Research Hub</div>'; } }
     ResearchView.define('capitan-research-view');
-    class DeveloperView extends CapitanElement { render() { this.shadowRoot.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Developer – Coming soon</div>`; } }
+    class DeveloperView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Developer</div>'; } }
     DeveloperView.define('capitan-developer-view');
-    class WorkspacesView extends CapitanElement { render() { this.shadowRoot.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Workspaces – Coming soon</div>`; } }
+    class WorkspacesView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Workspaces</div>'; } }
     WorkspacesView.define('capitan-workspaces-view');
-    class CommunityView extends CapitanElement { render() { this.shadowRoot.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Community – Coming soon</div>`; } }
+    class CommunityView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Community</div>'; } }
     CommunityView.define('capitan-community-view');
-    class DashboardView extends CapitanElement { render() { this.shadowRoot.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">Dashboard – Admin only</div>`; } }
+    class DashboardView extends CapitanElement { render() { this.shadowRoot.innerHTML = '<div style="padding:40px;">Admin Dashboard</div>'; } }
     DashboardView.define('capitan-dashboard-view');
 
     // ==================== GRACEFUL AUTH CHECK ====================
@@ -1202,30 +1041,21 @@
       const token = store.get('auth.token');
       if (!token) return;
       try {
-        const res = await fetch(BASE_URL + '/api/auth/validate', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(BASE_URL + '/api/auth/validate', { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
           store.set('auth.user', data.user);
           store.set('auth.isAdmin', data.is_admin);
         } else {
-          store.set('auth.token', null);
-          store.set('auth.user', null);
-          localStorage.removeItem('ct');
-          localStorage.removeItem('cu');
+          store.set('auth.token', null); store.set('auth.user', null);
+          localStorage.removeItem('ct'); localStorage.removeItem('cu');
         }
       } catch (e) {
-        store.set('auth.token', null);
-        store.set('auth.user', null);
-        localStorage.removeItem('ct');
-        localStorage.removeItem('cu');
+        store.set('auth.token', null); store.set('auth.user', null);
+        localStorage.removeItem('ct'); localStorage.removeItem('cu');
       }
-      // Set initial theme
       const theme = store.get('ui.theme');
-      document.body.className = theme === 'auto'
-        ? (new Date().getHours() >= 6 && new Date().getHours() < 18 ? 'light' : 'dark')
-        : theme;
+      document.body.className = theme === 'auto' ? (new Date().getHours() >= 6 && new Date().getHours() < 18 ? 'light' : 'dark') : theme;
     })();
   </script>
 </body>
