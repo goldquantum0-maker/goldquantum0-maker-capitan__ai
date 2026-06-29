@@ -65,7 +65,7 @@
         .notif-bell .badge{position:absolute;top:-2px;right:-2px;background:var(--danger);color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
         .chat-container{max-width:820px;margin:0 auto;width:100%;height:100%;display:flex;flex-direction:column;padding:0 20px}
-        .messages-area{flex:1;overflow-y:auto;padding:70px 0 20px;scroll-behavior:smooth}
+        .messages-area{flex:1;overflow-y:auto;padding:70px 0 20px;scroll-behavior:smooth;will-change:scroll-position}
         .greeting-container{text-align:center;margin-bottom:24px;animation:fadeSlideUp 0.5s ease}
         @keyframes fadeSlideUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
         .greeting-text{font-size:28px;font-weight:700;background:linear-gradient(135deg,#00b4d8,#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -111,10 +111,13 @@
         .profile-name{font-weight:600;font-size:13px}
         .profile-tokens{font-size:11px;color:var(--text-secondary);margin-top:2px}
         .sidebar-footer{padding:10px;text-align:center;font-size:9px;color:var(--text-tertiary);border-top:1px solid var(--border)}
-        .full-page-view{position:fixed;inset:0;background:var(--bg-primary);z-index:100;display:none;flex-direction:column;overflow-y:auto;padding:20px}
+        .full-page-view{position:fixed;inset:0;background:var(--bg-primary);z-index:100;display:none;flex-direction:column;overflow-y:auto}
         .full-page-view.open{display:flex}
-        .full-page-view .close-btn{align-self:flex-end;background:var(--accent);color:white;border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
-        .wallet-container{max-width:900px;width:100%;margin:0 auto}
+        .full-page-top{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-primary);z-index:5}
+        .back-btn{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);margin-right:12px;font-size:18px;transition:0.2s}
+        .back-btn:hover{background:var(--bg-tertiary);color:var(--accent)}
+        .full-page-title{font-weight:600;font-size:16px}
+        .wallet-container{max-width:900px;width:100%;margin:0 auto;padding:20px}
         .elite-wallet{background:linear-gradient(145deg,#0d1117,#161b22);border-radius:var(--radius);padding:24px;margin-bottom:20px;color:#f0f6fc;border:1px solid var(--glass-border)}
         .elite-wallet h2{font-size:1.6rem;font-weight:700;background:linear-gradient(90deg,#00b4d8,#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px}
         .balance-card{background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
@@ -152,6 +155,22 @@
         .admin-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
         .admin-table th,.admin-table td{padding:8px 5px;text-align:left;border-bottom:1px solid var(--border)}
         .admin-table th{font-weight:600;color:var(--text-secondary)}
+        .spinner{width:20px;height:20px;border:2px solid var(--glass-border);border-top:2px solid var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .stream-cursor{display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 1s step-end infinite}
+        @keyframes blink{50%{opacity:0}}
+
+        /* Ticker Styles */
+        .ticker-wrap{width:100%;overflow:hidden;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:8px;margin-bottom:16px}
+        .ticker{display:flex;width:max-content;animation:marquee 60s linear infinite}
+        .ticker:hover{animation-play-state:paused}
+        .ticker-item{display:inline-flex;align-items:center;gap:4px;padding:8px 20px;white-space:nowrap;font-size:12px;color:var(--text-primary)}
+        .ticker-price{font-weight:600}
+        .ticker-change.positive{color:var(--success)}
+        .ticker-change.negative{color:var(--danger)}
+        .news-ticker{background:rgba(0,180,216,0.05)}
+        .news-item a{color:var(--accent);text-decoration:none}
+        @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     </style>
 </head>
 <body>
@@ -249,25 +268,26 @@
             </div>
         </div>
     </main>
+    <!-- Full Page Views -->
     <div class="full-page-view" id="walletFullPage">
-        <button class="close-btn" onclick="closeWallet()">&times;</button>
+        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">OS Wallets</span></div>
         <div class="wallet-container" id="walletContainer"></div>
     </div>
     <div class="full-page-view" id="portfolioFullPage">
-        <button class="close-btn" onclick="closePortfolio()">&times;</button>
-        <div id="portfolioFullContent" style="max-width:800px;margin:0 auto;width:100%;"></div>
+        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Portfolio</span></div>
+        <div id="portfolioFullContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
     </div>
     <div class="full-page-view" id="workspaceFullPage">
-        <button class="close-btn" onclick="closeWorkspacePage()">&times;</button>
-        <div id="workspaceFullContent" style="max-width:800px;margin:0 auto;width:100%;"></div>
+        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Work Areas</span></div>
+        <div id="workspaceFullContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
     </div>
     <div class="full-page-view" id="developerFullPage">
-        <button class="close-btn" onclick="closeDeveloperPage()">&times;</button>
-        <div id="developerContent" style="max-width:800px;margin:0 auto;width:100%;"></div>
+        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Developer</span></div>
+        <div id="developerContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
     </div>
     <div class="full-page-view" id="founderDashboardPage">
-        <button class="close-btn" onclick="closeFounderDashboard()">&times;</button>
-        <div id="founderDashboardContent" style="max-width:1100px;margin:0 auto;width:100%;"></div>
+        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Dashboard</span></div>
+        <div id="founderDashboardContent" style="max-width:1100px;margin:0 auto;width:100%;padding:20px;"></div>
     </div>
 </div>
 
@@ -434,7 +454,6 @@ function updateUI(){
     document.getElementById('workspaceMenuItem').style.display=logged?'flex':'none';
     document.getElementById('developerMenuItem').style.display=(logged&&(state.stakeTier==='pro'||state.stakeTier==='enterprise'||state.stakeTier==='founder'))?'flex':'none';
     document.getElementById('dashboardMenuItem').style.display=(logged&&state.stakeTier==='founder')?'flex':'none';
-    // CLOSE balance badge
     let badge = document.getElementById('closeBalanceBadge');
     if(logged){
         badge.style.display='flex';
@@ -452,13 +471,31 @@ async function sendMessage(){
     state.loading=true; state.messages.push({role:'assistant',content:'',isTyping:true}); renderMessages();
     try{
         let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify({messages:state.messages.slice(0,-1),chat_id:state.activeChatId})});
-        state.messages.pop();
-        state.messages.push({role:'assistant',content:res.content||'No response',message_id:res.message_id});
+        let full=res.content||'No response';
+        state.messages[state.messages.length-1]={role:'assistant',content:full,message_id:res.message_id};
         if(res.close_balance!==undefined){ state.closeBalance=res.close_balance; localStorage.setItem('close_balance',state.closeBalance); }
         if(res.free_messages_remaining!==undefined) state.freeUsed = CFG.FREE_MSGS - res.free_messages_remaining;
+        state.activeChatId=res.chat_id; state.loading=false;
+        let msgIdx = state.messages.length-1;
+        renderMessages();
+        let msgEl = document.getElementById('msg-'+msgIdx);
+        if(msgEl && full) streamText(msgEl, full, 20);
         if(res.wallet_prompt) showBubblePrompt(res.wallet_message);
-        state.activeChatId=res.chat_id; state.loading=false; renderMessages(); updateUI();
+        updateUI();
     }catch(e){state.messages.pop();state.messages.push({role:'assistant',content:'Error: unable to reach AI.'});state.loading=false;renderMessages()}
+}
+function streamText(container, fullText, speed=15){
+    container.innerHTML=''; let i=0; let cursor=document.createElement('span'); cursor.className='stream-cursor';
+    container.appendChild(cursor);
+    function type(){
+        if(i<fullText.length){
+            let char=fullText.charAt(i);
+            if(char==='\n'){ let br=document.createElement('br'); container.insertBefore(br,cursor); }
+            else{ let span=document.createElement('span'); span.textContent=char; container.insertBefore(span,cursor); }
+            i++; setTimeout(type,speed);
+        }else{ cursor.remove(); }
+    }
+    type();
 }
 function showBubblePrompt(msg, canDismiss=true){
     let area=document.getElementById('messagesArea');
@@ -477,40 +514,71 @@ function renderMessages(){
         c.innerHTML=`<div style="text-align:center;padding:60px 16px;"><div class="greeting-container"><div class="greeting-text">${['Good morning','Good afternoon','Good evening','Welcome'][Math.floor(new Date().getHours()/6)%4]}</div></div><div class="suggestion-pills"><button class="suggestion-pill" onclick="useSuggestion('Give me today\\'s top business headlines')">Business</button><button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing simply')">Tech</button><button class="suggestion-pill" onclick="useSuggestion('Three easy dinner recipes')">Everyday</button></div></div>`;
         return;
     }
-    c.innerHTML=state.messages.map((m,i)=>m.isTyping?`<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`:`<div class="message ${m.role}"><div class="message-content">${m.role==='user'?escapeHtml(m.content):formatMarkdown(m.content)}</div></div>`).join('');
+    c.innerHTML=state.messages.map((m,i)=>m.isTyping?`<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`:`<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${m.role==='user'?escapeHtml(m.content):''}</div></div>`).join('');
     c.scrollTop=c.scrollHeight;
 }
 function escapeHtml(s){return s?.replace(/</g,'&lt;')}
 function formatMarkdown(t){return t?.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
 function useSuggestion(t){document.getElementById('messageInput').value=t;sendMessage()}
 
-// ==================== OS WALLETS FULL PAGE ====================
-function openWallet(){
-    hideAllViews(); document.getElementById('chatView').style.display='none';
-    document.getElementById('walletFullPage').classList.add('open');
-    renderWalletDashboard();
+// ==================== NAVIGATION ====================
+function goBackToChat(){
+    document.querySelectorAll('.full-page-view').forEach(v=>v.classList.remove('open'));
+    document.getElementById('chatView').style.display='flex';
 }
-function closeWallet(){ document.getElementById('walletFullPage').classList.remove('open'); document.getElementById('chatView').style.display='flex'; }
+function hideAllViews(){
+    ['walletFullPage','portfolioFullPage','workspaceFullPage','developerFullPage','founderDashboardPage'].forEach(id=>document.getElementById(id).classList.remove('open'));
+    document.getElementById('chatView').style.display='flex';
+}
+
+// ==================== OS WALLETS (COMPLETE + TICKER) ====================
+function openWallet(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('walletFullPage').classList.add('open');renderWalletDashboard();}
 async function renderWalletDashboard(){
     let c=document.getElementById('walletContainer');
     if(!state.user){ c.innerHTML='<div class="elite-wallet"><h2>OS Wallets</h2><p>Sign in to access your universal wallet.</p><button class="btn" onclick="showSignupModal()">Create Account</button></div>'; return; }
-    c.innerHTML = '<div class="elite-wallet"><h2>OS Wallets</h2><p>Loading...</p></div>';
+    c.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
     try{
-        let [bal,stakes,txs,wallets,nfts,wcSessions,addresses] = await Promise.allSettled([
+        let [bal,stakes,txs,wallets,nfts,wcSessions,addresses, tickerData, newsData] = await Promise.allSettled([
             apiCall('/api/wallet/balance'), apiCall('/api/wallet/stakes'), apiCall('/api/wallet/transactions'),
             apiCall('/api/wallets'), apiCall('/api/wallet/nfts?chain=polygon'),
-            apiCall('/api/walletconnect/sessions'), apiCall('/api/addresses')
+            apiCall('/api/walletconnect/sessions'), apiCall('/api/addresses'),
+            apiCall('/api/market/crypto'), // for ticker
+            apiCall('/api/market/news')    // news headlines
         ]);
         bal=bal.value||{}; stakes=stakes.value||{}; txs=txs.value||{}; wallets=wallets.value||{}; nfts=nfts.value||{}; wcSessions=wcSessions.value||{}; addresses=addresses.value||{};
+        tickerData = tickerData.value || [];
+        newsData = newsData.value || [];
         state.closeBalance=bal.close_balance||0; state.closeStaked=bal.close_staked||0; state.stakeTier=bal.stake_tier||'none';
         localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
+        updateUI();
+
+        // Build ticker HTML
+        let tickerHTML = '';
+        if(tickerData.length){
+            let items = '';
+            tickerData.forEach(coin => {
+                let change = coin.price_change_percentage_24h?.toFixed(2) || 0;
+                let changeClass = change >= 0 ? 'positive' : 'negative';
+                items += `<span class="ticker-item"><span class="ticker-price">${coin.symbol.toUpperCase()} $${coin.current_price?.toFixed(6) || '0'}</span> <span class="ticker-change ${changeClass}">${change}%</span></span>`;
+            });
+            // Duplicate for seamless loop
+            tickerHTML = `<div class="ticker-wrap"><div class="ticker">${items}${items}</div></div>`;
+        }
+        let newsHTML = '';
+        if(newsData.length){
+            let items = '';
+            newsData.forEach(n => {
+                items += `<span class="ticker-item news-item"><a href="${n.url}" target="_blank">${n.headline}</a></span>`;
+            });
+            newsHTML = `<div class="ticker-wrap"><div class="ticker news-ticker">${items}${items}</div></div>`;
+        }
 
         c.innerHTML=`
         <div class="elite-wallet">
-            <h2>OS Wallets</h2>
-            <div class="balance-card"><div><span class="balance-label">CLOSE Balance</span><br><span class="balance-amount">${state.closeBalance.toLocaleString()} CLOSE</span><br><small>$${ (state.closeBalance*CFG.CLOSE_PRICE).toFixed(4) }</small></div></div>
-            <div class="balance-card"><div><span class="balance-label">CLOSE Staked</span><br><span class="balance-amount">${state.closeStaked.toLocaleString()} CLOSE</span><br><small>Tier: ${state.stakeTier.toUpperCase()}</small></div></div>
-
+            ${tickerHTML}
+            ${newsHTML}
+            <div class="balance-card"><div><span>CLOSE Balance</span><br><span class="amount">${state.closeBalance.toLocaleString()} CLOSE</span><br><small>$${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)}</small></div></div>
+            <div class="balance-card"><div><span>CLOSE Staked</span><br><span class="amount">${state.closeStaked.toLocaleString()} CLOSE</span><br><small>Tier: ${state.stakeTier.toUpperCase()}</small></div></div>
             <div class="wallet-tabs">
                 <button class="wallet-tab active" data-tab="dashboard">Dashboard</button>
                 <button class="wallet-tab" data-tab="nfts">NFTs</button>
@@ -518,7 +586,6 @@ async function renderWalletDashboard(){
                 <button class="wallet-tab" data-tab="addresses">Addresses</button>
                 <button class="wallet-tab" data-tab="settings">Settings</button>
             </div>
-
             <div class="wallet-panel active" id="panel-dashboard">
                 <div class="action-grid">
                     <button class="action-btn" onclick="showSendModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send</button>
@@ -531,15 +598,15 @@ async function renderWalletDashboard(){
                 <div class="dashboard-card"><h3>Recent Transactions</h3>${(txs.transactions||[]).slice(0,5).map(t=>`<div style="display:flex;justify-content:space-between;font-size:11px;cursor:pointer" onclick="openTxDetail('${t.tx_hash||''}')"><span>${t.type.toUpperCase()}</span><span>${t.amount.toLocaleString()}</span><span>${new Date(t.created).toLocaleDateString()}</span></div>`).join('')||'No transactions'}</div>
             </div>
             <div class="wallet-panel" id="panel-nfts">
-                <div class="nft-grid">${(nfts.nfts||[]).length?(nfts.nfts).map(n=>`<div class="nft-card"><img src="${n.image}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23333%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23fff%22 x=%2250%22 y=%2255%22 text-anchor=%22middle%22%3ENFT%3C/text%3E%3C/svg%3E"><div>${n.name||'NFT'}</div></div>`).join(''):'No NFTs found'}</div>
+                <div class="nft-grid">${(nfts.nfts||[]).length?nfts.nfts.map(n=>`<div class="nft-card"><img src="${n.image}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23333%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23fff%22 x=%2250%22 y=%2255%22 text-anchor=%22middle%22%3ENFT%3C/text%3E%3C/svg%3E"><div>${n.name||'NFT'}</div></div>`).join(''):'No NFTs found'}</div>
             </div>
             <div class="wallet-panel" id="panel-dapps">
                 <button class="btn" onclick="connectWalletConnect()">Connect to dApp</button>
-                <div>${(wcSessions.sessions||[]).length?wcSessions.sessions.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;"><span>${s.name} (${s.url})</span><button onclick="disconnectWC('${s.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">Disconnect</button></div>`).join(''):'No active sessions'}</div>
+                <div style="margin-top:10px;">${(wcSessions.sessions||[]).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;"><span>${s.name} (${s.url})</span><button onclick="disconnectWC('${s.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">Disconnect</button></div>`).join('')||'No active sessions'}</div>
             </div>
             <div class="wallet-panel" id="panel-addresses">
                 <button class="btn" onclick="showAddAddressModal()">+ Add Address</button>
-                <div style="margin-top:10px;">${(addresses.addresses||[]).length?addresses.addresses.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span>${a.label}: ${a.address.slice(0,8)}...${a.address.slice(-6)}</span><button onclick="deleteAddress('${a.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">X</button></div>`).join(''):'No saved addresses'}</div>
+                <div style="margin-top:10px;">${(addresses.addresses||[]).map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span>${a.label}: ${a.address.slice(0,8)}...${a.address.slice(-6)}</span><button onclick="deleteAddress('${a.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">X</button></div>`).join('')||'No saved addresses'}</div>
             </div>
             <div class="wallet-panel" id="panel-settings">
                 <h3>Gas Preset</h3>
@@ -552,16 +619,19 @@ async function renderWalletDashboard(){
             </div>
         </div>`;
 
+        // Tab switching
         document.querySelectorAll('.wallet-tab').forEach(tab=>tab.addEventListener('click',function(){
             document.querySelectorAll('.wallet-tab').forEach(t=>t.classList.remove('active'));
             this.classList.add('active');
             document.querySelectorAll('.wallet-panel').forEach(p=>p.classList.remove('active'));
             document.getElementById('panel-'+this.dataset.tab).classList.add('active');
         }));
-    }catch(e){c.innerHTML='<div class="elite-wallet"><p>Failed to load wallet. Please try again.</p></div>'}
+        // Refresh tickers every 30s
+        setTimeout(()=>{ if(document.getElementById('walletFullPage').classList.contains('open')) renderWalletDashboard(); }, 30000);
+    }catch(e){c.innerHTML='<p>Failed to load wallet.</p>'}
 }
 
-// Wallet actions
+// ---------- Wallet action functions (unchanged) ----------
 function showBuyModal(){
     document.getElementById('buyCloseModalContent').innerHTML=`<h2>Buy CLOSE</h2><p>Minimum $1 = ${Math.floor(1/CFG.CLOSE_PRICE)} CLOSE</p><input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash"><button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
     document.getElementById('buyCloseModal').classList.add('open');
@@ -633,23 +703,20 @@ async function getSwapQuote(){
     }catch(e){document.getElementById('swapQuoteResult').innerHTML='Quote failed'}
 }
 async function executeSwap(){
-    // Frontend would build and sign the transaction; simplified version uses backend
     toast('Swap execution requires transaction signing. Use Send modal or dApp.');
 }
 function showSendModal(){
-    let wallets=JSON.parse(localStorage.getItem('capitan_wallets')||'[]');
-    let chain=document.getElementById('swapChain')?.value||'polygon';
-    let tokens=CFG.CHAINS[chain]?.tokens||{};
-    let tokenOptions=Object.entries(tokens).map(([sym,addr])=>`<option value="${addr==='native'?sym:addr}">${sym}</option>`).join('');
+    let chains=Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('');
     document.getElementById('sendModalContent').innerHTML=`
         <h2>Send</h2>
-        <select id="sendChain" onchange="updateSendTokens()">${Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('')}</select>
-        <select id="sendToken">${tokenOptions}</select>
-        <input id="sendTo" placeholder="Recipient address">
+        <select id="sendChain" onchange="updateSendTokens()">${chains}</select>
+        <select id="sendToken"></select>
+        <input id="sendTo" placeholder="Address">
         <input id="sendAmount" placeholder="Amount">
         <input id="sendPassword" type="password" placeholder="Wallet password">
         <button class="btn" onclick="sendTransaction()">Send</button>`;
     document.getElementById('sendModal').classList.add('open');
+    updateSendTokens();
 }
 function updateSendTokens(){
     let chain=document.getElementById('sendChain').value;
@@ -679,108 +746,200 @@ function showAddAddressModal(){
     document.getElementById('addressModalContent').innerHTML=`<h2>Add Address</h2><input id="addrLabel" placeholder="Label"><input id="addrAddress" placeholder="Address"><select id="addrChain">${Object.keys(CFG.CHAINS).map(c=>`<option>${c}</option>`).join('')}</select><button class="btn" onclick="addAddress()">Save</button>`;
     document.getElementById('addressModal').classList.add('open');
 }
-async function addAddress(){/*... same as before ...*/}
-async function deleteAddress(id){if(confirm('Delete?')){await apiCall('/api/addresses/'+id,{method:'DELETE'});renderWalletDashboard();}}
-async function setActiveWallet(id){await apiCall('/api/wallets/'+id+'/active',{method:'PUT'});renderWalletDashboard();}
-async function deleteWallet(id){if(confirm('Delete wallet?')){await apiCall('/api/wallets/'+id,{method:'DELETE'});renderWalletDashboard();}}
-async function createNewWallet(){let chain=prompt('Chain (polygon/ethereum/bsc/arbitrum/base):','polygon');let label=prompt('Label:','New Wallet');if(!chain)return;try{await apiCall('/api/wallet/create',{method:'POST',body:JSON.stringify({chain,label})});renderWalletDashboard();}catch(e){toast('Creation failed')}}
-async function saveGasPreset(){let preset=document.getElementById('gasPreset').value;await apiCall('/api/wallet/gas',{method:'POST',body:JSON.stringify({preset})});toast('Gas preset saved')}
-function openTxDetail(txHash){if(!txHash)return;apiCall('/api/transactions/'+txHash).then(tx=>{alert(`TX: ${tx.tx_hash}\nFrom: ${tx.from}\nTo: ${tx.to}\nAmount: ${tx.amount||tx.value} ${tx.token||''}\nStatus: ${tx.status}\nExplorer: ${tx.explorer_url}`);});}
+async function addAddress(){
+    let label=document.getElementById('addrLabel').value, address=document.getElementById('addrAddress').value, chain=document.getElementById('addrChain').value;
+    if(!label||!address) return toast('Fill all fields');
+    try{await apiCall('/api/addresses',{method:'POST',body:JSON.stringify({label,address,chain})});closeModal('addressModal');renderWalletDashboard();}
+    catch(e){toast('Failed')}
+}
+async function deleteAddress(id){ if(confirm('Delete?')){await apiCall('/api/addresses/'+id,{method:'DELETE'});renderWalletDashboard();} }
+async function setActiveWallet(id){ await apiCall('/api/wallets/'+id+'/active',{method:'PUT'}); renderWalletDashboard(); }
+async function deleteWallet(id){ if(confirm('Delete wallet?')){await apiCall('/api/wallets/'+id,{method:'DELETE'});renderWalletDashboard();} }
+async function createNewWallet(){
+    let chain = prompt('Chain (polygon/ethereum/bsc/arbitrum/base):','polygon');
+    let label = prompt('Label:','New Wallet');
+    if(!chain) return;
+    try{await apiCall('/api/wallet/create',{method:'POST',body:JSON.stringify({chain,label})});renderWalletDashboard();}
+    catch(e){toast('Creation failed')}
+}
+async function saveGasPreset(){
+    let preset = document.getElementById('gasPreset').value;
+    await apiCall('/api/wallet/gas',{method:'POST',body:JSON.stringify({preset})});
+    toast('Gas preset saved');
+}
+function openTxDetail(txHash){
+    if(!txHash) return;
+    apiCall('/api/transactions/'+txHash).then(tx=>{
+        alert(`TX: ${tx.tx_hash}\nFrom: ${tx.from}\nTo: ${tx.to}\nAmount: ${tx.amount||tx.value} ${tx.token||''}\nStatus: ${tx.status}\nExplorer: ${tx.explorer_url}`);
+    }).catch(()=>toast('Transaction details not available'));
+}
 async function connectWalletConnect(){
     if(!window.Web3Wallet) return toast('WalletConnect library not loaded');
     try{
-        const wc=await Web3Wallet.init({core:{projectId:'YOUR_PROJECT_ID'},metadata:{name:'CAPITAN AI OS Wallets',description:'Universal Wallet',url:'https://capitanai.com',icons:[]}});
-        state.walletConnector=wc;
-        const {uri,approval}=await wc.connect({requiredNamespaces:{eip155:{methods:['eth_sendTransaction','personal_sign'],chains:['eip155:137'],events:['chainChanged','accountsChanged']}}});
-        if(uri){prompt('Copy this URI to connect dApp:',uri);const session=await approval();await apiCall('/api/walletconnect/sessions',{method:'POST',body:JSON.stringify({topic:session.topic,dapp_name:session.peer.metadata.name,dapp_url:session.peer.metadata.url,chain_id:137,accounts:session.namespaces.eip155.accounts})});toast('dApp connected!');renderWalletDashboard();}
-    }catch(e){toast('WalletConnect error')}
+        const wc = await Web3Wallet.init({core:{projectId:'YOUR_PROJECT_ID'},metadata:{name:'CAPITAN AI OS Wallets',description:'Universal Wallet',url:'https://capitanai.com',icons:[]}});
+        state.walletConnector = wc;
+        const { uri, approval } = await wc.connect({requiredNamespaces:{eip155:{methods:['eth_sendTransaction','personal_sign'],chains:['eip155:137'],events:['chainChanged','accountsChanged']}}});
+        if(uri){
+            prompt('Copy this URI to connect dApp:', uri);
+            const session = await approval();
+            await apiCall('/api/walletconnect/sessions',{method:'POST',body:JSON.stringify({topic:session.topic,dapp_name:session.peer.metadata.name,dapp_url:session.peer.metadata.url,chain_id:137,accounts:session.namespaces.eip155.accounts})});
+            toast('dApp connected!');
+            renderWalletDashboard();
+        }
+    }catch(e){toast('WalletConnect error: '+(e.message||'Unknown'))}
 }
-async function disconnectWC(sessionId){if(confirm('Disconnect dApp?')){await apiCall('/api/walletconnect/sessions/'+sessionId,{method:'DELETE'});toast('Disconnected');renderWalletDashboard();}}
+async function disconnectWC(sessionId){
+    if(confirm('Disconnect dApp?')){
+        await apiCall('/api/walletconnect/sessions/'+sessionId,{method:'DELETE'});
+        toast('Disconnected');
+        renderWalletDashboard();
+    }
+}
 
-// ==================== PORTFOLIO (with edit/delete/pin) ====================
+// ==================== PORTFOLIO ====================
 function openPortfolio(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.add('open');loadPortfolio()}
-function closePortfolio(){document.getElementById('portfolioFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 async function loadPortfolio(){
+    let c=document.getElementById('portfolioFullContent');
+    c.innerHTML='<div class="spinner"></div>';
     try{
         let d=await apiCall('/api/portfolio');
+        if(!d.items||!d.items.length){ c.innerHTML='<h2>Portfolio</h2><p>No items yet.</p><button class="btn" onclick="showPortfolioCreate()">+ New Note</button>'; return; }
         let html='<h2>Portfolio</h2><button class="btn" onclick="showPortfolioCreate()">+ New Note</button><div style="margin-top:16px;">';
-        d.items.forEach(i=>{html+=`<div class="dashboard-card"><div style="display:flex;justify-content:space-between;"><span style="font-weight:600;">${escapeHtml(i.name||'Untitled')}</span><div><button onclick="editPortfolioItem('${i.id}')">Edit</button> <button onclick="togglePin('${i.id}')">${i.pinned?'Unpin':'Pin'}</button> <button onclick="deletePortfolioItem('${i.id}')">Delete</button></div></div><div style="font-size:11px;color:var(--text-tertiary);">${escapeHtml((i.content||'').substring(0,120))}</div></div>`;});
+        d.items.forEach(i=>{
+            html+=`<div class="dashboard-card" style="cursor:pointer">
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="font-weight:600;">${escapeHtml(i.name||'Untitled')}</span>
+                    <div>
+                        <button onclick="event.stopPropagation();editPortfolioItem('${i.id}')">✏️</button>
+                        <button onclick="event.stopPropagation();togglePin('${i.id}')">${i.pinned?'📌':'📍'}</button>
+                        <button onclick="event.stopPropagation();deletePortfolioItem('${i.id}')">🗑️</button>
+                    </div>
+                </div>
+                <div style="font-size:11px;color:var(--text-tertiary);">${escapeHtml((i.content||'').substring(0,120))}</div>
+            </div>`;
+        });
         html+='</div>';
-        document.getElementById('portfolioFullContent').innerHTML=html;
-    }catch(e){document.getElementById('portfolioFullContent').innerHTML='<p>Failed to load portfolio.</p>'}
+        c.innerHTML=html;
+    }catch(e){c.innerHTML='<p>Failed to load portfolio.</p>'}
 }
 function showPortfolioCreate(){
-    document.getElementById('portfolioFullContent').innerHTML=`<input type="text" id="portName" placeholder="Title" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"><textarea id="portContent" placeholder="Content" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"></textarea><button class="btn" onclick="savePortfolioItem()">Save</button><button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
+    document.getElementById('portfolioFullContent').innerHTML=`
+        <h2>New Note</h2>
+        <input id="portName" placeholder="Title" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <textarea id="portContent" placeholder="Content" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"></textarea>
+        <button class="btn" onclick="savePortfolioItem()">Save</button>
+        <button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
 }
 async function savePortfolioItem(){
-    let name=document.getElementById('portName').value.trim(),content=document.getElementById('portContent').value;
+    let name=document.getElementById('portName').value.trim(), content=document.getElementById('portContent').value;
     if(!name||!content){toast('Title and content required');return}
     await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name,folder:'General',tags:[],attachments:[],content,chat_id:null})});
-    toast('Saved');loadPortfolio();
+    toast('Saved'); loadPortfolio();
 }
-async function editPortfolioItem(id){/* load item and show edit form */ }
+async function editPortfolioItem(id){
+    let item = (await apiCall('/api/portfolio')).items.find(i=>i.id===id);
+    if(!item) return;
+    document.getElementById('portfolioFullContent').innerHTML=`
+        <h2>Edit Note</h2>
+        <input id="portName" value="${escapeHtml(item.name||'')}" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <textarea id="portContent" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">${escapeHtml(item.content||'')}</textarea>
+        <button class="btn" onclick="updatePortfolioItem('${id}')">Update</button>
+        <button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
+}
+async function updatePortfolioItem(id){
+    let name=document.getElementById('portName').value.trim(), content=document.getElementById('portContent').value;
+    if(!name||!content){toast('Title and content required');return}
+    await apiCall('/api/portfolio/'+id,{method:'PUT',body:JSON.stringify({name,content,folder:'General',tags:[],attachments:[],chat_id:null})});
+    toast('Updated'); loadPortfolio();
+}
 async function deletePortfolioItem(id){if(confirm('Delete?')){await apiCall('/api/portfolio/'+id,{method:'DELETE'});loadPortfolio();}}
-async function togglePin(id){/* toggle pinned via update */ }
+async function togglePin(id){
+    let item = (await apiCall('/api/portfolio')).items.find(i=>i.id===id);
+    if(!item) return;
+    await apiCall('/api/portfolio/'+id,{method:'PUT',body:JSON.stringify({...item,pinned:!item.pinned})});
+    loadPortfolio();
+}
 
 // ==================== WORKSPACES ====================
 function openWorkspacePage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('workspaceFullPage').classList.add('open');loadWorkspaces()}
-function closeWorkspacePage(){document.getElementById('workspaceFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 async function loadWorkspaces(){
+    let c=document.getElementById('workspaceFullContent');
+    c.innerHTML='<div class="spinner"></div>';
     try{
         let d=await apiCall('/api/hub/rooms');
-        let html='<h2>Work Areas</h2><div style="display:flex;gap:8px;margin-bottom:16px;"><button class="btn" onclick="openWorkspaceCreateModal()">+ Create</button><button class="btn" onclick="openWorkspaceJoinModal()">Join</button></div>';
-        if(d.rooms.length) d.rooms.forEach(r=>{html+=`<div class="dashboard-card" onclick="openRoomChat('${r.room_code}')"><div style="font-weight:600;">${r.name}</div><div style="font-size:11px;color:var(--text-tertiary);">Code: ${r.room_code} | Members: ${r.member_count}</div></div>`;});
+        let html=`<h2>Work Areas</h2><div style="display:flex;gap:8px;margin-bottom:16px;"><button class="btn" onclick="openWorkspaceCreateModal()">+ Create</button><button class="btn" onclick="openWorkspaceJoinModal()">Join</button></div>`;
+        if(d.rooms&&d.rooms.length){ d.rooms.forEach(r=>{html+=`<div class="dashboard-card" onclick="openRoomChat('${r.room_code}')"><div style="font-weight:600;">${escapeHtml(r.name)}</div><div style="font-size:11px;color:var(--text-tertiary);">Code: ${r.room_code} | Members: ${r.member_count}</div></div>`;}); }
         else html+='<p>No rooms yet.</p>';
-        document.getElementById('workspaceFullContent').innerHTML=html;
-    }catch(e){document.getElementById('workspaceFullContent').innerHTML='<p>Failed to load.</p>'}
+        c.innerHTML=html;
+    }catch(e){c.innerHTML='<p>Failed to load workspaces.</p>'}
 }
 function openWorkspaceCreateModal(){
-    document.getElementById('workspaceCreateModalContent').innerHTML=`<h2>Create Work Area</h2><input id="wsName" placeholder="Name" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"><input id="wsCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"><button class="btn" onclick="createWorkspace()">Create</button><button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;
+    document.getElementById('workspaceCreateModalContent').innerHTML=`
+        <h2>Create Work Area</h2>
+        <input id="wsName" placeholder="Name" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input id="wsCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <button class="btn" onclick="createWorkspace()">Create</button>
+        <button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;
     document.getElementById('workspaceCreateModal').classList.add('open');
 }
 function openWorkspaceJoinModal(){
-    document.getElementById('workspaceJoinModalContent').innerHTML=`<h2>Join Work Area</h2><input id="joinRoomCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"><button class="btn" onclick="joinWorkspace()">Join</button><button class="btn btn-outline" onclick="closeModal('workspaceJoinModal')">Cancel</button>`;
+    document.getElementById('workspaceJoinModalContent').innerHTML=`
+        <h2>Join Work Area</h2>
+        <input id="joinRoomCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <button class="btn" onclick="joinWorkspace()">Join</button>
+        <button class="btn btn-outline" onclick="closeModal('workspaceJoinModal')">Cancel</button>`;
     document.getElementById('workspaceJoinModal').classList.add('open');
 }
 async function createWorkspace(){
-    let name=document.getElementById('wsName').value.trim(),code=document.getElementById('wsCode').value.trim();
+    let name=document.getElementById('wsName').value.trim(), code=document.getElementById('wsCode').value.trim();
     if(!name){toast('Name required');return}
     try{await apiCall('/api/hub/rooms',{method:'POST',body:JSON.stringify({name,room_code:code})});toast('Created');closeModal('workspaceCreateModal');loadWorkspaces()}catch(e){toast('Failed')}
 }
 async function joinWorkspace(){
     let code=document.getElementById('joinRoomCode').value.trim().toUpperCase();
+    if(!code){toast('Room code required');return}
     try{await apiCall('/api/hub/rooms/join',{method:'POST',body:JSON.stringify({room_code:code})});toast('Joined');closeModal('workspaceJoinModal');loadWorkspaces()}catch(e){toast('Failed')}
 }
 function openRoomChat(roomCode){
-    document.getElementById('workspaceFullContent').innerHTML=`<div id="roomChat"><h3>Room: ${roomCode}</h3><div id="roomMessages" style="height:60vh;overflow-y:auto;border:1px solid var(--border);padding:10px;margin-bottom:10px;"></div><div style="display:flex;gap:8px;"><input id="roomMsgInput" placeholder="Type @CAPITAN for AI" style="flex:1;padding:10px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);"><button class="btn" style="width:auto;" onclick="sendRoomMessage('${roomCode}')">Send</button></div></div>`;
+    let c=document.getElementById('workspaceFullContent');
+    c.innerHTML=`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <button class="back-btn" onclick="loadWorkspaces()">←</button>
+            <h3>Room: ${roomCode}</h3>
+        </div>
+        <div id="roomMessages" style="height:60vh;overflow-y:auto;border:1px solid var(--border);padding:10px;margin-bottom:10px;border-radius:12px;background:var(--bg-secondary);"></div>
+        <div style="display:flex;gap:8px;">
+            <input id="roomMsgInput" placeholder="Type @CAPITAN for AI" style="flex:1;padding:10px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);">
+            <button class="btn" style="width:auto;" onclick="sendRoomMessage('${roomCode}')">Send</button>
+        </div>`;
     loadRoomMessages(roomCode);
 }
 async function loadRoomMessages(roomCode){
     try{
         let d=await apiCall('/api/hub/rooms/'+roomCode+'/messages');
-        let html=d.messages.map(m=>`<div><b>${m.author}:</b> ${m.message}</div>`).join('');
-        document.getElementById('roomMessages').innerHTML=html||'No messages';
-    }catch(e){}
+        let html=d.messages.map(m=>`<div style="margin-bottom:6px;"><b>${escapeHtml(m.author)}:</b> ${m.is_ai?'(AI) ':''}${escapeHtml(m.message)}</div>`).join('');
+        document.getElementById('roomMessages').innerHTML=html||'No messages yet.';
+    }catch(e){document.getElementById('roomMessages').innerHTML='Failed to load messages.'}
 }
 async function sendRoomMessage(roomCode){
     let msg=document.getElementById('roomMsgInput').value.trim();
-    if(!msg)return;
+    if(!msg) return;
     await apiCall('/api/hub/rooms/'+roomCode+'/messages',{method:'POST',body:JSON.stringify({message:msg})});
     document.getElementById('roomMsgInput').value='';
     loadRoomMessages(roomCode);
 }
 
 // ==================== DEVELOPER PAGE ====================
-function openDeveloperPage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('developerFullPage').classList.add('open');loadDeveloperPage()}
-function closeDeveloperPage(){document.getElementById('developerFullPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
-async function loadDeveloperPage(tab='keys'){
+function openDeveloperPage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('developerFullPage').classList.add('open');loadDeveloperPage('keys')}
+async function loadDeveloperPage(tab){
     let c=document.getElementById('developerContent');
-    c.innerHTML='<p>Loading...</p>';
     if(tab==='keys'){
         try{
             let keys=await apiCall('/api/developer/keys');
             let html='<h2>API Keys</h2><button class="btn" onclick="createApiKey()">+ Generate Key</button><div style="margin-top:12px;">';
-            keys.keys.forEach(k=>{html+=`<div class="dashboard-card"><span>${k.prefix}...</span><span style="float:right;color:var(--accent)">${k.scopes}</span> <button onclick="revokeApiKey('${k.id}')">Revoke</button></div>`;});
+            keys.keys.forEach(k=>{
+                html+=`<div class="dashboard-card"><div style="display:flex;justify-content:space-between;"><span>${k.prefix}...</span><span style="color:var(--accent)">${k.scopes}</span><button onclick="revokeApiKey('${k.id}')">Revoke</button></div><small>${k.last_used||'Never used'}</small></div>`;
+            });
             html+='</div>';
             c.innerHTML=html;
         }catch(e){c.innerHTML='<p>Failed to load API keys.</p>'}
@@ -788,7 +947,9 @@ async function loadDeveloperPage(tab='keys'){
         try{
             let hooks=await apiCall('/api/developer/webhooks');
             let html='<h2>Webhooks</h2><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div style="margin-top:12px;">';
-            hooks.webhooks.forEach(w=>{html+=`<div class="dashboard-card"><div>${w.url}</div><div style="font-size:11px;">Events: ${w.events}</div><button onclick="deleteWebhook('${w.id}')">Delete</button></div>`;});
+            hooks.webhooks.forEach(w=>{
+                html+=`<div class="dashboard-card"><div>${w.url}</div><small>Events: ${w.events}</small><button onclick="deleteWebhook('${w.id}')">Delete</button></div>`;
+            });
             html+='</div>';
             c.innerHTML=html;
         }catch(e){c.innerHTML='<p>Failed to load webhooks.</p>'}
@@ -797,32 +958,38 @@ async function loadDeveloperPage(tab='keys'){
 async function createApiKey(){
     try{
         let res=await apiCall('/api/developer/keys',{method:'POST',body:JSON.stringify({})});
-        document.getElementById('apiKeyModalContent').innerHTML=`<h2>New API Key</h2><pre>${res.key}</pre><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');closeModal('apiKeyModal')">Copy</button>`;
+        document.getElementById('apiKeyModalContent').innerHTML=`<h2>New API Key</h2><pre style="word-break:break-all;background:var(--bg-secondary);padding:10px;border-radius:8px;">${res.key}</pre><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');closeModal('apiKeyModal')">Copy & Close</button>`;
         document.getElementById('apiKeyModal').classList.add('open');
         loadDeveloperPage('keys');
-    }catch(e){toast('Failed')}
+    }catch(e){toast('Failed to create key')}
 }
-async function revokeApiKey(id){if(confirm('Revoke?')){await apiCall('/api/developer/keys/'+id,{method:'DELETE'});loadDeveloperPage('keys');}}
+async function revokeApiKey(id){ if(confirm('Revoke this key?')){await apiCall('/api/developer/keys/'+id,{method:'DELETE'});loadDeveloperPage('keys');} }
 function showCreateWebhook(){
-    document.getElementById('webhookModalContent').innerHTML=`<h2>Add Webhook</h2><input id="webhookUrl" placeholder="URL"><input id="webhookEvents" placeholder="Events (comma separated)" value="new_message"><button class="btn" onclick="createWebhook()">Save</button>`;
+    document.getElementById('webhookModalContent').innerHTML=`
+        <h2>Add Webhook</h2>
+        <input id="webhookUrl" placeholder="URL">
+        <input id="webhookEvents" placeholder="Events (comma separated)" value="new_message">
+        <button class="btn" onclick="createWebhook()">Save</button>`;
     document.getElementById('webhookModal').classList.add('open');
 }
 async function createWebhook(){
-    let url=document.getElementById('webhookUrl').value, events=document.getElementById('webhookEvents').value;
-    if(!url)return toast('URL required');
+    let url=document.getElementById('webhookUrl').value.trim(), events=document.getElementById('webhookEvents').value.trim();
+    if(!url) return toast('URL required');
     await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});
     closeModal('webhookModal'); loadDeveloperPage('webhooks');
 }
-async function deleteWebhook(id){if(confirm('Delete?')){await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});loadDeveloperPage('webhooks');}}
+async function deleteWebhook(id){ if(confirm('Delete webhook?')){await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});loadDeveloperPage('webhooks');} }
 
 // ==================== FOUNDER DASHBOARD ====================
 async function openFounderDashboard(){
     if(!state.user||state.stakeTier!=='founder') return toast('Founder access required');
-    hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('founderDashboardPage').classList.add('open');
+    hideAllViews(); document.getElementById('chatView').style.display='none'; document.getElementById('founderDashboardPage').classList.add('open');
+    let c=document.getElementById('founderDashboardContent'); c.innerHTML='<div class="spinner"></div>';
     try{
         let d=await apiCall('/api/admin/dashboard');
         let users=await apiCall('/api/admin/users');
-        let html=`<h2>Dashboard</h2>
+        let html=`
+        <h2>Dashboard</h2>
         <div class="grid-2">
             <div class="dashboard-card"><h3>Total Users</h3><div class="big-number">${d.total_users}</div></div>
             <div class="dashboard-card"><h3>Active Today</h3><div class="big-number">${d.active_today}</div></div>
@@ -835,16 +1002,15 @@ async function openFounderDashboard(){
         <input id="adminSearch" placeholder="Search users..." oninput="searchAdminUsers()" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:12px;">
         <table class="admin-table" id="adminUserTable">
             <thead><tr><th>Email</th><th>Name</th><th>CLOSE</th><th>Staked</th><th>Tier</th><th>Actions</th></tr></thead>
-            <tbody>${users.users.map(u=>`<tr><td>${u.email}</td><td>${u.name}</td><td>${u.close_balance}</td><td>${u.close_staked}</td><td>${u.stake_tier}</td><td><button onclick="adjustUserBalance('${u.id}')">Adjust</button> <button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('')}</tbody>
+            <tbody>${users.users.map(u=>`<tr><td>${u.email}</td><td>${u.name||''}</td><td>${u.close_balance}</td><td>${u.close_staked}</td><td>${u.stake_tier}</td><td><button onclick="adjustUserBalance('${u.id}')">Adjust</button> <button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('')}</tbody>
         </table>`;
-        document.getElementById('founderDashboardContent').innerHTML=html;
-    }catch(e){document.getElementById('founderDashboardContent').innerHTML='<p>Access denied.</p>'}
+        c.innerHTML=html;
+    }catch(e){c.innerHTML='<p>Access denied or failed to load.</p>'}
 }
-function closeFounderDashboard(){document.getElementById('founderDashboardPage').classList.remove('open');document.getElementById('chatView').style.display='flex'}
 async function searchAdminUsers(){
     let q=document.getElementById('adminSearch').value;
     let users=await apiCall('/api/admin/users?search='+encodeURIComponent(q));
-    document.getElementById('adminUserTable').querySelector('tbody').innerHTML=users.users.map(u=>`<tr><td>${u.email}</td><td>${u.name}</td><td>${u.close_balance}</td><td>${u.close_staked}</td><td>${u.stake_tier}</td><td><button onclick="adjustUserBalance('${u.id}')">Adjust</button> <button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('');
+    document.getElementById('adminUserTable').querySelector('tbody').innerHTML=users.users.map(u=>`<tr><td>${u.email}</td><td>${u.name||''}</td><td>${u.close_balance}</td><td>${u.close_staked}</td><td>${u.stake_tier}</td><td><button onclick="adjustUserBalance('${u.id}')">Adjust</button> <button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('');
 }
 async function adjustUserBalance(userId){
     let amount=prompt('Amount to add (can be negative):','0');
@@ -860,56 +1026,121 @@ async function deleteUser(userId){
 }
 
 // ==================== NOTIFICATIONS ====================
-async function fetchNotifications(){/* same as before */}
+async function fetchNotifications(){
+    if(!state.user) return;
+    try{
+        let d=await apiCall('/api/notifications/push');
+        state.unreadCount = d.notifications.length;
+        document.getElementById('notifBadge').textContent = state.unreadCount||'0';
+        document.getElementById('notifBadge').style.display = state.unreadCount?'flex':'none';
+        document.getElementById('notifList').innerHTML = d.notifications.map(n=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);"><div>${n.message}</div><small>${new Date(n.created).toLocaleString()}</small></div>`).join('')||'No new notifications';
+    }catch(e){}
+}
 function openNotifPanel(){document.getElementById('notifPanel').style.right='0'}
 function closeNotifPanel(){document.getElementById('notifPanel').style.right='-360px'}
-async function markAllRead(){await apiCall('/api/notifications/read',{method:'POST'});state.unreadCount=0;document.getElementById('notifBadge').style.display='none';fetchNotifications();}
+async function markAllRead(){
+    await apiCall('/api/notifications/read',{method:'POST'});
+    state.unreadCount=0;
+    document.getElementById('notifBadge').style.display='none';
+    fetchNotifications();
+}
 
 // ==================== PROFILE / LEGAL ====================
-function openProfileModal(){/* ... */}
-async function openPrivacyModal(){let d=await apiCall('/api/legal/privacy');document.getElementById('privacyModalContent').innerHTML=`<h2>Privacy Policy</h2><div>${d.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;document.getElementById('privacyModal').classList.add('open');}
-async function openTermsModal(){let d=await apiCall('/api/legal/terms');document.getElementById('termsModalContent').innerHTML=`<h2>Terms of Service</h2><div>${d.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;document.getElementById('termsModal').classList.add('open');}
-
-// ==================== HELPERS ====================
-function hideAllViews(){
-    ['walletFullPage','portfolioFullPage','workspaceFullPage','developerFullPage','founderDashboardPage'].forEach(id=>document.getElementById(id).classList.remove('open'));
-    document.getElementById('chatView').style.display='flex';
+function openProfileModal(){
+    document.getElementById('profileModalContent').innerHTML=`
+        <h2>Account</h2>
+        <p><strong>${state.user?.email||'Guest'}</strong></p>
+        <p>CLOSE Balance: ${state.closeBalance.toLocaleString()} ($${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)})</p>
+        <p>Staked: ${state.closeStaked.toLocaleString()} | Tier: ${state.stakeTier.toUpperCase()}</p>
+        ${state.user?`<button class="btn btn-outline" onclick="logout()">Sign Out</button>`:`<button class="btn" onclick="closeModal('profileModal');showSignupModal()">Sign Up</button>`}
+        <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
+    document.getElementById('profileModal').classList.add('open');
 }
-function toggleCollapsible(k){let c=document.getElementById(k+'Content'),a=document.getElementById(k+'Arrow');c.classList.toggle('open');a.style.transform=c.classList.contains('open')?'rotate(180deg)':'';}
-function toggleSidebar(){let s=document.getElementById('sidebar'),o=document.getElementById('overlay');if(window.innerWidth<=768){s.classList.toggle('open');o.classList.toggle('open');}else{s.classList.toggle('collapsed');}}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
+async function openPrivacyModal(){
+    try{
+        let d=await apiCall('/api/legal/privacy');
+        document.getElementById('privacyModalContent').innerHTML=`<h2>Privacy Policy</h2><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
+        document.getElementById('privacyModal').classList.add('open');
+    }catch(e){toast('Could not load privacy policy')}
+}
+async function openTermsModal(){
+    try{
+        let d=await apiCall('/api/legal/terms');
+        document.getElementById('termsModalContent').innerHTML=`<h2>Terms of Service</h2><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
+        document.getElementById('termsModal').classList.add('open');
+    }catch(e){toast('Could not load terms')}
+}
+
+// ==================== FILE UPLOAD ====================
 function triggerFileUpload(){
     if(!state.user) return toast('Sign in to upload');
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
     inp.onchange=async e=>{
         let file=e.target.files[0];if(!file)return;
         if(file.size/(1024*1024)>60)return toast('Max 60MB');
+        document.getElementById('messageInput').disabled=true;
+        toast('Uploading...');
         let fd=new FormData();fd.append('file',file);
         try{
             let res=await fetch(CFG.API+'/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+state.token},body:fd});
+            if(!res.ok) throw new Error('Upload failed');
             let data=await res.json();
             toast('Uploaded: '+file.name);
             state.messages.push({role:'user',content:`[Uploaded document: ${file.name}]\n\nPlease analyze this document.`});
-            renderMessages();sendMessage();
-        }catch(e){toast('Upload failed')}
+            renderMessages(); sendMessage();
+        }catch(e){toast('Upload failed: '+e.message)}
+        document.getElementById('messageInput').disabled=false;
     };
     inp.click();
 }
 
+// ==================== COLLAPSIBLE ====================
+function toggleCollapsible(k){
+    let content=document.getElementById(k+'Content'), arrow=document.getElementById(k+'Arrow');
+    content.classList.toggle('open');
+    arrow.style.transform=content.classList.contains('open')?'rotate(180deg)':'rotate(0deg)';
+}
+
+// ==================== SIDEBAR TOGGLE ====================
+function toggleSidebar(){
+    let s=document.getElementById('sidebar'), o=document.getElementById('overlay');
+    if(window.innerWidth<=768){ s.classList.toggle('open'); o.classList.toggle('open'); }
+    else{ s.classList.toggle('collapsed'); }
+}
+function closeSidebar(){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+}
+
 // ==================== INIT ====================
 async function init(){
-    document.getElementById('toggleSidebarBtn').onclick=toggleSidebar;
+    document.getElementById('toggleSidebarBtn').addEventListener('click',toggleSidebar);
+    document.addEventListener('click', (e)=>{
+        if(window.innerWidth<=768 && document.getElementById('sidebar').classList.contains('open') &&
+           !document.getElementById('sidebar').contains(e.target) &&
+           !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar();
+    });
     setTimeout(()=>{document.getElementById('splashScreen').classList.add('hide');document.getElementById('app').style.display='flex';},1600);
     if(state.token && state.user){
-        try{let data=await apiCall('/api/auth/me');state.user=data;state.closeBalance=data.close_balance||0;state.closeStaked=data.close_staked||0;state.stakeTier=data.stake_tier||'none';state.walletAddress=data.wallet_address||'';
-            localStorage.setItem('capitan_user',JSON.stringify(data));localStorage.setItem('close_balance',state.closeBalance);localStorage.setItem('close_staked',state.closeStaked);localStorage.setItem('stake_tier',state.stakeTier);localStorage.setItem('wallet_address',state.walletAddress);
-            state.isGuest=false;}catch(e){logout();}
-    }else if(state.token && !state.user){state.isGuest=true;state.freeUsed=0;}else{state.isGuest=true;}
-    updateUI();renderMessages();
-    if(!state.token) setTimeout(()=>{if(!state.user&&!state.token&&state.messages.length===0)showBubblePrompt('Welcome! Create your OS Wallet to claim 2,000 CLOSE.',false);},5000);
-    setInterval(fetchNotifications,30000);
+        try{
+            let data=await apiCall('/api/auth/me');
+            state.user=data; state.closeBalance=data.close_balance||0; state.closeStaked=data.close_staked||0;
+            state.stakeTier=data.stake_tier||'none'; state.walletAddress=data.wallet_address||'';
+            localStorage.setItem('capitan_user',JSON.stringify(data));
+            localStorage.setItem('close_balance',state.closeBalance);
+            localStorage.setItem('close_staked',state.closeStaked);
+            localStorage.setItem('stake_tier',state.stakeTier);
+            localStorage.setItem('wallet_address',state.walletAddress);
+            state.isGuest=false;
+        }catch(e){logout();}
+    }else if(state.token && !state.user){ state.isGuest=true; state.freeUsed=0; }
+    else{ state.isGuest=true; }
+    updateUI(); renderMessages();
+    if(!state.token) setTimeout(()=>{ if(!state.user&&!state.token&&state.messages.length===0) showBubblePrompt('Welcome! Create your OS Wallet to claim 2,000 CLOSE.', false); },5000);
+    setInterval(fetchNotifications, 30000);
+    fetchNotifications();
 }
 init();
 </script>
 </body>
-</html> 
+</html>
