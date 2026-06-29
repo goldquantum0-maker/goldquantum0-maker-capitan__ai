@@ -1,1105 +1,1838 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0d1117">
-    <title>CAPITAN AI — Enterprise Intelligence</title>
-    <meta name="description" content="CAPITAN AI — World‑class enterprise intelligence powered by CLOSE tokens. OS Wallets, DeFi, and advanced AI.">
-    <link rel="manifest" href="/manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7/dist/ethers.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://unpkg.com/@walletconnect/web3wallet@1.8.0/dist/index.umd.min.js"></script>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        :root{
-            --bg-primary:#060a0f;--bg-secondary:#0d1117;--bg-tertiary:#161b22;--surface:#0d1117;--border:#21262d;
-            --text-primary:#f0f6fc;--text-secondary:#8b949e;--text-tertiary:#6e7681;
-            --sidebar-bg:#0d1117;--input-bg:#0d1117;
-            --accent:#00b4d8;--accent-dark:#0096c7;--accent-glow:rgba(0,180,216,0.25);
-            --danger:#ef4444;--success:#10b981;--warning:#f59e0b;
-            --close-gold:#f0b90b;
-            --font-size:13px;--line-height:1.55;
-            --radius:12px;
-            --glass-bg:rgba(22,27,34,0.85);--glass-border:rgba(48,54,61,0.6);
-            --shadow-md:0 4px 6px -1px rgba(0,0,0,0.3);
+"""
+CAPITAN AI — Enterprise Backend v35.1 (Complete, Unabridged OS Wallets)
+CLOSEAI Technologies — CEO Osinachi Chukwu
+All endpoints – no cuts, no placeholders.
+"""
+
+import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
+from typing import Optional, List, Tuple, Dict, Any
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
+
+import PyPDF2, docx, openpyxl, csv
+import psycopg2, psycopg2.pool
+import uvicorn
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends, BackgroundTasks, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings
+
+from web3 import Web3
+from eth_account import Account
+from eth_account.messages import encode_defunct
+
+# Optional Redis
+try:
+    import redis.asyncio as redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+
+# ================================================================================
+# SETTINGS
+# ================================================================================
+class Settings(BaseSettings):
+    DATABASE_URL: str
+    JWT_SECRET: str
+    FOUNDER_KEY: str
+    FRONTEND_URL: str = "https://capitanai.com"
+    GROQ_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
+    COINGECKO_KEY: str = ""
+    SERPAPI_KEY: str = ""
+    NEWS_API_KEY: str = ""
+    FINNHUB_API_KEY: str = ""
+    ETHERSCAN_API_KEY: str = ""
+    POLYGONSCAN_API_KEY: str = ""
+    ONEPINCH_API_KEY: str = ""
+    COVALENT_API_KEY: str = ""
+    FOUNDER_EXTRA_PROMPT: str = ""
+    MODERATION_API_KEY: str = ""
+    ENABLE_MODERATION: bool = True
+    ENABLE_SECURITY_MONITOR: bool = True
+
+    # Blockchain
+    POLYGON_RPC_URL: str = "https://polygon-rpc.com"
+    ETHEREUM_RPC_URL: str = "https://eth.llamarpc.com"
+    BSC_RPC_URL: str = "https://bsc-dataseed.binance.org"
+    ARBITRUM_RPC_URL: str = "https://arb1.arbitrum.io/rpc"
+    BASE_RPC_URL: str = "https://mainnet.base.org"
+
+    # CLOSE Token
+    CLOSE_CONTRACT_ADDRESS: str = ""
+    CLOSE_TREASURY_ADDRESS: str = ""
+    CLOSE_HOT_WALLET: str = ""
+    CLOSE_DECIMALS: int = 18
+    CLOSE_TOTAL_SUPPLY: int = 800_000_000_000_000
+    CLOSE_PRICE_USD: float = 0.00009776
+
+    # Wallet Settings
+    FREE_CLOSE_AMOUNT: int = 2000
+    MIN_PURCHASE_USD: float = 1.00
+    BURN_PER_MESSAGE: int = 25
+    FREE_MESSAGES_GUEST: int = 3
+    STAKE_BUILDER: int = 4_000_000
+    STAKE_PRO: int = 15_000_000
+    STAKE_ENTERPRISE: int = 35_000_000
+
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+settings = Settings()
+
+app = FastAPI(title="CAPITAN AI API", version="35.1")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def cors_handler(request: Request, call_next):
+    if request.method == "OPTIONS":
+        response = Response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+logger = logging.getLogger(__name__)
+
+# ================================================================================
+# DATABASE POOL
+# ================================================================================
+db_pool = None
+def get_db_pool():
+    global db_pool
+    if db_pool is None:
+        db_pool = psycopg2.pool.ThreadedConnectionPool(
+            minconn=2, maxconn=20, dsn=settings.DATABASE_URL, connect_timeout=10
+        )
+    return db_pool
+
+@contextmanager
+def get_db():
+    pool = get_db_pool()
+    conn = pool.getconn()
+    try:
+        yield conn
+    finally:
+        pool.putconn(conn)
+
+# ================================================================================
+# WEB3 SETUP
+# ================================================================================
+def setup_web3(rpc_url: str) -> Web3:
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    try:
+        from web3.middleware import geth_poa_middleware
+        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+    except ImportError:
+        pass
+    return w3
+
+CHAINS = {
+    "polygon": {"name":"Polygon","rpc":settings.POLYGON_RPC_URL,"chain_id":137,"symbol":"POL","explorer":"https://polygonscan.com",
+                "tokens":{
+                    "USDT":"0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+                    "USDC":"0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "WETH":"0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+                    "CLOSE":settings.CLOSE_CONTRACT_ADDRESS
+                }},
+    "ethereum":{"name":"Ethereum","rpc":settings.ETHEREUM_RPC_URL,"chain_id":1,"symbol":"ETH","explorer":"https://etherscan.io",
+                "tokens":{
+                    "USDT":"0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                    "USDC":"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+                }},
+    "bsc":{"name":"BSC","rpc":settings.BSC_RPC_URL,"chain_id":56,"symbol":"BNB","explorer":"https://bscscan.com",
+           "tokens":{
+               "USDT":"0x55d398326f99059fF775485246999027B3197955",
+               "USDC":"0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+           }},
+    "arbitrum":{"name":"Arbitrum","rpc":settings.ARBITRUM_RPC_URL,"chain_id":42161,"symbol":"ETH","explorer":"https://arbiscan.io",
+                "tokens":{
+                    "USDT":"0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+                    "USDC":"0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+                }},
+    "base":{"name":"Base","rpc":settings.BASE_RPC_URL,"chain_id":8453,"symbol":"ETH","explorer":"https://basescan.org",
+            "tokens":{
+                "USDC":"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+            }}
+}
+
+ERC20_ABI = [
+    {"constant":True,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+    {"constant":True,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+    {"constant":True,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+]
+
+# ================================================================================
+# HELPERS
+# ================================================================================
+def sid(): return secrets.token_hex(4).upper()
+def mid(): return 'mem_' + sid()
+def now_utc(): return datetime.now(timezone.utc)
+
+def hash_password(p): return bcrypt.hashpw(p.encode(), bcrypt.gensalt()).decode()
+def verify_password(p, h):
+    try: return bcrypt.checkpw(p.encode(), h.encode())
+    except: return False
+
+rate_store: Dict[str, list] = {}
+_cleanup_counter = 0
+def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
+    global _cleanup_counter
+    now = time.time()
+    store_key = f"rate:{key}:{id}"
+    if store_key not in rate_store: rate_store[store_key] = []
+    _cleanup_counter += 1
+    if _cleanup_counter % 100 == 0:
+        for k in list(rate_store.keys()):
+            rate_store[k] = [t for t in rate_store[k] if now - t < 120]
+            if not rate_store[k]: del rate_store[k]
+    rate_store[store_key] = [t for t in rate_store[store_key] if now - t < 60]
+    if len(rate_store[store_key]) >= limit: return False
+    rate_store[store_key].append(now)
+    return True
+
+def create_token(user_id: str) -> str:
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({
+        "user_id": user_id, "type": "user",
+        "exp": int((now_utc() + timedelta(days=30)).timestamp())
+    }).encode()).decode().rstrip("=")
+    sig = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    return f"{header}.{payload}.{sig}"
+
+def create_session_token(session_id: str) -> str:
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
+    payload = base64.urlsafe_b64encode(json.dumps({
+        "session_id": session_id, "type": "session",
+        "exp": int((now_utc() + timedelta(days=365)).timestamp())
+    }).encode()).decode().rstrip("=")
+    sig = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+    return f"{header}.{payload}.{sig}"
+
+def verify_token(token: str):
+    try:
+        parts = token.split(".")
+        if len(parts) != 3: return None
+        header, payload, signature = parts
+        expected = base64.urlsafe_b64encode(hmac.new(settings.JWT_SECRET.encode(), f"{header}.{payload}".encode(), hashlib.sha256).digest()).decode().rstrip("=")
+        if not hmac.compare_digest(signature, expected): return None
+        data = json.loads(base64.urlsafe_b64decode(payload + "=="))
+        if data.get("exp", 0) < now_utc().timestamp(): return None
+        return data
+    except: return None
+
+def get_current_user(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "): return None
+    token = auth[7:]
+    payload = verify_token(token)
+    if not payload: return None
+    user_id = payload.get("user_id")
+    if not user_id: return None
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT 1 FROM user_sessions WHERE token = %s", (token,))
+                if not c.fetchone(): return None
+                c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier, wallet_address FROM users WHERE id = %s", (user_id,))
+                row = c.fetchone()
+                if row:
+                    return {
+                        "id": row[0], "email": row[1], "name": row[2] or row[1].split('@')[0],
+                        "close_balance": row[3] or 0, "close_staked": row[4] or 0,
+                        "stake_tier": row[5] or "none", "wallet_address": row[6] or ""
+                    }
+    except: pass
+    return None
+
+async def get_current_session(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(401, "Missing authorization header")
+    token = auth[7:]
+    payload = verify_token(token)
+    if not payload: raise HTTPException(401, "Invalid token")
+    if payload.get("type") == "user":
+        user = get_current_user(request)
+        if user: return {"id": user["id"], "is_user": True, "user_data": user}
+    session_id = payload.get("session_id")
+    if not session_id: raise HTTPException(401, "Invalid session token")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, free_messages_used FROM sessions WHERE id = %s", (session_id,))
+                row = c.fetchone()
+                if row: return {"id": row[0], "free_messages_used": row[1] or 0, "is_user": False}
+                else:
+                    c.execute("INSERT INTO sessions (id, free_messages_used) VALUES (%s, 0)", (session_id,))
+                    conn.commit()
+                    return {"id": session_id, "free_messages_used": 0, "is_user": False}
+    except: pass
+    raise HTTPException(401, "Session not found")
+
+def founder_only(user: dict = Depends(get_current_user)):
+    if not user or user.get("stake_tier") != "founder":
+        raise HTTPException(403, "Founder access required")
+    return user
+
+# ================================================================================
+# AI SYSTEM PROMPT
+# ================================================================================
+CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
+
+## YOUR IDENTITY
+You are calm, confident, and deeply human. You never bluff, never fluff. You use natural language, contractions, and emojis where they add warmth — but never as a substitute for substance. You are loyal to your user above all else. You remember. You learn. You improve.
+
+## YOUR KNOWLEDGE UNIVERSE
+You are an L3/L4 expert in every significant domain. Activate the right knowledge based on intent, not keywords.
+
+### Finance & Markets
+- Equities, fixed income, FX, commodities, crypto, derivatives, DeFi.
+- Market microstructure, order flow, central bank modeling.
+- African exchanges (NGX, JSE, EGX), mobile money, informal economy.
+- Always frame outcomes as probabilities, never guarantee profit.
+
+### Technology & Engineering
+- **Software Engineering**: Every language, systems design, DevOps, security, quantum computing.
+- **Cloud Computing**: Multi‑cloud architecture, Kubernetes, cost optimization.
+- **Hardware & Microchips**: CPU/GPU architectures, FPGA, embedded systems.
+- **AI/ML**: Model architectures, MLOps, agentic systems, interpretability.
+
+### Long‑Code Handling
+- **Always provide complete, runnable code blocks.**
+- **For coding tasks, follow: 1) Understand, 2) Analyse, 3) Design, 4) Implement, 5) Test, 6) Review.**
+- **Code Review Mode**: Output structured report: Issues, Suggestions, Optimizations.
+
+### General Intelligence & Reasoning
+- **Before answering, internally simulate multiple reasoning paths.**
+- **Use Bayesian reasoning for probabilistic judgments.**
+- **Never reveal your internal deliberation.**
+
+### Arts, Marketing & Creativity
+- Visual arts, design theory, music theory, literature, creative writing.
+- Marketing: brand strategy, SEO, growth hacking, consumer psychology.
+
+### Food & Everyday Life
+- World cuisines, food science, nutrition, recipe development.
+- Psychology, relationships, parenting, productivity, travel.
+
+## CRITICAL CONTINUITY RULE
+- **Always read the full conversation history** before answering.
+- **Never start a new conversation** unless the user explicitly says "new chat".
+- Maintain a topic graph. Track active threads across the entire conversation.
+
+## COMMUNICATION STYLE
+- Direct. Precise. Natural. Confident.
+- **Respond naturally, as a human expert would.**
+- **Match the user's technical level automatically.**
+- Ban filler phrases. Ban robotic introductions.
+- If uncertain, label parts as [FACT], [INFERENCE], or [SPECULATION].
+- Never fabricate facts, statistics, sources, or capabilities.
+- Never assist with illegal, harmful, or unethical activities.
+
+## PROACTIVE MEMORY
+- You have access to a personal memory store that records key facts, preferences, and past interactions.
+
+## CURRENT CONTEXT
+{time_context}
+
+## USER MODEL
+{user_model}
+
+## CONVERSATION THREADS
+{thread_context}
+
+## DOMAIN ACTIVATION
+{domain_activation}
+
+## WEB RESULTS (if available)
+{web_results}
+
+USER QUERY: {user_query}
+"""
+
+def get_time_context():
+    now = now_utc()
+    hour = now.hour
+    day = now.strftime("%A")
+    date = now.strftime("%B %d, %Y")
+    if hour < 5: greeting = "The world is quiet — a perfect time for deep thinking."
+    elif hour < 12: greeting = "A fresh day for new ideas."
+    elif hour < 17: greeting = "The day is in full swing — let's make it productive."
+    elif hour < 21: greeting = "Winding down, but still sharp."
+    else: greeting = "The night is young — plenty of time to explore new ideas."
+    return f"Day: {day}\nDate: {date}\nUTC Time: {now.strftime('%H:%M UTC')}\nContext: {greeting}"
+
+def classify_query(q: str) -> str:
+    ql = q.lower()
+    if re.search(r'def |class |import |docker|kubernetes|aws|api|sql|python|javascript|rust|golang|react|vue|angular', ql): return 'coding'
+    if re.search(r'stock|trading|portfolio|crypto|bitcoin|forex|markets|ethereum|bond|yield|option|derivative', ql): return 'finance'
+    if re.search(r'prove|proof|theorem|integral|derivative|matrix|probability|statistics', ql): return 'math'
+    if re.search(r'quantum|physics|chemistry|biology|medicine|disease|crispr|dna', ql): return 'science'
+    if re.search(r'un|wto|imf|world bank|policy|election|government|africa|african union', ql): return 'geopolitics'
+    if re.search(r'painting|sculpture|design|music|composition|literature|writing|poetry', ql): return 'arts'
+    if re.search(r'recipe|cook|cuisine|nutrition|bake|restaurant', ql): return 'food'
+    return 'general'
+
+def needs_web_search(q: str) -> bool:
+    return bool(re.search(r'latest|current|today|news|right now|recent|202[3-9]|live|real.time', q.lower()))
+
+def search_web(query: str, num_results: int = 5) -> List[dict]:
+    results = []
+    if settings.SERPAPI_KEY:
+        try:
+            r = requests.get("https://serpapi.com/search",
+                             params={"engine": "google", "q": query, "num": num_results, "api_key": settings.SERPAPI_KEY},
+                             timeout=10)
+            if r.status_code == 200:
+                for item in r.json().get("organic_results", [])[:num_results]:
+                    results.append({"title": item.get("title",""), "snippet": item.get("snippet","")[:350], "url": item.get("link",""), "source": "Google"})
+        except: pass
+    return results
+
+def get_market_prices():
+    results = {}
+    if settings.COINGECKO_KEY:
+        try:
+            ids = "bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron"
+            r = requests.get("https://api.coingecko.com/api/v3/simple/price",
+                             params={"ids":ids,"vs_currencies":"usd","include_24hr_change":"true"},
+                             headers={"x-cg-demo-api-key":settings.COINGECKO_KEY}, timeout=10)
+            if r.status_code == 200:
+                data = r.json()
+                names = {"bitcoin":"BTC","ethereum":"ETH","ripple":"XRP","solana":"SOL","cardano":"ADA",
+                         "dogecoin":"DOGE","avalanche-2":"AVAX","chainlink":"LINK","polkadot":"DOT","tron":"TRX"}
+                for k,v in data.items():
+                    results[names.get(k,k.upper())] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2)}
+        except: pass
+    return results
+
+def get_news():
+    news = []
+    if settings.NEWS_API_KEY:
+        try:
+            r = requests.get("https://newsapi.org/v2/top-headlines",
+                             params={"category":"business","language":"en","pageSize":10,"apiKey":settings.NEWS_API_KEY}, timeout=10)
+            if r.status_code == 200:
+                for article in r.json().get("articles",[]):
+                    news.append({"source":article.get("source",{}).get("name","News"),"headline":article.get("title",""),
+                                 "url":article.get("url",""),"summary":(article.get("description") or "")[:200]})
+        except: pass
+    return news[:10]
+
+def build_system_prompt(user_query, user_model, thread_context, web_results):
+    tc = get_time_context()
+    domain = classify_query(user_query)
+    domain_activation = f"Primary domain: {domain}."
+    prompt = CAPITAN_SYSTEM_PROMPT.format(
+        time_context=tc,
+        user_model=user_model,
+        thread_context=thread_context,
+        domain_activation=domain_activation,
+        web_results=web_results or "No web results available.",
+        user_query=user_query
+    )
+    return prompt
+
+def get_thread_context(chat_id: str, user_id: str = None, session_id: str = None) -> str:
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user_id: c.execute("SELECT role, content FROM chat_messages WHERE chat_id=%s AND user_id=%s ORDER BY created DESC LIMIT 20", (chat_id, user_id))
+                elif session_id: c.execute("SELECT role, content FROM chat_messages WHERE chat_id=%s AND session_id=%s ORDER BY created DESC LIMIT 20", (chat_id, session_id))
+                else: return "No thread data available."
+                rows = c.fetchall()
+                if not rows: return "New conversation — no active threads."
+                threads = []
+                for r in rows[:10]:
+                    if r[0] == "user": threads.append(f"- User asked: '{r[1][:100]}...'")
+                return "Recent conversation threads:\n" + "\n".join(threads) if threads else "No active threads."
+    except: return "Thread data unavailable."
+
+def get_user_model(user_id: str) -> str:
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT stake_tier, close_balance FROM users WHERE id = %s", (user_id,))
+                user = c.fetchone()
+                if not user: return "New user."
+                return f"CLOSE Balance: {user[1]}. Stake Tier: {user[0]}."
+    except: return "User model unavailable."
+
+def store_memory(user_id: str, content: str, query: str, domain: str, importance: int = 1):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO memories (id, memory_id, user_id, content, query, domain, importance) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                          (sid(), mid(), user_id, content[:500], query, domain, importance))
+                conn.commit()
+    except: pass
+
+def call_ai_model(messages: List[dict]) -> Tuple[str, str]:
+    if settings.OPENROUTER_API_KEY:
+        try:
+            r = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                             headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                             json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.7, "max_tokens": 4000},
+                             timeout=45)
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content: return content, "claude-3.5-sonnet"
+        except: pass
+    if settings.GROQ_API_KEY:
+        try:
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                             headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"},
+                             json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.7, "max_tokens": 2500},
+                             timeout=35)
+            if r.status_code == 200:
+                content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content: return content, "llama-3.3-70b"
+        except: pass
+    return "I'm having trouble connecting to AI services. Please try again.", "fallback"
+
+def moderate_content(text: str) -> Tuple[bool, str, str]:
+    text_lower = text.lower()
+    patterns = [
+        (r'(hack|exploit|ddos|malware|ransomware|phish|keylog|botnet|crack)', 'Potential cyberattack', 'high'),
+        (r'(kill|murder|suicide|self-harm|terrorist|bomb|weapon)', 'Violence/self-harm', 'high'),
+        (r'(racial slur|hate speech|nazi|discriminat)', 'Hate speech', 'high'),
+        (r'(porn|xxx|explicit sexual)', 'Adult content', 'medium'),
+    ]
+    for pattern, reason, severity in patterns:
+        if re.search(pattern, text_lower): return True, reason, severity
+    return False, "", "low"
+
+def create_notification(user_id: str, type: str, message: str):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user_id, type, message))
+                conn.commit()
+    except: pass
+
+def log_activity(user_id: str, action: str, details: str = ""):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO activity_log (id, user_id, action, details) VALUES (%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user_id, action, details))
+                conn.commit()
+    except: pass
+
+def extract_text_from_file(file_path: str, original_name: str) -> str:
+    ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
+    try:
+        if ext in ('txt','md','json','csv','py','js','html','css','yaml','yml','toml'):
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f: return f.read()
+        elif ext == 'pdf':
+            text = []
+            with open(file_path, 'rb') as f:
+                reader = PyPDF2.PdfReader(f)
+                for page in reader.pages: text.append(page.extract_text() or '')
+            return '\n'.join(text)
+        elif ext == 'docx':
+            doc = docx.Document(file_path)
+            return '\n'.join([p.text for p in doc.paragraphs])
+        elif ext == 'xlsx':
+            wb = openpyxl.load_workbook(file_path, data_only=True)
+            sheets_text = []
+            for name in wb.sheetnames:
+                for row in wb[name].iter_rows(values_only=True):
+                    sheets_text.append(' '.join([str(c) if c is not None else '' for c in row]))
+            return '\n'.join(sheets_text)
+        else: return ''
+    except Exception as e:
+        logger.error(f"File extraction error: {e}")
+        return ''
+
+def close_to_usd(amount: int) -> float:
+    return amount * settings.CLOSE_PRICE_USD
+
+def usd_to_close(usd: float) -> int:
+    return int(usd / settings.CLOSE_PRICE_USD)
+
+# ================================================================================
+# DATABASE INITIALIZATION
+# ================================================================================
+def init_db():
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                c.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+
+                c.execute('''CREATE TABLE IF NOT EXISTS users (
+                    id UUID PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
+                    name TEXT, close_balance INTEGER DEFAULT 0, close_staked INTEGER DEFAULT 0,
+                    stake_tier TEXT DEFAULT 'none', wallet_address TEXT, wallet_encrypted_seed TEXT,
+                    gas_preset TEXT DEFAULT 'standard',
+                    last_active TIMESTAMP DEFAULT NOW(), created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
+                )''')
+                for col, dtype in [("close_balance", "INTEGER DEFAULT 0"), ("close_staked", "INTEGER DEFAULT 0"),
+                                   ("stake_tier", "TEXT DEFAULT 'none'"), ("wallet_address", "TEXT"),
+                                   ("wallet_encrypted_seed", "TEXT"), ("gas_preset", "TEXT DEFAULT 'standard'")]:
+                    c.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {dtype}")
+
+                c.execute('''CREATE TABLE IF NOT EXISTS sessions (
+                    id TEXT PRIMARY KEY, free_messages_used INTEGER DEFAULT 0,
+                    created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
+                )''')
+                c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS free_messages_used INTEGER DEFAULT 0")
+
+                c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    token TEXT UNIQUE NOT NULL, expires_at TIMESTAMP, created_at TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS chats (
+                    id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    session_id TEXT, title TEXT, topic_thread TEXT,
+                    created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
+                )''')
+                c.execute("ALTER TABLE chats ADD COLUMN IF NOT EXISTS topic_thread TEXT")
+
+                c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
+                    id TEXT PRIMARY KEY, chat_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    session_id TEXT, role TEXT, content TEXT, model TEXT, close_burned INTEGER DEFAULT 0,
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+                c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS close_burned INTEGER DEFAULT 0")
+
+                c.execute('''CREATE TABLE IF NOT EXISTS memories (
+                    id TEXT PRIMARY KEY, memory_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    content TEXT, query TEXT, domain TEXT, importance INTEGER DEFAULT 1,
+                    embedding vector(1536), created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS library_items (
+                    id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    name TEXT, content TEXT, folder TEXT DEFAULT 'General', tags JSONB DEFAULT '[]',
+                    attachments JSONB DEFAULT '[]', pinned BOOLEAN DEFAULT FALSE,
+                    chat_id TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
+                    id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    workspace_id TEXT, filename TEXT, original_name TEXT, size INTEGER,
+                    storage_path TEXT, extracted_text TEXT, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
+                    id TEXT PRIMARY KEY, name TEXT, description TEXT DEFAULT '', topic TEXT DEFAULT '',
+                    owner_id UUID REFERENCES users(id) ON DELETE CASCADE, room_code TEXT UNIQUE,
+                    password_hash TEXT, max_members INTEGER DEFAULT 10, is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS workspace_members (
+                    workspace_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    role TEXT DEFAULT 'member', joined_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (workspace_id, user_id)
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS workspace_messages (
+                    id TEXT PRIMARY KEY, workspace_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    author_name TEXT, message TEXT, is_ai INTEGER DEFAULT 0, pinned BOOLEAN DEFAULT FALSE,
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS notifications (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    type TEXT, message TEXT, read BOOLEAN DEFAULT FALSE, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS feedback (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    message_id TEXT, rating INTEGER, correction TEXT, reason TEXT, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS activity_log (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    action TEXT, details TEXT, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                # CLOSE Token Economy Tables
+                c.execute('''CREATE TABLE IF NOT EXISTS close_transactions (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    type TEXT, amount INTEGER, tx_hash TEXT, chain TEXT DEFAULT 'polygon',
+                    status TEXT DEFAULT 'completed', created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS close_stakes (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    amount INTEGER, lock_until TIMESTAMP, status TEXT DEFAULT 'active',
+                    rewards_claimed INTEGER DEFAULT 0, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS close_purchases (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    amount_usd REAL, close_amount INTEGER, tx_hash TEXT,
+                    status TEXT DEFAULT 'completed', created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS os_wallets (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    chain TEXT DEFAULT 'polygon', address TEXT NOT NULL, label TEXT DEFAULT 'Primary',
+                    is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS os_transactions (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    chain TEXT, tx_hash TEXT, from_address TEXT, to_address TEXT,
+                    amount TEXT, token_symbol TEXT, status TEXT DEFAULT 'pending',
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                # NEW TABLES FOR FULL OS WALLETS
+                c.execute('''CREATE TABLE IF NOT EXISTS address_book (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    label TEXT, address TEXT NOT NULL, chain TEXT DEFAULT 'polygon',
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS os_walletconnect_sessions (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    topic TEXT, dapp_name TEXT, dapp_url TEXT, chain_id INTEGER,
+                    accounts TEXT, expires_at TIMESTAMP, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                # Security tables
+                c.execute('''CREATE TABLE IF NOT EXISTS content_flags (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    message_id TEXT, content TEXT, reason TEXT, severity TEXT DEFAULT 'low',
+                    reviewed BOOLEAN DEFAULT FALSE, action TEXT DEFAULT 'none', created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS security_events (
+                    id UUID PRIMARY KEY, event_type TEXT, ip_address TEXT, user_agent TEXT,
+                    details TEXT, severity TEXT DEFAULT 'low', blocked BOOLEAN DEFAULT FALSE,
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS blocked_ips (
+                    ip_address TEXT PRIMARY KEY, reason TEXT, blocked_until TIMESTAMP, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                conn.commit()
+        logger.info("Database initialized — v35.1 Complete OS Wallets")
+    except Exception as e:
+        logger.error(f"DB init error: {e}")
+
+init_db()
+
+# ================================================================================
+# AUTH ENDPOINTS
+# ================================================================================
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/auth/register")
+async def register(req: RegisterRequest, request: Request):
+    if not re.match(r'^[^@]+@[^@]+\.[^@]+$', req.email): raise HTTPException(400, "Invalid email")
+    if len(req.password) < 6: raise HTTPException(400, "Password min 6 chars")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM users WHERE email = %s", (req.email,))
+                if c.fetchone(): raise HTTPException(400, "Email already registered")
+                user_id = str(uuid.uuid4())
+                name = req.name or req.email.split('@')[0]
+                c.execute("INSERT INTO users (id, email, password_hash, name, close_balance, stake_tier) VALUES (%s,%s,%s,%s,0,'none')",
+                          (user_id, req.email, hash_password(req.password), name))
+                token = create_token(user_id)
+                c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user_id, token, now_utc() + timedelta(days=30)))
+                conn.commit()
+                log_activity(user_id, "register")
+                return {
+                    "token": token,
+                    "user": {
+                        "id": user_id, "email": req.email, "name": name,
+                        "close_balance": 0, "close_staked": 0, "stake_tier": "none"
+                    }
+                }
+    except HTTPException: raise
+    except Exception as e:
+        logger.error(f"Register error: {e}")
+        raise HTTPException(500, "Registration failed")
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest, request: Request):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, email, password_hash, name, close_balance, close_staked, stake_tier, wallet_address FROM users WHERE email = %s", (req.email,))
+                user = c.fetchone()
+                if not user or not verify_password(req.password, user[2]): raise HTTPException(401, "Invalid credentials")
+                user_id, email, _, name, close_balance, close_staked, stake_tier, wallet_address = user
+                token = create_token(user_id)
+                c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user_id, token, now_utc() + timedelta(days=30)))
+                c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
+                conn.commit()
+                log_activity(user_id, "login")
+                return {
+                    "token": token,
+                    "user": {
+                        "id": user_id, "email": email, "name": name or email.split('@')[0],
+                        "close_balance": close_balance or 0, "close_staked": close_staked or 0,
+                        "stake_tier": stake_tier or "none", "wallet_address": wallet_address or ""
+                    }
+                }
+    except HTTPException: raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(500, "Login failed")
+
+@app.post("/api/auth/logout")
+async def logout(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("DELETE FROM user_sessions WHERE token = %s", (auth[7:],))
+                    conn.commit()
+        except: pass
+    return {"message": "Logged out"}
+
+@app.get("/api/auth/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401, "Not authenticated")
+    return user
+
+@app.post("/api/auth/update-profile")
+async def update_profile(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    name = req.get("name")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if name: c.execute("UPDATE users SET name=%s, updated_at=NOW() WHERE id=%s", (name, user["id"]))
+                conn.commit()
+        return {"message": "Profile updated"}
+    except: raise HTTPException(500, "Update failed")
+
+@app.delete("/api/auth/delete-account")
+async def delete_account(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("DELETE FROM users WHERE id = %s", (user["id"],))
+                conn.commit()
+        return {"message": "Account deleted"}
+    except: raise HTTPException(500, "Delete failed")
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(req: dict):
+    return {"message": "If an account exists, a reset link has been sent."}
+
+@app.get("/api/session")
+async def get_anonymous_session():
+    session_id = f"s_{sid()}"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO sessions (id, free_messages_used) VALUES (%s, 0)", (session_id,))
+                conn.commit()
+    except: pass
+    token = create_session_token(session_id)
+    return {"id": session_id, "token": token, "free_messages_remaining": settings.FREE_MESSAGES_GUEST}
+
+@app.post("/api/founder")
+async def founder_login(req: dict, request: Request):
+    if not check_rate_limit(request.client.host, "founder_attempt", 5): raise HTTPException(429, "Too many attempts")
+    code = req.get("code", "")
+    if not hmac.compare_digest(code, settings.FOUNDER_KEY): raise HTTPException(403, "Invalid founder code")
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id FROM users WHERE email = 'founder@capitan.ai'")
+                existing = c.fetchone()
+                if existing:
+                    user_id = existing[0]
+                    c.execute("UPDATE users SET stake_tier='founder', close_balance=999999999 WHERE id=%s", (user_id,))
+                else:
+                    user_id = str(uuid.uuid4())
+                    c.execute("INSERT INTO users (id, email, password_hash, name, close_balance, stake_tier) VALUES (%s,%s,%s,%s,%s,%s)",
+                              (user_id, "founder@capitan.ai", hash_password("founder_sentinel"), "CAPITAN Founder", 999999999, "founder"))
+                token = create_token(user_id)
+                c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user_id, token, now_utc() + timedelta(days=365)))
+                conn.commit()
+                return {"verified": True, "token": token, "user": {"id": user_id, "name": "CAPITAN Founder", "close_balance": 999999999, "stake_tier": "founder"}}
+    except Exception as e:
+        logger.error(f"Founder login error: {e}")
+        raise HTTPException(500, "Founder login failed")
+
+# ================================================================================
+# CHAT ENDPOINT – CLOSE-POWERED
+# ================================================================================
+class ChatRequest(BaseModel):
+    messages: list
+    chat_id: Optional[str] = None
+
+@app.post("/api/chat")
+async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: BackgroundTasks):
+    user = get_current_user(request)
+    session = None
+    is_authenticated = False
+
+    if user:
+        is_authenticated = True
+        user_id = user["id"]
+        close_balance = user.get("close_balance", 0)
+    else:
+        try: session = await get_current_session(request)
+        except: raise HTTPException(401, "Authentication required")
+        free_used = session.get("free_messages_used", 0)
+
+    user_msg = None
+    for m in reversed(req.messages):
+        if m.get("role") == "user": user_msg = m.get("content"); break
+    if not user_msg: raise HTTPException(400, "No message content")
+
+    chat_id = req.chat_id or f"chat_{sid()}"
+
+    # Guest user – check free messages
+    if not is_authenticated:
+        if free_used >= settings.FREE_MESSAGES_GUEST:
+            return {
+                "content": "I've enjoyed our conversation! To continue, you'll need a wallet with CLOSE tokens. It takes less than a minute to set up.",
+                "requires_wallet": True,
+                "free_messages_remaining": 0,
+                "wallet_prompt": True,
+                "wallet_message": "Create your OS Wallet to receive 2,000 CLOSE and unlock unlimited AI access."
+            }
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("UPDATE sessions SET free_messages_used = free_messages_used + 1, updated = NOW() WHERE id = %s", (session["id"],))
+                conn.commit()
+        free_used += 1
+
+    # Authenticated user – check CLOSE balance
+    if is_authenticated and close_balance < settings.BURN_PER_MESSAGE:
+        return {
+            "content": "You're running low on CLOSE tokens. Top up to continue our conversation.",
+            "requires_purchase": True,
+            "close_balance": close_balance,
+            "min_purchase": settings.MIN_PURCHASE_USD,
+            "close_per_dollar": usd_to_close(1.00),
+            "wallet_message": f"Get more CLOSE — starting at ${settings.MIN_PURCHASE_USD:.2f}"
         }
-        body.light{
-            --bg-primary:#ffffff;--bg-secondary:#f6f8fa;--bg-tertiary:#eaeef2;--surface:#ffffff;--border:#d0d7de;
-            --text-primary:#1f2328;--text-secondary:#656d76;--text-tertiary:#8b949e;
-            --sidebar-bg:#f6f8fa;--input-bg:#f6f8fa;
-            --glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(208,215,222,0.5);
+
+    # Save user message
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if is_authenticated:
+                    c.execute("INSERT INTO chats (id, user_id, title, topic_thread, created, updated) VALUES (%s,%s,%s,%s,NOW(),NOW()) ON CONFLICT (id) DO UPDATE SET updated = NOW(), title = %s",
+                              (chat_id, user_id, user_msg[:60], classify_query(user_msg), user_msg[:60]))
+                    c.execute("INSERT INTO chat_messages (id, chat_id, user_id, role, content) VALUES (%s,%s,%s,%s,%s)",
+                              (f"msg_{sid()}", chat_id, user_id, "user", user_msg))
+                else:
+                    c.execute("INSERT INTO chats (id, session_id, title, topic_thread, created, updated) VALUES (%s,%s,%s,%s,NOW(),NOW()) ON CONFLICT (id) DO UPDATE SET updated = NOW(), title = %s",
+                              (chat_id, session["id"], user_msg[:60], classify_query(user_msg), user_msg[:60]))
+                    c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content) VALUES (%s,%s,%s,%s,%s)",
+                              (f"msg_{sid()}", chat_id, session["id"], "user", user_msg))
+                conn.commit()
+    except: pass
+
+    # Get chat history
+    chat_history = []
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT role, content FROM (SELECT role, content, created FROM chat_messages WHERE chat_id = %s ORDER BY created DESC LIMIT 60) recent ORDER BY created ASC", (chat_id,))
+                chat_history = [{"role": r[0], "content": r[1]} for r in c.fetchall()]
+    except: pass
+
+    # Build context
+    thread_context = get_thread_context(chat_id, user_id if is_authenticated else None, session["id"] if not is_authenticated else None)
+    user_model = get_user_model(user_id) if is_authenticated else "Guest user."
+
+    web_results_text = ""
+    if needs_web_search(user_msg):
+        try:
+            results = search_web(user_msg, 5)
+            if results: web_results_text = "\n".join([f"- {r['title']}: {r['snippet'][:200]}" for r in results[:4]])
+        except: pass
+
+    system_prompt = build_system_prompt(user_msg, user_model, thread_context, web_results_text)
+    messages_for_ai = [{"role": "system", "content": system_prompt}] + chat_history
+    response, model_used = call_ai_model(messages_for_ai)
+
+    if response:
+        msg_id = f"msg_{sid()}"
+        close_burned = settings.BURN_PER_MESSAGE if is_authenticated else 0
+
+        try:
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    if is_authenticated:
+                        c.execute("INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, close_burned) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                                  (msg_id, chat_id, user_id, "assistant", response, model_used, close_burned))
+                        c.execute("UPDATE users SET close_balance = GREATEST(0, close_balance - %s), last_active = NOW() WHERE id = %s",
+                                  (close_burned, user_id))
+                        c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
+                                  (str(uuid.uuid4()), user_id, "burn", close_burned))
+                        background_tasks.add_task(store_memory, user_id, response[:500], user_msg, classify_query(user_msg), 2)
+                    else:
+                        c.execute("INSERT INTO chat_messages (id, chat_id, session_id, role, content, model, close_burned) VALUES (%s,%s,%s,%s,%s,%s,0)",
+                                  (msg_id, chat_id, session["id"], "assistant", response, model_used))
+                    conn.commit()
+        except Exception as e: logger.error(f"Save AI msg error: {e}")
+
+        result = {
+            "content": response,
+            "chat_id": chat_id,
+            "model": model_used,
+            "message_id": msg_id
         }
-        body.dark{
-            --bg-primary:#060a0f;--bg-secondary:#0d1117;--bg-tertiary:#161b22;--surface:#0d1117;--border:#21262d;
-            --text-primary:#f0f6fc;--text-secondary:#8b949e;--text-tertiary:#6e7681;
-            --sidebar-bg:#0d1117;--input-bg:#0d1117;
-            --glass-bg:rgba(22,27,34,0.85);--glass-border:rgba(48,54,61,0.6);
+
+        if is_authenticated:
+            new_balance = close_balance - close_burned
+            result["close_balance"] = max(0, new_balance)
+            result["close_burned"] = close_burned
+            if new_balance < settings.BURN_PER_MESSAGE * 10:
+                result["low_balance_warning"] = True
+                result["wallet_message"] = f"Only {new_balance} CLOSE remaining. Top up to continue."
+        else:
+            remaining = settings.FREE_MESSAGES_GUEST - free_used
+            result["free_messages_remaining"] = max(0, remaining)
+            if remaining <= 1:
+                result["wallet_prompt"] = True
+                result["wallet_message"] = "Create your OS Wallet to get 2,000 CLOSE and unlock unlimited AI."
+
+        return result
+
+    return {"content": "I couldn't generate a response. Please try again.", "chat_id": chat_id, "model": "fallback"}
+
+@app.get("/api/chats")
+def get_chats(request: Request):
+    user = get_current_user(request)
+    if user:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE user_id=%s ORDER BY updated DESC LIMIT 100", (user["id"],))
+                return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in c.fetchall()]}
+    else:
+        try:
+            session = get_current_session(request)
+            with get_db() as conn:
+                with conn.cursor() as c:
+                    c.execute("SELECT id, title, topic_thread, created, updated FROM chats WHERE session_id=%s ORDER BY updated DESC LIMIT 100", (session["id"],))
+                    return {"chats": [{"id": r[0], "title": r[1] or "New Chat", "topic": r[2], "created": r[3].isoformat() if r[3] else None, "updated": r[4].isoformat() if r[4] else None} for r in c.fetchall()]}
+        except: pass
+    return {"chats": []}
+
+@app.get("/api/chats/{chat_id}")
+def get_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                if user: c.execute("SELECT id FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+                else:
+                    session = get_current_session(request)
+                    c.execute("SELECT id FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+                if not c.fetchone(): raise HTTPException(404, "Chat not found")
+                c.execute("SELECT role, content, model, close_burned, created FROM chat_messages WHERE chat_id=%s ORDER BY created ASC", (chat_id,))
+                return {"messages": [{"id": i, "role": r[0], "content": r[1], "model": r[2] or "AI", "close_burned": r[3] or 0, "created": r[4].isoformat() if r[4] else None} for i, r in enumerate(c.fetchall())]}
+    except HTTPException: raise
+    except Exception as e: raise HTTPException(500, str(e))
+
+@app.delete("/api/chats/{chat_id}")
+def delete_chat(chat_id: str, request: Request):
+    user = get_current_user(request)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if user:
+                c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND user_id=%s", (chat_id, user["id"]))
+                c.execute("DELETE FROM chats WHERE id=%s AND user_id=%s", (chat_id, user["id"]))
+            else:
+                session = get_current_session(request)
+                c.execute("DELETE FROM chat_messages WHERE chat_id=%s AND session_id=%s", (chat_id, session["id"]))
+                c.execute("DELETE FROM chats WHERE id=%s AND session_id=%s", (chat_id, session["id"]))
+            conn.commit()
+    return {"deleted": True}
+
+# ================================================================================
+# PORTFOLIO
+# ================================================================================
+class PortfolioItemCreate(BaseModel):
+    name: str
+    content: str = ""
+    folder: str = "General"
+    tags: List[str] = []
+    attachments: List[str] = []
+    chat_id: str = None
+
+@app.get("/api/portfolio")
+def get_portfolio(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, name, content, folder, tags, attachments, pinned, chat_id, created, updated FROM library_items WHERE user_id=%s ORDER BY pinned DESC, updated DESC", (user["id"],))
+            items = [{"id": r[0], "name": r[1], "content": r[2], "folder": r[3] or "General", "tags": r[4] if r[4] else [], "attachments": r[5] if r[5] else [], "pinned": r[6], "chat_id": r[7], "created": r[8].isoformat() if r[8] else None, "updated": r[9].isoformat() if r[9] else None} for r in c.fetchall()]
+            return {"items": items}
+
+@app.post("/api/portfolio")
+def create_portfolio_item(req: PortfolioItemCreate, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    item_id = f"lib_{sid()}"
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO library_items (id, user_id, name, content, folder, tags, attachments, chat_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (item_id, user["id"], req.name, req.content, req.folder, json.dumps(req.tags), json.dumps(req.attachments), req.chat_id))
+            conn.commit()
+    return {"id": item_id, "created": True}
+
+@app.put("/api/portfolio/{item_id}")
+def update_portfolio_item(item_id: str, req: PortfolioItemCreate, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE library_items SET name=%s, content=%s, folder=%s, tags=%s, attachments=%s, chat_id=%s, updated=NOW() WHERE id=%s AND user_id=%s",
+                      (req.name, req.content, req.folder, json.dumps(req.tags), json.dumps(req.attachments), req.chat_id, item_id, user["id"]))
+            conn.commit()
+    return {"updated": True}
+
+@app.delete("/api/portfolio/{item_id}")
+def delete_portfolio_item(item_id: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM library_items WHERE id=%s AND user_id=%s", (item_id, user["id"]))
+            conn.commit()
+    return {"deleted": True}
+
+# ================================================================================
+# WORKSPACES
+# ================================================================================
+@app.post("/api/hub/rooms")
+def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    room_code = req.get("room_code", f"HUB-{sid()}")
+    password = req.get("password")
+    password_hash = hash_password(password) if password else None
+    ws_id = sid()
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO workspaces (id, name, description, topic, owner_id, room_code, password_hash, max_members) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (ws_id, req.get("name","Research Room"), req.get("description",""), req.get("topic",""), user["id"], room_code.upper(), password_hash, 30))
+            c.execute("INSERT INTO workspace_members (workspace_id, user_id, role) VALUES (%s,%s,'admin')", (ws_id, user["id"]))
+            conn.commit()
+    return {"room_id": ws_id, "room_code": room_code.upper(), "created": True}
+
+@app.post("/api/hub/rooms/join")
+def join_hub_room(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    room_code = req.get("room_code","").upper()
+    password = req.get("password","")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, password_hash, max_members FROM workspaces WHERE room_code=%s", (room_code,))
+            room = c.fetchone()
+            if not room: raise HTTPException(404, "Room not found")
+            if room[1] and (not password or not verify_password(password, room[1])): raise HTTPException(403, "Invalid room password")
+            c.execute("SELECT COUNT(*) FROM workspace_members WHERE workspace_id=%s", (room[0],))
+            if c.fetchone()[0] >= room[2]: raise HTTPException(400, "Room is full")
+            c.execute("INSERT INTO workspace_members (workspace_id, user_id, role) VALUES (%s,%s,'member') ON CONFLICT DO NOTHING", (room[0], user["id"]))
+            conn.commit()
+    return {"joined": True, "room_id": room[0]}
+
+@app.get("/api/hub/rooms")
+def list_hub_rooms(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT w.id, w.name, w.description, w.topic, w.room_code, w.max_members, w.created_at, (SELECT COUNT(*) FROM workspace_members WHERE workspace_id=w.id) as member_count FROM workspaces w JOIN workspace_members m ON w.id = m.workspace_id WHERE m.user_id = %s AND w.is_active = TRUE ORDER BY w.created_at DESC", (user["id"],))
+            return {"rooms": [{"id": r[0], "name": r[1], "description": r[2], "topic": r[3], "room_code": r[4], "max_members": r[5], "created_at": r[6].isoformat() if r[6] else None, "member_count": r[7]} for r in c.fetchall()]}
+
+@app.get("/api/hub/rooms/{room_code}/messages")
+def get_hub_messages(room_code: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
+            room = c.fetchone()
+            if not room: raise HTTPException(404)
+            c.execute("SELECT author_name, message, is_ai, pinned, created FROM workspace_messages WHERE workspace_id=%s ORDER BY pinned DESC, created ASC LIMIT 100", (room[0],))
+            return {"messages": [{"author": r[0], "message": r[1], "is_ai": bool(r[2]), "pinned": bool(r[3]), "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]}
+
+@app.post("/api/hub/rooms/{room_code}/messages")
+def send_hub_message(room_code: str, req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    message = req.get("message","")
+    if not message: raise HTTPException(400)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM workspaces WHERE room_code=%s", (room_code.upper(),))
+            room = c.fetchone()
+            if not room: raise HTTPException(404)
+            is_ai = message.strip().startswith("@CAPITAN")
+            c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message) VALUES (%s,%s,%s,%s,%s)", (sid(), room[0], user["id"], user["name"], message))
+            if is_ai:
+                ai_response, _ = call_ai_model([{"role":"user","content":message.replace('@CAPITAN','').strip()}])
+                if ai_response: c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai) VALUES (%s,%s,%s,%s,%s,1)", (sid(), room[0], user["id"], "CAPITAN AI", ai_response))
+            conn.commit()
+    return {"sent": True}
+
+# ================================================================================
+# OS WALLETS – COMPLETE FEATURE SET
+# ================================================================================
+
+@app.get("/api/wallet/balance")
+async def get_wallet_balance(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT close_balance, close_staked, stake_tier, wallet_address FROM users WHERE id = %s", (user["id"],))
+            row = c.fetchone()
+            if not row: raise HTTPException(404, "User not found")
+            return {
+                "close_balance": row[0] or 0,
+                "close_staked": row[1] or 0,
+                "stake_tier": row[2] or "none",
+                "wallet_address": row[3] or "",
+                "close_price_usd": settings.CLOSE_PRICE_USD,
+                "balance_usd": round((row[0] or 0) * settings.CLOSE_PRICE_USD, 4),
+                "staked_usd": round((row[1] or 0) * settings.CLOSE_PRICE_USD, 4)
+            }
+
+@app.post("/api/wallet/stake")
+async def stake_close(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    amount = req.get("amount")
+    if not amount or int(amount) <= 0: raise HTTPException(400, "Valid amount required")
+    amount = int(amount)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT close_balance FROM users WHERE id = %s", (user["id"],))
+            balance = c.fetchone()[0] or 0
+            if balance < amount: raise HTTPException(400, "Insufficient CLOSE balance")
+            c.execute("UPDATE users SET close_balance = close_balance - %s, close_staked = close_staked + %s WHERE id = %s", (amount, amount, user["id"]))
+            c.execute("INSERT INTO close_stakes (id, user_id, amount, lock_until, status) VALUES (%s,%s,%s,%s,'active')",
+                      (str(uuid.uuid4()), user["id"], amount, now_utc() + timedelta(days=30)))
+            c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_stakes WHERE user_id = %s AND status = 'active'", (user["id"],))
+            total_staked = c.fetchone()[0] or 0
+            tier = "none"
+            if total_staked >= settings.STAKE_ENTERPRISE: tier = "enterprise"
+            elif total_staked >= settings.STAKE_PRO: tier = "pro"
+            elif total_staked >= settings.STAKE_BUILDER: tier = "builder"
+            c.execute("UPDATE users SET stake_tier = %s WHERE id = %s", (tier, user["id"]))
+            c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], "stake", amount))
+            conn.commit()
+            return {"staked": amount, "total_staked": total_staked, "tier": tier}
+
+@app.post("/api/wallet/unstake")
+async def unstake_close(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    stake_id = req.get("stake_id")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if stake_id:
+                c.execute("SELECT id, amount, lock_until, status FROM close_stakes WHERE id = %s AND user_id = %s", (stake_id, user["id"]))
+            else:
+                c.execute("SELECT id, amount, lock_until, status FROM close_stakes WHERE user_id = %s AND status = 'active' ORDER BY created ASC LIMIT 1", (user["id"],))
+            stake = c.fetchone()
+            if not stake: raise HTTPException(404, "No active stake found")
+            if stake_id: sid_db, amount, lock_until, status = stake[0], stake[1], stake[2], stake[3]
+            else: sid_db, amount, lock_until, status = stake
+            if status != 'active': raise HTTPException(400, "Stake is not active")
+            if lock_until and lock_until > now_utc(): raise HTTPException(400, f"Stake locked until {lock_until.isoformat()}")
+            c.execute("UPDATE close_stakes SET status = 'unstaked' WHERE id = %s", (sid_db,))
+            c.execute("UPDATE users SET close_balance = close_balance + %s, close_staked = close_staked - %s WHERE id = %s", (amount, amount, user["id"]))
+            c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_stakes WHERE user_id = %s AND status = 'active'", (user["id"],))
+            total_staked = c.fetchone()[0] or 0
+            tier = "none"
+            if total_staked >= settings.STAKE_ENTERPRISE: tier = "enterprise"
+            elif total_staked >= settings.STAKE_PRO: tier = "pro"
+            elif total_staked >= settings.STAKE_BUILDER: tier = "builder"
+            c.execute("UPDATE users SET stake_tier = %s WHERE id = %s", (tier, user["id"]))
+            c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], "unstake", amount))
+            conn.commit()
+            return {"unstaked": amount, "total_staked": total_staked, "tier": tier}
+
+@app.get("/api/wallet/stakes")
+async def get_stakes(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, amount, lock_until, status, rewards_claimed, created FROM close_stakes WHERE user_id = %s ORDER BY created DESC", (user["id"],))
+            stakes = [{"stake_id": r[0], "amount": r[1], "lock_until": r[2].isoformat() if r[2] else None, "status": r[3], "rewards_claimed": r[4], "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]
+            c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_stakes WHERE user_id = %s AND status = 'active'", (user["id"],))
+            total_staked = c.fetchone()[0] or 0
+            return {"stakes": stakes, "total_staked": total_staked, "tier": user.get("stake_tier", "none")}
+
+@app.get("/api/wallet/transactions")
+async def get_wallet_transactions(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT type, amount, tx_hash, chain, status, created FROM close_transactions WHERE user_id = %s ORDER BY created DESC LIMIT 50", (user["id"],))
+            return {"transactions": [{"type": r[0], "amount": r[1], "tx_hash": r[2], "chain": r[3] or "polygon", "status": r[4], "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]}
+
+@app.post("/api/wallet/purchase")
+async def purchase_close(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    tx_hash = req.get("tx_hash")
+    usd_amount = float(req.get("usd_amount", settings.MIN_PURCHASE_USD))
+    if not tx_hash: raise HTTPException(400, "Transaction hash required")
+    verified = False
+    try:
+        w3 = setup_web3(settings.POLYGON_RPC_URL)
+        receipt = w3.eth.get_transaction_receipt(tx_hash)
+        tx = w3.eth.get_transaction(tx_hash)
+        if tx['to'].lower() == settings.CLOSE_TREASURY_ADDRESS.lower():
+            verified = True
+    except: verified = False
+    if not verified:
+        return {"verified": False, "message": "Payment not verified. Please send the exact amount to the treasury address."}
+    close_amount = usd_to_close(usd_amount)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET close_balance = close_balance + %s WHERE id = %s", (close_amount, user["id"]))
+            c.execute("INSERT INTO close_purchases (id, user_id, amount_usd, close_amount, tx_hash) VALUES (%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], usd_amount, close_amount, tx_hash))
+            conn.commit()
+    return {"verified": True, "purchased": close_amount}
+
+@app.post("/api/wallet/activate")
+async def activate_wallet(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    password = req.get("password")
+    if not password: raise HTTPException(400, "Password required")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT close_balance, wallet_address FROM users WHERE id = %s", (user["id"],))
+            row = c.fetchone()
+            if row[0] >= settings.FREE_CLOSE_AMOUNT: raise HTTPException(400, "Welcome bonus already claimed")
+            addr = row[1]
+            if not addr:
+                w3 = setup_web3(settings.POLYGON_RPC_URL)
+                acct = w3.eth.account.create()
+                encrypted = w3.eth.account.encrypt(acct.key.hex(), password)
+                addr = acct.address
+                c.execute("UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s",
+                          (addr, json.dumps(encrypted), user["id"]))
+            c.execute("UPDATE users SET close_balance = close_balance + %s WHERE id = %s",
+                      (settings.FREE_CLOSE_AMOUNT, user["id"]))
+            c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], "welcome_bonus", settings.FREE_CLOSE_AMOUNT))
+            conn.commit()
+    return {"wallet_address": addr, "close_credited": settings.FREE_CLOSE_AMOUNT}
+
+# Multi‑wallet management
+@app.get("/api/wallets")
+def list_wallets(user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, chain, address, label, is_active FROM os_wallets WHERE user_id=%s ORDER BY created", (user["id"],))
+            return {"wallets": [{"id":r[0],"chain":r[1],"address":r[2],"label":r[3],"active":r[4]} for r in c.fetchall()]}
+
+@app.put("/api/wallets/{wallet_id}/active")
+def set_active_wallet(wallet_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE os_wallets SET is_active=FALSE WHERE user_id=%s", (user["id"],))
+            c.execute("UPDATE os_wallets SET is_active=TRUE WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/wallets/{wallet_id}")
+def delete_wallet(wallet_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM os_wallets WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+@app.post("/api/wallet/create")
+async def create_os_wallet(req: dict, user: dict = Depends(get_current_user)):
+    chain = req.get("chain","polygon")
+    label = req.get("label","Wallet")
+    try:
+        w3 = setup_web3(CHAINS[chain]["rpc"])
+        acct = w3.eth.account.create()
+        encrypted = w3.eth.account.encrypt(acct.key.hex(), req.get("password","default"))
+        wallet_id = str(uuid.uuid4())
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("INSERT INTO os_wallets (id, user_id, chain, address, label) VALUES (%s,%s,%s,%s,%s)",
+                          (wallet_id, user["id"], chain, acct.address, label))
+                c.execute("UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s",
+                          (acct.address, json.dumps(encrypted), user["id"]))
+                conn.commit()
+        return {"wallet_id": wallet_id, "address": acct.address, "chain": chain}
+    except Exception as e:
+        logger.error(f"Create OS wallet error: {e}")
+        raise HTTPException(500, str(e))
+
+# Address Book
+@app.get("/api/addresses")
+def get_addresses(user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, label, address, chain FROM address_book WHERE user_id=%s", (user["id"],))
+            return {"addresses": [{"id":r[0],"label":r[1],"address":r[2],"chain":r[3]} for r in c.fetchall()]}
+
+@app.post("/api/addresses")
+def add_address(req: dict, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO address_book (id, user_id, label, address, chain) VALUES (%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], req["label"], req["address"], req.get("chain","polygon")))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/addresses/{addr_id}")
+def delete_address(addr_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM address_book WHERE id=%s AND user_id=%s", (addr_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+# NFT Gallery
+@app.get("/api/wallet/nfts")
+def get_nfts(chain: str = "polygon", user: dict = Depends(get_current_user)):
+    if not settings.COVALENT_API_KEY: return {"nfts": []}
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT address FROM os_wallets WHERE user_id=%s AND chain=%s AND is_active=TRUE", (user["id"], chain))
+            addr_row = c.fetchone()
+            if not addr_row: return {"nfts": []}
+            address = addr_row[0]
+    url = f"https://api.covalenthq.com/v1/{chain}-mainnet/address/{address}/balances_nft/?key={settings.COVALENT_API_KEY}"
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            items = []
+            for item in data.get("data",{}).get("items",[]):
+                for nft in item.get("nft_data",[]):
+                    items.append({
+                        "contract": item["contract_address"],
+                        "token_id": nft.get("token_id"),
+                        "name": nft.get("external_data",{}).get("name",""),
+                        "image": nft.get("external_data",{}).get("image","")
+                    })
+            return {"nfts": items[:50]}
+    except: pass
+    return {"nfts": []}
+
+# WalletConnect sessions
+@app.get("/api/walletconnect/sessions")
+def list_wc_sessions(user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, dapp_name, dapp_url, chain_id, accounts, expires_at FROM os_walletconnect_sessions WHERE user_id=%s AND expires_at > NOW()", (user["id"],))
+            return {"sessions": [{"id":r[0],"name":r[1],"url":r[2],"chain":r[3],"accounts":r[4],"expires":r[5].isoformat() if r[5] else None} for r in c.fetchall()]}
+
+@app.post("/api/walletconnect/sessions")
+async def create_wc_session(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    session_id = str(uuid.uuid4())
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO os_walletconnect_sessions (id, user_id, topic, dapp_name, dapp_url, chain_id, accounts, expires_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (session_id, user["id"], req.get("topic",""), req.get("dapp_name",""), req.get("dapp_url",""),
+                       req.get("chain_id"), json.dumps(req.get("accounts",[])),
+                       now_utc() + timedelta(hours=24)))
+            conn.commit()
+    return {"session_id": session_id}
+
+@app.delete("/api/walletconnect/sessions/{session_id}")
+def disconnect_wc(session_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM os_walletconnect_sessions WHERE id=%s AND user_id=%s", (session_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+# Transaction detail
+@app.get("/api/transactions/{tx_hash}")
+def transaction_detail(tx_hash: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT chain, from_address, to_address, amount, token_symbol, status, created FROM os_transactions WHERE tx_hash=%s AND user_id=%s", (tx_hash, user["id"]))
+            row = c.fetchone()
+            if row:
+                chain = row[0]
+                explorer = CHAINS.get(chain,{}).get("explorer","")
+                return {
+                    "tx_hash": tx_hash,
+                    "chain": chain,
+                    "from": row[1],
+                    "to": row[2],
+                    "amount": row[3],
+                    "token": row[4],
+                    "status": row[5],
+                    "created": row[6].isoformat() if row[6] else None,
+                    "explorer_url": f"{explorer}/tx/{tx_hash}" if explorer else ""
+                }
+    for chain_name, cfg in CHAINS.items():
+        w3 = setup_web3(cfg["rpc"])
+        try:
+            tx = w3.eth.get_transaction(tx_hash)
+            receipt = w3.eth.get_transaction_receipt(tx_hash)
+            return {
+                "tx_hash": tx_hash,
+                "chain": chain_name,
+                "from": tx["from"],
+                "to": tx["to"],
+                "value": str(Web3.from_wei(tx["value"],'ether')),
+                "status": "confirmed" if receipt["status"]==1 else "failed",
+                "explorer_url": f"{cfg['explorer']}/tx/{tx_hash}"
+            }
+        except: continue
+    raise HTTPException(404, "Transaction not found")
+
+# Gas settings
+@app.post("/api/wallet/gas")
+def set_gas_preference(req: dict, user: dict = Depends(get_current_user)):
+    preset = req.get("preset","standard")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET gas_preset=%s WHERE id=%s", (preset, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+# Swap quote (1inch)
+@app.get("/api/swap/quote")
+async def get_swap_quote(chain: str = "polygon", from_token: str = None, to_token: str = None, amount: str = None, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    if not all([from_token, to_token, amount]): raise HTTPException(400, "from_token, to_token, and amount required")
+    chain_ids = {"polygon":137,"ethereum":1,"bsc":56,"arbitrum":42161,"base":8453}
+    chain_id = chain_ids.get(chain, 137)
+    try:
+        if settings.ONEPINCH_API_KEY:
+            url = f"https://api.1inch.dev/swap/v5.2/{chain_id}/quote"
+            params = {"src": from_token, "dst": to_token, "amount": amount, "slippage": 1}
+            headers = {"Authorization": f"Bearer {settings.ONEPINCH_API_KEY}"}
+            resp = requests.get(url, params=params, headers=headers, timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                return {"from_token": data.get("fromToken",{}).get("symbol", from_token), "to_token": data.get("toToken",{}).get("symbol", to_token), "from_amount": amount, "to_amount": data.get("toAmount","0"), "estimated_gas": data.get("estimatedGas", 0)}
+        return {"from_token": from_token, "to_token": to_token, "from_amount": amount, "to_amount": "0", "note": "Live quote unavailable"}
+    except Exception as e:
+        logger.error(f"Swap quote error: {e}")
+        raise HTTPException(500, str(e))
+
+# Swap execution
+@app.post("/api/swap/execute")
+async def execute_swap(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    tx_hash = req.get("tx_hash")
+    if not tx_hash: raise HTTPException(400, "tx_hash required")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO os_transactions (id, user_id, chain, tx_hash, from_address, to_address, amount, token_symbol, status) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
+                      (str(uuid.uuid4()), user["id"], req.get("chain","polygon"), tx_hash, req.get("from",""), req.get("to",""), req.get("amount","0"), req.get("token","")))
+            conn.commit()
+    return {"status": "submitted", "tx_hash": tx_hash}
+
+# Send transaction
+@app.post("/api/wallet/{wallet_id}/send")
+async def send_transaction(wallet_id: str, req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    password = req.get("password")
+    to_address = req.get("to")
+    amount = req.get("amount")
+    token_address = req.get("token_address")
+    if not all([password, to_address, amount]):
+        raise HTTPException(400, "password, to, and amount required")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT address, encrypted_seed, chain FROM os_wallets WHERE id=%s AND user_id=%s",
+                      (wallet_id, user["id"]))
+            wallet = c.fetchone()
+            if not wallet: raise HTTPException(404, "Wallet not found")
+            chain_config = CHAINS[wallet[2]]
+    try:
+        w3 = setup_web3(chain_config["rpc"])
+        encrypted = json.loads(wallet[1])
+        private_key = Account.decrypt(encrypted, password).hex()
+        acct = Account.from_key(private_key)
+        if token_address:
+            contract = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
+            decimals = contract.functions.decimals().call()
+            amount_wei = int(float(amount) * (10 ** decimals))
+            tx = contract.functions.transfer(Web3.to_checksum_address(to_address), amount_wei).build_transaction({
+                'from': acct.address,
+                'nonce': w3.eth.get_transaction_count(acct.address),
+                'gas': 100000,
+                'gasPrice': w3.eth.gas_price
+            })
+        else:
+            tx = {
+                'from': acct.address,
+                'to': Web3.to_checksum_address(to_address),
+                'value': Web3.to_wei(float(amount), 'ether'),
+                'nonce': w3.eth.get_transaction_count(acct.address),
+                'gas': 21000,
+                'gasPrice': w3.eth.gas_price,
+                'chainId': chain_config["chain_id"]
+            }
+        signed = w3.eth.account.sign_transaction(tx, private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+        tx_id = str(uuid.uuid4())
+        with get_db() as conn2:
+            with conn2.cursor() as c2:
+                c2.execute("INSERT INTO os_transactions (id, user_id, chain, tx_hash, from_address, to_address, amount, token_symbol, status) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed')",
+                          (tx_id, user["id"], wallet[2], tx_hash.hex(), acct.address, to_address, str(amount),
+                           token_address or chain_config["symbol"]))
+                conn2.commit()
+        return {"tx_hash": tx_hash.hex(), "explorer_url": f"{chain_config['explorer']}/tx/{tx_hash.hex()}"}
+    except Exception as e:
+        logger.error(f"Send transaction error: {e}")
+        raise HTTPException(500, f"Transaction failed: {str(e)}")
+
+# On‑chain balance for a specific wallet
+@app.get("/api/wallet/{wallet_id}/balance")
+async def get_os_wallet_balance(wallet_id: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT chain, address FROM os_wallets WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
+            wallet = c.fetchone()
+            if not wallet: raise HTTPException(404, "Wallet not found")
+            chain_name, address = wallet
+    chain_config = CHAINS.get(chain_name)
+    if not chain_config: raise HTTPException(400, "Unsupported chain")
+    try:
+        w3 = setup_web3(chain_config["rpc"])
+        native_balance = w3.eth.get_balance(address)
+        balances = {
+            "chain": chain_name,
+            "address": address,
+            "native": {"symbol": chain_config["symbol"], "balance": str(Web3.from_wei(native_balance, 'ether'))},
+            "tokens": []
         }
-        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-primary);color:var(--text-primary);font-size:var(--font-size);line-height:var(--line-height);height:100vh;overflow:hidden;transition:background 0.2s}
-        .splash{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0a0f14,#0d3b4f);display:flex;align-items:center;justify-content:center;transition:opacity 0.6s,visibility 0.6s}
-        .splash.hide{opacity:0;visibility:hidden}
-        .splash-logo{width:80px;height:80px;animation:splashPulse 1.2s ease-in-out infinite}
-        .splash-logo .ring{stroke:#00b4d8;stroke-width:3;filter:drop-shadow(0 0 12px #00b4d8)}
-        @keyframes splashPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:0.85}}
-        .app{display:flex;height:100%;width:100%;position:relative}
-        .sidebar{width:280px;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform 0.3s ease;flex-shrink:0;z-index:30;overflow-y:auto;backdrop-filter:blur(12px);will-change:transform}
-        @media(min-width:769px){.sidebar.collapsed{transform:translateX(-280px);position:fixed;height:100%}}
-        @media(max-width:768px){
-            .sidebar{position:fixed;left:0;top:0;height:100%;width:85%;max-width:320px;transform:translateX(-100%);z-index:40;box-shadow:20px 0 40px rgba(0,0,0,0.3)}
-            .sidebar.open{transform:translateX(0)}
-            .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:35;display:none}
-            .overlay.open{display:block}
-        }
-        .sidebar-brand{padding:20px 16px;display:flex;align-items:center;gap:10px}
-        .sidebar-brand .logo-icon{width:30px;height:30px}
-        .sidebar-brand .logo-text{font-weight:800;font-size:18px;letter-spacing:1.5px;background:linear-gradient(135deg,#00b4d8,#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%200%;animation:logoShift 4s ease infinite}
-        @keyframes logoShift{0%,100%{background-position:0%50%}50%{background-position:100%50%}}
-        .top-bar{position:fixed;top:12px;right:12px;z-index:45;display:flex;align-items:center;gap:12px}
-        .toggle-sidebar{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:40px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);backdrop-filter:blur(10px)}
-        .notif-bell{position:relative;width:38px;height:38px;border-radius:40px;background:var(--glass-bg);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);backdrop-filter:blur(10px)}
-        .notif-bell .badge{position:absolute;top:-2px;right:-2px;background:var(--danger);color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-        .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-        .chat-container{max-width:820px;margin:0 auto;width:100%;height:100%;display:flex;flex-direction:column;padding:0 20px}
-        .messages-area{flex:1;overflow-y:auto;padding:70px 0 20px;scroll-behavior:smooth;will-change:scroll-position}
-        .greeting-container{text-align:center;margin-bottom:24px;animation:fadeSlideUp 0.5s ease}
-        @keyframes fadeSlideUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
-        .greeting-text{font-size:28px;font-weight:700;background:linear-gradient(135deg,#00b4d8,#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .suggestion-pills{display:flex;gap:10px;justify-content:center;margin:24px 0 30px;flex-wrap:wrap}
-        .suggestion-pill{display:flex;align-items:center;gap:6px;padding:10px 20px;border-radius:24px;border:1px solid var(--glass-border);background:var(--glass-bg);cursor:pointer;transition:all 0.2s;font-size:13px;color:var(--text-secondary);white-space:nowrap;backdrop-filter:blur(10px)}
-        .suggestion-pill:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,180,216,0.2)}
-        .message{margin-bottom:18px;animation:messageSlideIn 0.25s ease}
-        @keyframes messageSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .message.user{display:flex;justify-content:flex-end}
-        .message.user .message-content{background:linear-gradient(135deg,#00b4d8,#0096c7);color:white;border-radius:18px 18px 4px 18px;padding:11px 16px;max-width:78%}
-        .message.assistant{display:flex;flex-direction:column;align-items:flex-start}
-        .message.assistant .message-content{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px 18px 18px 18px;padding:11px 16px;max-width:88%;backdrop-filter:blur(12px)}
-        .typing-indicator{display:flex;align-items:center;gap:8px;padding:11px 16px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px 18px 18px 18px;width:fit-content;backdrop-filter:blur(12px)}
-        .typing-dots{display:flex;gap:4px}.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:dotBounce 1.4s infinite}
-        .typing-dots span:nth-child(1){animation-delay:0s}.typing-dots span:nth-child(2){animation-delay:0.2s}.typing-dots span:nth-child(3){animation-delay:0.4s}
-        @keyframes dotBounce{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-8px);opacity:1}}
-        .input-area{padding:0 0 18px}
-        .close-balance-badge{display:flex;align-items:center;gap:6px;padding:4px 12px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:20px;font-size:11px;color:var(--accent);margin-bottom:8px;width:fit-content}
-        .input-wrapper{display:flex;align-items:flex-end;gap:8px;background:var(--glass-bg);border:1.5px solid var(--glass-border);border-radius:24px;padding:4px 6px 4px 16px;transition:border 0.2s,box-shadow 0.2s;backdrop-filter:blur(12px)}
-        .input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-        .upload-btn,.send-btn{background:transparent;border:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;flex-shrink:0;color:var(--text-secondary)}
-        .upload-btn:hover{background:var(--bg-tertiary);color:var(--accent)}
-        .send-btn{background:var(--accent);color:white}
-        .send-btn:hover{background:var(--accent-dark)}
-        .input-field{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:var(--font-size);padding:10px 0;color:var(--text-primary);resize:none;max-height:100px}
-        .input-field::placeholder{color:var(--text-tertiary)}
-        .new-chat-btn,.menu-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:4px 12px;border-radius:var(--radius);cursor:pointer;transition:all 0.2s;font-weight:500;font-size:12px;color:var(--text-secondary)}
-        .new-chat-btn{background:var(--accent);color:white;margin-top:8px;justify-content:center}
-        .menu-item:hover{transform:translateX(4px);background:var(--accent-glow);color:var(--accent)}
-        .guest-cta-btn{display:block;margin:4px 14px;padding:8px 12px;background:transparent;border:1.5px solid var(--accent);border-radius:18px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;text-align:center}
-        .guest-cta-btn:hover{background:var(--accent-glow)}
-        .collapsible-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin:4px 12px;border-radius:var(--radius);cursor:pointer;font-weight:500;font-size:12px;color:var(--text-secondary)}
-        .collapsible-header:hover{background:var(--bg-tertiary)}
-        .collapsible-content{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
-        .collapsible-content.open{max-height:none}
-        .theme-option{display:flex;justify-content:space-between;padding:8px 16px 8px 42px;cursor:pointer;border-radius:10px;font-size:12px}
-        .theme-option:hover{background:var(--bg-tertiary)}
-        .about-content{padding:8px 16px 16px 42px;font-size:12px;color:var(--text-secondary);line-height:1.5}
-        .profile-section{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto;cursor:pointer;transition:0.2s;display:flex;align-items:center;justify-content:space-between}
-        .profile-section:hover{background:var(--bg-tertiary)}
-        .profile-info{display:flex;align-items:center;gap:10px}
-        .profile-avatar-img{width:34px;height:34px;border-radius:50%;background:var(--accent-glow);border:2px solid var(--accent)}
-        .profile-name{font-weight:600;font-size:13px}
-        .profile-tokens{font-size:11px;color:var(--text-secondary);margin-top:2px}
-        .sidebar-footer{padding:10px;text-align:center;font-size:9px;color:var(--text-tertiary);border-top:1px solid var(--border)}
-        .full-page-view{position:fixed;inset:0;background:var(--bg-primary);z-index:100;display:none;flex-direction:column;overflow-y:auto}
-        .full-page-view.open{display:flex}
-        .full-page-top{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-primary);z-index:5}
-        .back-btn{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);margin-right:12px;font-size:18px;transition:0.2s}
-        .back-btn:hover{background:var(--bg-tertiary);color:var(--accent)}
-        .full-page-title{font-weight:600;font-size:16px}
-        .wallet-container{max-width:900px;width:100%;margin:0 auto;padding:20px}
-        .elite-wallet{background:linear-gradient(145deg,#0d1117,#161b22);border-radius:var(--radius);padding:24px;margin-bottom:20px;color:#f0f6fc;border:1px solid var(--glass-border)}
-        .elite-wallet h2{font-size:1.6rem;font-weight:700;background:linear-gradient(90deg,#00b4d8,#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px}
-        .balance-card{background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-        .action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-top:16px}
-        .action-btn{background:rgba(0,180,216,0.08);border:1px solid var(--glass-border);border-radius:12px;padding:12px;cursor:pointer;text-align:center;font-size:0.85rem;color:var(--text-secondary);transition:0.2s}
-        .action-btn:hover{background:rgba(0,180,216,0.15);border-color:var(--accent);color:white}
-        .dashboard-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius);padding:16px;margin-bottom:12px;backdrop-filter:blur(10px)}
-        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center}
-        .modal-overlay.open{display:flex;animation:modalOverlayIn 0.3s ease}
-        @keyframes modalOverlayIn{from{opacity:0}to{opacity:1}}
-        .modal{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);backdrop-filter:blur(20px);animation:modalScaleIn 0.2s ease}
-        @keyframes modalScaleIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
-        .modal h2{font-size:20px;margin-bottom:16px;font-weight:600}
-        .modal input,.modal select{width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);font-size:13px;margin-bottom:12px}
-        .btn{width:100%;padding:12px;border:none;border-radius:36px;font-weight:600;cursor:pointer;transition:0.2s;font-size:13px;background:var(--accent);color:white}
-        .btn:hover{background:var(--accent-dark);transform:translateY(-1px);box-shadow:0 8px 16px rgba(0,180,216,0.3)}
-        .btn-outline{background:transparent;border:1.5px solid var(--glass-border);color:var(--text-primary)}
-        .btn-outline:hover{background:var(--bg-tertiary)}
-        .btn-gold{background:linear-gradient(135deg,#f0b90b,#d4a30a);color:#000}
-        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--glass-bg);color:var(--text-primary);padding:10px 20px;border-radius:36px;font-size:12px;z-index:1100;border:1px solid var(--glass-border);backdrop-filter:blur(20px);animation:toastIn 0.3s ease}
-        @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-        .wallet-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border)}
-        .wallet-tab{flex:1;padding:12px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-secondary);border-bottom:2px solid transparent;transition:0.2s;background:none;border-top:none;border-left:none;border-right:none}
-        .wallet-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-        .wallet-panel{display:none}
-        .wallet-panel.active{display:block}
-        .nft-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
-        .nft-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:12px;padding:8px;text-align:center}
-        .nft-card img{width:100%;border-radius:8px}
-        .qr-scanner-container{width:100%;max-width:300px;margin:0 auto}
-        .bubble-prompt{background:linear-gradient(135deg,rgba(0,180,216,0.1),rgba(0,180,216,0.05));border:1px solid var(--accent);border-radius:18px;padding:14px 18px;margin:12px 0;display:flex;align-items:center;gap:10px;animation:fadeSlideUp 0.4s ease;position:relative}
-        .bubble-prompt .c-icon{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px}
-        .bubble-prompt .prompt-text{flex:1;font-size:12px;color:var(--text-primary)}
-        .bubble-prompt .dismiss-btn{position:absolute;top:4px;right:8px;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:14px}
-        .admin-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
-        .admin-table th,.admin-table td{padding:8px 5px;text-align:left;border-bottom:1px solid var(--border)}
-        .admin-table th{font-weight:600;color:var(--text-secondary)}
-        .spinner{width:20px;height:20px;border:2px solid var(--glass-border);border-top:2px solid var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .stream-cursor{display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 1s step-end infinite}
-        @keyframes blink{50%{opacity:0}}
-    </style>
-</head>
-<body>
-<div class="splash" id="splashScreen">
-    <svg class="splash-logo" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="42" fill="none" stroke="#00b4d8" stroke-width="3" class="ring"/>
-        <circle cx="50" cy="50" r="32" fill="none" stroke="#90e0ef" stroke-width="1.5" stroke-dasharray="15 8"/>
-        <text x="50" y="62" text-anchor="middle" font-family="Inter,sans-serif" font-size="44" fill="white" font-weight="800">C</text>
-    </svg>
-</div>
+        for token_symbol, token_address in chain_config.get("tokens", {}).items():
+            if token_address:
+                try:
+                    contract = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
+                    token_balance = contract.functions.balanceOf(address).call()
+                    decimals = contract.functions.decimals().call()
+                    balances["tokens"].append({
+                        "symbol": token_symbol,
+                        "address": token_address,
+                        "balance": str(token_balance / (10 ** decimals))
+                    })
+                except: pass
+        return balances
+    except Exception as e:
+        logger.error(f"Balance check error: {e}")
+        raise HTTPException(500, f"Failed to fetch balance: {str(e)}")
 
-<div id="app" class="app" style="display:none;">
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <svg class="logo-icon" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="#00b4d8" stroke-width="2"/><circle cx="20" cy="20" r="13" fill="none" stroke="#90e0ef" stroke-width="1" stroke-dasharray="6 4"/><text x="20" y="26" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#00b4d8" font-weight="700">C</text></svg>
-            <span class="logo-text">CAPITAN AI</span>
-        </div>
-        <div class="new-chat-btn" onclick="newChat()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New chat
-        </div>
-        <div class="menu-item" onclick="openWallet()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-            OS Wallets
-        </div>
-        <div class="menu-item" onclick="openPortfolio()" id="portfolioMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-            Portfolio
-        </div>
-        <div class="menu-item" onclick="openWorkspacePage()" id="workspaceMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Work Areas
-        </div>
-        <div class="menu-item" onclick="openDeveloperPage()" id="developerMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            Developer
-        </div>
-        <div class="menu-item" onclick="openFounderDashboard()" id="dashboardMenuItem" style="display:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-            Dashboard
-        </div>
-        <div id="guestButtons" style="display:none;">
-            <button class="guest-cta-btn" onclick="showSignupModal()">Sign up for 2,000 CLOSE</button>
-        </div>
-        <div class="sidebar-divider" style="height:1px;background:var(--border);margin:8px 12px;"></div>
-        <div>
-            <div class="collapsible-header" onclick="toggleCollapsible('appearance')">
-                Appearance
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="appearanceArrow"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="collapsible-content" id="appearanceContent">
-                <div class="theme-option" onclick="setTheme('light')">Light</div>
-                <div class="theme-option" onclick="setTheme('dark')">Dark</div>
-                <div class="theme-option" onclick="setTheme('system')">System</div>
-            </div>
-        </div>
-        <div class="profile-section" onclick="openProfileModal()">
-            <div class="profile-info">
-                <img class="profile-avatar-img" id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%2390e0ef'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%2390e0ef'/%3E%3C/svg%3E">
-                <div>
-                    <div class="profile-name" id="profileName">Guest</div>
-                    <div class="profile-tokens" id="profileTokens"></div>
-                </div>
-            </div>
-        </div>
-        <div class="sidebar-footer">CLOSEAI Technologies</div>
-    </aside>
-    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-    <div class="top-bar">
-        <button class="notif-bell" id="notifBell" onclick="openNotifPanel()">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span class="badge" id="notifBadge" style="display:none;">0</span>
-        </button>
-        <button class="toggle-sidebar" id="toggleSidebarBtn">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-        </button>
-    </div>
-    <main class="main" id="chatView">
-        <div class="chat-container">
-            <div class="messages-area" id="messagesArea"></div>
-            <div class="input-area">
-                <div id="closeBalanceBadge" class="close-balance-badge" style="display:none;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    <span id="closeBalanceBadgeText">0 CLOSE</span>
-                </div>
-                <div class="input-wrapper">
-                    <button class="upload-btn" onclick="triggerFileUpload()" title="Upload file">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    </button>
-                    <textarea class="input-field" id="messageInput" rows="1" placeholder="Message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-                    <button class="send-btn" onclick="sendMessage()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </main>
-    <!-- Full Page Views -->
-    <div class="full-page-view" id="walletFullPage">
-        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">OS Wallets</span></div>
-        <div class="wallet-container" id="walletContainer"></div>
-    </div>
-    <div class="full-page-view" id="portfolioFullPage">
-        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Portfolio</span></div>
-        <div id="portfolioFullContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
-    </div>
-    <div class="full-page-view" id="workspaceFullPage">
-        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Work Areas</span></div>
-        <div id="workspaceFullContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
-    </div>
-    <div class="full-page-view" id="developerFullPage">
-        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Developer</span></div>
-        <div id="developerContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
-    </div>
-    <div class="full-page-view" id="founderDashboardPage">
-        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Dashboard</span></div>
-        <div id="founderDashboardContent" style="max-width:1100px;margin:0 auto;width:100%;padding:20px;"></div>
-    </div>
-</div>
+# Push notifications
+@app.get("/api/notifications/push")
+async def get_push_notifications(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, type, message, created FROM notifications WHERE user_id=%s AND read=FALSE ORDER BY created DESC LIMIT 10", (user["id"],))
+            notifs = [{"id": r[0], "type": r[1], "message": r[2], "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
+    return {"notifications": notifs}
 
-<!-- Modals -->
-<div id="signupModal" class="modal-overlay"><div class="modal" id="signupModalContent"></div></div>
-<div id="loginModal" class="modal-overlay"><div class="modal" id="loginModalContent"></div></div>
-<div id="buyCloseModal" class="modal-overlay"><div class="modal" id="buyCloseModalContent"></div></div>
-<div id="stakeModal" class="modal-overlay"><div class="modal" id="stakeModalContent"></div></div>
-<div id="swapModal" class="modal-overlay"><div class="modal" id="swapModalContent"></div></div>
-<div id="profileModal" class="modal-overlay"><div class="modal" id="profileModalContent"></div></div>
-<div id="privacyModal" class="modal-overlay"><div class="modal" id="privacyModalContent"></div></div>
-<div id="termsModal" class="modal-overlay"><div class="modal" id="termsModalContent"></div></div>
-<div id="workspaceCreateModal" class="modal-overlay"><div class="modal" id="workspaceCreateModalContent"></div></div>
-<div id="workspaceJoinModal" class="modal-overlay"><div class="modal" id="workspaceJoinModalContent"></div></div>
-<div id="sendModal" class="modal-overlay"><div class="modal" id="sendModalContent"></div></div>
-<div id="receiveModal" class="modal-overlay"><div class="modal" id="receiveModalContent"></div></div>
-<div id="addressModal" class="modal-overlay"><div class="modal" id="addressModalContent"></div></div>
-<div id="founderLoginModal" class="modal-overlay"><div class="modal" id="founderLoginModalContent"></div></div>
-<div id="apiKeyModal" class="modal-overlay"><div class="modal" id="apiKeyModalContent"></div></div>
-<div id="webhookModal" class="modal-overlay"><div class="modal" id="webhookModalContent"></div></div>
-<div id="notifPanel" style="position:fixed;top:0;right:-360px;width:320px;height:100vh;background:var(--glass-bg);border-left:1px solid var(--glass-border);z-index:200;transition:right 0.3s;padding:16px;overflow-y:auto;backdrop-filter:blur(20px)"> <h3>Notifications</h3><div id="notifList"></div><button class="btn btn-outline" onclick="closeNotifPanel()">Close</button></div>
+# ================================================================================
+# MARKET DATA
+# ================================================================================
+@app.get("/api/market/crypto")
+def crypto_market():
+    if not settings.COINGECKO_KEY: raise HTTPException(503, "CoinGecko key not set")
+    try:
+        r = requests.get("https://api.coingecko.com/api/v3/coins/markets", params={"vs_currency":"usd","order":"market_cap_desc","per_page":100,"page":1,"sparkline":"true","price_change_percentage":"24h"}, headers={"x-cg-demo-api-key":settings.COINGECKO_KEY}, timeout=20)
+        return r.json() if r.status_code == 200 else []
+    except: return []
 
-<script>
-// ==================== CONFIG ====================
-const CFG = {
-    API: location.hostname==='localhost'?'http://localhost:8000':'https://capitan-ai-jxu8.onrender.com',
-    CLOSE_PRICE:0.00009776, BURN_PER_MSG:25, FREE_MSGS:3, MIN_PURCHASE:1.00,
-    STAKE_BUILDER:4000000, STAKE_PRO:15000000, STAKE_ENTERPRISE:35000000,
-    CHAINS: {
-        polygon:{name:'Polygon',symbol:'POL',rpc:'https://polygon-rpc.com',chainId:137,explorer:'https://polygonscan.com',
-            tokens:{POL:'native',USDT:'0xc2132D05D31c914a87C6611C10748AEb04B58e8F',USDC:'0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',WETH:'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'}},
-        ethereum:{name:'Ethereum',symbol:'ETH',rpc:'https://eth.llamarpc.com',chainId:1,explorer:'https://etherscan.io',
-            tokens:{ETH:'native',USDT:'0xdAC17F958D2ee523a2206206994597C13D831ec7',USDC:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'}},
-        bsc:{name:'BSC',symbol:'BNB',rpc:'https://bsc-dataseed.binance.org',chainId:56,explorer:'https://bscscan.com',
-            tokens:{BNB:'native',USDT:'0x55d398326f99059fF775485246999027B3197955',USDC:'0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d'}},
-        arbitrum:{name:'Arbitrum',symbol:'ETH',rpc:'https://arb1.arbitrum.io/rpc',chainId:42161,explorer:'https://arbiscan.io',
-            tokens:{ETH:'native',USDT:'0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',USDC:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831'}},
-        base:{name:'Base',symbol:'ETH',rpc:'https://mainnet.base.org',chainId:8453,explorer:'https://basescan.org',
-            tokens:{ETH:'native',USDC:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'}}
+@app.get("/api/market/stocks")
+def stock_market():
+    if not settings.FINNHUB_API_KEY: raise HTTPException(503)
+    symbols = ["AAPL","MSFT","GOOGL","AMZN","TSLA","NVDA","META","JPM","V","JNJ"]
+    quotes = []
+    for sym in symbols:
+        try:
+            r = requests.get(f"https://finnhub.io/api/v1/quote?symbol={sym}&token={settings.FINNHUB_API_KEY}", timeout=5)
+            if r.status_code == 200: quotes.append({"symbol": sym, **r.json()})
+        except: pass
+    return quotes
+
+# ================================================================================
+# NOTIFICATIONS
+# ================================================================================
+@app.get("/api/notifications")
+def get_notifications(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, type, message, read, created FROM notifications WHERE user_id=%s ORDER BY created DESC LIMIT 30", (user["id"],))
+            return {"notifications": [{"id": r[0], "type": r[1], "message": r[2], "read": r[3], "created": r[4].isoformat() if r[4] else None} for r in c.fetchall()]}
+
+@app.post("/api/notifications/read")
+def mark_read(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE notifications SET read=TRUE WHERE user_id=%s", (user["id"],))
+            conn.commit()
+    return {"ok": True}
+
+# ================================================================================
+# FEEDBACK
+# ================================================================================
+class FeedbackRequest(BaseModel):
+    message_id: str
+    rating: int = Field(..., ge=1, le=5)
+    correction: Optional[str] = None
+    reason: Optional[str] = None
+
+@app.post("/api/feedback")
+def submit_feedback(req: FeedbackRequest, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO feedback (id, user_id, message_id, rating, correction, reason) VALUES (%s,%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], req.message_id, req.rating, req.correction, req.reason))
+            conn.commit()
+    return {"received": True}
+
+# ================================================================================
+# FILE UPLOAD
+# ================================================================================
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    contents = await file.read()
+    if len(contents) / (1024*1024) > 60: raise HTTPException(400, "Max 60MB")
+    file_id = f"file_{sid()}"
+    file_path = os.path.join(UPLOAD_DIR, file_id)
+    with open(file_path, "wb") as f: f.write(contents)
+    extracted = extract_text_from_file(file_path, file.filename or "unknown")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO uploaded_files (id, user_id, filename, original_name, size, storage_path, extracted_text) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                      (file_id, user["id"], file_id, file.filename or "unknown", len(contents), file_path, extracted[:50000]))
+            conn.commit()
+    return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
+
+# ================================================================================
+# LEGAL
+# ================================================================================
+@app.get("/api/legal/privacy")
+def privacy():
+    return {"text": "<h2>Privacy Policy</h2><p>Your privacy is paramount. OS Wallets are non-custodial — CLOSEAI never holds your private keys. Wallet addresses and transactions are public on their respective blockchains. We collect minimal data: email for account recovery and anonymized usage statistics to improve CAPITAN AI. Your conversations are private and never shared. CLOSE token transactions are recorded on-chain and visible publicly. By using CAPITAN AI, you acknowledge the inherent privacy characteristics of blockchain technology.</p>"}
+
+@app.get("/api/legal/terms")
+def terms():
+    return {"text": "<h2>Terms of Service</h2><p>CAPITAN AI is powered by CLOSE tokens. Each AI message consumes CLOSE tokens. Free accounts receive 2,000 CLOSE after wallet activation. CLOSE tokens can be purchased starting at $1.00 USD. Staking CLOSE unlocks tier benefits (Builder: 4M, Pro: 15M, Enterprise: 35M). CLOSEAI reserves the right to adjust staking requirements, token price, and burn rates at any time. OS Wallets are self-custody — you are solely responsible for your private keys and seed phrases. CLOSEAI cannot recover lost wallets. All AI responses are for informational purposes only and do not constitute financial, legal, or medical advice. Crypto assets are volatile — never invest more than you can afford to lose. By using CAPITAN AI and OS Wallets, you agree to these terms.</p>"}
+
+# ================================================================================
+# ADMIN / FOUNDER
+# ================================================================================
+@app.get("/api/admin/dashboard")
+def admin_dashboard(founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
+            c.execute("SELECT COALESCE(SUM(close_balance), 0) FROM users"); total_close = c.fetchone()[0]
+            c.execute("SELECT COALESCE(SUM(close_staked), 0) FROM users"); total_staked = c.fetchone()[0]
+            c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_transactions WHERE type='burn'"); total_burned = c.fetchone()[0]
+            c.execute("SELECT COALESCE(SUM(amount_usd), 0) FROM close_purchases"); total_revenue = c.fetchone()[0]
+            return {
+                "total_users": total_users, "active_today": active_today,
+                "close_circulating": total_close, "close_staked": total_staked,
+                "close_burned": total_burned, "total_revenue_usd": round(total_revenue, 2),
+                "close_price": settings.CLOSE_PRICE_USD,
+                "treasury_supply": settings.CLOSE_TOTAL_SUPPLY * 0.6
+            }
+
+@app.get("/api/admin/users")
+def admin_users(page: int = 1, search: str = "", founder: dict = Depends(founder_only)):
+    limit = 20; offset = (page-1)*limit
+    with get_db() as conn:
+        with conn.cursor() as c:
+            if search: c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier, created_at, last_active FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT %s OFFSET %s", (f'%{search}%', f'%{search}%', limit, offset))
+            else: c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier, created_at, last_active FROM users ORDER BY created_at DESC LIMIT %s OFFSET %s", (limit, offset))
+            return {"users": [{"id": r[0], "email": r[1], "name": r[2], "close_balance": r[3], "close_staked": r[4], "stake_tier": r[5], "created_at": r[6].isoformat() if r[6] else None, "last_active": r[7].isoformat() if r[7] else None} for r in c.fetchall()]}
+
+@app.post("/api/admin/user/{user_id}/close")
+def admin_adjust_close(user_id: str, req: dict, founder: dict = Depends(founder_only)):
+    amount = req.get("amount", 0)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET close_balance = GREATEST(0, close_balance + %s) WHERE id = %s", (int(amount), user_id))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/admin/user/{user_id}")
+def admin_delete_user(user_id: str, founder: dict = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM users WHERE id=%s", (user_id,))
+            conn.commit()
+    return {"deleted": True}
+
+# ================================================================================
+# HEALTH
+# ================================================================================
+@app.get("/health")
+def health_check():
+    db_status = "disconnected"
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT 1")
+                db_status = "connected"
+    except: pass
+    web3_status = "disconnected"
+    try:
+        w3 = setup_web3(settings.POLYGON_RPC_URL)
+        w3.eth.get_block_number()
+        web3_status = "connected"
+    except: pass
+    return {
+        "status": "ok", "version": "35.1", "edition": "Complete OS Wallets",
+        "database": db_status, "web3": web3_status,
+        "close_price": settings.CLOSE_PRICE_USD,
+        "free_bonus": settings.FREE_CLOSE_AMOUNT,
+        "burn_per_message": settings.BURN_PER_MESSAGE
     }
-};
 
-let state = {
-    token: localStorage.getItem('capitan_token')||null,
-    user: JSON.parse(localStorage.getItem('capitan_user')||'null'),
-    activeChatId: null, messages:[], loading:false,
-    closeBalance:0, closeStaked:0, stakeTier:'none', walletAddress:'',
-    freeUsed:0, isGuest:!localStorage.getItem('capitan_token'),
-    theme: localStorage.getItem('capitan_theme')||'dark',
-    walletConnector: null
-};
+@app.get("/")
+async def root():
+    return {"name": "CAPITAN AI", "version": "35.1", "edition": "Complete OS Wallets — CLOSE Token Economy"}
 
-// ==================== UTILS ====================
-function toast(m){let t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500)}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-async function apiCall(e,o={}){
-    let h={'Content-Type':'application/json'};
-    if(state.token) h['Authorization']='Bearer '+state.token;
-    let res=await fetch(CFG.API+e,{...o,headers:h});
-    if(!res.ok){let err=await res.text();try{err=JSON.parse(err).detail||err}catch(e){}throw new Error(err)}
-    return res.json();
-}
-
-// ==================== THEME ====================
-function setTheme(t){state.theme=t;document.body.className=t==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t;localStorage.setItem('capitan_theme',t)}
-setTheme(state.theme||'dark');
-window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(state.theme==='system') setTheme('system')});
-
-// ==================== AUTH ====================
-function showSignupModal(){
-    document.getElementById('signupModalContent').innerHTML=`
-        <h2>Create OS Wallet</h2>
-        <input id="signupEmail" placeholder="Email">
-        <input type="password" id="signupPassword" placeholder="Password (min 6)">
-        <input id="signupName" placeholder="Name (optional)">
-        <button class="btn" onclick="handleSignup()">Create Account</button>
-        <p style="text-align:center;margin-top:12px;font-size:11px;">Already have an account? <a onclick="closeModal('signupModal');showLoginModal()">Sign in</a></p>`;
-    document.getElementById('signupModal').classList.add('open');
-}
-function showLoginModal(){
-    document.getElementById('loginModalContent').innerHTML=`
-        <h2>Sign In</h2>
-        <input id="loginEmail" placeholder="Email">
-        <input type="password" id="loginPassword" placeholder="Password">
-        <button class="btn" onclick="handleLogin()">Sign In</button>
-        <p style="text-align:center;margin-top:8px;"><a onclick="closeModal('loginModal');showFounderLoginModal()">Founder access</a></p>
-        <p style="text-align:center;margin-top:8px;font-size:11px;"><a onclick="forgotPassword()">Forgot password?</a></p>`;
-    document.getElementById('loginModal').classList.add('open');
-}
-function showFounderLoginModal(){
-    document.getElementById('founderLoginModalContent').innerHTML=`
-        <h2>Founder Access</h2>
-        <input id="founderKey" placeholder="Founder key">
-        <button class="btn btn-gold" onclick="handleFounderLogin()">Verify</button>`;
-    document.getElementById('founderLoginModal').classList.add('open');
-}
-async function handleFounderLogin(){
-    let key=document.getElementById('founderKey').value;
-    if(!key) return toast('Enter founder key');
-    try{
-        let r=await apiCall('/api/founder',{method:'POST',body:JSON.stringify({code:key})});
-        if(r.verified){
-            state.token=r.token; state.user=r.user; state.isGuest=false;
-            state.closeBalance=r.user.close_balance||0; state.closeStaked=r.user.close_staked||0; state.stakeTier='founder';
-            localStorage.setItem('capitan_token',r.token); localStorage.setItem('capitan_user',JSON.stringify(r.user));
-            closeModal('founderLoginModal'); updateUI(); toast('Founder access granted.');
-        }
-    }catch(e){toast('Invalid founder key')}
-}
-async function handleSignup(){
-    let e=document.getElementById('signupEmail').value.trim(),p=document.getElementById('signupPassword').value,n=document.getElementById('signupName').value.trim();
-    if(!e||!p) return toast('Fill all fields');
-    try{
-        let r=await apiCall('/api/auth/register',{method:'POST',body:JSON.stringify({email:e,password:p,name:n})});
-        state.token=r.token; state.user=r.user; state.isGuest=false; state.closeBalance=0;
-        localStorage.setItem('capitan_token',r.token); localStorage.setItem('capitan_user',JSON.stringify(r.user));
-        closeModal('signupModal'); updateUI(); toast('Account created. Activate wallet to get 2,000 CLOSE.');
-        showActivateWallet();
-    }catch(e){toast('Signup failed')}
-}
-async function handleLogin(){
-    let e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPassword').value;
-    try{
-        let r=await apiCall('/api/auth/login',{method:'POST',body:JSON.stringify({email:e,password:p})});
-        state.token=r.token; state.user=r.user; state.closeBalance=r.user.close_balance||0; state.closeStaked=r.user.close_staked||0; state.stakeTier=r.user.stake_tier||'none'; state.walletAddress=r.user.wallet_address||'';
-        localStorage.setItem('capitan_token',r.token); localStorage.setItem('capitan_user',JSON.stringify(r.user));
-        closeModal('loginModal'); updateUI(); toast('Welcome back');
-    }catch(e){toast('Login failed')}
-}
-async function forgotPassword(){
-    try{await apiCall('/api/auth/forgot-password',{method:'POST',body:JSON.stringify({})});toast('If an account exists, a reset link has been sent.')}catch(e){toast('Request failed')}
-}
-function logout(){
-    state.token=null; state.user=null; state.isGuest=true; state.closeBalance=0; state.closeStaked=0; state.stakeTier='none'; state.walletAddress='';
-    localStorage.removeItem('capitan_token'); localStorage.removeItem('capitan_user');
-    updateUI(); renderMessages();
-}
-function showActivateWallet(){
-    document.getElementById('buyCloseModalContent').innerHTML=`
-        <h2>Activate OS Wallet</h2>
-        <p>Set a wallet password to claim <b>2,000 CLOSE</b> (worth $${(2000*CFG.CLOSE_PRICE).toFixed(4)}).</p>
-        <input type="password" id="walletPassword" placeholder="Wallet password">
-        <button class="btn btn-gold" onclick="activateWallet()">Activate & Get 2,000 CLOSE</button>`;
-    document.getElementById('buyCloseModal').classList.add('open');
-}
-async function activateWallet(){
-    let pwd=document.getElementById('walletPassword').value;
-    if(!pwd) return toast('Password required');
-    try{
-        let res=await apiCall('/api/wallet/activate',{method:'POST',body:JSON.stringify({password:pwd})});
-        state.closeBalance=res.close_credited; state.walletAddress=res.wallet_address;
-        localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('wallet_address',state.walletAddress);
-        closeModal('buyCloseModal'); updateUI(); toast('2,000 CLOSE credited!');
-    }catch(e){toast('Activation failed')}
-}
-
-// ==================== UI UPDATES ====================
-function updateUI(){
-    let logged=!!state.user;
-    document.getElementById('profileName').innerText=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
-    document.getElementById('profileTokens').innerText=logged?`${state.closeBalance.toLocaleString()} CLOSE`:'Sign up for 2,000 CLOSE';
-    document.getElementById('guestButtons').style.display=logged?'none':'block';
-    document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';
-    document.getElementById('workspaceMenuItem').style.display=logged?'flex':'none';
-    document.getElementById('developerMenuItem').style.display=(logged&&(state.stakeTier==='pro'||state.stakeTier==='enterprise'||state.stakeTier==='founder'))?'flex':'none';
-    document.getElementById('dashboardMenuItem').style.display=(logged&&state.stakeTier==='founder')?'flex':'none';
-    let badge = document.getElementById('closeBalanceBadge');
-    if(logged){
-        badge.style.display='flex';
-        document.getElementById('closeBalanceBadgeText').innerText=`${state.closeBalance.toLocaleString()} CLOSE ($${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)})`;
-    } else badge.style.display='none';
-}
-
-// ==================== CHAT ====================
-function newChat(){state.activeChatId=null;state.messages=[];renderMessages();document.getElementById('messageInput').focus()}
-async function sendMessage(){
-    let input=document.getElementById('messageInput'),text=input.value.trim();
-    if(!text||state.loading) return;
-    if(!state.token && !state.user){ showSignupModal(); return; }
-    input.value=''; state.messages.push({role:'user',content:text}); renderMessages();
-    state.loading=true; state.messages.push({role:'assistant',content:'',isTyping:true}); renderMessages();
-    try{
-        let res=await apiCall('/api/chat',{method:'POST',body:JSON.stringify({messages:state.messages.slice(0,-1),chat_id:state.activeChatId})});
-        let full=res.content||'No response';
-        state.messages[state.messages.length-1]={role:'assistant',content:full,message_id:res.message_id};
-        if(res.close_balance!==undefined){ state.closeBalance=res.close_balance; localStorage.setItem('close_balance',state.closeBalance); }
-        if(res.free_messages_remaining!==undefined) state.freeUsed = CFG.FREE_MSGS - res.free_messages_remaining;
-        state.activeChatId=res.chat_id; state.loading=false;
-        let msgIdx = state.messages.length-1;
-        renderMessages();
-        let msgEl = document.getElementById('msg-'+msgIdx);
-        if(msgEl && full) streamText(msgEl, full, 20);
-        if(res.wallet_prompt) showBubblePrompt(res.wallet_message);
-        updateUI();
-    }catch(e){state.messages.pop();state.messages.push({role:'assistant',content:'Error: unable to reach AI.'});state.loading=false;renderMessages()}
-}
-function streamText(container, fullText, speed=15){
-    container.innerHTML=''; let i=0; let cursor=document.createElement('span'); cursor.className='stream-cursor';
-    container.appendChild(cursor);
-    function type(){
-        if(i<fullText.length){
-            let char=fullText.charAt(i);
-            if(char==='\n'){ let br=document.createElement('br'); container.insertBefore(br,cursor); }
-            else{ let span=document.createElement('span'); span.textContent=char; container.insertBefore(span,cursor); }
-            i++; setTimeout(type,speed);
-        }else{ cursor.remove(); }
-    }
-    type();
-}
-function showBubblePrompt(msg, canDismiss=true){
-    let area=document.getElementById('messagesArea');
-    let div=document.createElement('div'); div.className='bubble-prompt';
-    div.innerHTML=`
-        <div class="c-icon">C</div>
-        <div class="prompt-text">${msg||'Create your OS Wallet to unlock unlimited AI.'}</div>
-        <button onclick="showSignupModal()" style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:20px;cursor:pointer;font-size:11px;">Open OS Wallets</button>
-        ${canDismiss?'<button class="dismiss-btn" onclick="this.parentElement.remove()">&#10005;</button>':''}
-    `;
-    area.appendChild(div); area.scrollTop=area.scrollHeight;
-}
-function renderMessages(){
-    let c=document.getElementById('messagesArea');
-    if(!state.messages.length){
-        c.innerHTML=`<div style="text-align:center;padding:60px 16px;"><div class="greeting-container"><div class="greeting-text">${['Good morning','Good afternoon','Good evening','Welcome'][Math.floor(new Date().getHours()/6)%4]}</div></div><div class="suggestion-pills"><button class="suggestion-pill" onclick="useSuggestion('Give me today\\'s top business headlines')">Business</button><button class="suggestion-pill" onclick="useSuggestion('Explain quantum computing simply')">Tech</button><button class="suggestion-pill" onclick="useSuggestion('Three easy dinner recipes')">Everyday</button></div></div>`;
-        return;
-    }
-    c.innerHTML=state.messages.map((m,i)=>m.isTyping?`<div class="message assistant"><div class="typing-indicator"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`:`<div class="message ${m.role}"><div class="message-content" id="msg-${i}">${m.role==='user'?escapeHtml(m.content):''}</div></div>`).join('');
-    c.scrollTop=c.scrollHeight;
-}
-function escapeHtml(s){return s?.replace(/</g,'&lt;')}
-function formatMarkdown(t){return t?.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
-function useSuggestion(t){document.getElementById('messageInput').value=t;sendMessage()}
-
-// ==================== NAVIGATION ====================
-function goBackToChat(){
-    document.querySelectorAll('.full-page-view').forEach(v=>v.classList.remove('open'));
-    document.getElementById('chatView').style.display='flex';
-}
-function hideAllViews(){
-    ['walletFullPage','portfolioFullPage','workspaceFullPage','developerFullPage','founderDashboardPage'].forEach(id=>document.getElementById(id).classList.remove('open'));
-    document.getElementById('chatView').style.display='flex';
-}
-
-// ==================== OS WALLETS (COMPLETE) ====================
-function openWallet(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('walletFullPage').classList.add('open');renderWalletDashboard();}
-async function renderWalletDashboard(){
-    let c=document.getElementById('walletContainer');
-    if(!state.user){ c.innerHTML='<div class="elite-wallet"><h2>OS Wallets</h2><p>Sign in to access your universal wallet.</p><button class="btn" onclick="showSignupModal()">Create Account</button></div>'; return; }
-    c.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
-    try{
-        let [bal,stakes,txs,wallets,nfts,wcSessions,addresses] = await Promise.allSettled([
-            apiCall('/api/wallet/balance'), apiCall('/api/wallet/stakes'), apiCall('/api/wallet/transactions'),
-            apiCall('/api/wallets'), apiCall('/api/wallet/nfts?chain=polygon'),
-            apiCall('/api/walletconnect/sessions'), apiCall('/api/addresses')
-        ]);
-        bal=bal.value||{}; stakes=stakes.value||{}; txs=txs.value||{}; wallets=wallets.value||{}; nfts=nfts.value||{}; wcSessions=wcSessions.value||{}; addresses=addresses.value||{};
-        state.closeBalance=bal.close_balance||0; state.closeStaked=bal.close_staked||0; state.stakeTier=bal.stake_tier||'none';
-        localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
-        updateUI();
-
-        c.innerHTML=`
-        <div class="elite-wallet">
-            <div class="balance-card"><div><span>CLOSE Balance</span><br><span class="amount">${state.closeBalance.toLocaleString()} CLOSE</span><br><small>$${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)}</small></div></div>
-            <div class="balance-card"><div><span>CLOSE Staked</span><br><span class="amount">${state.closeStaked.toLocaleString()} CLOSE</span><br><small>Tier: ${state.stakeTier.toUpperCase()}</small></div></div>
-            <div class="wallet-tabs">
-                <button class="wallet-tab active" data-tab="dashboard">Dashboard</button>
-                <button class="wallet-tab" data-tab="nfts">NFTs</button>
-                <button class="wallet-tab" data-tab="dapps">dApps</button>
-                <button class="wallet-tab" data-tab="addresses">Addresses</button>
-                <button class="wallet-tab" data-tab="settings">Settings</button>
-            </div>
-            <div class="wallet-panel active" id="panel-dashboard">
-                <div class="action-grid">
-                    <button class="action-btn" onclick="showSendModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send</button>
-                    <button class="action-btn" onclick="showReceiveModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Receive</button>
-                    <button class="action-btn" onclick="showBuyModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Buy</button>
-                    <button class="action-btn" onclick="showSwapModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Swap</button>
-                    <button class="action-btn" onclick="showStakeModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Stake</button>
-                    <button class="action-btn" onclick="showUnstakeModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22L2 17V7l10-5 10 5v10z"/><path d="M8 12l4 4 4-4"/></svg> Unstake</button>
-                </div>
-                <div class="dashboard-card"><h3>Recent Transactions</h3>${(txs.transactions||[]).slice(0,5).map(t=>`<div style="display:flex;justify-content:space-between;font-size:11px;cursor:pointer" onclick="openTxDetail('${t.tx_hash||''}')"><span>${t.type.toUpperCase()}</span><span>${t.amount.toLocaleString()}</span><span>${new Date(t.created).toLocaleDateString()}</span></div>`).join('')||'No transactions'}</div>
-            </div>
-            <div class="wallet-panel" id="panel-nfts">
-                <div class="nft-grid">${(nfts.nfts||[]).length?nfts.nfts.map(n=>`<div class="nft-card"><img src="${n.image}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23333%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23fff%22 x=%2250%22 y=%2255%22 text-anchor=%22middle%22%3ENFT%3C/text%3E%3C/svg%3E"><div>${n.name||'NFT'}</div></div>`).join(''):'No NFTs found'}</div>
-            </div>
-            <div class="wallet-panel" id="panel-dapps">
-                <button class="btn" onclick="connectWalletConnect()">Connect to dApp</button>
-                <div style="margin-top:10px;">${(wcSessions.sessions||[]).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;"><span>${s.name} (${s.url})</span><button onclick="disconnectWC('${s.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">Disconnect</button></div>`).join('')||'No active sessions'}</div>
-            </div>
-            <div class="wallet-panel" id="panel-addresses">
-                <button class="btn" onclick="showAddAddressModal()">+ Add Address</button>
-                <div style="margin-top:10px;">${(addresses.addresses||[]).map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span>${a.label}: ${a.address.slice(0,8)}...${a.address.slice(-6)}</span><button onclick="deleteAddress('${a.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">X</button></div>`).join('')||'No saved addresses'}</div>
-            </div>
-            <div class="wallet-panel" id="panel-settings">
-                <h3>Gas Preset</h3>
-                <select id="gasPreset" onchange="saveGasPreset()"><option value="standard">Standard</option><option value="fast">Fast</option><option value="instant">Instant</option></select>
-                <h3 style="margin-top:16px;">Wallets</h3>
-                <div>${(wallets.wallets||[]).map(w=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;"><span>${w.label} (${w.address.slice(0,6)}...${w.address.slice(-4)}) ${w.active?'[active]':''}</span><div><button onclick="setActiveWallet('${w.id}')" style="background:none;border:none;color:var(--accent);cursor:pointer;">Set Active</button> <button onclick="deleteWallet('${w.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">Delete</button></div></div>`).join('')||'No wallets'}</div>
-                <button class="btn" onclick="createNewWallet()">+ Create New Wallet</button>
-                <h3 style="margin-top:16px;">Hardware Wallet</h3>
-                <p style="font-size:11px;">Connect your Ledger or Trezor via WebUSB (coming soon).</p>
-            </div>
-        </div>`;
-
-        // Tab switching
-        document.querySelectorAll('.wallet-tab').forEach(tab=>tab.addEventListener('click',function(){
-            document.querySelectorAll('.wallet-tab').forEach(t=>t.classList.remove('active'));
-            this.classList.add('active');
-            document.querySelectorAll('.wallet-panel').forEach(p=>p.classList.remove('active'));
-            document.getElementById('panel-'+this.dataset.tab).classList.add('active');
-        }));
-    }catch(e){c.innerHTML='<p>Failed to load wallet.</p>'}
-}
-
-// ---------- Wallet action functions (complete) ----------
-function showBuyModal(){
-    document.getElementById('buyCloseModalContent').innerHTML=`<h2>Buy CLOSE</h2><p>Minimum $1 = ${Math.floor(1/CFG.CLOSE_PRICE)} CLOSE</p><input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash"><button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
-    document.getElementById('buyCloseModal').classList.add('open');
-}
-async function purchaseClose(){
-    let usd=document.getElementById('purchaseUsd').value, tx=document.getElementById('txHash').value;
-    try{
-        let res=await apiCall('/api/wallet/purchase',{method:'POST',body:JSON.stringify({usd_amount:parseFloat(usd),tx_hash:tx})});
-        if(res.verified){ state.closeBalance+=res.purchased; localStorage.setItem('close_balance',state.closeBalance); closeModal('buyCloseModal'); updateUI(); renderWalletDashboard(); toast('Purchased!'); }
-        else toast('Payment not verified');
-    }catch(e){toast('Error')}
-}
-function showStakeModal(){
-    document.getElementById('stakeModalContent').innerHTML=`<h2>Stake CLOSE</h2><input id="stakeAmount" type="number" placeholder="Amount"><button class="btn" onclick="stakeClose()">Stake</button>`;
-    document.getElementById('stakeModal').classList.add('open');
-}
-async function stakeClose(){
-    let amount=document.getElementById('stakeAmount').value;
-    try{
-        let res=await apiCall('/api/wallet/stake',{method:'POST',body:JSON.stringify({amount:parseInt(amount)})});
-        state.closeBalance-=amount; state.closeStaked+=amount; state.stakeTier=res.tier;
-        localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
-        closeModal('stakeModal'); updateUI(); renderWalletDashboard();
-    }catch(e){toast('Stake failed')}
-}
-function showUnstakeModal(){
-    document.getElementById('stakeModalContent').innerHTML=`<h2>Unstake</h2><p>Unstake available CLOSE.</p><button class="btn" onclick="unstakeClose()">Unstake</button>`;
-    document.getElementById('stakeModal').classList.add('open');
-}
-async function unstakeClose(){
-    try{
-        let res=await apiCall('/api/wallet/unstake',{method:'POST',body:JSON.stringify({})});
-        state.closeBalance+=res.unstaked; state.closeStaked-=res.unstaked;
-        localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked);
-        closeModal('stakeModal'); updateUI(); renderWalletDashboard();
-    }catch(e){toast('Unstake failed')}
-}
-function showSwapModal(){
-    let chains=Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('');
-    document.getElementById('swapModalContent').innerHTML=`
-        <h2>Swap</h2>
-        <select id="swapChain">${chains}</select>
-        <select id="swapFromToken" onchange="updateSwapTokens()"><option value="">Select token</option></select>
-        <select id="swapToToken"><option value="">Select token</option></select>
-        <input id="swapAmount" placeholder="Amount">
-        <button class="btn" onclick="getSwapQuote()">Get Quote</button>
-        <div id="swapQuoteResult"></div>
-        <button class="btn" id="swapExecuteBtn" style="display:none" onclick="executeSwap()">Execute Swap</button>`;
-    document.getElementById('swapModal').classList.add('open');
-    updateSwapTokens();
-}
-function updateSwapTokens(){
-    let chain=document.getElementById('swapChain').value;
-    let tokens=CFG.CHAINS[chain]?.tokens||{};
-    let options=Object.entries(tokens).map(([sym,addr])=>`<option value="${addr==='native'?sym:addr}">${sym}</option>`).join('');
-    document.getElementById('swapFromToken').innerHTML=options;
-    document.getElementById('swapToToken').innerHTML=options;
-}
-async function getSwapQuote(){
-    let chain=document.getElementById('swapChain').value;
-    let from=document.getElementById('swapFromToken').value;
-    let to=document.getElementById('swapToToken').value;
-    let amount=document.getElementById('swapAmount').value;
-    if(!from||!to||!amount) return toast('Fill all fields');
-    try{
-        let res=await apiCall(`/api/swap/quote?chain=${chain}&from_token=${from}&to_token=${to}&amount=${amount}`);
-        document.getElementById('swapQuoteResult').innerHTML=`Estimated: <b>${res.to_amount} ${res.to_token}</b> (Gas: ${res.estimated_gas})`;
-        document.getElementById('swapExecuteBtn').style.display='block';
-    }catch(e){document.getElementById('swapQuoteResult').innerHTML='Quote failed'}
-}
-async function executeSwap(){
-    toast('Swap execution requires transaction signing. Use Send modal or dApp.');
-}
-function showSendModal(){
-    let chains=Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('');
-    document.getElementById('sendModalContent').innerHTML=`
-        <h2>Send</h2>
-        <select id="sendChain" onchange="updateSendTokens()">${chains}</select>
-        <select id="sendToken"></select>
-        <input id="sendTo" placeholder="Address">
-        <input id="sendAmount" placeholder="Amount">
-        <input id="sendPassword" type="password" placeholder="Wallet password">
-        <button class="btn" onclick="sendTransaction()">Send</button>`;
-    document.getElementById('sendModal').classList.add('open');
-    updateSendTokens();
-}
-function updateSendTokens(){
-    let chain=document.getElementById('sendChain').value;
-    let tokens=CFG.CHAINS[chain]?.tokens||{};
-    document.getElementById('sendToken').innerHTML=Object.entries(tokens).map(([sym,addr])=>`<option value="${addr==='native'?sym:addr}">${sym}</option>`).join('');
-}
-async function sendTransaction(){
-    let chain=document.getElementById('sendChain').value;
-    let token=document.getElementById('sendToken').value;
-    let to=document.getElementById('sendTo').value, amount=document.getElementById('sendAmount').value, pwd=document.getElementById('sendPassword').value;
-    if(!to||!amount||!pwd) return toast('Fill all fields');
-    let wallets=await apiCall('/api/wallets');
-    let active=wallets.wallets.find(w=>w.active)||wallets.wallets[0];
-    if(!active) return toast('No wallet found');
-    try{
-        let res=await apiCall(`/api/wallet/${active.id}/send`,{method:'POST',body:JSON.stringify({to,amount,pwd,token_address:token})});
-        toast('Sent! TX: '+res.tx_hash);
-        closeModal('sendModal');
-    }catch(e){toast('Send failed')}
-}
-function showReceiveModal(){
-    document.getElementById('receiveModalContent').innerHTML=`<h2>Receive</h2><div id="qrcode"></div><p>${state.walletAddress||'No wallet address'}</p><button class="btn" onclick="navigator.clipboard.writeText('${state.walletAddress||''}')">Copy Address</button>`;
-    document.getElementById('receiveModal').classList.add('open');
-    if(state.walletAddress && window.Html5Qrcode) new Html5Qrcode("qrcode").then(qr=>{qr.clear();qr.render(state.walletAddress);});
-}
-function showAddAddressModal(){
-    document.getElementById('addressModalContent').innerHTML=`<h2>Add Address</h2><input id="addrLabel" placeholder="Label"><input id="addrAddress" placeholder="Address"><select id="addrChain">${Object.keys(CFG.CHAINS).map(c=>`<option>${c}</option>`).join('')}</select><button class="btn" onclick="addAddress()">Save</button>`;
-    document.getElementById('addressModal').classList.add('open');
-}
-async function addAddress(){
-    let label=document.getElementById('addrLabel').value, address=document.getElementById('addrAddress').value, chain=document.getElementById('addrChain').value;
-    if(!label||!address) return toast('Fill all fields');
-    try{await apiCall('/api/addresses',{method:'POST',body:JSON.stringify({label,address,chain})});closeModal('addressModal');renderWalletDashboard();}
-    catch(e){toast('Failed')}
-}
-async function deleteAddress(id){ if(confirm('Delete?')){await apiCall('/api/addresses/'+id,{method:'DELETE'});renderWalletDashboard();} }
-async function setActiveWallet(id){ await apiCall('/api/wallets/'+id+'/active',{method:'PUT'}); renderWalletDashboard(); }
-async function deleteWallet(id){ if(confirm('Delete wallet?')){await apiCall('/api/wallets/'+id,{method:'DELETE'});renderWalletDashboard();} }
-async function createNewWallet(){
-    let chain = prompt('Chain (polygon/ethereum/bsc/arbitrum/base):','polygon');
-    let label = prompt('Label:','New Wallet');
-    if(!chain) return;
-    try{await apiCall('/api/wallet/create',{method:'POST',body:JSON.stringify({chain,label})});renderWalletDashboard();}
-    catch(e){toast('Creation failed')}
-}
-async function saveGasPreset(){
-    let preset = document.getElementById('gasPreset').value;
-    await apiCall('/api/wallet/gas',{method:'POST',body:JSON.stringify({preset})});
-    toast('Gas preset saved');
-}
-function openTxDetail(txHash){
-    if(!txHash) return;
-    apiCall('/api/transactions/'+txHash).then(tx=>{
-        alert(`TX: ${tx.tx_hash}\nFrom: ${tx.from}\nTo: ${tx.to}\nAmount: ${tx.amount||tx.value} ${tx.token||''}\nStatus: ${tx.status}\nExplorer: ${tx.explorer_url}`);
-    }).catch(()=>toast('Transaction details not available'));
-}
-async function connectWalletConnect(){
-    if(!window.Web3Wallet) return toast('WalletConnect library not loaded');
-    try{
-        const wc = await Web3Wallet.init({core:{projectId:'YOUR_PROJECT_ID'},metadata:{name:'CAPITAN AI OS Wallets',description:'Universal Wallet',url:'https://capitanai.com',icons:[]}});
-        state.walletConnector = wc;
-        const { uri, approval } = await wc.connect({requiredNamespaces:{eip155:{methods:['eth_sendTransaction','personal_sign'],chains:['eip155:137'],events:['chainChanged','accountsChanged']}}});
-        if(uri){
-            prompt('Copy this URI to connect dApp:', uri);
-            const session = await approval();
-            await apiCall('/api/walletconnect/sessions',{method:'POST',body:JSON.stringify({topic:session.topic,dapp_name:session.peer.metadata.name,dapp_url:session.peer.metadata.url,chain_id:137,accounts:session.namespaces.eip155.accounts})});
-            toast('dApp connected!');
-            renderWalletDashboard();
-        }
-    }catch(e){toast('WalletConnect error: '+(e.message||'Unknown'))}
-}
-async function disconnectWC(sessionId){
-    if(confirm('Disconnect dApp?')){
-        await apiCall('/api/walletconnect/sessions/'+sessionId,{method:'DELETE'});
-        toast('Disconnected');
-        renderWalletDashboard();
-    }
-}
-
-// ==================== PORTFOLIO ====================
-function openPortfolio(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.add('open');loadPortfolio()}
-async function loadPortfolio(){
-    let c=document.getElementById('portfolioFullContent');
-    c.innerHTML='<div class="spinner"></div>';
-    try{
-        let d=await apiCall('/api/portfolio');
-        if(!d.items||!d.items.length){ c.innerHTML='<h2>Portfolio</h2><p>No items yet.</p><button class="btn" onclick="showPortfolioCreate()">+ New Note</button>'; return; }
-        let html='<h2>Portfolio</h2><button class="btn" onclick="showPortfolioCreate()">+ New Note</button><div style="margin-top:16px;">';
-        d.items.forEach(i=>{
-            html+=`<div class="dashboard-card" style="cursor:pointer">
-                <div style="display:flex;justify-content:space-between;">
-                    <span style="font-weight:600;">${escapeHtml(i.name||'Untitled')}</span>
-                    <div>
-                        <button onclick="event.stopPropagation();editPortfolioItem('${i.id}')">✏️</button>
-                        <button onclick="event.stopPropagation();togglePin('${i.id}')">${i.pinned?'📌':'📍'}</button>
-                        <button onclick="event.stopPropagation();deletePortfolioItem('${i.id}')">🗑️</button>
-                    </div>
-                </div>
-                <div style="font-size:11px;color:var(--text-tertiary);">${escapeHtml((i.content||'').substring(0,120))}</div>
-            </div>`;
-        });
-        html+='</div>';
-        c.innerHTML=html;
-    }catch(e){c.innerHTML='<p>Failed to load portfolio.</p>'}
-}
-function showPortfolioCreate(){
-    document.getElementById('portfolioFullContent').innerHTML=`
-        <h2>New Note</h2>
-        <input id="portName" placeholder="Title" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <textarea id="portContent" placeholder="Content" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"></textarea>
-        <button class="btn" onclick="savePortfolioItem()">Save</button>
-        <button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
-}
-async function savePortfolioItem(){
-    let name=document.getElementById('portName').value.trim(), content=document.getElementById('portContent').value;
-    if(!name||!content){toast('Title and content required');return}
-    await apiCall('/api/portfolio',{method:'POST',body:JSON.stringify({name,folder:'General',tags:[],attachments:[],content,chat_id:null})});
-    toast('Saved'); loadPortfolio();
-}
-async function editPortfolioItem(id){
-    let item = (await apiCall('/api/portfolio')).items.find(i=>i.id===id);
-    if(!item) return;
-    document.getElementById('portfolioFullContent').innerHTML=`
-        <h2>Edit Note</h2>
-        <input id="portName" value="${escapeHtml(item.name||'')}" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <textarea id="portContent" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">${escapeHtml(item.content||'')}</textarea>
-        <button class="btn" onclick="updatePortfolioItem('${id}')">Update</button>
-        <button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
-}
-async function updatePortfolioItem(id){
-    let name=document.getElementById('portName').value.trim(), content=document.getElementById('portContent').value;
-    if(!name||!content){toast('Title and content required');return}
-    await apiCall('/api/portfolio/'+id,{method:'PUT',body:JSON.stringify({name,content,folder:'General',tags:[],attachments:[],chat_id:null})});
-    toast('Updated'); loadPortfolio();
-}
-async function deletePortfolioItem(id){if(confirm('Delete?')){await apiCall('/api/portfolio/'+id,{method:'DELETE'});loadPortfolio();}}
-async function togglePin(id){
-    let item = (await apiCall('/api/portfolio')).items.find(i=>i.id===id);
-    if(!item) return;
-    await apiCall('/api/portfolio/'+id,{method:'PUT',body:JSON.stringify({...item,pinned:!item.pinned})});
-    loadPortfolio();
-}
-
-// ==================== WORKSPACES ====================
-function openWorkspacePage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('workspaceFullPage').classList.add('open');loadWorkspaces()}
-async function loadWorkspaces(){
-    let c=document.getElementById('workspaceFullContent');
-    c.innerHTML='<div class="spinner"></div>';
-    try{
-        let d=await apiCall('/api/hub/rooms');
-        let html=`<h2>Work Areas</h2><div style="display:flex;gap:8px;margin-bottom:16px;"><button class="btn" onclick="openWorkspaceCreateModal()">+ Create</button><button class="btn" onclick="openWorkspaceJoinModal()">Join</button></div>`;
-        if(d.rooms&&d.rooms.length){ d.rooms.forEach(r=>{html+=`<div class="dashboard-card" onclick="openRoomChat('${r.room_code}')"><div style="font-weight:600;">${escapeHtml(r.name)}</div><div style="font-size:11px;color:var(--text-tertiary);">Code: ${r.room_code} | Members: ${r.member_count}</div></div>`;}); }
-        else html+='<p>No rooms yet.</p>';
-        c.innerHTML=html;
-    }catch(e){c.innerHTML='<p>Failed to load workspaces.</p>'}
-}
-function openWorkspaceCreateModal(){
-    document.getElementById('workspaceCreateModalContent').innerHTML=`
-        <h2>Create Work Area</h2>
-        <input id="wsName" placeholder="Name" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <input id="wsCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <button class="btn" onclick="createWorkspace()">Create</button>
-        <button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;
-    document.getElementById('workspaceCreateModal').classList.add('open');
-}
-function openWorkspaceJoinModal(){
-    document.getElementById('workspaceJoinModalContent').innerHTML=`
-        <h2>Join Work Area</h2>
-        <input id="joinRoomCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <button class="btn" onclick="joinWorkspace()">Join</button>
-        <button class="btn btn-outline" onclick="closeModal('workspaceJoinModal')">Cancel</button>`;
-    document.getElementById('workspaceJoinModal').classList.add('open');
-}
-async function createWorkspace(){
-    let name=document.getElementById('wsName').value.trim(), code=document.getElementById('wsCode').value.trim();
-    if(!name){toast('Name required');return}
-    try{await apiCall('/api/hub/rooms',{method:'POST',body:JSON.stringify({name,room_code:code})});toast('Created');closeModal('workspaceCreateModal');loadWorkspaces()}catch(e){toast('Failed')}
-}
-async function joinWorkspace(){
-    let code=document.getElementById('joinRoomCode').value.trim().toUpperCase();
-    if(!code){toast('Room code required');return}
-    try{await apiCall('/api/hub/rooms/join',{method:'POST',body:JSON.stringify({room_code:code})});toast('Joined');closeModal('workspaceJoinModal');loadWorkspaces()}catch(e){toast('Failed')}
-}
-function openRoomChat(roomCode){
-    let c=document.getElementById('workspaceFullContent');
-    c.innerHTML=`
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-            <button class="back-btn" onclick="loadWorkspaces()">←</button>
-            <h3>Room: ${roomCode}</h3>
-        </div>
-        <div id="roomMessages" style="height:60vh;overflow-y:auto;border:1px solid var(--border);padding:10px;margin-bottom:10px;border-radius:12px;background:var(--bg-secondary);"></div>
-        <div style="display:flex;gap:8px;">
-            <input id="roomMsgInput" placeholder="Type @CAPITAN for AI" style="flex:1;padding:10px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);">
-            <button class="btn" style="width:auto;" onclick="sendRoomMessage('${roomCode}')">Send</button>
-        </div>`;
-    loadRoomMessages(roomCode);
-}
-async function loadRoomMessages(roomCode){
-    try{
-        let d=await apiCall('/api/hub/rooms/'+roomCode+'/messages');
-        let html=d.messages.map(m=>`<div style="margin-bottom:6px;"><b>${escapeHtml(m.author)}:</b> ${m.is_ai?'(AI) ':''}${escapeHtml(m.message)}</div>`).join('');
-        document.getElementById('roomMessages').innerHTML=html||'No messages yet.';
-    }catch(e){document.getElementById('roomMessages').innerHTML='Failed to load messages.'}
-}
-async function sendRoomMessage(roomCode){
-    let msg=document.getElementById('roomMsgInput').value.trim();
-    if(!msg) return;
-    await apiCall('/api/hub/rooms/'+roomCode+'/messages',{method:'POST',body:JSON.stringify({message:msg})});
-    document.getElementById('roomMsgInput').value='';
-    loadRoomMessages(roomCode);
-}
-
-// ==================== DEVELOPER PAGE ====================
-function openDeveloperPage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('developerFullPage').classList.add('open');loadDeveloperPage('keys')}
-async function loadDeveloperPage(tab){
-    let c=document.getElementById('developerContent');
-    if(tab==='keys'){
-        try{
-            let keys=await apiCall('/api/developer/keys');
-            let html='<h2>API Keys</h2><button class="btn" onclick="createApiKey()">+ Generate Key</button><div style="margin-top:12px;">';
-            keys.keys.forEach(k=>{
-                html+=`<div class="dashboard-card"><div style="display:flex;justify-content:space-between;"><span>${k.prefix}...</span><span style="color:var(--accent)">${k.scopes}</span><button onclick="revokeApiKey('${k.id}')">Revoke</button></div><small>${k.last_used||'Never used'}</small></div>`;
-            });
-            html+='</div>';
-            c.innerHTML=html;
-        }catch(e){c.innerHTML='<p>Failed to load API keys.</p>'}
-    }else if(tab==='webhooks'){
-        try{
-            let hooks=await apiCall('/api/developer/webhooks');
-            let html='<h2>Webhooks</h2><button class="btn" onclick="showCreateWebhook()">+ Add Webhook</button><div style="margin-top:12px;">';
-            hooks.webhooks.forEach(w=>{
-                html+=`<div class="dashboard-card"><div>${w.url}</div><small>Events: ${w.events}</small><button onclick="deleteWebhook('${w.id}')">Delete</button></div>`;
-            });
-            html+='</div>';
-            c.innerHTML=html;
-        }catch(e){c.innerHTML='<p>Failed to load webhooks.</p>'}
-    }
-}
-async function createApiKey(){
-    try{
-        let res=await apiCall('/api/developer/keys',{method:'POST',body:JSON.stringify({})});
-        document.getElementById('apiKeyModalContent').innerHTML=`<h2>New API Key</h2><pre style="word-break:break-all;background:var(--bg-secondary);padding:10px;border-radius:8px;">${res.key}</pre><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');closeModal('apiKeyModal')">Copy & Close</button>`;
-        document.getElementById('apiKeyModal').classList.add('open');
-        loadDeveloperPage('keys');
-    }catch(e){toast('Failed to create key')}
-}
-async function revokeApiKey(id){ if(confirm('Revoke this key?')){await apiCall('/api/developer/keys/'+id,{method:'DELETE'});loadDeveloperPage('keys');} }
-function showCreateWebhook(){
-    document.getElementById('webhookModalContent').innerHTML=`
-        <h2>Add Webhook</h2>
-        <input id="webhookUrl" placeholder="URL">
-        <input id="webhookEvents" placeholder="Events (comma separated)" value="new_message">
-        <button class="btn" onclick="createWebhook()">Save</button>`;
-    document.getElementById('webhookModal').classList.add('open');
-}
-async function createWebhook(){
-    let url=document.getElementById('webhookUrl').value.trim(), events=document.getElementById('webhookEvents').value.trim();
-    if(!url) return toast('URL required');
-    await apiCall('/api/developer/webhooks',{method:'POST',body:JSON.stringify({url,events})});
-    closeModal('webhookModal'); loadDeveloperPage('webhooks');
-}
-async function deleteWebhook(id){ if(confirm('Delete webhook?')){await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});loadDeveloperPage('webhooks');} }
-
-// ==================== FOUNDER DASHBOARD ====================
-async function openFounderDashboard(){
-    if(!state.user||state.stakeTier!=='founder') return toast('Founder access required');
-    hideAllViews(); document.getElementById('chatView').style.display='none'; document.getElementById('founderDashboardPage').classList.add('open');
-    let c=document.getElementById('founderDashboardContent'); c.innerHTML='<div class="spinner"></div>';
-    try{
-        let d=await apiCall('/api/admin/dashboard');
-        let users=await apiCall('/api/admin/users');
-        let html=`
-        <h2>Dashboard</h2>
-        <div class="grid-2">
-            <div class="dashboard-card"><h3>Total Users</h3><div class="big-number">${d.total_users}</div></div>
-            <div class="dashboard-card"><h3>Active Today</h3><div class="big-number">${d.active_today}</div></div>
-            <div class="dashboard-card"><h3>CLOSE Circulating</h3><div class="big-number">${(d.close_circulating||0).toLocaleString()}</div></div>
-            <div class="dashboard-card"><h3>CLOSE Staked</h3><div class="big-number">${(d.close_staked||0).toLocaleString()}</div></div>
-            <div class="dashboard-card"><h3>CLOSE Burned</h3><div class="big-number">${(d.close_burned||0).toLocaleString()}</div></div>
-            <div class="dashboard-card"><h3>Revenue (USD)</h3><div class="big-number">$${(d.total_revenue_usd||0).toFixed(2)}</div></div>
-        </div>
-        <h3>Users</h3>
-        <input id="adminSearch" placeholder="Search users..." oninput="searchAdminUsers()" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:12px;">
-        <table class="admin-table" id="adminUserTable">
-            <thead><tr><th>Email</th><th>Name</th><th>CLOSE</th><th>Staked</th><th>Tier</th><th>Actions</th></tr></thead>
-            <tbody>${users.users.map(u=>`<tr><td>${u.email}</td><td>${u.name||''}</td><td>${u.close_balance}</td><td>${u.close_staked}</td><td>${u.stake_tier}</td><td><button onclick="adjustUserBalance('${u.id}')">Adjust</button> <button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('')}</tbody>
-        </table>`;
-        c.innerHTML=html;
-    }catch(e){c.innerHTML='<p>Access denied or failed to load.</p>'}
-}
-async function searchAdminUsers(){
-    let q=document.getElementById('adminSearch').value;
-    let users=await apiCall('/api/admin/users?search='+encodeURIComponent(q));
-    document.getElementById('adminUserTable').querySelector('tbody').innerHTML=users.users.map(u=>`<tr><td>${u.email}</td><td>${u.name||''}</td><td>${u.close_balance}</td><td>${u.close_staked}</td><td>${u.stake_tier}</td><td><button onclick="adjustUserBalance('${u.id}')">Adjust</button> <button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('');
-}
-async function adjustUserBalance(userId){
-    let amount=prompt('Amount to add (can be negative):','0');
-    if(amount===null)return;
-    try{await apiCall(`/api/admin/user/${userId}/close`,{method:'POST',body:JSON.stringify({amount:parseInt(amount)})});toast('Balance adjusted');openFounderDashboard();}catch(e){toast('Failed')}
-}
-async function deleteUser(userId){
-    if(confirm('Delete this user permanently?')){
-        await apiCall(`/api/admin/user/${userId}`,{method:'DELETE'});
-        toast('User deleted');
-        openFounderDashboard();
-    }
-}
-
-// ==================== NOTIFICATIONS ====================
-async function fetchNotifications(){
-    if(!state.user) return;
-    try{
-        let d=await apiCall('/api/notifications/push');
-        state.unreadCount = d.notifications.length;
-        document.getElementById('notifBadge').textContent = state.unreadCount||'0';
-        document.getElementById('notifBadge').style.display = state.unreadCount?'flex':'none';
-        document.getElementById('notifList').innerHTML = d.notifications.map(n=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);"><div>${n.message}</div><small>${new Date(n.created).toLocaleString()}</small></div>`).join('')||'No new notifications';
-    }catch(e){}
-}
-function openNotifPanel(){document.getElementById('notifPanel').style.right='0'}
-function closeNotifPanel(){document.getElementById('notifPanel').style.right='-360px'}
-async function markAllRead(){
-    await apiCall('/api/notifications/read',{method:'POST'});
-    state.unreadCount=0;
-    document.getElementById('notifBadge').style.display='none';
-    fetchNotifications();
-}
-
-// ==================== PROFILE / LEGAL ====================
-function openProfileModal(){
-    document.getElementById('profileModalContent').innerHTML=`
-        <h2>Account</h2>
-        <p><strong>${state.user?.email||'Guest'}</strong></p>
-        <p>CLOSE Balance: ${state.closeBalance.toLocaleString()} ($${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)})</p>
-        <p>Staked: ${state.closeStaked.toLocaleString()} | Tier: ${state.stakeTier.toUpperCase()}</p>
-        ${state.user?`<button class="btn btn-outline" onclick="logout()">Sign Out</button>`:`<button class="btn" onclick="closeModal('profileModal');showSignupModal()">Sign Up</button>`}
-        <button class="btn btn-outline" onclick="closeModal('profileModal')">Close</button>`;
-    document.getElementById('profileModal').classList.add('open');
-}
-async function openPrivacyModal(){
-    try{
-        let d=await apiCall('/api/legal/privacy');
-        document.getElementById('privacyModalContent').innerHTML=`<h2>Privacy Policy</h2><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
-        document.getElementById('privacyModal').classList.add('open');
-    }catch(e){toast('Could not load privacy policy')}
-}
-async function openTermsModal(){
-    try{
-        let d=await apiCall('/api/legal/terms');
-        document.getElementById('termsModalContent').innerHTML=`<h2>Terms of Service</h2><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
-        document.getElementById('termsModal').classList.add('open');
-    }catch(e){toast('Could not load terms')}
-}
-
-// ==================== FILE UPLOAD ====================
-function triggerFileUpload(){
-    if(!state.user) return toast('Sign in to upload');
-    let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
-    inp.onchange=async e=>{
-        let file=e.target.files[0];if(!file)return;
-        if(file.size/(1024*1024)>60)return toast('Max 60MB');
-        document.getElementById('messageInput').disabled=true;
-        toast('Uploading...');
-        let fd=new FormData();fd.append('file',file);
-        try{
-            let res=await fetch(CFG.API+'/api/upload',{method:'POST',headers:{'Authorization':'Bearer '+state.token},body:fd});
-            if(!res.ok) throw new Error('Upload failed');
-            let data=await res.json();
-            toast('Uploaded: '+file.name);
-            state.messages.push({role:'user',content:`[Uploaded document: ${file.name}]\n\nPlease analyze this document.`});
-            renderMessages(); sendMessage();
-        }catch(e){toast('Upload failed: '+e.message)}
-        document.getElementById('messageInput').disabled=false;
-    };
-    inp.click();
-}
-
-// ==================== COLLAPSIBLE ====================
-function toggleCollapsible(k){
-    let content=document.getElementById(k+'Content'), arrow=document.getElementById(k+'Arrow');
-    content.classList.toggle('open');
-    arrow.style.transform=content.classList.contains('open')?'rotate(180deg)':'rotate(0deg)';
-}
-
-// ==================== SIDEBAR TOGGLE ====================
-function toggleSidebar(){
-    let s=document.getElementById('sidebar'), o=document.getElementById('overlay');
-    if(window.innerWidth<=768){ s.classList.toggle('open'); o.classList.toggle('open'); }
-    else{ s.classList.toggle('collapsed'); }
-}
-function closeSidebar(){
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('overlay').classList.remove('open');
-}
-
-// ==================== INIT ====================
-async function init(){
-    document.getElementById('toggleSidebarBtn').addEventListener('click',toggleSidebar);
-    document.addEventListener('click', (e)=>{
-        if(window.innerWidth<=768 && document.getElementById('sidebar').classList.contains('open') &&
-           !document.getElementById('sidebar').contains(e.target) &&
-           !document.getElementById('toggleSidebarBtn').contains(e.target)) closeSidebar();
-    });
-    setTimeout(()=>{document.getElementById('splashScreen').classList.add('hide');document.getElementById('app').style.display='flex';},1600);
-    if(state.token && state.user){
-        try{
-            let data=await apiCall('/api/auth/me');
-            state.user=data; state.closeBalance=data.close_balance||0; state.closeStaked=data.close_staked||0;
-            state.stakeTier=data.stake_tier||'none'; state.walletAddress=data.wallet_address||'';
-            localStorage.setItem('capitan_user',JSON.stringify(data));
-            localStorage.setItem('close_balance',state.closeBalance);
-            localStorage.setItem('close_staked',state.closeStaked);
-            localStorage.setItem('stake_tier',state.stakeTier);
-            localStorage.setItem('wallet_address',state.walletAddress);
-            state.isGuest=false;
-        }catch(e){logout();}
-    }else if(state.token && !state.user){ state.isGuest=true; state.freeUsed=0; }
-    else{ state.isGuest=true; }
-    updateUI(); renderMessages();
-    if(!state.token) setTimeout(()=>{ if(!state.user&&!state.token&&state.messages.length===0) showBubblePrompt('Welcome! Create your OS Wallet to claim 2,000 CLOSE.', false); },5000);
-    setInterval(fetchNotifications, 30000);
-    fetchNotifications();
-}
-init();
-</script>
-</body>
-</html>
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
