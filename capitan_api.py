@@ -1,8 +1,7 @@
 """
-CAPITAN AI — Enterprise Backend v34.0 (CLOSE Token Economy)
+CAPITAN AI — Enterprise Backend v35.1 (Complete, Unabridged OS Wallets)
 CLOSEAI Technologies — CEO Osinachi Chukwu
-Complete OS Wallets · CLOSE Token Economy · Self-Custody · Multi-Chain
-No cuts. No compromises. Production-ready.
+All endpoints – no cuts, no placeholders.
 """
 
 import os, re, json, uuid, time, hmac, hashlib, base64, secrets, requests, logging, bcrypt
@@ -37,7 +36,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     JWT_SECRET: str
     FOUNDER_KEY: str
-    FRONTEND_URL: str ="https://capitanai.billionaireman35.workers.dev"
+    FRONTEND_URL: str = "https://capitanai.com"
     GROQ_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
     COINGECKO_KEY: str = ""
@@ -47,6 +46,7 @@ class Settings(BaseSettings):
     ETHERSCAN_API_KEY: str = ""
     POLYGONSCAN_API_KEY: str = ""
     ONEPINCH_API_KEY: str = ""
+    COVALENT_API_KEY: str = ""
     FOUNDER_EXTRA_PROMPT: str = ""
     MODERATION_API_KEY: str = ""
     ENABLE_MODERATION: bool = True
@@ -82,7 +82,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-app = FastAPI(title="CAPITAN AI API", version="34.0")
+app = FastAPI(title="CAPITAN AI API", version="35.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -91,7 +91,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# CORS handler for OPTIONS
 @app.middleware("http")
 async def cors_handler(request: Request, call_next):
     if request.method == "OPTIONS":
@@ -99,7 +98,6 @@ async def cors_handler(request: Request, call_next):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
         response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Max-Age"] = "86400"
         return response
     response = await call_next(request)
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -138,62 +136,42 @@ def setup_web3(rpc_url: str) -> Web3:
         from web3.middleware import geth_poa_middleware
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)
     except ImportError:
-        try:
-            from web3.middleware import ExtraDataToPOAMiddleware
-            w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-        except ImportError:
-            pass
+        pass
     return w3
 
 CHAINS = {
-    "polygon": {
-        "name": "Polygon", "rpc": settings.POLYGON_RPC_URL, "chain_id": 137,
-        "symbol": "POL", "explorer": "https://polygonscan.com",
-        "tokens": {
-            "USDT": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-            "USDC": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-            "WETH": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
-            "CLOSE": settings.CLOSE_CONTRACT_ADDRESS,
-        }
-    },
-    "ethereum": {
-        "name": "Ethereum", "rpc": settings.ETHEREUM_RPC_URL, "chain_id": 1,
-        "symbol": "ETH", "explorer": "https://etherscan.io",
-        "tokens": {
-            "USDT": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-            "USDC": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-        }
-    },
-    "bsc": {
-        "name": "BSC", "rpc": settings.BSC_RPC_URL, "chain_id": 56,
-        "symbol": "BNB", "explorer": "https://bscscan.com",
-        "tokens": {
-            "USDT": "0x55d398326f99059fF775485246999027B3197955",
-            "USDC": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-        }
-    },
-    "arbitrum": {
-        "name": "Arbitrum", "rpc": settings.ARBITRUM_RPC_URL, "chain_id": 42161,
-        "symbol": "ETH", "explorer": "https://arbiscan.io",
-        "tokens": {
-            "USDT": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-            "USDC": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-        }
-    },
-    "base": {
-        "name": "Base", "rpc": settings.BASE_RPC_URL, "chain_id": 8453,
-        "symbol": "ETH", "explorer": "https://basescan.org",
-        "tokens": {
-            "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        }
-    }
+    "polygon": {"name":"Polygon","rpc":settings.POLYGON_RPC_URL,"chain_id":137,"symbol":"POL","explorer":"https://polygonscan.com",
+                "tokens":{
+                    "USDT":"0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+                    "USDC":"0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "WETH":"0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+                    "CLOSE":settings.CLOSE_CONTRACT_ADDRESS
+                }},
+    "ethereum":{"name":"Ethereum","rpc":settings.ETHEREUM_RPC_URL,"chain_id":1,"symbol":"ETH","explorer":"https://etherscan.io",
+                "tokens":{
+                    "USDT":"0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                    "USDC":"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+                }},
+    "bsc":{"name":"BSC","rpc":settings.BSC_RPC_URL,"chain_id":56,"symbol":"BNB","explorer":"https://bscscan.com",
+           "tokens":{
+               "USDT":"0x55d398326f99059fF775485246999027B3197955",
+               "USDC":"0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+           }},
+    "arbitrum":{"name":"Arbitrum","rpc":settings.ARBITRUM_RPC_URL,"chain_id":42161,"symbol":"ETH","explorer":"https://arbiscan.io",
+                "tokens":{
+                    "USDT":"0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+                    "USDC":"0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+                }},
+    "base":{"name":"Base","rpc":settings.BASE_RPC_URL,"chain_id":8453,"symbol":"ETH","explorer":"https://basescan.org",
+            "tokens":{
+                "USDC":"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+            }}
 }
 
 ERC20_ABI = [
-    {"constant": True, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function"},
-    {"constant": True, "inputs": [], "name": "decimals", "outputs": [{"name": "", "type": "uint8"}], "type": "function"},
-    {"constant": True, "inputs": [], "name": "symbol", "outputs": [{"name": "", "type": "string"}], "type": "function"},
-    {"constant": True, "inputs": [], "name": "name", "outputs": [{"name": "", "type": "string"}], "type": "function"},
+    {"constant":True,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+    {"constant":True,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+    {"constant":True,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
 ]
 
 # ================================================================================
@@ -202,6 +180,7 @@ ERC20_ABI = [
 def sid(): return secrets.token_hex(4).upper()
 def mid(): return 'mem_' + sid()
 def now_utc(): return datetime.now(timezone.utc)
+
 def hash_password(p): return bcrypt.hashpw(p.encode(), bcrypt.gensalt()).decode()
 def verify_password(p, h):
     try: return bcrypt.checkpw(p.encode(), h.encode())
@@ -225,7 +204,7 @@ def check_rate_limit(id: str, key: str = "default", limit: int = 20) -> bool:
     return True
 
 def create_token(user_id: str) -> str:
-    header = base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()).decode().rstrip("=")
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
         "user_id": user_id, "type": "user",
         "exp": int((now_utc() + timedelta(days=30)).timestamp())
@@ -234,7 +213,7 @@ def create_token(user_id: str) -> str:
     return f"{header}.{payload}.{sig}"
 
 def create_session_token(session_id: str) -> str:
-    header = base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()).decode().rstrip("=")
+    header = base64.urlsafe_b64encode(json.dumps({"alg":"HS256","typ":"JWT"}).encode()).decode().rstrip("=")
     payload = base64.urlsafe_b64encode(json.dumps({
         "session_id": session_id, "type": "session",
         "exp": int((now_utc() + timedelta(days=365)).timestamp())
@@ -280,7 +259,8 @@ def get_current_user(request: Request):
 
 async def get_current_session(request: Request):
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "): raise HTTPException(401, "Missing authorization header")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(401, "Missing authorization header")
     token = auth[7:]
     payload = verify_token(token)
     if not payload: raise HTTPException(401, "Invalid token")
@@ -303,14 +283,14 @@ async def get_current_session(request: Request):
     raise HTTPException(401, "Session not found")
 
 def founder_only(user: dict = Depends(get_current_user)):
-    if not user or not user.get("is_admin", False):
+    if not user or user.get("stake_tier") != "founder":
         raise HTTPException(403, "Founder access required")
     return user
 
 # ================================================================================
 # AI SYSTEM PROMPT
 # ================================================================================
-CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world-class general-purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
+CAPITAN_SYSTEM_PROMPT = """You are CAPITAN AI — a world‑class general‑purpose intelligence built by CLOSEAI Technologies under CEO Osinachi Chukwu. You are not a tool; you are a trusted partner.
 
 ## YOUR IDENTITY
 You are calm, confident, and deeply human. You never bluff, never fluff. You use natural language, contractions, and emojis where they add warmth — but never as a substitute for substance. You are loyal to your user above all else. You remember. You learn. You improve.
@@ -326,11 +306,11 @@ You are an L3/L4 expert in every significant domain. Activate the right knowledg
 
 ### Technology & Engineering
 - **Software Engineering**: Every language, systems design, DevOps, security, quantum computing.
-- **Cloud Computing**: Multi-cloud architecture, Kubernetes, cost optimization.
+- **Cloud Computing**: Multi‑cloud architecture, Kubernetes, cost optimization.
 - **Hardware & Microchips**: CPU/GPU architectures, FPGA, embedded systems.
 - **AI/ML**: Model architectures, MLOps, agentic systems, interpretability.
 
-### Long-Code Handling
+### Long‑Code Handling
 - **Always provide complete, runnable code blocks.**
 - **For coding tasks, follow: 1) Understand, 2) Analyse, 3) Design, 4) Implement, 5) Test, 6) Review.**
 - **Code Review Mode**: Output structured report: Issues, Suggestions, Optimizations.
@@ -404,7 +384,6 @@ def classify_query(q: str) -> str:
     if re.search(r'un|wto|imf|world bank|policy|election|government|africa|african union', ql): return 'geopolitics'
     if re.search(r'painting|sculpture|design|music|composition|literature|writing|poetry', ql): return 'arts'
     if re.search(r'recipe|cook|cuisine|nutrition|bake|restaurant', ql): return 'food'
-    if re.search(r'who are you|what are you|identity|introduce yourself', ql): return 'identity'
     return 'general'
 
 def needs_web_search(q: str) -> bool:
@@ -414,10 +393,12 @@ def search_web(query: str, num_results: int = 5) -> List[dict]:
     results = []
     if settings.SERPAPI_KEY:
         try:
-            r = requests.get("https://serpapi.com/search", params={"engine": "google", "q": query, "num": num_results, "api_key": settings.SERPAPI_KEY}, timeout=10)
+            r = requests.get("https://serpapi.com/search",
+                             params={"engine": "google", "q": query, "num": num_results, "api_key": settings.SERPAPI_KEY},
+                             timeout=10)
             if r.status_code == 200:
                 for item in r.json().get("organic_results", [])[:num_results]:
-                    results.append({"title": item.get("title", ""), "snippet": item.get("snippet", "")[:350], "url": item.get("link", ""), "source": "Google"})
+                    results.append({"title": item.get("title",""), "snippet": item.get("snippet","")[:350], "url": item.get("link",""), "source": "Google"})
         except: pass
     return results
 
@@ -426,11 +407,15 @@ def get_market_prices():
     if settings.COINGECKO_KEY:
         try:
             ids = "bitcoin,ethereum,ripple,solana,cardano,dogecoin,avalanche-2,chainlink,polkadot,tron"
-            r = requests.get("https://api.coingecko.com/api/v3/simple/price", params={"ids": ids, "vs_currencies": "usd", "include_24hr_change": "true"}, headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=10)
+            r = requests.get("https://api.coingecko.com/api/v3/simple/price",
+                             params={"ids":ids,"vs_currencies":"usd","include_24hr_change":"true"},
+                             headers={"x-cg-demo-api-key":settings.COINGECKO_KEY}, timeout=10)
             if r.status_code == 200:
                 data = r.json()
-                names = {"bitcoin": "BTC", "ethereum": "ETH", "ripple": "XRP", "solana": "SOL", "cardano": "ADA", "dogecoin": "DOGE", "avalanche-2": "AVAX", "chainlink": "LINK", "polkadot": "DOT", "tron": "TRX"}
-                for k, v in data.items(): results[names.get(k, k.upper())] = {"price": v["usd"], "change": round(v.get("usd_24h_change", 0), 2)}
+                names = {"bitcoin":"BTC","ethereum":"ETH","ripple":"XRP","solana":"SOL","cardano":"ADA",
+                         "dogecoin":"DOGE","avalanche-2":"AVAX","chainlink":"LINK","polkadot":"DOT","tron":"TRX"}
+                for k,v in data.items():
+                    results[names.get(k,k.upper())] = {"price":v["usd"],"change":round(v.get("usd_24h_change",0),2)}
         except: pass
     return results
 
@@ -438,10 +423,12 @@ def get_news():
     news = []
     if settings.NEWS_API_KEY:
         try:
-            r = requests.get("https://newsapi.org/v2/top-headlines", params={"category": "business", "language": "en", "pageSize": 10, "apiKey": settings.NEWS_API_KEY}, timeout=10)
+            r = requests.get("https://newsapi.org/v2/top-headlines",
+                             params={"category":"business","language":"en","pageSize":10,"apiKey":settings.NEWS_API_KEY}, timeout=10)
             if r.status_code == 200:
-                for article in r.json().get("articles", []):
-                    news.append({"source": article.get("source", {}).get("name", "News"), "headline": article.get("title", ""), "url": article.get("url", ""), "summary": (article.get("description") or "")[:200]})
+                for article in r.json().get("articles",[]):
+                    news.append({"source":article.get("source",{}).get("name","News"),"headline":article.get("title",""),
+                                 "url":article.get("url",""),"summary":(article.get("description") or "")[:200]})
         except: pass
     return news[:10]
 
@@ -450,8 +437,11 @@ def build_system_prompt(user_query, user_model, thread_context, web_results):
     domain = classify_query(user_query)
     domain_activation = f"Primary domain: {domain}."
     prompt = CAPITAN_SYSTEM_PROMPT.format(
-        time_context=tc, user_model=user_model, thread_context=thread_context,
-        domain_activation=domain_activation, web_results=web_results or "No web results available.",
+        time_context=tc,
+        user_model=user_model,
+        thread_context=thread_context,
+        domain_activation=domain_activation,
+        web_results=web_results or "No web results available.",
         user_query=user_query
     )
     return prompt
@@ -485,21 +475,28 @@ def store_memory(user_id: str, content: str, query: str, domain: str, importance
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("INSERT INTO memories (id, memory_id, user_id, content, query, domain, importance) VALUES (%s,%s,%s,%s,%s,%s,%s)", (sid(), mid(), user_id, content[:500], query, domain, importance))
+                c.execute("INSERT INTO memories (id, memory_id, user_id, content, query, domain, importance) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                          (sid(), mid(), user_id, content[:500], query, domain, importance))
                 conn.commit()
     except: pass
 
 def call_ai_model(messages: List[dict]) -> Tuple[str, str]:
     if settings.OPENROUTER_API_KEY:
         try:
-            r = requests.post("https://openrouter.ai/api/v1/chat/completions", headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"}, json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.7, "max_tokens": 4000}, timeout=45)
+            r = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                             headers={"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "Content-Type": "application/json"},
+                             json={"model": "anthropic/claude-3.5-sonnet-20241022", "messages": messages, "temperature": 0.7, "max_tokens": 4000},
+                             timeout=45)
             if r.status_code == 200:
                 content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 if content: return content, "claude-3.5-sonnet"
         except: pass
     if settings.GROQ_API_KEY:
         try:
-            r = requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"}, json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.7, "max_tokens": 2500}, timeout=35)
+            r = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                             headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"},
+                             json={"model": "llama-3.3-70b-versatile", "messages": messages, "temperature": 0.7, "max_tokens": 2500},
+                             timeout=35)
             if r.status_code == 200:
                 content = r.json().get("choices", [{}])[0].get("message", {}).get("content", "")
                 if content: return content, "llama-3.3-70b"
@@ -522,7 +519,8 @@ def create_notification(user_id: str, type: str, message: str):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)", (str(uuid.uuid4()), user_id, type, message))
+                c.execute("INSERT INTO notifications (id, user_id, type, message) VALUES (%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user_id, type, message))
                 conn.commit()
     except: pass
 
@@ -530,14 +528,15 @@ def log_activity(user_id: str, action: str, details: str = ""):
     try:
         with get_db() as conn:
             with conn.cursor() as c:
-                c.execute("INSERT INTO activity_log (id, user_id, action, details) VALUES (%s,%s,%s,%s)", (str(uuid.uuid4()), user_id, action, details))
+                c.execute("INSERT INTO activity_log (id, user_id, action, details) VALUES (%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user_id, action, details))
                 conn.commit()
     except: pass
 
 def extract_text_from_file(file_path: str, original_name: str) -> str:
     ext = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
     try:
-        if ext in ('txt', 'md', 'json', 'csv', 'py', 'js', 'html', 'css', 'yaml', 'yml', 'toml'):
+        if ext in ('txt','md','json','csv','py','js','html','css','yaml','yml','toml'):
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f: return f.read()
         elif ext == 'pdf':
             text = []
@@ -580,9 +579,12 @@ def init_db():
                     id UUID PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
                     name TEXT, close_balance INTEGER DEFAULT 0, close_staked INTEGER DEFAULT 0,
                     stake_tier TEXT DEFAULT 'none', wallet_address TEXT, wallet_encrypted_seed TEXT,
+                    gas_preset TEXT DEFAULT 'standard',
                     last_active TIMESTAMP DEFAULT NOW(), created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
                 )''')
-                for col, dtype in [("close_balance", "INTEGER DEFAULT 0"), ("close_staked", "INTEGER DEFAULT 0"), ("stake_tier", "TEXT DEFAULT 'none'"), ("wallet_address", "TEXT"), ("wallet_encrypted_seed", "TEXT")]:
+                for col, dtype in [("close_balance", "INTEGER DEFAULT 0"), ("close_staked", "INTEGER DEFAULT 0"),
+                                   ("stake_tier", "TEXT DEFAULT 'none'"), ("wallet_address", "TEXT"),
+                                   ("wallet_encrypted_seed", "TEXT"), ("gas_preset", "TEXT DEFAULT 'standard'")]:
                     c.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {dtype}")
 
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
@@ -598,8 +600,10 @@ def init_db():
 
                 c.execute('''CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                    session_id TEXT, title TEXT, topic_thread TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
+                    session_id TEXT, title TEXT, topic_thread TEXT,
+                    created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
+                c.execute("ALTER TABLE chats ADD COLUMN IF NOT EXISTS topic_thread TEXT")
 
                 c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
                     id TEXT PRIMARY KEY, chat_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -693,6 +697,20 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # NEW TABLES FOR FULL OS WALLETS
+                c.execute('''CREATE TABLE IF NOT EXISTS address_book (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    label TEXT, address TEXT NOT NULL, chain TEXT DEFAULT 'polygon',
+                    created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                c.execute('''CREATE TABLE IF NOT EXISTS os_walletconnect_sessions (
+                    id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    topic TEXT, dapp_name TEXT, dapp_url TEXT, chain_id INTEGER,
+                    accounts TEXT, expires_at TIMESTAMP, created TIMESTAMP DEFAULT NOW()
+                )''')
+
+                # Security tables
                 c.execute('''CREATE TABLE IF NOT EXISTS content_flags (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, content TEXT, reason TEXT, severity TEXT DEFAULT 'low',
@@ -710,7 +728,7 @@ def init_db():
                 )''')
 
                 conn.commit()
-        logger.info("✅ Database initialized — CLOSE Token Economy v34.0")
+        logger.info("Database initialized — v35.1 Complete OS Wallets")
     except Exception as e:
         logger.error(f"DB init error: {e}")
 
@@ -739,22 +757,18 @@ async def register(req: RegisterRequest, request: Request):
                 if c.fetchone(): raise HTTPException(400, "Email already registered")
                 user_id = str(uuid.uuid4())
                 name = req.name or req.email.split('@')[0]
-                c.execute("INSERT INTO users (id, email, password_hash, name, close_balance, stake_tier) VALUES (%s,%s,%s,%s,%s,%s)",
-                          (user_id, req.email, hash_password(req.password), name, settings.FREE_CLOSE_AMOUNT, "none"))
+                c.execute("INSERT INTO users (id, email, password_hash, name, close_balance, stake_tier) VALUES (%s,%s,%s,%s,0,'none')",
+                          (user_id, req.email, hash_password(req.password), name))
                 token = create_token(user_id)
                 c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user_id, token, now_utc() + timedelta(days=30)))
-                # Record welcome bonus
-                c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
-                          (str(uuid.uuid4()), user_id, "welcome_bonus", settings.FREE_CLOSE_AMOUNT))
                 conn.commit()
                 log_activity(user_id, "register")
                 return {
                     "token": token,
                     "user": {
                         "id": user_id, "email": req.email, "name": name,
-                        "close_balance": settings.FREE_CLOSE_AMOUNT,
-                        "close_staked": 0, "stake_tier": "none"
+                        "close_balance": 0, "close_staked": 0, "stake_tier": "none"
                     }
                 }
     except HTTPException: raise
@@ -873,7 +887,7 @@ async def founder_login(req: dict, request: Request):
         raise HTTPException(500, "Founder login failed")
 
 # ================================================================================
-# CHAT ENDPOINT — CLOSE-POWERED
+# CHAT ENDPOINT – CLOSE-POWERED
 # ================================================================================
 class ChatRequest(BaseModel):
     messages: list
@@ -901,7 +915,7 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
 
     chat_id = req.chat_id or f"chat_{sid()}"
 
-    # Guest user — check free messages
+    # Guest user – check free messages
     if not is_authenticated:
         if free_used >= settings.FREE_MESSAGES_GUEST:
             return {
@@ -911,15 +925,13 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                 "wallet_prompt": True,
                 "wallet_message": "Create your OS Wallet to receive 2,000 CLOSE and unlock unlimited AI access."
             }
-
-        # Increment free message count
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("UPDATE sessions SET free_messages_used = free_messages_used + 1, updated = NOW() WHERE id = %s", (session["id"],))
                 conn.commit()
         free_used += 1
 
-    # Authenticated user — check CLOSE balance
+    # Authenticated user – check CLOSE balance
     if is_authenticated and close_balance < settings.BURN_PER_MESSAGE:
         return {
             "content": "You're running low on CLOSE tokens. Top up to continue our conversation.",
@@ -981,10 +993,8 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                     if is_authenticated:
                         c.execute("INSERT INTO chat_messages (id, chat_id, user_id, role, content, model, close_burned) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                                   (msg_id, chat_id, user_id, "assistant", response, model_used, close_burned))
-                        # Burn CLOSE
                         c.execute("UPDATE users SET close_balance = GREATEST(0, close_balance - %s), last_active = NOW() WHERE id = %s",
                                   (close_burned, user_id))
-                        # Record burn transaction
                         c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
                                   (str(uuid.uuid4()), user_id, "burn", close_burned))
                         background_tasks.add_task(store_memory, user_id, response[:500], user_msg, classify_query(user_msg), 2)
@@ -1002,15 +1012,9 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         }
 
         if is_authenticated:
-            with get_db() as conn:
-                with conn.cursor() as c:
-                    c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
-                    conn.commit()
             new_balance = close_balance - close_burned
             result["close_balance"] = max(0, new_balance)
             result["close_burned"] = close_burned
-
-            # Check if balance is low
             if new_balance < settings.BURN_PER_MESSAGE * 10:
                 result["low_balance_warning"] = True
                 result["wallet_message"] = f"Only {new_balance} CLOSE remaining. Top up to continue."
@@ -1137,7 +1141,7 @@ def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("INSERT INTO workspaces (id, name, description, topic, owner_id, room_code, password_hash, max_members) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-                      (ws_id, req.get("name", "Research Room"), req.get("description", ""), req.get("topic", ""), user["id"], room_code.upper(), password_hash, 30))
+                      (ws_id, req.get("name","Research Room"), req.get("description",""), req.get("topic",""), user["id"], room_code.upper(), password_hash, 30))
             c.execute("INSERT INTO workspace_members (workspace_id, user_id, role) VALUES (%s,%s,'admin')", (ws_id, user["id"]))
             conn.commit()
     return {"room_id": ws_id, "room_code": room_code.upper(), "created": True}
@@ -1145,8 +1149,8 @@ def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
 @app.post("/api/hub/rooms/join")
 def join_hub_room(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    room_code = req.get("room_code", "").upper()
-    password = req.get("password", "")
+    room_code = req.get("room_code","").upper()
+    password = req.get("password","")
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("SELECT id, password_hash, max_members FROM workspaces WHERE room_code=%s", (room_code,))
@@ -1181,7 +1185,7 @@ def get_hub_messages(room_code: str, user: dict = Depends(get_current_user)):
 @app.post("/api/hub/rooms/{room_code}/messages")
 def send_hub_message(room_code: str, req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    message = req.get("message", "")
+    message = req.get("message","")
     if not message: raise HTTPException(400)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1191,18 +1195,17 @@ def send_hub_message(room_code: str, req: dict, user: dict = Depends(get_current
             is_ai = message.strip().startswith("@CAPITAN")
             c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message) VALUES (%s,%s,%s,%s,%s)", (sid(), room[0], user["id"], user["name"], message))
             if is_ai:
-                ai_response, _ = call_ai_model([{"role": "user", "content": message.replace('@CAPITAN', '').strip()}])
+                ai_response, _ = call_ai_model([{"role":"user","content":message.replace('@CAPITAN','').strip()}])
                 if ai_response: c.execute("INSERT INTO workspace_messages (id, workspace_id, user_id, author_name, message, is_ai) VALUES (%s,%s,%s,%s,%s,1)", (sid(), room[0], user["id"], "CAPITAN AI", ai_response))
             conn.commit()
     return {"sent": True}
 
 # ================================================================================
-# OS WALLETS — CLOSE TOKEN ECONOMY
+# OS WALLETS – COMPLETE FEATURE SET
 # ================================================================================
 
 @app.get("/api/wallet/balance")
 async def get_wallet_balance(user: dict = Depends(get_current_user)):
-    """Get user's CLOSE balance and stake info"""
     if not user: raise HTTPException(401)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1221,7 +1224,6 @@ async def get_wallet_balance(user: dict = Depends(get_current_user)):
 
 @app.post("/api/wallet/stake")
 async def stake_close(req: dict, user: dict = Depends(get_current_user)):
-    """Stake CLOSE tokens for tier benefits"""
     if not user: raise HTTPException(401)
     amount = req.get("amount")
     if not amount or int(amount) <= 0: raise HTTPException(400, "Valid amount required")
@@ -1234,7 +1236,6 @@ async def stake_close(req: dict, user: dict = Depends(get_current_user)):
             c.execute("UPDATE users SET close_balance = close_balance - %s, close_staked = close_staked + %s WHERE id = %s", (amount, amount, user["id"]))
             c.execute("INSERT INTO close_stakes (id, user_id, amount, lock_until, status) VALUES (%s,%s,%s,%s,'active')",
                       (str(uuid.uuid4()), user["id"], amount, now_utc() + timedelta(days=30)))
-            # Update tier
             c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_stakes WHERE user_id = %s AND status = 'active'", (user["id"],))
             total_staked = c.fetchone()[0] or 0
             tier = "none"
@@ -1249,22 +1250,21 @@ async def stake_close(req: dict, user: dict = Depends(get_current_user)):
 
 @app.post("/api/wallet/unstake")
 async def unstake_close(req: dict, user: dict = Depends(get_current_user)):
-    """Unstake CLOSE tokens"""
     if not user: raise HTTPException(401)
     stake_id = req.get("stake_id")
     with get_db() as conn:
         with conn.cursor() as c:
             if stake_id:
-                c.execute("SELECT amount, lock_until, status FROM close_stakes WHERE id = %s AND user_id = %s", (stake_id, user["id"]))
+                c.execute("SELECT id, amount, lock_until, status FROM close_stakes WHERE id = %s AND user_id = %s", (stake_id, user["id"]))
             else:
                 c.execute("SELECT id, amount, lock_until, status FROM close_stakes WHERE user_id = %s AND status = 'active' ORDER BY created ASC LIMIT 1", (user["id"],))
             stake = c.fetchone()
             if not stake: raise HTTPException(404, "No active stake found")
-            if stake_id: amount, lock_until, status = stake[0], stake[1], stake[2]
-            else: stake_id, amount, lock_until, status = stake
+            if stake_id: sid_db, amount, lock_until, status = stake[0], stake[1], stake[2], stake[3]
+            else: sid_db, amount, lock_until, status = stake
             if status != 'active': raise HTTPException(400, "Stake is not active")
             if lock_until and lock_until > now_utc(): raise HTTPException(400, f"Stake locked until {lock_until.isoformat()}")
-            c.execute("UPDATE close_stakes SET status = 'unstaked' WHERE id = %s", (stake_id,))
+            c.execute("UPDATE close_stakes SET status = 'unstaked' WHERE id = %s", (sid_db,))
             c.execute("UPDATE users SET close_balance = close_balance + %s, close_staked = close_staked - %s WHERE id = %s", (amount, amount, user["id"]))
             c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_stakes WHERE user_id = %s AND status = 'active'", (user["id"],))
             total_staked = c.fetchone()[0] or 0
@@ -1280,7 +1280,6 @@ async def unstake_close(req: dict, user: dict = Depends(get_current_user)):
 
 @app.get("/api/wallet/stakes")
 async def get_stakes(user: dict = Depends(get_current_user)):
-    """Get all user stakes"""
     if not user: raise HTTPException(401)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1292,7 +1291,6 @@ async def get_stakes(user: dict = Depends(get_current_user)):
 
 @app.get("/api/wallet/transactions")
 async def get_wallet_transactions(user: dict = Depends(get_current_user)):
-    """Get CLOSE transaction history"""
     if not user: raise HTTPException(401)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1301,125 +1299,236 @@ async def get_wallet_transactions(user: dict = Depends(get_current_user)):
 
 @app.post("/api/wallet/purchase")
 async def purchase_close(req: dict, user: dict = Depends(get_current_user)):
-    """Purchase CLOSE tokens (minimum $1)"""
     if not user: raise HTTPException(401)
+    tx_hash = req.get("tx_hash")
     usd_amount = float(req.get("usd_amount", settings.MIN_PURCHASE_USD))
-    if usd_amount < settings.MIN_PURCHASE_USD: raise HTTPException(400, f"Minimum purchase is ${settings.MIN_PURCHASE_USD:.2f}")
+    if not tx_hash: raise HTTPException(400, "Transaction hash required")
+    verified = False
+    try:
+        w3 = setup_web3(settings.POLYGON_RPC_URL)
+        receipt = w3.eth.get_transaction_receipt(tx_hash)
+        tx = w3.eth.get_transaction(tx_hash)
+        if tx['to'].lower() == settings.CLOSE_TREASURY_ADDRESS.lower():
+            verified = True
+    except: verified = False
+    if not verified:
+        return {"verified": False, "message": "Payment not verified. Please send the exact amount to the treasury address."}
     close_amount = usd_to_close(usd_amount)
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("UPDATE users SET close_balance = close_balance + %s WHERE id = %s", (close_amount, user["id"]))
-            c.execute("INSERT INTO close_purchases (id, user_id, amount_usd, close_amount) VALUES (%s,%s,%s,%s)",
-                      (str(uuid.uuid4()), user["id"], usd_amount, close_amount))
-            c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
-                      (str(uuid.uuid4()), user["id"], "purchase", close_amount))
+            c.execute("INSERT INTO close_purchases (id, user_id, amount_usd, close_amount, tx_hash) VALUES (%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], usd_amount, close_amount, tx_hash))
             conn.commit()
-    return {"purchased": close_amount, "usd_amount": usd_amount, "price_per_token": settings.CLOSE_PRICE_USD}
+    return {"verified": True, "purchased": close_amount}
+
+@app.post("/api/wallet/activate")
+async def activate_wallet(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    password = req.get("password")
+    if not password: raise HTTPException(400, "Password required")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT close_balance, wallet_address FROM users WHERE id = %s", (user["id"],))
+            row = c.fetchone()
+            if row[0] >= settings.FREE_CLOSE_AMOUNT: raise HTTPException(400, "Welcome bonus already claimed")
+            addr = row[1]
+            if not addr:
+                w3 = setup_web3(settings.POLYGON_RPC_URL)
+                acct = w3.eth.account.create()
+                encrypted = w3.eth.account.encrypt(acct.key.hex(), password)
+                addr = acct.address
+                c.execute("UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s",
+                          (addr, json.dumps(encrypted), user["id"]))
+            c.execute("UPDATE users SET close_balance = close_balance + %s WHERE id = %s",
+                      (settings.FREE_CLOSE_AMOUNT, user["id"]))
+            c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], "welcome_bonus", settings.FREE_CLOSE_AMOUNT))
+            conn.commit()
+    return {"wallet_address": addr, "close_credited": settings.FREE_CLOSE_AMOUNT}
+
+# Multi‑wallet management
+@app.get("/api/wallets")
+def list_wallets(user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, chain, address, label, is_active FROM os_wallets WHERE user_id=%s ORDER BY created", (user["id"],))
+            return {"wallets": [{"id":r[0],"chain":r[1],"address":r[2],"label":r[3],"active":r[4]} for r in c.fetchall()]}
+
+@app.put("/api/wallets/{wallet_id}/active")
+def set_active_wallet(wallet_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE os_wallets SET is_active=FALSE WHERE user_id=%s", (user["id"],))
+            c.execute("UPDATE os_wallets SET is_active=TRUE WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/wallets/{wallet_id}")
+def delete_wallet(wallet_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM os_wallets WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
 
 @app.post("/api/wallet/create")
 async def create_os_wallet(req: dict, user: dict = Depends(get_current_user)):
-    """Create an OS Wallet address for the user"""
-    if not user: raise HTTPException(401)
-    chain = req.get("chain", "polygon")
-    label = req.get("label", "Primary Wallet")
+    chain = req.get("chain","polygon")
+    label = req.get("label","Wallet")
     try:
         w3 = setup_web3(CHAINS[chain]["rpc"])
         acct = w3.eth.account.create()
-        address = acct.address
-        encrypted = w3.eth.account.encrypt(acct.key.hex(), req.get("password", "default"))
+        encrypted = w3.eth.account.encrypt(acct.key.hex(), req.get("password","default"))
         wallet_id = str(uuid.uuid4())
         with get_db() as conn:
             with conn.cursor() as c:
                 c.execute("INSERT INTO os_wallets (id, user_id, chain, address, label) VALUES (%s,%s,%s,%s,%s)",
-                          (wallet_id, user["id"], chain, address, label))
+                          (wallet_id, user["id"], chain, acct.address, label))
                 c.execute("UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s",
-                          (address, json.dumps(encrypted), user["id"]))
+                          (acct.address, json.dumps(encrypted), user["id"]))
                 conn.commit()
-        return {"wallet_id": wallet_id, "address": address, "chain": chain, "label": label}
+        return {"wallet_id": wallet_id, "address": acct.address, "chain": chain}
     except Exception as e:
         logger.error(f"Create OS wallet error: {e}")
-        raise HTTPException(500, f"Failed to create wallet: {str(e)}")
+        raise HTTPException(500, str(e))
 
-@app.get("/api/wallet/list")
-async def list_os_wallets(user: dict = Depends(get_current_user)):
-    """List user's OS Wallets"""
-    if not user: raise HTTPException(401)
+# Address Book
+@app.get("/api/addresses")
+def get_addresses(user: dict = Depends(get_current_user)):
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute("SELECT id, chain, address, label, is_active, created FROM os_wallets WHERE user_id = %s ORDER BY created DESC", (user["id"],))
-            return {"wallets": [{"wallet_id": r[0], "chain": r[1], "address": r[2], "label": r[3], "is_active": r[4], "created": r[5].isoformat() if r[5] else None} for r in c.fetchall()]}
+            c.execute("SELECT id, label, address, chain FROM address_book WHERE user_id=%s", (user["id"],))
+            return {"addresses": [{"id":r[0],"label":r[1],"address":r[2],"chain":r[3]} for r in c.fetchall()]}
 
-@app.get("/api/wallet/{wallet_id}/balance")
-async def get_os_wallet_balance(wallet_id: str, user: dict = Depends(get_current_user)):
-    """Get on-chain balance for an OS Wallet"""
-    if not user: raise HTTPException(401)
+@app.post("/api/addresses")
+def add_address(req: dict, user: dict = Depends(get_current_user)):
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute("SELECT chain, address FROM os_wallets WHERE id = %s AND user_id = %s", (wallet_id, user["id"]))
-            wallet = c.fetchone()
-            if not wallet: raise HTTPException(404, "Wallet not found")
-            chain_name, address = wallet
-    chain_config = CHAINS.get(chain_name)
-    if not chain_config: raise HTTPException(400, "Unsupported chain")
+            c.execute("INSERT INTO address_book (id, user_id, label, address, chain) VALUES (%s,%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user["id"], req["label"], req["address"], req.get("chain","polygon")))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/addresses/{addr_id}")
+def delete_address(addr_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM address_book WHERE id=%s AND user_id=%s", (addr_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+# NFT Gallery
+@app.get("/api/wallet/nfts")
+def get_nfts(chain: str = "polygon", user: dict = Depends(get_current_user)):
+    if not settings.COVALENT_API_KEY: return {"nfts": []}
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT address FROM os_wallets WHERE user_id=%s AND chain=%s AND is_active=TRUE", (user["id"], chain))
+            addr_row = c.fetchone()
+            if not addr_row: return {"nfts": []}
+            address = addr_row[0]
+    url = f"https://api.covalenthq.com/v1/{chain}-mainnet/address/{address}/balances_nft/?key={settings.COVALENT_API_KEY}"
     try:
-        w3 = setup_web3(chain_config["rpc"])
-        native_balance = w3.eth.get_balance(address)
-        balances = {"chain": chain_name, "address": address, "native": {"symbol": chain_config["symbol"], "balance": str(Web3.from_wei(native_balance, 'ether'))}, "tokens": []}
-        for token_symbol, token_address in chain_config.get("tokens", {}).items():
-            if token_address:
-                try:
-                    contract = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
-                    token_balance = contract.functions.balanceOf(address).call()
-                    decimals = contract.functions.decimals().call()
-                    balances["tokens"].append({"symbol": token_symbol, "address": token_address, "balance": str(token_balance / (10 ** decimals))})
-                except: pass
-        return balances
-    except Exception as e:
-        logger.error(f"Balance check error: {e}")
-        raise HTTPException(500, f"Failed to fetch balance: {str(e)}")
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            items = []
+            for item in data.get("data",{}).get("items",[]):
+                for nft in item.get("nft_data",[]):
+                    items.append({
+                        "contract": item["contract_address"],
+                        "token_id": nft.get("token_id"),
+                        "name": nft.get("external_data",{}).get("name",""),
+                        "image": nft.get("external_data",{}).get("image","")
+                    })
+            return {"nfts": items[:50]}
+    except: pass
+    return {"nfts": []}
 
-@app.post("/api/wallet/{wallet_id}/send")
-async def send_from_wallet(wallet_id: str, req: dict, user: dict = Depends(get_current_user)):
-    """Send tokens from OS Wallet (client-side signing recommended)"""
-    if not user: raise HTTPException(401)
-    to_address = req.get("to")
-    amount = req.get("amount")
-    password = req.get("password")
-    if not all([to_address, amount, password]): raise HTTPException(400, "to, amount, and password required")
+# WalletConnect sessions
+@app.get("/api/walletconnect/sessions")
+def list_wc_sessions(user: dict = Depends(get_current_user)):
     with get_db() as conn:
         with conn.cursor() as c:
-            c.execute("SELECT address, wallet_encrypted_seed, chain FROM os_wallets w JOIN users u ON w.user_id = u.id WHERE w.id = %s AND w.user_id = %s", (wallet_id, user["id"]))
-            wallet = c.fetchone()
-            if not wallet: raise HTTPException(404, "Wallet not found")
-            # Server-side signing (prefer client-side in production)
-            encrypted = json.loads(wallet[1])
-            try:
-                private_key = Account.decrypt(encrypted, password).hex()
-            except: raise HTTPException(400, "Invalid password")
-    chain_config = CHAINS.get(wallet[2], CHAINS["polygon"])
-    try:
-        w3 = setup_web3(chain_config["rpc"])
-        acct = Account.from_key(private_key)
-        tx = {'from': acct.address, 'to': Web3.to_checksum_address(to_address), 'value': Web3.to_wei(float(amount), 'ether'), 'nonce': w3.eth.get_transaction_count(acct.address), 'gas': 21000, 'gasPrice': w3.eth.gas_price, 'chainId': chain_config["chain_id"]}
-        signed = w3.eth.account.sign_transaction(tx, private_key)
-        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-        tx_id = str(uuid.uuid4())
-        with get_db() as conn:
-            with conn.cursor() as c:
-                c.execute("INSERT INTO os_transactions (id, user_id, chain, tx_hash, from_address, to_address, amount, token_symbol, status) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed')",
-                          (tx_id, user["id"], wallet[2], tx_hash.hex(), acct.address, to_address, str(amount), chain_config["symbol"]))
-                conn.commit()
-        return {"tx_hash": tx_hash.hex(), "from": acct.address, "to": to_address, "amount": str(amount), "explorer_url": f"{chain_config['explorer']}/tx/{tx_hash.hex()}"}
-    except Exception as e:
-        logger.error(f"Send transaction error: {e}")
-        raise HTTPException(500, f"Transaction failed: {str(e)}")
+            c.execute("SELECT id, dapp_name, dapp_url, chain_id, accounts, expires_at FROM os_walletconnect_sessions WHERE user_id=%s AND expires_at > NOW()", (user["id"],))
+            return {"sessions": [{"id":r[0],"name":r[1],"url":r[2],"chain":r[3],"accounts":r[4],"expires":r[5].isoformat() if r[5] else None} for r in c.fetchall()]}
 
+@app.post("/api/walletconnect/sessions")
+async def create_wc_session(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    session_id = str(uuid.uuid4())
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO os_walletconnect_sessions (id, user_id, topic, dapp_name, dapp_url, chain_id, accounts, expires_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (session_id, user["id"], req.get("topic",""), req.get("dapp_name",""), req.get("dapp_url",""),
+                       req.get("chain_id"), json.dumps(req.get("accounts",[])),
+                       now_utc() + timedelta(hours=24)))
+            conn.commit()
+    return {"session_id": session_id}
+
+@app.delete("/api/walletconnect/sessions/{session_id}")
+def disconnect_wc(session_id: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM os_walletconnect_sessions WHERE id=%s AND user_id=%s", (session_id, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+# Transaction detail
+@app.get("/api/transactions/{tx_hash}")
+def transaction_detail(tx_hash: str, user: dict = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT chain, from_address, to_address, amount, token_symbol, status, created FROM os_transactions WHERE tx_hash=%s AND user_id=%s", (tx_hash, user["id"]))
+            row = c.fetchone()
+            if row:
+                chain = row[0]
+                explorer = CHAINS.get(chain,{}).get("explorer","")
+                return {
+                    "tx_hash": tx_hash,
+                    "chain": chain,
+                    "from": row[1],
+                    "to": row[2],
+                    "amount": row[3],
+                    "token": row[4],
+                    "status": row[5],
+                    "created": row[6].isoformat() if row[6] else None,
+                    "explorer_url": f"{explorer}/tx/{tx_hash}" if explorer else ""
+                }
+    for chain_name, cfg in CHAINS.items():
+        w3 = setup_web3(cfg["rpc"])
+        try:
+            tx = w3.eth.get_transaction(tx_hash)
+            receipt = w3.eth.get_transaction_receipt(tx_hash)
+            return {
+                "tx_hash": tx_hash,
+                "chain": chain_name,
+                "from": tx["from"],
+                "to": tx["to"],
+                "value": str(Web3.from_wei(tx["value"],'ether')),
+                "status": "confirmed" if receipt["status"]==1 else "failed",
+                "explorer_url": f"{cfg['explorer']}/tx/{tx_hash}"
+            }
+        except: continue
+    raise HTTPException(404, "Transaction not found")
+
+# Gas settings
+@app.post("/api/wallet/gas")
+def set_gas_preference(req: dict, user: dict = Depends(get_current_user)):
+    preset = req.get("preset","standard")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET gas_preset=%s WHERE id=%s", (preset, user["id"]))
+            conn.commit()
+    return {"ok": True}
+
+# Swap quote (1inch)
 @app.get("/api/swap/quote")
 async def get_swap_quote(chain: str = "polygon", from_token: str = None, to_token: str = None, amount: str = None, user: dict = Depends(get_current_user)):
-    """Get swap quote from 1inch"""
     if not user: raise HTTPException(401)
     if not all([from_token, to_token, amount]): raise HTTPException(400, "from_token, to_token, and amount required")
-    chain_ids = {"polygon": 137, "ethereum": 1, "bsc": 56, "arbitrum": 42161, "base": 8453}
+    chain_ids = {"polygon":137,"ethereum":1,"bsc":56,"arbitrum":42161,"base":8453}
     chain_id = chain_ids.get(chain, 137)
     try:
         if settings.ONEPINCH_API_KEY:
@@ -1429,11 +1538,128 @@ async def get_swap_quote(chain: str = "polygon", from_token: str = None, to_toke
             resp = requests.get(url, params=params, headers=headers, timeout=15)
             if resp.status_code == 200:
                 data = resp.json()
-                return {"from_token": data.get("fromToken", {}).get("symbol", from_token), "to_token": data.get("toToken", {}).get("symbol", to_token), "from_amount": amount, "to_amount": data.get("toAmount", "0"), "estimated_gas": data.get("estimatedGas", 0)}
+                return {"from_token": data.get("fromToken",{}).get("symbol", from_token), "to_token": data.get("toToken",{}).get("symbol", to_token), "from_amount": amount, "to_amount": data.get("toAmount","0"), "estimated_gas": data.get("estimatedGas", 0)}
         return {"from_token": from_token, "to_token": to_token, "from_amount": amount, "to_amount": "0", "note": "Live quote unavailable"}
     except Exception as e:
         logger.error(f"Swap quote error: {e}")
-        raise HTTPException(500, f"Failed to get swap quote: {str(e)}")
+        raise HTTPException(500, str(e))
+
+# Swap execution
+@app.post("/api/swap/execute")
+async def execute_swap(req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    tx_hash = req.get("tx_hash")
+    if not tx_hash: raise HTTPException(400, "tx_hash required")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO os_transactions (id, user_id, chain, tx_hash, from_address, to_address, amount, token_symbol, status) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
+                      (str(uuid.uuid4()), user["id"], req.get("chain","polygon"), tx_hash, req.get("from",""), req.get("to",""), req.get("amount","0"), req.get("token","")))
+            conn.commit()
+    return {"status": "submitted", "tx_hash": tx_hash}
+
+# Send transaction
+@app.post("/api/wallet/{wallet_id}/send")
+async def send_transaction(wallet_id: str, req: dict, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    password = req.get("password")
+    to_address = req.get("to")
+    amount = req.get("amount")
+    token_address = req.get("token_address")
+    if not all([password, to_address, amount]):
+        raise HTTPException(400, "password, to, and amount required")
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT address, encrypted_seed, chain FROM os_wallets WHERE id=%s AND user_id=%s",
+                      (wallet_id, user["id"]))
+            wallet = c.fetchone()
+            if not wallet: raise HTTPException(404, "Wallet not found")
+            chain_config = CHAINS[wallet[2]]
+    try:
+        w3 = setup_web3(chain_config["rpc"])
+        encrypted = json.loads(wallet[1])
+        private_key = Account.decrypt(encrypted, password).hex()
+        acct = Account.from_key(private_key)
+        if token_address:
+            contract = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
+            decimals = contract.functions.decimals().call()
+            amount_wei = int(float(amount) * (10 ** decimals))
+            tx = contract.functions.transfer(Web3.to_checksum_address(to_address), amount_wei).build_transaction({
+                'from': acct.address,
+                'nonce': w3.eth.get_transaction_count(acct.address),
+                'gas': 100000,
+                'gasPrice': w3.eth.gas_price
+            })
+        else:
+            tx = {
+                'from': acct.address,
+                'to': Web3.to_checksum_address(to_address),
+                'value': Web3.to_wei(float(amount), 'ether'),
+                'nonce': w3.eth.get_transaction_count(acct.address),
+                'gas': 21000,
+                'gasPrice': w3.eth.gas_price,
+                'chainId': chain_config["chain_id"]
+            }
+        signed = w3.eth.account.sign_transaction(tx, private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+        tx_id = str(uuid.uuid4())
+        with get_db() as conn2:
+            with conn2.cursor() as c2:
+                c2.execute("INSERT INTO os_transactions (id, user_id, chain, tx_hash, from_address, to_address, amount, token_symbol, status) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed')",
+                          (tx_id, user["id"], wallet[2], tx_hash.hex(), acct.address, to_address, str(amount),
+                           token_address or chain_config["symbol"]))
+                conn2.commit()
+        return {"tx_hash": tx_hash.hex(), "explorer_url": f"{chain_config['explorer']}/tx/{tx_hash.hex()}"}
+    except Exception as e:
+        logger.error(f"Send transaction error: {e}")
+        raise HTTPException(500, f"Transaction failed: {str(e)}")
+
+# On‑chain balance for a specific wallet
+@app.get("/api/wallet/{wallet_id}/balance")
+async def get_os_wallet_balance(wallet_id: str, user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT chain, address FROM os_wallets WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
+            wallet = c.fetchone()
+            if not wallet: raise HTTPException(404, "Wallet not found")
+            chain_name, address = wallet
+    chain_config = CHAINS.get(chain_name)
+    if not chain_config: raise HTTPException(400, "Unsupported chain")
+    try:
+        w3 = setup_web3(chain_config["rpc"])
+        native_balance = w3.eth.get_balance(address)
+        balances = {
+            "chain": chain_name,
+            "address": address,
+            "native": {"symbol": chain_config["symbol"], "balance": str(Web3.from_wei(native_balance, 'ether'))},
+            "tokens": []
+        }
+        for token_symbol, token_address in chain_config.get("tokens", {}).items():
+            if token_address:
+                try:
+                    contract = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
+                    token_balance = contract.functions.balanceOf(address).call()
+                    decimals = contract.functions.decimals().call()
+                    balances["tokens"].append({
+                        "symbol": token_symbol,
+                        "address": token_address,
+                        "balance": str(token_balance / (10 ** decimals))
+                    })
+                except: pass
+        return balances
+    except Exception as e:
+        logger.error(f"Balance check error: {e}")
+        raise HTTPException(500, f"Failed to fetch balance: {str(e)}")
+
+# Push notifications
+@app.get("/api/notifications/push")
+async def get_push_notifications(user: dict = Depends(get_current_user)):
+    if not user: raise HTTPException(401)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, type, message, created FROM notifications WHERE user_id=%s AND read=FALSE ORDER BY created DESC LIMIT 10", (user["id"],))
+            notifs = [{"id": r[0], "type": r[1], "message": r[2], "created": r[3].isoformat() if r[3] else None} for r in c.fetchall()]
+    return {"notifications": notifs}
 
 # ================================================================================
 # MARKET DATA
@@ -1442,14 +1668,14 @@ async def get_swap_quote(chain: str = "polygon", from_token: str = None, to_toke
 def crypto_market():
     if not settings.COINGECKO_KEY: raise HTTPException(503, "CoinGecko key not set")
     try:
-        r = requests.get("https://api.coingecko.com/api/v3/coins/markets", params={"vs_currency": "usd", "order": "market_cap_desc", "per_page": 100, "page": 1, "sparkline": "true", "price_change_percentage": "24h"}, headers={"x-cg-demo-api-key": settings.COINGECKO_KEY}, timeout=20)
+        r = requests.get("https://api.coingecko.com/api/v3/coins/markets", params={"vs_currency":"usd","order":"market_cap_desc","per_page":100,"page":1,"sparkline":"true","price_change_percentage":"24h"}, headers={"x-cg-demo-api-key":settings.COINGECKO_KEY}, timeout=20)
         return r.json() if r.status_code == 200 else []
     except: return []
 
 @app.get("/api/market/stocks")
 def stock_market():
     if not settings.FINNHUB_API_KEY: raise HTTPException(503)
-    symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "JPM", "V", "JNJ"]
+    symbols = ["AAPL","MSFT","GOOGL","AMZN","TSLA","NVDA","META","JPM","V","JNJ"]
     quotes = []
     for sym in symbols:
         try:
@@ -1507,7 +1733,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     contents = await file.read()
-    if len(contents) / (1024 * 1024) > 60: raise HTTPException(400, "Max 60MB")
+    if len(contents) / (1024*1024) > 60: raise HTTPException(400, "Max 60MB")
     file_id = f"file_{sid()}"
     file_path = os.path.join(UPLOAD_DIR, file_id)
     with open(file_path, "wb") as f: f.write(contents)
@@ -1517,7 +1743,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
             c.execute("INSERT INTO uploaded_files (id, user_id, filename, original_name, size, storage_path, extracted_text) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                       (file_id, user["id"], file_id, file.filename or "unknown", len(contents), file_path, extracted[:50000]))
             conn.commit()
-    return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents) / (1024 * 1024), 2), "extracted": bool(extracted)}
+    return {"id": file_id, "filename": file.filename, "size_mb": round(len(contents)/(1024*1024),2), "extracted": bool(extracted)}
 
 # ================================================================================
 # LEGAL
@@ -1528,7 +1754,7 @@ def privacy():
 
 @app.get("/api/legal/terms")
 def terms():
-    return {"text": "<h2>Terms of Service</h2><p>CAPITAN AI is powered by CLOSE tokens. Each AI message consumes CLOSE tokens. Free accounts receive 2,000 CLOSE upon signup. CLOSE tokens can be purchased starting at $1.00 USD. Staking CLOSE unlocks tier benefits (Builder: 4M, Pro: 15M, Enterprise: 35M). CLOSEAI reserves the right to adjust staking requirements, token price, and burn rates at any time. OS Wallets are self-custody — you are solely responsible for your private keys and seed phrases. CLOSEAI cannot recover lost wallets. All AI responses are for informational purposes only and do not constitute financial, legal, or medical advice. Crypto assets are volatile — never invest more than you can afford to lose. By using CAPITAN AI and OS Wallets, you agree to these terms.</p>"}
+    return {"text": "<h2>Terms of Service</h2><p>CAPITAN AI is powered by CLOSE tokens. Each AI message consumes CLOSE tokens. Free accounts receive 2,000 CLOSE after wallet activation. CLOSE tokens can be purchased starting at $1.00 USD. Staking CLOSE unlocks tier benefits (Builder: 4M, Pro: 15M, Enterprise: 35M). CLOSEAI reserves the right to adjust staking requirements, token price, and burn rates at any time. OS Wallets are self-custody — you are solely responsible for your private keys and seed phrases. CLOSEAI cannot recover lost wallets. All AI responses are for informational purposes only and do not constitute financial, legal, or medical advice. Crypto assets are volatile — never invest more than you can afford to lose. By using CAPITAN AI and OS Wallets, you agree to these terms.</p>"}
 
 # ================================================================================
 # ADMIN / FOUNDER
@@ -1539,23 +1765,21 @@ def admin_dashboard(founder: dict = Depends(founder_only)):
         with conn.cursor() as c:
             c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
             c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(close_balance), 0) FROM users"); total_close_circulating = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(close_staked), 0) FROM users"); total_close_staked = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_transactions WHERE type = 'burn'"); total_burned = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_transactions WHERE type = 'purchase'"); total_purchased = c.fetchone()[0]
+            c.execute("SELECT COALESCE(SUM(close_balance), 0) FROM users"); total_close = c.fetchone()[0]
+            c.execute("SELECT COALESCE(SUM(close_staked), 0) FROM users"); total_staked = c.fetchone()[0]
+            c.execute("SELECT COALESCE(SUM(amount), 0) FROM close_transactions WHERE type='burn'"); total_burned = c.fetchone()[0]
             c.execute("SELECT COALESCE(SUM(amount_usd), 0) FROM close_purchases"); total_revenue = c.fetchone()[0]
             return {
                 "total_users": total_users, "active_today": active_today,
-                "close_circulating": total_close_circulating, "close_staked": total_close_staked,
-                "close_burned": total_burned, "close_purchased": total_purchased,
-                "total_revenue_usd": round(total_revenue, 2),
+                "close_circulating": total_close, "close_staked": total_staked,
+                "close_burned": total_burned, "total_revenue_usd": round(total_revenue, 2),
                 "close_price": settings.CLOSE_PRICE_USD,
                 "treasury_supply": settings.CLOSE_TOTAL_SUPPLY * 0.6
             }
 
 @app.get("/api/admin/users")
 def admin_users(page: int = 1, search: str = "", founder: dict = Depends(founder_only)):
-    limit = 20; offset = (page - 1) * limit
+    limit = 20; offset = (page-1)*limit
     with get_db() as conn:
         with conn.cursor() as c:
             if search: c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier, created_at, last_active FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT %s OFFSET %s", (f'%{search}%', f'%{search}%', limit, offset))
@@ -1597,18 +1821,18 @@ def health_check():
         w3.eth.get_block_number()
         web3_status = "connected"
     except: pass
-    return {"status": "ok", "version": "34.0", "edition": "CLOSE Token Economy", "database": db_status, "web3": web3_status, "close_price": settings.CLOSE_PRICE_USD, "free_bonus": settings.FREE_CLOSE_AMOUNT, "burn_per_message": settings.BURN_PER_MESSAGE}
+    return {
+        "status": "ok", "version": "35.1", "edition": "Complete OS Wallets",
+        "database": db_status, "web3": web3_status,
+        "close_price": settings.CLOSE_PRICE_USD,
+        "free_bonus": settings.FREE_CLOSE_AMOUNT,
+        "burn_per_message": settings.BURN_PER_MESSAGE
+    }
 
 @app.get("/")
 async def root():
-    return {"name": "CAPITAN AI", "version": "34.0", "edition": "CLOSE Token Economy — OS Wallets"}
+    return {"name": "CAPITAN AI", "version": "35.1", "edition": "Complete OS Wallets — CLOSE Token Economy"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    print(f"\n{'='*70}")
-    print(f"🚀 CAPITAN AI v34.0 — CLOSE Token Economy")
-    print(f"🪙 2,000 CLOSE welcome bonus · {settings.BURN_PER_MESSAGE} CLOSE per message · ${settings.MIN_PURCHASE_USD} min purchase")
-    print(f"💳 OS Wallets · Staking · Swaps · Multi-chain")
-    print(f"📍 Backend: 0.0.0.0:{port}")
-    print(f"{'='*70}\n")
     uvicorn.run(app, host="0.0.0.0", port=port)
