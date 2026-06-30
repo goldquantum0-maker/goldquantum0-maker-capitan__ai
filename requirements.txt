@@ -1,12 +1,12 @@
 fastapi
-uvicorn 
+uvicorn
 psycopg2-binary
 web3
 eth-account
-PyPDF2
-python-docx
-openpyxl
 bcrypt
 pydantic-settings
 python-multipart
-eth-account>=0.8.0
+PyPDF2
+python-docx
+openpyxl
+httpx
