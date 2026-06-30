@@ -9,3 +9,4 @@ openpyxl
 bcrypt
 pydantic-settings
 python-multipart
+eth-account>=0.8.0
