@@ -24,12 +24,7 @@
             --font-size:13px;--line-height:1.55;--radius:12px;
             --glass-bg:rgba(22,27,34,0.85);--glass-border:rgba(48,54,61,0.6);
         }
-        body.light{
-            --bg-primary:#ffffff;--bg-secondary:#f6f8fa;--bg-tertiary:#eaeef2;--surface:#ffffff;--border:#d0d7de;
-            --text-primary:#1f2328;--text-secondary:#656d76;--text-tertiary:#8b949e;
-            --sidebar-bg:#f6f8fa;--input-bg:#f6f8fa;
-            --glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(208,215,222,0.5);
-        }
+        body.light{--bg-primary:#ffffff;--bg-secondary:#f6f8fa;--bg-tertiary:#eaeef2;--surface:#ffffff;--border:#d0d7de;--text-primary:#1f2328;--text-secondary:#656d76;--text-tertiary:#8b949e;--sidebar-bg:#f6f8fa;--input-bg:#f6f8fa;--glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(208,215,222,0.5)}
         body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-primary);color:var(--text-primary);font-size:var(--font-size);line-height:var(--line-height);height:100vh;overflow:hidden;transition:background 0.2s}
         .splash{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#0a0f14,#0d3b4f);display:flex;align-items:center;justify-content:center;transition:opacity 0.6s,visibility 0.6s}
         .splash.hide{opacity:0;visibility:hidden}
@@ -41,7 +36,7 @@
         @media(min-width:769px){.sidebar.collapsed{transform:translateX(-280px);position:fixed;height:100%}}
         @media(max-width:768px){.sidebar{position:fixed;left:0;top:0;height:100%;width:85%;max-width:320px;transform:translateX(-100%);z-index:40}.sidebar.open{transform:translateX(0)}.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:35;display:none}.overlay.open{display:block}}
         .sidebar-brand{padding:20px 16px;display:flex;align-items:center;gap:10px}
-        .sidebar-brand .logo-icon{width:30px;height:30px}
+        .sidebar-brand .logo-icon{width:30px;height:30px;cursor:pointer}
         .sidebar-brand .logo-text{font-weight:800;font-size:18px;letter-spacing:1.5px;background:linear-gradient(135deg,#00b4d8,#90e0ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%200%;animation:logoShift 4s ease infinite}
         @keyframes logoShift{0%,100%{background-position:0%50%}50%{background-position:100%50%}}
         .top-bar{position:fixed;top:12px;right:12px;z-index:45;display:flex;align-items:center;gap:12px}
@@ -164,7 +159,11 @@
 <div id="app" class="app" style="display:none;">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <svg class="logo-icon" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="#00b4d8" stroke-width="2"/><circle cx="20" cy="20" r="13" fill="none" stroke="#90e0ef" stroke-width="1" stroke-dasharray="6 4"/><text x="20" y="26" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#00b4d8" font-weight="700">C</text></svg>
+            <svg class="logo-icon" id="founderEasterEgg" viewBox="0 0 40 40" style="cursor:pointer">
+                <circle cx="20" cy="20" r="18" fill="none" stroke="#00b4d8" stroke-width="2"/>
+                <circle cx="20" cy="20" r="13" fill="none" stroke="#90e0ef" stroke-width="1" stroke-dasharray="6 4"/>
+                <text x="20" y="26" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#00b4d8" font-weight="700">C</text>
+            </svg>
             <span class="logo-text">CAPITAN AI</span>
         </div>
         <div class="new-chat-btn" onclick="newChat()">
@@ -182,6 +181,10 @@
         <div class="menu-item" onclick="openWorkspacePage()" id="workspaceMenuItem" style="display:none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Work Areas
+        </div>
+        <div class="menu-item" onclick="openLeaderboardPage()" id="leaderboardMenuItem" style="display:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            Leaderboard
         </div>
         <div class="menu-item" onclick="openDeveloperPage()" id="developerMenuItem" style="display:none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -259,6 +262,10 @@
         <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Work Areas</span></div>
         <div id="workspaceFullContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
     </div>
+    <div class="full-page-view" id="leaderboardFullPage">
+        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Leaderboard</span></div>
+        <div id="leaderboardContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
+    </div>
     <div class="full-page-view" id="developerFullPage">
         <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">Developer</span></div>
         <div id="developerContent" style="max-width:800px;margin:0 auto;width:100%;padding:20px;"></div>
@@ -269,6 +276,7 @@
     </div>
 </div>
 
+<!-- Modals -->
 <div id="signupModal" class="modal-overlay"><div class="modal" id="signupModalContent"></div></div>
 <div id="loginModal" class="modal-overlay"><div class="modal" id="loginModalContent"></div></div>
 <div id="buyCloseModal" class="modal-overlay"><div class="modal" id="buyCloseModalContent"></div></div>
@@ -293,6 +301,7 @@ const CFG = {
     API: location.hostname==='localhost'?'http://localhost:8000':'https://capitan-ai-jxu8.onrender.com',
     CLOSE_PRICE:0.00009776, BURN_PER_MSG:25, FREE_MSGS:3, MIN_PURCHASE:1.00,
     STAKE_BUILDER:4000000, STAKE_PRO:15000000, STAKE_ENTERPRISE:35000000,
+    WORKSPACE_JOIN_COST:500,
     CHAINS: {
         polygon:{name:'Polygon',symbol:'POL',rpc:'https://polygon-rpc.com',chainId:137,explorer:'https://polygonscan.com',
             tokens:{POL:'native',USDT:'0xc2132D05D31c914a87C6611C10748AEb04B58e8F',USDC:'0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',WETH:'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619'}},
@@ -314,7 +323,9 @@ let state = {
     closeBalance:0, closeStaked:0, stakeTier:'none', walletAddress:'',
     freeUsed:0, isGuest:!localStorage.getItem('capitan_token'),
     theme: localStorage.getItem('capitan_theme')||'dark',
-    walletConnector: null
+    walletConnector: null,
+    sessionWalletPassword: null,
+    founderClickCount: 0
 };
 
 const COLORS = ["#00b4d8","#a855f7","#f0b90b","#10b981","#f43f5e","#f97316","#8b5cf6","#ec4899","#06b6d4","#84cc16"];
@@ -342,6 +353,7 @@ function setTheme(t){state.theme=t;document.body.className=t==='system'?(window.
 setTheme(state.theme||'dark');
 window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(state.theme==='system') setTheme('system')});
 
+// ==================== AUTH ====================
 function showSignupModal(){
     document.getElementById('signupModalContent').innerHTML=`
         <h2>Create OS Wallet</h2>
@@ -358,7 +370,6 @@ function showLoginModal(){
         <input id="loginEmail" placeholder="Email">
         <input type="password" id="loginPassword" placeholder="Password">
         <button class="btn" onclick="handleLogin()">Sign In</button>
-        <p style="text-align:center;margin-top:8px;"><a onclick="closeModal('loginModal');showFounderLoginModal()">Founder access</a></p>
         <p style="text-align:center;margin-top:8px;font-size:11px;"><a onclick="forgotPassword()">Forgot password?</a></p>`;
     document.getElementById('loginModal').classList.add('open');
 }
@@ -407,8 +418,9 @@ async function forgotPassword(){
 }
 function logout(){
     state.token=null; state.user=null; state.isGuest=true; state.closeBalance=0; state.closeStaked=0; state.stakeTier='none'; state.walletAddress='';
+    state.sessionWalletPassword=null;
     localStorage.removeItem('capitan_token'); localStorage.removeItem('capitan_user');
-    updateUI(); renderMessages();
+    updateUI(); renderMessages(); document.getElementById('app').style.display='none'; document.getElementById('loginModal').classList.add('open');
 }
 function showActivateWallet(){
     document.getElementById('buyCloseModalContent').innerHTML=`
@@ -424,11 +436,13 @@ async function activateWallet(){
     try{
         let res=await apiCall('/api/wallet/activate',{method:'POST',body:JSON.stringify({password:pwd})});
         state.closeBalance=res.close_credited; state.walletAddress=res.wallet_address;
+        state.sessionWalletPassword=pwd;
         localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('wallet_address',state.walletAddress);
         closeModal('buyCloseModal'); updateUI(); toast('2,000 CLOSE credited!');
     }catch(e){toast('Activation failed')}
 }
 
+// ==================== UI UPDATES ====================
 function updateUI(){
     let logged=!!state.user;
     document.getElementById('profileName').innerText=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
@@ -436,6 +450,7 @@ function updateUI(){
     document.getElementById('guestButtons').style.display=logged?'none':'block';
     document.getElementById('portfolioMenuItem').style.display=logged?'flex':'none';
     document.getElementById('workspaceMenuItem').style.display=logged?'flex':'none';
+    document.getElementById('leaderboardMenuItem').style.display=logged?'flex':'none';
     document.getElementById('developerMenuItem').style.display=(logged&&(state.stakeTier==='pro'||state.stakeTier==='enterprise'||state.stakeTier==='founder'))?'flex':'none';
     document.getElementById('dashboardMenuItem').style.display=(logged&&state.stakeTier==='founder')?'flex':'none';
     let badge = document.getElementById('closeBalanceBadge');
@@ -445,16 +460,21 @@ function updateUI(){
     } else badge.style.display='none';
 }
 
+// ==================== CHAT ====================
 function newChat(){state.activeChatId=null;state.messages=[];renderMessages();document.getElementById('messageInput').focus()}
 async function sendMessage(){
     let input=document.getElementById('messageInput'),text=input.value.trim();
     if(!text||state.loading) return;
     if(!state.token && !state.user){ showSignupModal(); return; }
+    let pwd = state.sessionWalletPassword;
+    if(state.user && !pwd){
+        pwd = prompt("Enter wallet password to burn CLOSE on-chain (required):");
+        if(!pwd){ toast("Password required for on-chain burn."); return; }
+        state.sessionWalletPassword = pwd;
+    }
     input.value=''; state.messages.push({role:'user',content:text}); renderMessages();
     state.loading=true; state.messages.push({role:'assistant',content:'',isTyping:true}); renderMessages();
     try{
-        let pwd = null;
-        if(state.user) pwd = prompt("Enter wallet password to burn CLOSE on‑chain (or cancel to burn DB only):");
         let body = {messages:state.messages.slice(0,-1), chat_id:state.activeChatId, wallet_password: pwd};
         let res = await apiCall('/api/chat',{method:'POST',body:JSON.stringify(body)});
         let full = res.content||'No response';
@@ -469,7 +489,7 @@ async function sendMessage(){
         if(res.wallet_prompt) showBubblePrompt(res.wallet_message);
         if(res.burn_tx) toast('🔥 Burn TX: '+res.burn_tx.slice(0,10)+'...');
         updateUI();
-    }catch(e){state.messages.pop();state.messages.push({role:'assistant',content:'Error: unable to reach AI.'});state.loading=false;renderMessages()}
+    }catch(e){state.messages.pop();state.messages.push({role:'assistant',content:'Error: '+e.message});state.loading=false;renderMessages()}
 }
 function streamText(container, fullText, speed=15){
     container.innerHTML=''; let i=0; let cursor=document.createElement('span'); cursor.className='stream-cursor';
@@ -508,10 +528,17 @@ function escapeHtml(s){return s?.replace(/</g,'&lt;')}
 function formatMarkdown(t){return t?.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
 function useSuggestion(t){document.getElementById('messageInput').value=t;sendMessage()}
 
-function goBackToChat(){document.querySelectorAll('.full-page-view').forEach(v=>v.classList.remove('open'));document.getElementById('chatView').style.display='flex';}
-function hideAllViews(){['walletFullPage','portfolioFullPage','workspaceFullPage','developerFullPage','founderDashboardPage'].forEach(id=>document.getElementById(id).classList.remove('open'));document.getElementById('chatView').style.display='flex';}
+// ==================== NAVIGATION ====================
+function goBackToChat(){
+    document.querySelectorAll('.full-page-view').forEach(v=>v.classList.remove('open'));
+    document.getElementById('chatView').style.display='flex';
+}
+function hideAllViews(){
+    ['walletFullPage','portfolioFullPage','workspaceFullPage','leaderboardFullPage','developerFullPage','founderDashboardPage'].forEach(id=>document.getElementById(id).classList.remove('open'));
+    document.getElementById('chatView').style.display='flex';
+}
 
-// ==================== OS WALLETS (COMPLETE) ====================
+// ==================== OS WALLETS ====================
 function openWallet(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('walletFullPage').classList.add('open');renderWalletDashboard();}
 async function renderWalletDashboard(){
     let c=document.getElementById('walletContainer');
@@ -608,10 +635,8 @@ async function renderWalletDashboard(){
             document.querySelectorAll('.wallet-panel').forEach(p=>p.classList.remove('active'));
             document.getElementById('panel-'+this.dataset.tab).classList.add('active');
         }));
-        setTimeout(()=>{ if(document.getElementById('walletFullPage').classList.contains('open')) renderWalletDashboard(); }, 30000);
     }catch(e){c.innerHTML='<p>Failed to load wallet.</p>'}
 }
-
 function showBuyModal(){
     document.getElementById('buyCloseModalContent').innerHTML=`<h2>Buy CLOSE</h2><p>Send your payment to the Hot Wallet address below, then paste TXID.</p><p style="font-size:11px;word-break:break-all;">0x109464E84bDD6552d76bcBbaEf03bDe8069C0698</p><input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash"><button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
     document.getElementById('buyCloseModal').classList.add('open');
@@ -855,20 +880,22 @@ function openWorkspaceCreateModal(){
 function openWorkspaceJoinModal(){
     document.getElementById('workspaceJoinModalContent').innerHTML=`
         <h2>Join Work Area</h2>
+        <p style="color:var(--warning)">Joining costs <b>${CFG.WORKSPACE_JOIN_COST} CLOSE</b> (on-chain burn).</p>
         <input id="joinRoomCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <button class="btn" onclick="joinWorkspace()">Join</button>
+        <input id="joinWalletPassword" type="password" placeholder="Wallet password" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <button class="btn" onclick="joinWorkspace()">Join & Pay ${CFG.WORKSPACE_JOIN_COST} CLOSE</button>
         <button class="btn btn-outline" onclick="closeModal('workspaceJoinModal')">Cancel</button>`;
     document.getElementById('workspaceJoinModal').classList.add('open');
 }
-async function createWorkspace(){
-    let name=document.getElementById('wsName').value.trim(), code=document.getElementById('wsCode').value.trim();
-    if(!name){toast('Name required');return}
-    try{await apiCall('/api/hub/rooms',{method:'POST',body:JSON.stringify({name,room_code:code})});toast('Created');closeModal('workspaceCreateModal');loadWorkspaces()}catch(e){toast('Failed')}
-}
 async function joinWorkspace(){
     let code=document.getElementById('joinRoomCode').value.trim().toUpperCase();
-    if(!code){toast('Room code required');return}
-    try{await apiCall('/api/hub/rooms/join',{method:'POST',body:JSON.stringify({room_code:code})});toast('Joined');closeModal('workspaceJoinModal');loadWorkspaces()}catch(e){toast('Failed')}
+    let pwd=document.getElementById('joinWalletPassword').value;
+    if(!code||!pwd) return toast('Room code and password required');
+    try{
+        let res=await apiCall('/api/hub/rooms/join',{method:'POST',body:JSON.stringify({room_code:code, password:pwd})});
+        toast('Joined! Burn TX: '+res.burn_tx.slice(0,10)+'...');
+        closeModal('workspaceJoinModal'); loadWorkspaces();
+    }catch(e){toast('Join failed: '+e.message)}
 }
 function openRoomChat(roomCode){
     let c=document.getElementById('workspaceFullContent');
@@ -897,6 +924,27 @@ async function sendRoomMessage(roomCode){
     await apiCall('/api/hub/rooms/'+roomCode+'/messages',{method:'POST',body:JSON.stringify({message:msg})});
     document.getElementById('roomMsgInput').value='';
     loadRoomMessages(roomCode);
+}
+async function createWorkspace(){
+    let name=document.getElementById('wsName').value.trim(), code=document.getElementById('wsCode').value.trim();
+    if(!name){toast('Name required');return}
+    try{await apiCall('/api/hub/rooms',{method:'POST',body:JSON.stringify({name,room_code:code})});toast('Created');closeModal('workspaceCreateModal');loadWorkspaces()}catch(e){toast('Failed')}
+}
+
+// ==================== LEADERBOARD ====================
+function openLeaderboardPage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('leaderboardFullPage').classList.add('open');loadLeaderboard('staked')}
+async function loadLeaderboard(type){
+    let c=document.getElementById('leaderboardContent');
+    c.innerHTML='<div class="spinner"></div>';
+    try{
+        let res=await apiCall('/api/leaderboard?type='+type);
+        let html='<h2>Leaderboard</h2><div style="display:flex;gap:8px;margin-bottom:16px;"><button class="btn" onclick="loadLeaderboard(\'staked\')">Staked</button><button class="btn" onclick="loadLeaderboard(\'burned\')">Burned</button><button class="btn" onclick="loadLeaderboard(\'streak\')">Streak</button></div>';
+        let medals = ['🥇','🥈','🥉'];
+        res.leaderboard.forEach((u,i)=>{
+            html+=`<div class="dashboard-card"><span>${i<3?medals[i]:i+1} ${u.name}</span><span style="float:right">${u.value?.toLocaleString?.()||u.value}</span></div>`;
+        });
+        c.innerHTML=html;
+    }catch(e){c.innerHTML='<p>Failed to load leaderboard.</p>'}
 }
 
 // ==================== DEVELOPER PAGE ====================
@@ -1049,6 +1097,7 @@ async function openTermsModal(){
     }catch(e){toast('Could not load terms')}
 }
 
+// ==================== FILE UPLOAD ====================
 function triggerFileUpload(){
     if(!state.user) return toast('Sign in to upload');
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
@@ -1071,6 +1120,7 @@ function triggerFileUpload(){
     inp.click();
 }
 
+// ==================== HELPERS ====================
 function toggleCollapsible(k){
     let content=document.getElementById(k+'Content'), arrow=document.getElementById(k+'Arrow');
     content.classList.toggle('open');
@@ -1086,8 +1136,23 @@ function closeSidebar(){
     document.getElementById('overlay').classList.remove('open');
 }
 
+// ==================== FOUNDER EASTER EGG (13 CLICKS) ====================
+let founderClickTimeout;
+document.getElementById('founderEasterEgg').addEventListener('click', function(e){
+    e.stopPropagation();
+    state.founderClickCount++;
+    clearTimeout(founderClickTimeout);
+    if(state.founderClickCount >= 13){
+        state.founderClickCount = 0;
+        showFounderLoginModal();
+    } else {
+        founderClickTimeout = setTimeout(() => { state.founderClickCount = 0; }, 3000);
+    }
+});
+
+// ==================== INIT ====================
 async function init(){
-    document.getElementById('toggleSidebarBtn').addEventListener('click',toggleSidebar);
+    document.getElementById('toggleSidebarBtn').onclick=toggleSidebar;
     setTimeout(()=>{document.getElementById('splashScreen').classList.add('hide');document.getElementById('app').style.display='flex';},1600);
     if(state.token && state.user){
         try{let data=await apiCall('/api/auth/me'); state.user=data; state.closeBalance=data.close_balance||0; state.closeStaked=data.close_staked||0; state.stakeTier=data.stake_tier||'none'; state.walletAddress=data.wallet_address||'';
@@ -1097,7 +1162,6 @@ async function init(){
     updateUI(); renderMessages();
     if(!state.token) setTimeout(()=>{if(!state.user&&!state.token&&state.messages.length===0)showBubblePrompt('Welcome! Create your OS Wallet to claim 2,000 CLOSE.',false);},5000);
     setInterval(fetchNotifications,30000);
-    fetchNotifications();
 }
 init();
 </script>
