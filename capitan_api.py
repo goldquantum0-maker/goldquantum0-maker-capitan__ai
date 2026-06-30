@@ -1862,9 +1862,24 @@ def record_daily_stats():
                       (today, new, active, burned, staked, revenue))
             conn.commit()
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(record_daily_stats, 'cron', hour=0, minute=5)
-scheduler.start()
+import threading
+import time as _time
+
+def run_daily_stats_loop():
+    while True:
+        now = datetime.now()
+        # Calculate seconds until next 00:05 UTC
+        next_run = now.replace(hour=0, minute=5, second=0, microsecond=0)
+        if now >= next_run:
+            next_run += timedelta(days=1)
+        sleep_seconds = (next_run - now).total_seconds()
+        _time.sleep(sleep_seconds)
+        try:
+            record_daily_stats()
+        except Exception as e:
+            logger.error(f"Daily stats error: {e}")
+
+threading.Thread(target=run_daily_stats_loop, daemon=True).start()
 
 # ================================================================================
 # DEFAULT TOKEN LIST (100+ POLYGON TOKENS)
