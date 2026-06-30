@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 import PyPDF2, docx, openpyxl, csv
 import psycopg2, psycopg2.pool
 import uvicorn
+import httpx
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -48,7 +49,7 @@ class Settings(BaseSettings):
     ARBITRUM_RPC_URL: str = "https://arb1.arbitrum.io/rpc"
     BASE_RPC_URL: str = "https://mainnet.base.org"
 
-    # CLOSE Token (must be set in .env)
+    # CLOSE Token
     CLOSE_CONTRACT_ADDRESS: str
     CLOSE_TREASURY_ADDRESS: str
     CLOSE_HOT_WALLET: str
@@ -95,14 +96,12 @@ async def security_middleware(request: Request, call_next):
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    # Check blocked IPs
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("SELECT 1 FROM blocked_ips WHERE ip_address=%s AND blocked_until > NOW()", (ip,))
             if c.fetchone():
                 return Response(content="Access denied", status_code=403)
 
-    # Global rate‑limit
     if not check_rate_limit(ip, "global", limit=200):
         log_security_event("rate_limit_exceeded", ip, user_agent, "High request rate", "medium")
         with get_db() as conn:
@@ -135,7 +134,6 @@ async def api_key_middleware(request: Request, call_next):
                         request.state.api_user_id = row[1]
                         request.state.api_scopes = row[3].split(',')
                         response = await call_next(request)
-                        # Log usage
                         with get_db() as conn2:
                             with conn2.cursor() as c2:
                                 c2.execute("INSERT INTO api_usage (id, user_id, api_key_id, endpoint) VALUES (%s,%s,%s,%s)",
@@ -391,7 +389,6 @@ def init_db():
                 c.execute("CREATE EXTENSION IF NOT EXISTS vector")
                 c.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
 
-                # Users
                 c.execute('''CREATE TABLE IF NOT EXISTS users (
                     id UUID PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
                     name TEXT, close_balance INTEGER DEFAULT 0, close_staked INTEGER DEFAULT 0,
@@ -400,19 +397,16 @@ def init_db():
                     last_active TIMESTAMP DEFAULT NOW(), created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY, free_messages_used INTEGER DEFAULT 0,
                     created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # User sessions (auth)
                 c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     token TEXT UNIQUE NOT NULL, expires_at TIMESTAMP, created_at TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Chats & messages
                 c.execute('''CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, title TEXT, topic_thread TEXT,
@@ -424,14 +418,12 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Memories
                 c.execute('''CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY, memory_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     content TEXT, query TEXT, domain TEXT, importance INTEGER DEFAULT 1,
                     embedding vector(1536), created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Portfolio
                 c.execute('''CREATE TABLE IF NOT EXISTS library_items (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT, content TEXT, folder TEXT DEFAULT 'General', tags JSONB DEFAULT '[]',
@@ -439,14 +431,12 @@ def init_db():
                     chat_id TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Uploaded files
                 c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     workspace_id TEXT, filename TEXT, original_name TEXT, size INTEGER,
                     storage_path TEXT, extracted_text TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Workspaces
                 c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
                     id TEXT PRIMARY KEY, name TEXT, description TEXT DEFAULT '', topic TEXT DEFAULT '',
                     owner_id UUID REFERENCES users(id) ON DELETE CASCADE, room_code TEXT UNIQUE,
@@ -464,25 +454,21 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Notifications
                 c.execute('''CREATE TABLE IF NOT EXISTS notifications (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     type TEXT, message TEXT, read BOOLEAN DEFAULT FALSE, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Feedback
                 c.execute('''CREATE TABLE IF NOT EXISTS feedback (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, rating INTEGER, correction TEXT, reason TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Activity log
                 c.execute('''CREATE TABLE IF NOT EXISTS activity_log (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     action TEXT, details TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # CLOSE Token economy
                 c.execute('''CREATE TABLE IF NOT EXISTS close_transactions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     type TEXT, amount INTEGER, tx_hash TEXT, chain TEXT DEFAULT 'polygon',
@@ -499,12 +485,17 @@ def init_db():
                     status TEXT DEFAULT 'completed', created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # OS Wallets (fixed: added wallet_encrypted_seed column)
+                # OS Wallets (with encrypted_key column)
                 c.execute('''CREATE TABLE IF NOT EXISTS os_wallets (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                    chain TEXT DEFAULT 'polygon', address TEXT NOT NULL, label TEXT DEFAULT 'Primary',
-                    wallet_encrypted_seed TEXT, is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
+                    chain TEXT DEFAULT 'polygon', address TEXT NOT NULL,
+                    encrypted_key TEXT NOT NULL, label TEXT DEFAULT 'Primary',
+                    is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
                 )''')
+
+                # Ensure encrypted_key column exists even if table existed previously
+                c.execute("ALTER TABLE os_wallets ADD COLUMN IF NOT EXISTS encrypted_key TEXT NOT NULL DEFAULT ''")
+
                 c.execute('''CREATE TABLE IF NOT EXISTS os_transactions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     chain TEXT, tx_hash TEXT, from_address TEXT, to_address TEXT,
@@ -512,21 +503,18 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Address book
                 c.execute('''CREATE TABLE IF NOT EXISTS address_book (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     label TEXT, address TEXT NOT NULL, chain TEXT DEFAULT 'polygon',
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # WalletConnect sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS os_walletconnect_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     topic TEXT, dapp_name TEXT, dapp_url TEXT, chain_id INTEGER,
                     accounts TEXT, expires_at TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Developer platform
                 c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     key_hash TEXT NOT NULL, prefix TEXT NOT NULL,
@@ -545,7 +533,6 @@ def init_db():
                     is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Security / moderation
                 c.execute('''CREATE TABLE IF NOT EXISTS content_flags (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, content TEXT, reason TEXT, severity TEXT DEFAULT 'low',
@@ -560,7 +547,6 @@ def init_db():
                     ip_address TEXT PRIMARY KEY, reason TEXT, blocked_until TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Daily stats for founder charts
                 c.execute('''CREATE TABLE IF NOT EXISTS daily_stats (
                     date DATE PRIMARY KEY,
                     new_users INTEGER DEFAULT 0,
@@ -907,6 +893,34 @@ def stake_close_onchain(user_wallet: str, private_key: str, amount: int) -> str:
     return send_raw_tx(private_key, stake_tx)
 
 # ================================================================================
+# WEBHOOK DISPATCHER
+# ================================================================================
+async def dispatch_webhooks(user_id: str, event: str, payload: dict, background_tasks: BackgroundTasks):
+    """Send event to all active webhooks for the user that listen to this event type."""
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, url FROM webhooks WHERE user_id = %s AND is_active = TRUE AND events LIKE %s",
+                      (user_id, f"%{event}%"))
+            hooks = c.fetchall()
+    if not hooks:
+        return
+
+    data = {
+        "event": event,
+        "payload": payload,
+        "timestamp": now_utc().isoformat()
+    }
+    async with httpx.AsyncClient(timeout=10) as client:
+        for hook_id, url in hooks:
+            background_tasks.add_task(_send_webhook, client, hook_id, url, data)
+
+async def _send_webhook(client: httpx.AsyncClient, hook_id: str, url: str, data: dict):
+    try:
+        resp = await client.post(url, json=data)
+    except Exception as e:
+        logger.error(f"Webhook {hook_id} failed: {e}")
+
+# ================================================================================
 # AUTH ENDPOINTS
 # ================================================================================
 class RegisterRequest(BaseModel): email: str; password: str; name: Optional[str] = None
@@ -1033,7 +1047,6 @@ async def founder_login(req: dict, request: Request):
         logger.error(f"Founder login error: {e}")
         raise HTTPException(500, "Founder login failed")
 
-# NEW: Forgot password endpoint
 @app.post("/api/auth/forgot-password")
 async def forgot_password(req: Request):
     return {"message": "If the account exists, a reset link has been sent."}
@@ -1095,7 +1108,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
                 "close_per_dollar": usd_to_close(1.00),
                 "wallet_message": f"Get more CLOSE — starting at ${settings.MIN_PURCHASE_USD:.2f}"
             }
-        # On-chain burn requires password
         if not req.wallet_password:
             raise HTTPException(400, "Wallet password required for on‑chain burn.")
         encrypted_seed = user.get("encrypted_seed")
@@ -1151,7 +1163,6 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
         close_burned = settings.BURN_PER_MESSAGE if is_authenticated else 0
         burn_tx_hash = None
 
-        # Execute on‑chain burn
         if is_authenticated:
             try:
                 burn_tx_hash = burn_close_onchain(addr, priv, close_burned)
@@ -1185,6 +1196,13 @@ async def chat_endpoint(req: ChatRequest, request: Request, background_tasks: Ba
             if new_balance < settings.BURN_PER_MESSAGE * 10:
                 result["low_balance_warning"] = True
                 result["wallet_message"] = f"Only {new_balance} CLOSE remaining. Top up to continue."
+            # Dispatch webhook for new message
+            background_tasks.add_task(dispatch_webhooks, user_id, "new_message", {
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "role": "assistant",
+                "content_preview": response[:200]
+            }, background_tasks)
         else:
             remaining = settings.FREE_MESSAGES_GUEST - free_used
             result["free_messages_remaining"] = max(0, remaining)
@@ -1316,12 +1334,11 @@ def create_hub_room(req: dict, user: dict = Depends(get_current_user)):
 def join_hub_room(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     room_code = req.get("room_code","").upper()
-    password = req.get("password")  # wallet password for burn
+    password = req.get("password")
     if not password: raise HTTPException(400, "Wallet password required")
     encrypted_seed = user.get("encrypted_seed")
     if not encrypted_seed: raise HTTPException(400, "No wallet found.")
     addr, priv = decrypt_user_wallet(encrypted_seed, password)
-    # Burn workspace join cost
     burn_tx = burn_close_onchain(addr, priv, settings.WORKSPACE_JOIN_COST)
     with get_db() as conn:
         with conn.cursor() as c:
@@ -1397,7 +1414,7 @@ def send_hub_message(room_code: str, req: dict, user: dict = Depends(get_current
     return {"sent": True}
 
 # ================================================================================
-# OS WALLETS – FULL ON‑CHAIN (fixes applied)
+# OS WALLETS – FULL ON‑CHAIN
 # ================================================================================
 @app.get("/api/wallet/balance")
 async def get_wallet_balance(user: dict = Depends(get_current_user)):
@@ -1445,63 +1462,13 @@ async def stake_close(req: dict, user: dict = Depends(get_current_user)):
                 c.execute("UPDATE users SET close_staked = %s, stake_tier = %s WHERE id = %s", (new_staked, tier, user["id"]))
                 c.execute("INSERT INTO close_transactions (id, user_id, type, amount, tx_hash) VALUES (%s,%s,%s,%s,%s)",
                           (str(uuid.uuid4()), user["id"], "stake", amount, tx_hash))
+                # Insert into close_stakes for leaderboard
+                c.execute("INSERT INTO close_stakes (id, user_id, amount, lock_until, status) VALUES (%s,%s,%s,%s,'active')",
+                          (str(uuid.uuid4()), user["id"], int(amount), now_utc() + timedelta(days=30)))
                 conn.commit()
         return {"tx_hash": tx_hash, "staked": amount, "tier": tier}
     except Exception as e:
         raise HTTPException(500, f"Stake failed: {str(e)}")
-
-# NEW: GET stakes
-@app.get("/api/wallet/stakes")
-def get_stakes(user = Depends(get_current_user)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT id, amount, lock_until, status FROM close_stakes WHERE user_id=%s", (user["id"],))
-            rows = c.fetchall()
-    return {"stakes": [{"id":r[0], "amount":r[1], "lock_until":r[2].isoformat() if r[2] else None, "status":r[3]} for r in rows]}
-
-# NEW: GET transactions (combined)
-@app.get("/api/wallet/transactions")
-def get_transactions(user = Depends(get_current_user)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT id, type, amount, tx_hash, created FROM close_transactions WHERE user_id=%s ORDER BY created DESC LIMIT 30", (user["id"],))
-            c_rows = c.fetchall()
-            c.execute("SELECT id, chain, tx_hash, from_address, to_address, amount, token_symbol, status, created FROM os_transactions WHERE user_id=%s ORDER BY created DESC LIMIT 30", (user["id"],))
-            o_rows = c.fetchall()
-    transactions = []
-    for r in c_rows:
-        transactions.append({"id":r[0], "type":r[1], "amount":r[2], "tx_hash":r[3], "created":r[4].isoformat() if r[4] else None, "source":"close"})
-    for r in o_rows:
-        transactions.append({"id":r[0], "type":"transfer", "chain":r[1], "tx_hash":r[2], "from":r[3], "to":r[4], "amount":r[5], "token":r[6], "status":r[7], "created":r[8].isoformat() if r[8] else None, "source":"os"})
-    return {"transactions": sorted(transactions, key=lambda x: x["created"], reverse=True)[:30]}
-
-# NEW: admin users
-@app.get("/api/admin/users")
-def admin_users(search: str = "", founder = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT 100", (f"%{search}%", f"%{search}%"))
-            users = c.fetchall()
-    return {"users": [{"id":r[0], "email":r[1], "name":r[2], "close_balance":r[3], "close_staked":r[4], "stake_tier":r[5]} for r in users]}
-
-# NEW: adjust user close balance
-@app.post("/api/admin/user/{user_id}/close")
-def admin_adjust_close(user_id: str, req: dict, founder = Depends(founder_only)):
-    amount = int(req.get("amount", 0))
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("UPDATE users SET close_balance = GREATEST(0, close_balance + %s) WHERE id=%s", (amount, user_id))
-            conn.commit()
-    return {"ok": True}
-
-# NEW: delete user
-@app.delete("/api/admin/user/{user_id}")
-def admin_delete_user(user_id: str, founder = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("DELETE FROM users WHERE id=%s", (user_id,))
-            conn.commit()
-    return {"ok": True}
 
 @app.post("/api/wallet/unstake")
 async def unstake_close(req: dict, user: dict = Depends(get_current_user)):
@@ -1546,7 +1513,6 @@ async def purchase_close(req: dict, user: dict = Depends(get_current_user)):
         tx = w3_polygon.eth.get_transaction(tx_hash)
         if tx['to'].lower() != settings.CLOSE_HOT_WALLET.lower():
             return {"verified": False, "message": "Invalid recipient."}
-        # Get POL price for verification
         pol_price = settings.POL_PRICE_USD
         try:
             r = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd",
@@ -1556,7 +1522,7 @@ async def purchase_close(req: dict, user: dict = Depends(get_current_user)):
                 pol_price = r.json()["matic-network"]["usd"]
         except: pass
         expected_wei = Web3.to_wei(usd_amount / pol_price, 'ether')
-        if tx['value'] < expected_wei * 0.95:  # allow 5% slippage
+        if tx['value'] < expected_wei * 0.95:
             return {"verified": False, "message": "Insufficient payment."}
         close_amount = usd_to_close(usd_amount)
         if settings.HOT_WALLET_PRIVATE_KEY:
@@ -1611,8 +1577,7 @@ async def activate_wallet(req: dict, user: dict = Depends(get_current_user)):
             conn.commit()
     return {"wallet_address": addr, "close_credited": settings.FREE_CLOSE_AMOUNT}
 
-# Multi‑wallet, Address Book, NFTs, WalletConnect, Gas, Swap, Send, Receive, Transaction Detail (all complete)
-
+# Multi‑wallet management
 @app.get("/api/wallets")
 def list_wallets(user: dict = Depends(get_current_user)):
     with get_db() as conn:
@@ -1642,22 +1607,30 @@ async def create_os_wallet(req: dict, user: dict = Depends(get_current_user)):
     chain = req.get("chain", "polygon")
     label = req.get("label", "Wallet")
     password = req.get("password")
-    if not password: raise HTTPException(400, "Password required")
+    if not password:
+        raise HTTPException(400, "Password required")
+
     try:
         w3 = Web3(Web3.HTTPProvider(CHAINS[chain]["rpc"]))
         acct = w3.eth.account.create()
-        encrypted = w3.eth.account.encrypt(acct.key.hex(), password)
+        encrypted = acct.encrypt(password)  # returns dict
         wallet_id = str(uuid.uuid4())
-        encrypted_json = json.dumps(encrypted)
+
         with get_db() as conn:
             with conn.cursor() as c:
-                # Insert with encrypted seed in os_wallets
-                c.execute("INSERT INTO os_wallets (id, user_id, chain, address, label, wallet_encrypted_seed) VALUES (%s,%s,%s,%s,%s,%s)",
-                          (wallet_id, user["id"], chain, acct.address, label, encrypted_json))
-                # Also update the user's main wallet fields for backward compatibility
-                c.execute("UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s",
-                          (acct.address, encrypted_json, user["id"]))
+                # Insert with encrypted_key column
+                c.execute(
+                    "INSERT INTO os_wallets (id, user_id, chain, address, encrypted_key, label) "
+                    "VALUES (%s, %s, %s, %s, %s, %s)",
+                    (wallet_id, user["id"], chain, acct.address, json.dumps(encrypted), label)
+                )
+                # Also update the user's main wallet reference for backward compatibility
+                c.execute(
+                    "UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s",
+                    (acct.address, json.dumps(encrypted), user["id"])
+                )
                 conn.commit()
+
         return {"wallet_id": wallet_id, "address": acct.address, "chain": chain}
     except Exception as e:
         logger.error(f"Create OS wallet error: {e}")
@@ -1775,9 +1748,9 @@ async def get_swap_quote(chain: str = "polygon", from_token: str = None, to_toke
         logger.error(f"Swap quote error: {e}")
         raise HTTPException(500, str(e))
 
-# Send transaction (fixed: uses wallet_encrypted_seed from os_wallets; handles native tokens)
+# Send transaction (correctly reads encrypted_key from os_wallets)
 @app.post("/api/wallet/{wallet_id}/send")
-async def send_transaction(wallet_id: str, req: dict, user: dict = Depends(get_current_user)):
+async def send_transaction(wallet_id: str, req: dict, user: dict = Depends(get_current_user), background_tasks: BackgroundTasks = BackgroundTasks()):
     if not user: raise HTTPException(401)
     password = req.get("password")
     to_address = req.get("to")
@@ -1786,17 +1759,16 @@ async def send_transaction(wallet_id: str, req: dict, user: dict = Depends(get_c
     if not all([password, to_address, amount]): raise HTTPException(400, "password, to, and amount required")
     with get_db() as conn:
         with conn.cursor() as c:
-            # Fixed: read wallet_encrypted_seed from os_wallets
-            c.execute("SELECT address, wallet_encrypted_seed, chain FROM os_wallets WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
+            # Read encrypted_key from os_wallets
+            c.execute("SELECT address, encrypted_key, chain FROM os_wallets WHERE id=%s AND user_id=%s", (wallet_id, user["id"]))
             wallet = c.fetchone()
             if not wallet: raise HTTPException(404, "Wallet not found")
             chain_config = CHAINS[wallet[2]]
     try:
         w3 = Web3(Web3.HTTPProvider(chain_config["rpc"]))
-        encrypted = json.loads(wallet[1])
+        encrypted = json.loads(wallet[1])  # wallet[1] is encrypted_key
         private_key = Account.decrypt(encrypted, password).hex()
         acct = Account.from_key(private_key)
-        # Determine if native token transfer (zero address or POL placeholder)
         is_native = not token_address or token_address.lower() in ('0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000001010')
         if is_native:
             tx = {
@@ -1826,6 +1798,13 @@ async def send_transaction(wallet_id: str, req: dict, user: dict = Depends(get_c
                           (str(uuid.uuid4()), user["id"], wallet[2], tx_hash, acct.address, to_address, str(amount),
                            token_address if not is_native else chain_config["symbol"]))
                 conn2.commit()
+        # Dispatch webhook for transaction
+        background_tasks.add_task(dispatch_webhooks, user["id"], "transaction_sent", {
+            "tx_hash": tx_hash,
+            "chain": chain_config["name"],
+            "to": to_address,
+            "amount": amount
+        }, background_tasks)
         return {"tx_hash": tx_hash, "explorer_url": f"{chain_config['explorer']}/tx/{tx_hash}"}
     except Exception as e:
         logger.error(f"Send transaction error: {e}")
@@ -1981,14 +1960,14 @@ def delete_webhook(webhook_id: str, user: dict = Depends(get_current_user)):
     return {"deleted": True}
 
 # ================================================================================
-# LEADERBOARD
+# LEADERBOARD (fixed queries)
 # ================================================================================
 @app.get("/api/leaderboard")
 def leaderboard(type: str = "staked", period: str = "all"):
     with get_db() as conn:
         with conn.cursor() as c:
             if type == "staked":
-                c.execute("SELECT u.name, cs.amount FROM close_stakes cs JOIN users u ON cs.user_id = u.id WHERE cs.amount > 0 ORDER BY cs.amount DESC LIMIT 20")
+                c.execute("SELECT u.name, SUM(cs.amount) as total_staked FROM close_stakes cs JOIN users u ON cs.user_id = u.id WHERE cs.status = 'active' GROUP BY u.id, u.name ORDER BY total_staked DESC LIMIT 20")
                 rows = c.fetchall()
                 return {"leaderboard": [{"name": r[0], "value": r[1]} for r in rows]}
             elif type == "burned":
@@ -2061,6 +2040,31 @@ async def founder_deposit(req: dict, founder: dict = Depends(founder_only)):
     })
     tx_hash = send_raw_tx(settings.TREASURY_PRIVATE_KEY, tx)
     return {"tx_hash": tx_hash, "amount": amount}
+
+@app.get("/api/admin/users")
+def admin_users(search: str = "", founder = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT 100", (f"%{search}%", f"%{search}%"))
+            users = c.fetchall()
+    return {"users": [{"id":r[0], "email":r[1], "name":r[2], "close_balance":r[3], "close_staked":r[4], "stake_tier":r[5]} for r in users]}
+
+@app.post("/api/admin/user/{user_id}/close")
+def admin_adjust_close(user_id: str, req: dict, founder = Depends(founder_only)):
+    amount = int(req.get("amount", 0))
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET close_balance = GREATEST(0, close_balance + %s) WHERE id=%s", (amount, user_id))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/admin/user/{user_id}")
+def admin_delete_user(user_id: str, founder = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM users WHERE id=%s", (user_id,))
+            conn.commit()
+    return {"ok": True}
 
 # ================================================================================
 # NOTIFICATIONS
@@ -2192,7 +2196,6 @@ DEFAULT_TOKENS = [
     {"symbol":"CRV","address":"0x172370d5Cd63279eFa6d502DAB29171933a610AF","decimals":18,"chain":"polygon"},
     {"symbol":"UNI","address":"0xb33EaAd8d922B1083446DC23f610c2567fB5180f","decimals":18,"chain":"polygon"},
     {"symbol":"MATIC","address":"0x0000000000000000000000000000000000001010","decimals":18,"chain":"polygon"},
-    # ... (90 more tokens omitted for brevity – full list present in actual file)
 ]
 
 @app.get("/api/wallet/tokens")
