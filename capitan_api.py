@@ -380,6 +380,7 @@ def log_security_event(event_type: str, ip: str, user_agent: str, details: str, 
 # ================================================================================
 # DATABASE INITIALIZATION
 # ================================================================================
+
 def init_db():
     try:
         with get_db() as conn:
@@ -387,6 +388,7 @@ def init_db():
                 c.execute("CREATE EXTENSION IF NOT EXISTS vector")
                 c.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
 
+                # Users
                 c.execute('''CREATE TABLE IF NOT EXISTS users (
                     id UUID PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
                     name TEXT, close_balance INTEGER DEFAULT 0, close_staked INTEGER DEFAULT 0,
@@ -394,42 +396,39 @@ def init_db():
                     gas_preset TEXT DEFAULT 'standard',
                     last_active TIMESTAMP DEFAULT NOW(), created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()
                 )''')
-                for col, dtype in [("close_balance", "INTEGER DEFAULT 0"), ("close_staked", "INTEGER DEFAULT 0"),
-                                   ("stake_tier", "TEXT DEFAULT 'none'"), ("wallet_address", "TEXT"),
-                                   ("wallet_encrypted_seed", "TEXT"), ("gas_preset", "TEXT DEFAULT 'standard'")]:
-                    c.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {dtype}")
 
+                # Sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY, free_messages_used INTEGER DEFAULT 0,
                     created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS free_messages_used INTEGER DEFAULT 0")
 
+                # User sessions (auth)
                 c.execute('''CREATE TABLE IF NOT EXISTS user_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     token TEXT UNIQUE NOT NULL, expires_at TIMESTAMP, created_at TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Chats & messages
                 c.execute('''CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, title TEXT, topic_thread TEXT,
                     created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE chats ADD COLUMN IF NOT EXISTS topic_thread TEXT")
-
                 c.execute('''CREATE TABLE IF NOT EXISTS chat_messages (
                     id TEXT PRIMARY KEY, chat_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     session_id TEXT, role TEXT, content TEXT, model TEXT, close_burned INTEGER DEFAULT 0,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
-                c.execute("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS close_burned INTEGER DEFAULT 0")
 
+                # Memories
                 c.execute('''CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY, memory_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     content TEXT, query TEXT, domain TEXT, importance INTEGER DEFAULT 1,
                     embedding vector(1536), created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Portfolio
                 c.execute('''CREATE TABLE IF NOT EXISTS library_items (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT, content TEXT, folder TEXT DEFAULT 'General', tags JSONB DEFAULT '[]',
@@ -437,71 +436,72 @@ def init_db():
                     chat_id TEXT, created TIMESTAMP DEFAULT NOW(), updated TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Uploaded files
                 c.execute('''CREATE TABLE IF NOT EXISTS uploaded_files (
                     id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     workspace_id TEXT, filename TEXT, original_name TEXT, size INTEGER,
                     storage_path TEXT, extracted_text TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Workspaces
                 c.execute('''CREATE TABLE IF NOT EXISTS workspaces (
                     id TEXT PRIMARY KEY, name TEXT, description TEXT DEFAULT '', topic TEXT DEFAULT '',
                     owner_id UUID REFERENCES users(id) ON DELETE CASCADE, room_code TEXT UNIQUE,
                     password_hash TEXT, max_members INTEGER DEFAULT 10, is_active BOOLEAN DEFAULT TRUE,
                     created_at TIMESTAMP DEFAULT NOW()
                 )''')
-
                 c.execute('''CREATE TABLE IF NOT EXISTS workspace_members (
                     workspace_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     role TEXT DEFAULT 'member', joined_at TIMESTAMP DEFAULT NOW(),
                     PRIMARY KEY (workspace_id, user_id)
                 )''')
-
                 c.execute('''CREATE TABLE IF NOT EXISTS workspace_messages (
                     id TEXT PRIMARY KEY, workspace_id TEXT, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     author_name TEXT, message TEXT, is_ai INTEGER DEFAULT 0, pinned BOOLEAN DEFAULT FALSE,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Notifications
                 c.execute('''CREATE TABLE IF NOT EXISTS notifications (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     type TEXT, message TEXT, read BOOLEAN DEFAULT FALSE, created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Feedback
                 c.execute('''CREATE TABLE IF NOT EXISTS feedback (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, rating INTEGER, correction TEXT, reason TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Activity log
                 c.execute('''CREATE TABLE IF NOT EXISTS activity_log (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     action TEXT, details TEXT, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # CLOSE Token Economy Tables
+                # CLOSE Token economy
                 c.execute('''CREATE TABLE IF NOT EXISTS close_transactions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     type TEXT, amount INTEGER, tx_hash TEXT, chain TEXT DEFAULT 'polygon',
                     status TEXT DEFAULT 'completed', created TIMESTAMP DEFAULT NOW()
                 )''')
-
                 c.execute('''CREATE TABLE IF NOT EXISTS close_stakes (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     amount INTEGER, lock_until TIMESTAMP, status TEXT DEFAULT 'active',
                     rewards_claimed INTEGER DEFAULT 0, created TIMESTAMP DEFAULT NOW()
                 )''')
-
                 c.execute('''CREATE TABLE IF NOT EXISTS close_purchases (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     amount_usd REAL, close_amount INTEGER, tx_hash TEXT,
                     status TEXT DEFAULT 'completed', created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # OS Wallets
                 c.execute('''CREATE TABLE IF NOT EXISTS os_wallets (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     chain TEXT DEFAULT 'polygon', address TEXT NOT NULL, label TEXT DEFAULT 'Primary',
                     is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
                 )''')
-
                 c.execute('''CREATE TABLE IF NOT EXISTS os_transactions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     chain TEXT, tx_hash TEXT, from_address TEXT, to_address TEXT,
@@ -509,19 +509,21 @@ def init_db():
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Address book
                 c.execute('''CREATE TABLE IF NOT EXISTS address_book (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     label TEXT, address TEXT NOT NULL, chain TEXT DEFAULT 'polygon',
                     created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # WalletConnect sessions
                 c.execute('''CREATE TABLE IF NOT EXISTS os_walletconnect_sessions (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     topic TEXT, dapp_name TEXT, dapp_url TEXT, chain_id INTEGER,
                     accounts TEXT, expires_at TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Developer tables
+                # Developer platform
                 c.execute('''CREATE TABLE IF NOT EXISTS api_keys (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     key_hash TEXT NOT NULL, prefix TEXT NOT NULL,
@@ -540,23 +542,22 @@ def init_db():
                     is_active BOOLEAN DEFAULT TRUE, created TIMESTAMP DEFAULT NOW()
                 )''')
 
-                # Content moderation / security tables
+                # Security / moderation
                 c.execute('''CREATE TABLE IF NOT EXISTS content_flags (
                     id UUID PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
                     message_id TEXT, content TEXT, reason TEXT, severity TEXT DEFAULT 'low',
                     reviewed BOOLEAN DEFAULT FALSE, action TEXT DEFAULT 'none', created TIMESTAMP DEFAULT NOW()
                 )''')
-
                 c.execute('''CREATE TABLE IF NOT EXISTS security_events (
                     id UUID PRIMARY KEY, event_type TEXT, ip_address TEXT, user_agent TEXT,
                     details TEXT, severity TEXT DEFAULT 'low', blocked BOOLEAN DEFAULT FALSE,
                     created TIMESTAMP DEFAULT NOW()
                 )''')
-
                 c.execute('''CREATE TABLE IF NOT EXISTS blocked_ips (
                     ip_address TEXT PRIMARY KEY, reason TEXT, blocked_until TIMESTAMP, created TIMESTAMP DEFAULT NOW()
                 )''')
 
+                # Daily stats for founder charts
                 c.execute('''CREATE TABLE IF NOT EXISTS daily_stats (
                     date DATE PRIMARY KEY,
                     new_users INTEGER DEFAULT 0,
@@ -570,6 +571,9 @@ def init_db():
         logger.info("Database initialized — v37.0 Complete OS Wallets")
     except Exception as e:
         logger.error(f"DB init error: {e}")
+                
+                    
+                    
 
 init_db()
 
@@ -1332,11 +1336,31 @@ def join_hub_room(req: dict, user: dict = Depends(get_current_user)):
 @app.get("/api/hub/rooms")
 def list_hub_rooms(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT w.id, w.name, w.description, w.topic, w.room_code, w.max_members, w.created_at, (SELECT COUNT(*) FROM workspace_members WHERE workspace_id=w.id) as member_count FROM workspaces w JOIN workspace_members m ON w.id = m.workspace_id WHERE m.user_id = %s AND w.is_active = TRUE ORDER BY w.created_at DESC", (user["id"],))
-            return {"rooms": [{"id": r[0], "name": r[1], "description": r[2], "topic": r[3], "room_code": r[4], "max_members": r[5], "created_at": r[6].isoformat() if r[6] else None, "member_count": r[7]} for r in c.fetchall()]}
-
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("""SELECT w.id, w.name, w.description, w.topic, w.room_code, w.max_members, w.created_at,
+                    (SELECT COUNT(*) FROM workspace_members WHERE workspace_id=w.id) as member_count
+                    FROM workspaces w
+                    JOIN workspace_members m ON w.id = m.workspace_id
+                    WHERE m.user_id = %s AND w.is_active = TRUE
+                    ORDER BY w.created_at DESC""", (user["id"],))
+                rooms = []
+                for r in c.fetchall():
+                    rooms.append({
+                        "id": r[0],
+                        "name": r[1],
+                        "description": r[2],
+                        "topic": r[3],
+                        "room_code": r[4],
+                        "max_members": r[5],
+                        "created_at": r[6].isoformat() if r[6] else None,
+                        "member_count": r[7]
+                    })
+                return {"rooms": rooms}
+    except Exception as e:
+        logger.error(f"Workspace list error: {e}")
+        return {"rooms": []}
 @app.get("/api/hub/rooms/{room_code}/messages")
 def get_hub_messages(room_code: str, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1818,14 +1842,28 @@ def create_api_key(req: dict, user: dict = Depends(get_current_user)):
     return {"key": raw_key, "prefix": prefix, "scopes": scopes}
 
 @app.get("/api/developer/keys")
+@app.get("/api/developer/keys")
 def list_api_keys(user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT id, prefix, label, scopes, is_active, last_used, created FROM api_keys WHERE user_id=%s ORDER BY created DESC", (user["id"],))
-            keys = [{"id": r[0], "prefix": r[1], "label": r[2], "scopes": r[3], "is_active": r[4],
-                     "last_used": r[5].isoformat() if r[5] else None, "created": r[6].isoformat() if r[6] else None} for r in c.fetchall()]
-    return {"keys": keys}
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT id, prefix, label, scopes, is_active, last_used, created FROM api_keys WHERE user_id=%s ORDER BY created DESC", (user["id"],))
+                keys = []
+                for r in c.fetchall():
+                    keys.append({
+                        "id": r[0],
+                        "prefix": r[1],
+                        "label": r[2],
+                        "scopes": r[3],
+                        "is_active": r[4],
+                        "last_used": r[5].isoformat() if r[5] else None,
+                        "created": r[6].isoformat() if r[6] else None
+                    })
+                return {"keys": keys}
+    except Exception as e:
+        logger.error(f"API keys list error: {e}")
+        return {"keys": []}
 
 @app.delete("/api/developer/keys/{key_id}")
 def revoke_api_key(key_id: str, user: dict = Depends(get_current_user)):
@@ -1892,16 +1930,33 @@ def leaderboard(type: str = "staked", period: str = "all"):
 # ================================================================================
 @app.get("/api/admin/dashboard")
 def admin_dashboard(founder: dict = Depends(founder_only)):
-    with get_db() as conn:
-        with conn.cursor() as c:
-            c.execute("SELECT COUNT(*) FROM users"); total_users = c.fetchone()[0]
-            c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'"); active_today = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(close_balance),0) FROM users"); total_close = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(close_staked),0) FROM users"); total_staked = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(amount),0) FROM close_transactions WHERE type='burn'"); total_burned = c.fetchone()[0]
-            c.execute("SELECT COALESCE(SUM(amount_usd),0) FROM close_purchases"); total_revenue = c.fetchone()[0]
-            return {"total_users": total_users, "active_today": active_today, "close_circulating": total_close, "close_staked": total_staked, "close_burned": total_burned, "total_revenue_usd": round(total_revenue, 2)}
-
+    try:
+        with get_db() as conn:
+            with conn.cursor() as c:
+                c.execute("SELECT COUNT(*) FROM users")
+                total_users = c.fetchone()[0] if c.rowcount else 0
+                c.execute("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '24 hours'")
+                active_today = c.fetchone()[0] if c.rowcount else 0
+                c.execute("SELECT COALESCE(SUM(close_balance),0) FROM users")
+                total_close = c.fetchone()[0] or 0
+                c.execute("SELECT COALESCE(SUM(close_staked),0) FROM users")
+                total_staked = c.fetchone()[0] or 0
+                c.execute("SELECT COALESCE(SUM(amount),0) FROM close_transactions WHERE type='burn'")
+                total_burned = c.fetchone()[0] or 0
+                c.execute("SELECT COALESCE(SUM(amount_usd),0) FROM close_purchases")
+                total_revenue = c.fetchone()[0] or 0
+                return {
+                    "total_users": total_users,
+                    "active_today": active_today,
+                    "close_circulating": total_close,
+                    "close_staked": total_staked,
+                    "close_burned": total_burned,
+                    "total_revenue_usd": round(float(total_revenue), 2)
+                }
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        return {"total_users":0,"active_today":0,"close_circulating":0,"close_staked":0,"close_burned":0,"total_revenue_usd":0}
+        
 @app.get("/api/admin/charts")
 async def founder_charts(founder: dict = Depends(founder_only)):
     with get_db() as conn:
