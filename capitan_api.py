@@ -508,6 +508,8 @@ def init_db():
                     amount TEXT, token_symbol TEXT, status TEXT DEFAULT 'pending',
                     created TIMESTAMP DEFAULT NOW()
                 )''')
+                c.execute("INSERT INTO os_wallets (id, user_id, chain, address, label, wallet_encrypted_seed) VALUES (%s,%s,%s,%s,%s,%s)",
+                    (wallet_id, user["id"], chain, acct.address, label, json.dumps(encrypted)))
 
                 # Address book
                 c.execute('''CREATE TABLE IF NOT EXISTS address_book (
@@ -1443,7 +1445,60 @@ async def stake_close(req: dict, user: dict = Depends(get_current_user)):
         return {"tx_hash": tx_hash, "staked": amount, "tier": tier}
     except Exception as e:
         raise HTTPException(500, f"Stake failed: {str(e)}")
+        
+@app.get("/api/wallet/stakes")
+def get_stakes(user = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, amount, lock_until, status FROM close_stakes WHERE user_id=%s", (user["id"],))
+            rows = c.fetchall()
+    return {"stakes": [{"id":r[0], "amount":r[1], "lock_until":r[2].isoformat() if r[2] else None, "status":r[3]} for r in rows]}
 
+@app.get("/api/wallet/transactions")
+def get_transactions(user = Depends(get_current_user)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, type, amount, tx_hash, created FROM close_transactions WHERE user_id=%s ORDER BY created DESC LIMIT 30", (user["id"],))
+            c_rows = c.fetchall()
+            c.execute("SELECT id, chain, tx_hash, from_address, to_address, amount, token_symbol, status, created FROM os_transactions WHERE user_id=%s ORDER BY created DESC LIMIT 30", (user["id"],))
+            o_rows = c.fetchall()
+    transactions = []
+    for r in c_rows:
+        transactions.append({"id":r[0], "type":r[1], "amount":r[2], "tx_hash":r[3], "created":r[4].isoformat() if r[4] else None, "source":"close"})
+    for r in o_rows:
+        transactions.append({"id":r[0], "type":"transfer", "chain":r[1], "tx_hash":r[2], "from":r[3], "to":r[4], "amount":r[5], "token":r[6], "status":r[7], "created":r[8].isoformat() if r[8] else None, "source":"os"})
+    return {"transactions": sorted(transactions, key=lambda x: x["created"], reverse=True)[:30]}
+
+@app.get("/api/admin/users")
+def admin_users(search: str = "", founder = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier FROM users WHERE email ILIKE %s OR name ILIKE %s ORDER BY created_at DESC LIMIT 100", (f"%{search}%", f"%{search}%"))
+            users = c.fetchall()
+    return {"users": [{"id":r[0], "email":r[1], "name":r[2], "close_balance":r[3], "close_staked":r[4], "stake_tier":r[5]} for r in users]}
+
+@app.post("/api/admin/user/{user_id}/close")
+def admin_adjust_close(user_id: str, req: dict, founder = Depends(founder_only)):
+    amount = int(req.get("amount", 0))
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("UPDATE users SET close_balance = GREATEST(0, close_balance + %s) WHERE id=%s", (amount, user_id))
+            conn.commit()
+    return {"ok": True}
+
+@app.delete("/api/admin/user/{user_id}")
+def admin_delete_user(user_id: str, founder = Depends(founder_only)):
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM users WHERE id=%s", (user_id,))
+            conn.commit()
+    return {"ok": True}
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(req: Request):
+    # For now, just acknowledge; real implementation would send email
+    return {"message": "If the account exists, a reset link has been sent."}
+    
 @app.post("/api/wallet/unstake")
 async def unstake_close(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
@@ -1484,10 +1539,14 @@ async def purchase_close(req: dict, user: dict = Depends(get_current_user)):
     if not tx_hash: raise HTTPException(400, "Transaction hash required")
     try:
         receipt = w3_polygon.eth.get_transaction_receipt(tx_hash)
-        tx = w3_polygon.eth.get_transaction(tx_hash)
-        if tx['to'].lower() != settings.CLOSE_HOT_WALLET.lower():
-            return {"verified": False, "message": "Payment not verified. Send to the hot wallet address."}
-        close_amount = usd_to_close(usd_amount)
+tx = w3_polygon.eth.get_transaction(tx_hash)
+if tx['to'].lower() != settings.CLOSE_HOT_WALLET.lower():
+    return {"verified": False, "message": "Invalid recipient."}
+
+# Check that the ETH/POL amount matches the expected USD cost
+expected_wei = Web3.to_wei(usd_amount / current_pol_price, 'ether')  # fetch current_pol_price
+if tx['value'] < expected_wei * 0.95:  # allow 5% slippage
+    return {"verified": False, "message": "Insufficient payment."}
         if settings.HOT_WALLET_PRIVATE_KEY:
             hot_acct = Account.from_key(settings.HOT_WALLET_PRIVATE_KEY)
             contract = w3_polygon.eth.contract(address=settings.CLOSE_CONTRACT_ADDRESS, abi=ERC20_ABI)
@@ -1753,6 +1812,22 @@ async def send_transaction(wallet_id: str, req: dict, user: dict = Depends(get_c
     except Exception as e:
         logger.error(f"Send transaction error: {e}")
         raise HTTPException(500, f"Transaction failed: {str(e)}")
+
+def send_transaction(...):
+    # ... fetch wallet from os_wallets using wallet_encrypted_seed
+    if token_address and token_address.lower() in ('0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000001010'):
+        # Native token transfer
+        tx = {
+            'from': acct.address,
+            'to': to_address,
+            'value': Web3.to_wei(float(amount), 'ether'),
+            'nonce': w3.eth.get_transaction_count(acct.address),
+            'gas': 21000,
+            'gasPrice': w3.eth.gas_price,
+            'chainId': chain_config["chain_id"]
+        }
+    else:
+        # ERC-20 transfer as before
 
 # Transaction detail
 @app.get("/api/transactions/{tx_hash}")
