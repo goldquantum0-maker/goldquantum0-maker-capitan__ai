@@ -4,7 +4,7 @@ psycopg2-binary
 web3
 eth-account
 PyPDF2
-docx
+python-docx
 openpyxl
 bcrypt
 pydantic-settings
