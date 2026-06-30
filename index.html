@@ -11,7 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- QR code generator (replaces Html5Qrcode) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/@walletconnect/web3wallet@1.8.0/dist/index.umd.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -306,6 +307,19 @@
 <div id="transactionsModal" class="modal-overlay"><div class="modal" id="transactionsModalContent"></div></div>
 <div id="notifPanel" style="position:fixed;top:0;right:-360px;width:320px;height:100vh;background:var(--glass-bg);border-left:1px solid var(--glass-border);z-index:200;transition:right 0.3s;padding:16px;overflow-y:auto;backdrop-filter:blur(20px)"> <h3>Notifications</h3><div id="notifList"></div><button class="btn btn-outline" onclick="closeNotifPanel()">Close</button></div>
 
+<!-- Wallet password modal (added for secure per‑action password entry) -->
+<div id="passwordModal" class="modal-overlay">
+    <div class="modal">
+        <h2>Wallet Password</h2>
+        <p>Enter your wallet password to sign the on‑chain burn.</p>
+        <input type="password" id="passwordModalInput" placeholder="Password">
+        <div style="display:flex;gap:8px;">
+            <button class="btn" id="passwordModalConfirm">Confirm</button>
+            <button class="btn btn-outline" onclick="closePasswordModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ==================== CONFIG (native tokens now use wrapped/zero address) ====================
 const CFG = {
@@ -356,7 +370,8 @@ let state = {
     theme: localStorage.getItem('capitan_theme')||'dark',
     walletConnector: null,
     sessionWalletPassword: null,
-    founderClickCount: 0
+    founderClickCount: 0,
+    pendingMessageText: null   // stores the message text while waiting for password
 };
 
 const COLORS = ["#00b4d8","#a855f7","#f0b90b","#10b981","#f43f5e","#f97316","#8b5cf6","#ec4899","#06b6d4","#84cc16"];
@@ -376,7 +391,11 @@ async function apiCall(e,o={}){
     let h={'Content-Type':'application/json'};
     if(state.token) h['Authorization']='Bearer '+state.token;
     let res=await fetch(CFG.API+e,{...o,headers:h});
-    if(!res.ok){let err=await res.text();try{err=JSON.parse(err).detail||err}catch(e){}throw new Error(err)}
+    if(!res.ok){
+        let err = await res.text();
+        try { err = JSON.parse(err).detail || err; } catch {}
+        throw new Error(`API error (${res.status}): ${err}`);
+    }
     return res.json();
 }
 
@@ -384,7 +403,7 @@ function setTheme(t){state.theme=t;document.body.className=t==='system'?(window.
 setTheme(state.theme||'dark');
 window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(state.theme==='system') setTheme('system')});
 
-// ==================== AUTH (same) ====================
+// ==================== AUTH (unchanged) ====================
 function showSignupModal(){
     document.getElementById('signupModalContent').innerHTML=`
         <h2>Create OS Wallet</h2>
@@ -473,7 +492,7 @@ async function activateWallet(){
     }catch(e){toast('Activation failed')}
 }
 
-// ==================== UI UPDATES (same) ====================
+// ==================== UI UPDATES (unchanged) ====================
 function updateUI(){
     let logged=!!state.user;
     document.getElementById('profileName').innerText=state.user?.name||state.user?.email?.split('@')[0]||'Guest';
@@ -491,28 +510,43 @@ function updateUI(){
     } else badge.style.display='none';
 }
 
-// ==================== CHAT (same) ====================
+// ==================== CHAT (fixed: no ghost messages, secure password modal) ====================
 function newChat(){state.activeChatId=null;state.messages=[];renderMessages();document.getElementById('messageInput').focus()}
+
+// Entry point: either shows password modal or continues directly
 async function sendMessage(){
     let input=document.getElementById('messageInput'),text=input.value.trim();
     if(!text||state.loading) return;
     if(!state.token && !state.user){ showSignupModal(); return; }
-    let pwd = state.sessionWalletPassword;
-    if(state.user && !pwd){
-        pwd = prompt("Enter wallet password to burn CLOSE on-chain (required):");
-        if(!pwd){ toast("Password required for on-chain burn."); return; }
-        state.sessionWalletPassword = pwd;
+
+    // Authenticated user needs wallet password (if not yet entered)
+    if(state.user && !state.sessionWalletPassword){
+        state.pendingMessageText = text;
+        showPasswordModal();
+        return;
     }
-    input.value=''; state.messages.push({role:'user',content:text}); renderMessages();
-    state.loading=true; state.messages.push({role:'assistant',content:'',isTyping:true}); renderMessages();
+    // Proceed immediately (password already available or guest)
+    continueSendMessage(text);
+}
+
+// Continuation after password is obtained
+async function continueSendMessage(text){
+    let input = document.getElementById('messageInput');
+    input.value = '';
+    state.messages.push({role:'user', content:text}); renderMessages();
+    state.loading = true;
+    state.messages.push({role:'assistant', content:'', isTyping:true}); renderMessages();
     try{
-        let body = {messages:state.messages.slice(0,-1), chat_id:state.activeChatId, wallet_password: pwd};
+        let body = {messages:state.messages.slice(0,-1), chat_id:state.activeChatId, wallet_password: state.sessionWalletPassword};
         let res = await apiCall('/api/chat',{method:'POST',body:JSON.stringify(body)});
         let full = res.content||'No response';
         state.messages[state.messages.length-1] = {role:'assistant',content:full,message_id:res.message_id};
-        if(res.close_balance!==undefined){ state.closeBalance=res.close_balance; localStorage.setItem('close_balance',state.closeBalance); }
+        if(res.close_balance!==undefined){
+            state.closeBalance = res.close_balance;
+            localStorage.setItem('close_balance',state.closeBalance);
+        }
         if(res.free_messages_remaining!==undefined) state.freeUsed = CFG.FREE_MSGS - res.free_messages_remaining;
-        state.activeChatId=res.chat_id; state.loading=false;
+        state.activeChatId = res.chat_id; state.loading = false;
         let msgIdx = state.messages.length-1;
         renderMessages();
         let msgEl = document.getElementById('msg-'+msgIdx);
@@ -520,8 +554,35 @@ async function sendMessage(){
         if(res.wallet_prompt) showBubblePrompt(res.wallet_message);
         if(res.burn_tx) toast('🔥 Burn TX: '+res.burn_tx.slice(0,10)+'...');
         updateUI();
-    }catch(e){state.messages.pop();state.messages.push({role:'assistant',content:'Error: '+e.message});state.loading=false;renderMessages()}
+        // Clear password after successful burn? Keep until logout for convenience.
+    }catch(e){
+        state.messages.pop(); state.messages.push({role:'assistant',content:'Error: '+e.message}); state.loading=false; renderMessages();
+    }
 }
+
+// Password modal functions
+function showPasswordModal(){
+    document.getElementById('passwordModal').classList.add('open');
+    document.getElementById('passwordModalInput').value = '';
+    document.getElementById('passwordModalInput').focus();
+    document.getElementById('passwordModalConfirm').onclick = function(){
+        let pwd = document.getElementById('passwordModalInput').value;
+        if(!pwd){ toast('Password required'); return; }
+        state.sessionWalletPassword = pwd;
+        closePasswordModal();
+        // Now continue sending the pending message
+        if(state.pendingMessageText){
+            let text = state.pendingMessageText;
+            state.pendingMessageText = null;
+            continueSendMessage(text);
+        }
+    };
+}
+function closePasswordModal(){
+    document.getElementById('passwordModal').classList.remove('open');
+    state.pendingMessageText = null; // discard if cancelled
+}
+
 function streamText(container, fullText, speed=15){
     container.innerHTML=''; let i=0; let cursor=document.createElement('span'); cursor.className='stream-cursor';
     container.appendChild(cursor);
@@ -531,7 +592,11 @@ function streamText(container, fullText, speed=15){
             if(char==='\n'){ let br=document.createElement('br'); container.insertBefore(br,cursor); }
             else{ let span=document.createElement('span'); span.textContent=char; container.insertBefore(span,cursor); }
             i++; setTimeout(type,speed);
-        }else{ cursor.remove(); }
+        }else{
+            cursor.remove();
+            // After full text is typed, apply markdown formatting
+            container.innerHTML = formatMarkdown(escapeHtml(fullText));
+        }
     }
     type();
 }
@@ -556,10 +621,16 @@ function renderMessages(){
     c.scrollTop=c.scrollHeight;
 }
 function escapeHtml(s){return s?.replace(/</g,'&lt;')}
-function formatMarkdown(t){return t?.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
+function formatMarkdown(t){
+    // simple markdown: bold, italics, line breaks
+    return t
+        .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g,'<em>$1</em>')
+        .replace(/\n/g,'<br>');
+}
 function useSuggestion(t){document.getElementById('messageInput').value=t;sendMessage()}
 
-// ==================== NAVIGATION (same) ====================
+// ==================== NAVIGATION (unchanged) ====================
 function goBackToChat(){
     document.querySelectorAll('.full-page-view').forEach(v=>v.classList.remove('open'));
     document.getElementById('chatView').style.display='flex';
@@ -569,7 +640,7 @@ function hideAllViews(){
     document.getElementById('chatView').style.display='flex';
 }
 
-// ==================== OS WALLETS (FIXED + MODERN) ====================
+// ==================== OS WALLETS (balance refetch added after actions) ====================
 function openWallet(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('walletFullPage').classList.add('open');renderWalletDashboard();}
 async function renderWalletDashboard(){
     let c=document.getElementById('walletContainer');
@@ -737,7 +808,7 @@ async function createNewWalletFromUI(){
     }catch(e){toast('Creation failed: '+e.message)}
 }
 
-// Wallet action functions (unchanged, but now native tokens are real addresses)
+// Wallet action functions (balance refetch added after stake/unstake/purchase)
 function showBuyModal(){
     document.getElementById('buyCloseModalContent').innerHTML=`<h2>Buy CLOSE</h2><p>Send your payment to the Hot Wallet address below, then paste TXID.</p><p style="font-size:11px;word-break:break-all;">0x109464E84bDD6552d76bcBbaEf03bDe8069C0698</p><input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash"><button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
     document.getElementById('buyCloseModal').classList.add('open');
@@ -746,7 +817,15 @@ async function purchaseClose(){
     let usd=document.getElementById('purchaseUsd').value, tx=document.getElementById('txHash').value;
     try{
         let res=await apiCall('/api/wallet/purchase',{method:'POST',body:JSON.stringify({usd_amount:parseFloat(usd),tx_hash:tx})});
-        if(res.verified){ state.closeBalance+=res.purchased; localStorage.setItem('close_balance',state.closeBalance); closeModal('buyCloseModal'); updateUI(); renderWalletDashboard(); toast('Purchased!'); }
+        if(res.verified){
+            // refetch balances
+            let bal = await apiCall('/api/wallet/balance');
+            state.closeBalance = bal.close_balance;
+            state.closeStaked = bal.close_staked;
+            state.stakeTier = bal.stake_tier;
+            localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
+            closeModal('buyCloseModal'); updateUI(); renderWalletDashboard(); toast('Purchased!');
+        }
         else toast('Payment not verified');
     }catch(e){toast('Error')}
 }
@@ -758,7 +837,11 @@ async function stakeClose(){
     let amount=document.getElementById('stakeAmount').value, pwd=document.getElementById('stakePassword').value;
     try{
         let res=await apiCall('/api/wallet/stake',{method:'POST',body:JSON.stringify({amount:parseInt(amount),password:pwd})});
-        state.closeBalance-=amount; state.closeStaked=res.staked; state.stakeTier=res.tier;
+        // refetch balances
+        let bal = await apiCall('/api/wallet/balance');
+        state.closeBalance = bal.close_balance;
+        state.closeStaked = bal.close_staked;
+        state.stakeTier = bal.stake_tier;
         localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
         closeModal('stakeModal'); updateUI(); renderWalletDashboard();
     }catch(e){toast('Stake failed')}
@@ -771,7 +854,11 @@ async function unstakeClose(){
     let pwd=document.getElementById('unstakePassword').value;
     try{
         let res=await apiCall('/api/wallet/unstake',{method:'POST',body:JSON.stringify({password:pwd})});
-        state.closeBalance+=res.new_staked; state.closeStaked=res.new_staked; state.stakeTier=res.tier;
+        // refetch balances
+        let bal = await apiCall('/api/wallet/balance');
+        state.closeBalance = bal.close_balance;
+        state.closeStaked = bal.close_staked;
+        state.stakeTier = bal.stake_tier;
         localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
         closeModal('stakeModal'); updateUI(); renderWalletDashboard();
     }catch(e){toast('Unstake failed')}
@@ -838,7 +925,17 @@ async function sendTransaction(){
 function showReceiveModal(){
     document.getElementById('receiveModalContent').innerHTML=`<h2>Receive</h2><div id="qrcode"></div><p>${state.walletAddress||'No wallet address'}</p><button class="btn" onclick="navigator.clipboard.writeText('${state.walletAddress||''}')">Copy Address</button>`;
     document.getElementById('receiveModal').classList.add('open');
-    if(state.walletAddress && window.Html5Qrcode) new Html5Qrcode("qrcode").then(qr=>{qr.clear();qr.render(state.walletAddress);});
+    if(state.walletAddress){
+        // Use qrcode library (loaded via CDN)
+        new QRCode(document.getElementById("qrcode"), {
+            text: state.walletAddress,
+            width: 150,
+            height: 150,
+            colorDark : "#ffffff",
+            colorLight : "transparent",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    }
 }
 function showAddAddressModal(){
     document.getElementById('addressModalContent').innerHTML=`<h2>Add Address</h2><input id="addrLabel" placeholder="Label"><input id="addrAddress" placeholder="Address"><select id="addrChain">${Object.keys(CFG.CHAINS).map(c=>`<option>${c}</option>`).join('')}</select><button class="btn" onclick="addAddress()">Save</button>`;
@@ -892,7 +989,7 @@ function openWalletResearch(){
     });
 }
 
-// ==================== PORTFOLIO (same) ====================
+// ==================== PORTFOLIO (unchanged) ====================
 function openPortfolio(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('portfolioFullPage').classList.add('open');loadPortfolio()}
 async function loadPortfolio(){
     let c=document.getElementById('portfolioFullContent');
@@ -956,7 +1053,7 @@ async function togglePin(id){
     loadPortfolio();
 }
 
-// ==================== WORKSPACES (same) ====================
+// ==================== WORKSPACES (unchanged) ====================
 function openWorkspacePage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('workspaceFullPage').classList.add('open');loadWorkspaces()}
 async function loadWorkspaces(){
     let c=document.getElementById('workspaceFullContent');
@@ -1032,7 +1129,7 @@ async function createWorkspace(){
     try{await apiCall('/api/hub/rooms',{method:'POST',body:JSON.stringify({name,room_code:code})});toast('Created');closeModal('workspaceCreateModal');loadWorkspaces()}catch(e){toast('Failed')}
 }
 
-// ==================== LEADERBOARD (same) ====================
+// ==================== LEADERBOARD (unchanged) ====================
 function openLeaderboardPage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('leaderboardFullPage').classList.add('open');loadLeaderboard('staked')}
 async function loadLeaderboard(type){
     let c=document.getElementById('leaderboardContent');
@@ -1048,7 +1145,7 @@ async function loadLeaderboard(type){
     }catch(e){c.innerHTML='<p>Failed to load leaderboard.</p>'}
 }
 
-// ==================== DEVELOPER PAGE (same) ====================
+// ==================== DEVELOPER PAGE (unchanged) ====================
 function openDeveloperPage(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('developerFullPage').classList.add('open');loadDeveloperPage('keys')}
 async function loadDeveloperPage(tab){
     let c=document.getElementById('developerContent');
@@ -1099,7 +1196,7 @@ async function createWebhook(){
 }
 async function deleteWebhook(id){ if(confirm('Delete webhook?')){await apiCall('/api/developer/webhooks/'+id,{method:'DELETE'});loadDeveloperPage('webhooks');} }
 
-// ==================== FOUNDER DASHBOARD (same) ====================
+// ==================== FOUNDER DASHBOARD (unchanged) ====================
 async function openFounderDashboard(){
     if(!state.user||state.stakeTier!=='founder') return toast('Founder access required');
     hideAllViews(); document.getElementById('chatView').style.display='none'; document.getElementById('founderDashboardPage').classList.add('open');
@@ -1152,7 +1249,7 @@ async function deleteUser(userId){
     }
 }
 
-// ==================== NOTIFICATIONS (same) ====================
+// ==================== NOTIFICATIONS (unchanged) ====================
 async function fetchNotifications(){
     if(!state.user) return;
     try{
@@ -1172,7 +1269,7 @@ async function markAllRead(){
     fetchNotifications();
 }
 
-// ==================== PROFILE / LEGAL (same) ====================
+// ==================== PROFILE / LEGAL (unchanged) ====================
 function openProfileModal(){
     document.getElementById('profileModalContent').innerHTML=`
         <h2>Account</h2>
@@ -1198,7 +1295,7 @@ async function openTermsModal(){
     }catch(e){toast('Could not load terms')}
 }
 
-// ==================== FILE UPLOAD (same) ====================
+// ==================== FILE UPLOAD (unchanged) ====================
 function triggerFileUpload(){
     if(!state.user) return toast('Sign in to upload');
     let inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.docx,.doc,.xls,.xlsx,.txt,.png,.jpg,.jpeg';
@@ -1221,7 +1318,7 @@ function triggerFileUpload(){
     inp.click();
 }
 
-// ==================== HELPERS (same) ====================
+// ==================== HELPERS (unchanged) ====================
 function toggleCollapsible(k){
     let content=document.getElementById(k+'Content'), arrow=document.getElementById(k+'Arrow');
     content.classList.toggle('open');
@@ -1237,7 +1334,7 @@ function closeSidebar(){
     document.getElementById('overlay').classList.remove('open');
 }
 
-// ==================== FOUNDER EASTER EGG (13 CLICKS) ====================
+// ==================== FOUNDER EASTER EGG (unchanged) ====================
 let founderClickTimeout;
 document.getElementById('founderEasterEgg').addEventListener('click', function(e){
     e.stopPropagation();
@@ -1251,7 +1348,7 @@ document.getElementById('founderEasterEgg').addEventListener('click', function(e
     }
 });
 
-// ==================== INIT (same) ====================
+// ==================== INIT (unchanged) ====================
 async function init(){
     document.getElementById('toggleSidebarBtn').onclick=toggleSidebar;
     setTimeout(()=>{document.getElementById('splashScreen').classList.add('hide');document.getElementById('app').style.display='flex';},1600);
