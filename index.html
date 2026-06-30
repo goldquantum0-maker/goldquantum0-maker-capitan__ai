@@ -967,7 +967,7 @@ async function loadWorkspaces(){
         if(d.rooms&&d.rooms.length){ d.rooms.forEach(r=>{html+=`<div class="dashboard-card" onclick="openRoomChat('${r.room_code}')"><div style="font-weight:600;">${escapeHtml(r.name)}</div><div style="font-size:11px;color:var(--text-tertiary);">Code: ${r.room_code} | Members: ${r.member_count}</div></div>`;}); }
         else html+='<p>No rooms yet.</p>';
         c.innerHTML=html;
-    }catch(e){c.innerHTML='<p>Failed to load workspaces.</p>'}
+   } catch(e) { c.innerHTML='<p>Error: ' + e.message + '</p>'; }
 }
 function openWorkspaceCreateModal(){
     document.getElementById('workspaceCreateModalContent').innerHTML=`
@@ -1071,7 +1071,7 @@ async function loadDeveloperPage(tab){
             });
             html+='</div>';
             c.innerHTML=html;
-        }catch(e){c.innerHTML='<p>Failed to load webhooks.</p>'}
+       } catch(e) { c.innerHTML='<p>Error: ' + e.message + '</p>'; }
     }
 }
 async function createApiKey(){
@@ -1132,7 +1132,7 @@ async function openFounderDashboard(){
             new Chart(document.getElementById('userChart'),{type:'line',data:{labels:charts.dates,datasets:[{label:'New Users',data:charts.users,borderColor:'#00b4d8',fill:false}]}});
             new Chart(document.getElementById('burnChart'),{type:'line',data:{labels:charts.dates,datasets:[{label:'CLOSE Burned',data:charts.burns,borderColor:'#f43f5e',fill:false}]}});
         }
-    }catch(e){c.innerHTML='<p>Access denied or failed to load.</p>'}
+    } catch(e) { c.innerHTML='<p>Error: ' + e.message + '</p>'; }
 }
 async function searchAdminUsers(){
     let q=document.getElementById('adminSearch').value;
