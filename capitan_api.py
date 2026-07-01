@@ -258,6 +258,121 @@ if os.path.exists("staking_abi.json"):
     with open("staking_abi.json") as f:
         STAKING_ABI = json.load(f)
 
+# --------------------------------------------------------------------------------
+# WALLET‑ONLY AUTH (no email)
+# --------------------------------------------------------------------------------
+
+@app.post("/api/wallet/register")
+async def wallet_register(req: dict, request: Request):
+    """
+    Register a new user with only a wallet address and encrypted seed.
+    The wallet is generated client‑side.
+    """
+    wallet_address = req.get("wallet_address", "").strip()
+    encrypted_seed = req.get("encrypted_seed", "")
+
+    if not wallet_address or not encrypted_seed:
+        raise HTTPException(400, "wallet_address and encrypted_seed required")
+
+    # Check if address already registered
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id FROM users WHERE wallet_address = %s", (wallet_address,))
+            if c.fetchone():
+                raise HTTPException(400, "Wallet already registered. Please use Unlock.")
+
+            # Create user (no email, no password – only wallet)
+            user_id = str(uuid.uuid4())
+            c.execute("""INSERT INTO users (id, email, password_hash, name, close_balance, stake_tier, wallet_address, wallet_encrypted_seed)
+                         VALUES (%s, %s, '', '', 0, 'none', %s, %s)""",
+                      (user_id, f"wallet_{wallet_address[:8]}@capitan.ai",
+                       wallet_address, encrypted_seed))
+
+            # Credit welcome bonus from hot wallet
+            bonus_credited = False
+            if settings.HOT_WALLET_PRIVATE_KEY and settings.CLOSE_CONTRACT_ADDRESS:
+                try:
+                    hot_acct = Account.from_key(settings.HOT_WALLET_PRIVATE_KEY)
+                    contract = w3_polygon.eth.contract(address=settings.CLOSE_CONTRACT_ADDRESS, abi=ERC20_ABI)
+                    amount_wei = int(settings.FREE_CLOSE_AMOUNT * 10**settings.CLOSE_DECIMALS)
+                    tx = contract.functions.transfer(wallet_address, amount_wei).build_transaction({
+                        'from': hot_acct.address,
+                        'nonce': w3_polygon.eth.get_transaction_count(hot_acct.address),
+                        'gas': 100000,
+                        'gasPrice': w3_polygon.eth.gas_price
+                    })
+                    signed = w3_polygon.eth.account.sign_transaction(tx, settings.HOT_WALLET_PRIVATE_KEY)
+                    tx_hash = w3_polygon.eth.send_raw_transaction(signed.rawTransaction).hex()
+                    c.execute("INSERT INTO close_transactions (id, user_id, type, amount, tx_hash) VALUES (%s,%s,%s,%s,%s)",
+                              (str(uuid.uuid4()), user_id, "welcome_bonus", settings.FREE_CLOSE_AMOUNT, tx_hash))
+                    bonus_credited = True
+                except Exception as e:
+                    logger.error(f"Welcome bonus transfer failed: {e}")
+
+            # Always credit DB balance (in case on‑chain transfer fails, we still credit)
+            c.execute("UPDATE users SET close_balance = close_balance + %s WHERE id = %s",
+                      (settings.FREE_CLOSE_AMOUNT, user_id))
+            conn.commit()
+
+    # Generate JWT token for this wallet
+    token = create_token(user_id)
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user_id, token, now_utc() + timedelta(days=30)))
+            conn.commit()
+
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "wallet_address": wallet_address,
+            "close_balance": settings.FREE_CLOSE_AMOUNT,
+            "close_staked": 0,
+            "stake_tier": "none"
+        },
+        "close_credited": settings.FREE_CLOSE_AMOUNT,
+        "bonus_on_chain": bonus_credited
+    }
+
+
+@app.post("/api/auth/wallet-login")
+async def wallet_login(req: dict, request: Request):
+    """
+    Login with just the wallet address (the user already unlocked locally).
+    Returns a session token.
+    """
+    wallet_address = req.get("wallet_address", "").strip()
+    if not wallet_address:
+        raise HTTPException(400, "wallet_address required")
+
+    with get_db() as conn:
+        with conn.cursor() as c:
+            c.execute("SELECT id, email, name, close_balance, close_staked, stake_tier, wallet_address, wallet_encrypted_seed FROM users WHERE wallet_address = %s", (wallet_address,))
+            row = c.fetchone()
+            if not row:
+                raise HTTPException(404, "Wallet not registered. Create a new wallet first.")
+
+            user_id = row[0]
+            token = create_token(user_id)
+            c.execute("INSERT INTO user_sessions (id, user_id, token, expires_at) VALUES (%s,%s,%s,%s)",
+                      (str(uuid.uuid4()), user_id, token, now_utc() + timedelta(days=30)))
+            c.execute("UPDATE users SET last_active = NOW() WHERE id = %s", (user_id,))
+            conn.commit()
+
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "name": row[2] or f"Wallet {wallet_address[:6]}...",
+            "wallet_address": row[6],
+            "close_balance": row[3] or 0,
+            "close_staked": row[4] or 0,
+            "stake_tier": row[5] or "none"
+        }
+    }
+
+
 # ================================================================================
 # HELPERS
 # ================================================================================
