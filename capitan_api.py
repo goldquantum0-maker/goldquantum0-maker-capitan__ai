@@ -70,6 +70,12 @@ class Settings(BaseSettings):
     STAKE_ENTERPRISE: int = 35_000_000
     WORKSPACE_JOIN_COST: int = 500
 
+    # New distribution wallets
+    TRUST_WALLET_ADDRESS: str = ""
+    TRUST_WALLET_PRIVATE_KEY: str = ""
+    TOKEN_POCKET_WALLET_ADDRESS: str = ""
+    TOKEN_POCKET_WALLET_PRIVATE_KEY: str = ""
+
     # Additional market fallback for purchase verification
     POL_PRICE_USD: float = 0.5
 
@@ -1665,32 +1671,62 @@ async def activate_wallet(req: dict, user: dict = Depends(get_current_user)):
     if not user: raise HTTPException(401)
     password = req.get("password")
     if not password: raise HTTPException(400, "Password required")
+
+    # Use Token Pocket as distribution wallet
+    if not settings.TOKEN_POCKET_WALLET_PRIVATE_KEY:
+        raise HTTPException(500, "Distribution wallet not configured")
+    if not settings.TOKEN_POCKET_WALLET_ADDRESS:
+        raise HTTPException(500, "Distribution wallet address not set")
+
+    try:
+        dist_acct = Account.from_key(settings.TOKEN_POCKET_WALLET_PRIVATE_KEY)
+        if dist_acct.address.lower() != settings.TOKEN_POCKET_WALLET_ADDRESS.lower():
+            raise HTTPException(500, "Distribution wallet address does not match private key")
+    except Exception as e:
+        logger.error(f"Token Pocket wallet init error: {e}")
+        raise HTTPException(500, "Distribution wallet configuration invalid")
+
     with get_db() as conn:
         with conn.cursor() as c:
             c.execute("SELECT close_balance, wallet_address FROM users WHERE id = %s", (user["id"],))
             row = c.fetchone()
-            if row[0] >= settings.FREE_CLOSE_AMOUNT: raise HTTPException(400, "Welcome bonus already claimed")
+            if row[0] >= settings.FREE_CLOSE_AMOUNT:
+                raise HTTPException(400, "Welcome bonus already claimed")
+
             addr = row[1]
             if not addr:
                 acct = Account.create()
                 encrypted = Account.encrypt(acct.key.hex(), password)
                 addr = acct.address
-                c.execute("UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s", (addr, json.dumps(encrypted), user["id"]))
-            if settings.HOT_WALLET_PRIVATE_KEY:
-                hot_acct = Account.from_key(settings.HOT_WALLET_PRIVATE_KEY)
+                c.execute("UPDATE users SET wallet_address = %s, wallet_encrypted_seed = %s WHERE id = %s",
+                          (addr, json.dumps(encrypted), user["id"]))
+
+            # Transfer welcome bonus using Token Pocket wallet
+            try:
                 contract = w3_polygon.eth.contract(address=settings.CLOSE_CONTRACT_ADDRESS, abi=ERC20_ABI)
-                tx = contract.functions.transfer(addr, int(settings.FREE_CLOSE_AMOUNT * 10**settings.CLOSE_DECIMALS)).build_transaction({
-                    'from': hot_acct.address,
-                    'nonce': w3_polygon.eth.get_transaction_count(hot_acct.address),
-                    'gas': 60000,
+                amount_wei = int(settings.FREE_CLOSE_AMOUNT * 10**settings.CLOSE_DECIMALS)
+                tx = contract.functions.transfer(addr, amount_wei).build_transaction({
+                    'from': dist_acct.address,
+                    'nonce': w3_polygon.eth.get_transaction_count(dist_acct.address),
+                    'gas': 100000,
                     'gasPrice': w3_polygon.eth.gas_price
                 })
-                send_raw_tx(settings.HOT_WALLET_PRIVATE_KEY, tx)
-            c.execute("UPDATE users SET close_balance = close_balance + %s WHERE id = %s", (settings.FREE_CLOSE_AMOUNT, user["id"]))
-            c.execute("INSERT INTO close_transactions (id, user_id, type, amount) VALUES (%s,%s,%s,%s)",
-                      (str(uuid.uuid4()), user["id"], "welcome_bonus", settings.FREE_CLOSE_AMOUNT))
+                signed = w3_polygon.eth.account.sign_transaction(tx, settings.TOKEN_POCKET_WALLET_PRIVATE_KEY)
+                tx_hash = w3_polygon.eth.send_raw_transaction(signed.rawTransaction).hex()
+                # record transaction
+                c.execute("INSERT INTO close_transactions (id, user_id, type, amount, tx_hash) VALUES (%s,%s,%s,%s,%s)",
+                          (str(uuid.uuid4()), user["id"], "welcome_bonus", settings.FREE_CLOSE_AMOUNT, tx_hash))
+            except Exception as e:
+                logger.error(f"Welcome bonus transfer failed: {e}")
+                raise HTTPException(500, f"Failed to send welcome bonus: {str(e)}")
+
+            # Always credit DB balance
+            c.execute("UPDATE users SET close_balance = close_balance + %s WHERE id = %s",
+                      (settings.FREE_CLOSE_AMOUNT, user["id"]))
             conn.commit()
+
     return {"wallet_address": addr, "close_credited": settings.FREE_CLOSE_AMOUNT}
+
 
 # Multi‑wallet management
 @app.get("/api/wallets")
