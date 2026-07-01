@@ -708,28 +708,52 @@ def get_market_prices():
 
 def get_news():
     news = []
-    # Try NewsAPI first
+    # Try NewsAPI first (if key is set)
     if settings.NEWS_API_KEY:
         try:
-            r = requests.get("https://newsapi.org/v2/top-headlines",
-                             params={"category":"business","language":"en","pageSize":10,"apiKey":settings.NEWS_API_KEY}, timeout=10)
+            r = requests.get(
+                "https://newsapi.org/v2/top-headlines",
+                params={
+                    "category": "business",
+                    "language": "en",
+                    "pageSize": 10,
+                    "apiKey": settings.NEWS_API_KEY
+                },
+                timeout=10
+            )
             if r.status_code == 200:
-                for article in r.json().get("articles",[]):
-                    news.append({"source":article.get("source",{}).get("name","News"),"headline":article.get("title",""),
-                                 "url":article.get("url",""),"summary":(article.get("description") or "")[:200]})
-        except: pass
-    # Fallback to CoinDesk RSS if no results
+                for article in r.json().get("articles", []):
+                    news.append({
+                        "source": article.get("source", {}).get("name", "News"),
+                        "headline": article.get("title", ""),
+                        "url": article.get("url", ""),
+                        "summary": (article.get("description") or "")[:200]
+                    })
+        except Exception:
+            pass
+
+    # Fallback to CoinDesk RSS (no external libs needed)
     if not news:
         try:
-            feed = feedparser.parse("https://www.coindesk.com/arc/outboundfeeds/rss/")
-            for entry in feed.entries[:10]:
-                news.append({
-                    "source": "CoinDesk",
-                    "headline": entry.title,
-                    "url": entry.link,
-                    "summary": entry.get("summary", "")[:200]
-                })
-        except: pass
+            import xml.etree.ElementTree as ET
+            resp = requests.get("https://www.coindesk.com/arc/outboundfeeds/rss/", timeout=10)
+            if resp.status_code == 200:
+                root = ET.fromstring(resp.content)
+                # RSS items are inside <channel> -> <item>
+                for item in root.findall(".//item")[:10]:
+                    title = item.findtext("title", "")
+                    link = item.findtext("link", "")
+                    desc = item.findtext("description", "")
+                    # Clean HTML from description if needed
+                    news.append({
+                        "source": "CoinDesk",
+                        "headline": title,
+                        "url": link,
+                        "summary": (desc or "")[:200]
+                    })
+        except Exception:
+            pass
+
     return news[:10]
 
 def build_system_prompt(user_query, user_model, thread_context, web_results):
