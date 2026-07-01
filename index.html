@@ -111,7 +111,7 @@
         .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center}
         .modal-overlay.open{display:flex;animation:modalOverlayIn 0.3s ease}
         @keyframes modalOverlayIn{from{opacity:0}to{opacity:1}}
-        .modal{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);backdrop-filter:blur(20px);animation:modalScaleIn 0.2s ease}
+        .modal{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);backdrop-filter:blur(20px);animation:modalScaleIn 0.2s ease;position:relative}
         @keyframes modalScaleIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
         .modal h2{font-size:20px;margin-bottom:16px;font-weight:600}
         .modal input,.modal select{width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);font-size:13px;margin-bottom:12px}
@@ -151,6 +151,11 @@
         .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
         .big-number{font-size:2rem;font-weight:700;color:var(--accent)}
         .profile-modal-avatar{width:60px;height:60px;border-radius:50%;background:var(--accent-glow);border:2px solid var(--accent);margin-bottom:12px}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+        .modal-header h2{margin:0}
+        .modal-close-btn{background:none;border:none;font-size:24px;color:var(--text-secondary);cursor:pointer;line-height:1}
+        .modal-close-btn:hover{color:var(--danger)}
+        .wallet-address-display{background:var(--bg-secondary);padding:10px;border-radius:8px;word-break:break-all;font-family:monospace;font-size:13px;margin-bottom:10px}
     </style>
 </head>
 <body>
@@ -262,7 +267,15 @@
         </div>
     </main>
     <div class="full-page-view" id="walletFullPage">
-        <div class="full-page-top"><button class="back-btn" onclick="goBackToChat()">←</button><span class="full-page-title">OS Wallets</span></div>
+        <div class="full-page-top">
+            <button class="back-btn" onclick="goBackToChat()">←</button>
+            <svg width="28" height="28" viewBox="0 0 40 40" style="margin-right:10px;">
+                <circle cx="20" cy="20" r="18" fill="none" stroke="#00b4d8" stroke-width="2"/>
+                <circle cx="20" cy="20" r="13" fill="none" stroke="#90e0ef" stroke-width="1" stroke-dasharray="6 4"/>
+                <text x="20" y="26" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#00b4d8" font-weight="700">C</text>
+            </svg>
+            <span class="full-page-title">OS Wallets</span>
+        </div>
         <div class="wallet-container" id="walletContainer"></div>
     </div>
     <div class="full-page-view" id="portfolioFullPage">
@@ -308,7 +321,10 @@
 <div id="notifPanel" style="position:fixed;top:0;right:-360px;width:320px;height:100vh;background:var(--glass-bg);border-left:1px solid var(--glass-border);z-index:200;transition:right 0.3s;padding:16px;overflow-y:auto;backdrop-filter:blur(20px)"> <h3>Notifications</h3><div id="notifList"></div><button class="btn btn-outline" onclick="closeNotifPanel()">Close</button></div>
 <div id="passwordModal" class="modal-overlay">
     <div class="modal">
-        <h2>Wallet Password</h2>
+        <div class="modal-header">
+            <h2>Wallet Password</h2>
+            <button class="modal-close-btn" onclick="closePasswordModal()">×</button>
+        </div>
         <p>Enter your wallet password to sign the on‑chain burn.</p>
         <input type="password" id="passwordModalInput" placeholder="Password">
         <div style="display:flex;gap:8px;">
@@ -390,15 +406,18 @@ function showWalletCreationModal() {
     const seedPhrase = wallet.mnemonic.phrase;
     const address = wallet.address;
     document.getElementById('signupModalContent').innerHTML = `
-        <h2>Create OS Wallet</h2>
+        <div class="modal-header">
+            <h2>Create OS Wallet</h2>
+            <button class="modal-close-btn" onclick="closeModal('signupModal')">×</button>
+        </div>
         <p style="font-size:12px;color:var(--warning)">Write down these 12 words in order. Keep them safe!</p>
         <div style="background:var(--bg-secondary);padding:12px;border-radius:8px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-family:monospace;font-size:13px;">
             ${seedPhrase.split(' ').map((w,i) => `<span>${i+1}. ${w}</span>`).join('')}
         </div>
         <p style="font-size:12px;">Confirm your seed phrase by typing it below:</p>
-        <input id="confirmSeed" placeholder="Type the 12 words" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input id="confirmSeed" placeholder="Type the 12 words">
         <p style="font-size:12px;">Set a wallet password:</p>
-        <input type="password" id="walletPassword" placeholder="Password (min 10 chars)" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="password" id="walletPassword" placeholder="Password (min 10 chars)">
         <button class="btn btn-gold" onclick="completeWalletCreation('${seedPhrase.replace(/'/g, "\\'")}', '${address}')">Create Wallet & Get 2,000 CLOSE</button>
     `;
     document.getElementById('signupModal').classList.add('open');
@@ -440,9 +459,12 @@ async function completeWalletCreation(seedPhrase, address) {
 
 function showWalletUnlockModal() {
     document.getElementById('loginModalContent').innerHTML = `
-        <h2>Unlock Wallet</h2>
+        <div class="modal-header">
+            <h2>Unlock Wallet</h2>
+            <button class="modal-close-btn" onclick="closeModal('loginModal')">×</button>
+        </div>
         <p style="font-size:12px;">Enter your wallet password to unlock.</p>
-        <input type="password" id="unlockPassword" placeholder="Wallet password" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+        <input type="password" id="unlockPassword" placeholder="Wallet password">
         <button class="btn" onclick="unlockWallet()">Unlock</button>
         <p style="text-align:center;margin-top:8px;font-size:11px;">
             Don't have a wallet? <a onclick="closeModal('loginModal');showWalletCreationModal()">Create one</a>
@@ -485,7 +507,8 @@ function logout() {
     state.token=null; state.user=null; state.isGuest=true; state.closeBalance=0; state.closeStaked=0; state.stakeTier='none'; state.walletAddress='';
     state.sessionWalletPassword=null;
     localStorage.removeItem('capitan_token'); localStorage.removeItem('capitan_user');
-    updateUI(); renderMessages(); document.getElementById('app').style.display='none'; document.getElementById('loginModal').classList.add('open');
+    updateUI(); renderMessages(); document.getElementById('app').style.display='none';
+    showWalletUnlockModal(); // show unlock modal instead of old login
 }
 
 // ==================== UI UPDATES ====================
@@ -588,7 +611,7 @@ function showBubblePrompt(msg, canDismiss=true){
         <div class="c-icon">C</div>
         <div class="prompt-text">${msg||'Create your OS Wallet to unlock unlimited AI.'}</div>
         <button onclick="showSignupModal()" style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:20px;cursor:pointer;font-size:11px;">Open OS Wallets</button>
-        ${canDismiss?'<button class="dismiss-btn" onclick="this.parentElement.remove()">&#10005;</button>':''}
+        ${canDismiss?'<button class="dismiss-btn" onclick="this.parentElement.remove()">✕</button>':''}
     `;
     area.appendChild(div); area.scrollTop=area.scrollHeight;
 }
@@ -626,9 +649,9 @@ async function renderWalletDashboard(){
             <h2>Create Your OS Wallet</h2>
             <p>You need a wallet to hold CLOSE and other tokens.</p>
             <div style="max-width:400px;margin:20px auto;">
-                <input id="newWalletChain" placeholder="Chain (default: polygon)" value="polygon" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-                <input id="newWalletLabel" placeholder="Wallet Label (optional)" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-                <input type="password" id="newWalletPassword" placeholder="Set a password for this wallet" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
+                <input id="newWalletChain" placeholder="Chain (default: polygon)" value="polygon">
+                <input id="newWalletLabel" placeholder="Wallet Label (optional)">
+                <input type="password" id="newWalletPassword" placeholder="Set a password for this wallet">
                 <button class="btn" onclick="createNewWalletFromUI()">Create Wallet</button>
             </div>
         </div>`;
@@ -672,6 +695,12 @@ async function renderWalletDashboard(){
         c.innerHTML=`
         <div class="elite-wallet">
             ${tickerHTML} ${newsHTML}
+            <!-- Wallet address card -->
+            <div class="balance-card" style="flex-direction:column;align-items:flex-start;">
+                <span class="label" style="margin-bottom:8px;">Your Wallet Address</span>
+                <div class="wallet-address-display" id="walletAddressDisplay">${state.walletAddress}</div>
+                <button class="btn" style="width:auto;margin-top:8px;" onclick="navigator.clipboard.writeText('${state.walletAddress}');toast('Address copied!')">Copy Address</button>
+            </div>
             <div class="balance-card"><div><span class="label">Total Portfolio</span><div class="amount" style="color:var(--accent)">$${totalUSD.toFixed(2)}</div></div></div>
             <div class="balance-card"><div><span class="label">CLOSE Balance</span><div class="amount">${state.closeBalance.toLocaleString()} <small>CLOSE</small></div><div class="sub">$${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)} · 1 CLOSE = $${CFG.CLOSE_PRICE}</div></div></div>
             <div class="balance-card"><div><span class="label">CLOSE Staked</span><div class="amount">${state.closeStaked.toLocaleString()} <small>CLOSE</small></div><div class="sub">Tier: ${state.stakeTier.toUpperCase()}</div></div></div>
@@ -715,9 +744,17 @@ async function renderWalletDashboard(){
     }catch(e){c.innerHTML='<p>Failed to load wallet.</p>'}
 }
 
-// Wallet action functions
+// Wallet action functions (with modal header X buttons)
 function showBuyModal(){
-    document.getElementById('buyCloseModalContent').innerHTML=`<h2>Buy CLOSE</h2><p>Send your payment to the Hot Wallet address below, then paste TXID.</p><p style="font-size:11px;word-break:break-all;">0x109464E84bDD6552d76bcBbaEf03bDe8069C0698</p><input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash"><button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
+    document.getElementById('buyCloseModalContent').innerHTML=`
+        <div class="modal-header">
+            <h2>Buy CLOSE</h2>
+            <button class="modal-close-btn" onclick="closeModal('buyCloseModal')">×</button>
+        </div>
+        <p>Send your payment to the Hot Wallet address below, then paste TXID.</p>
+        <p style="font-size:11px;word-break:break-all;">0x109464E84bDD6552d76bcBbaEf03bDe8069C0698</p>
+        <input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash">
+        <button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
     document.getElementById('buyCloseModal').classList.add('open');
 }
 async function purchaseClose(){
@@ -733,7 +770,14 @@ async function purchaseClose(){
     }catch(e){toast('Error')}
 }
 function showStakeModal(){
-    document.getElementById('stakeModalContent').innerHTML=`<h2>Stake CLOSE</h2><input id="stakeAmount" type="number" placeholder="Amount"><input id="stakePassword" type="password" placeholder="Wallet password"><button class="btn" onclick="stakeClose()">Stake</button>`;
+    document.getElementById('stakeModalContent').innerHTML=`
+        <div class="modal-header">
+            <h2>Stake CLOSE</h2>
+            <button class="modal-close-btn" onclick="closeModal('stakeModal')">×</button>
+        </div>
+        <input id="stakeAmount" type="number" placeholder="Amount">
+        <input id="stakePassword" type="password" placeholder="Wallet password">
+        <button class="btn" onclick="stakeClose()">Stake</button>`;
     document.getElementById('stakeModal').classList.add('open');
 }
 async function stakeClose(){
@@ -747,7 +791,13 @@ async function stakeClose(){
     }catch(e){toast('Stake failed')}
 }
 function showUnstakeModal(){
-    document.getElementById('stakeModalContent').innerHTML=`<h2>Unstake</h2><input id="unstakePassword" type="password" placeholder="Wallet password"><button class="btn" onclick="unstakeClose()">Unstake All</button>`;
+    document.getElementById('stakeModalContent').innerHTML=`
+        <div class="modal-header">
+            <h2>Unstake</h2>
+            <button class="modal-close-btn" onclick="closeModal('stakeModal')">×</button>
+        </div>
+        <input id="unstakePassword" type="password" placeholder="Wallet password">
+        <button class="btn" onclick="unstakeClose()">Unstake All</button>`;
     document.getElementById('stakeModal').classList.add('open');
 }
 async function unstakeClose(){
@@ -763,7 +813,10 @@ async function unstakeClose(){
 function showSwapModal(){
     let chains=Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('');
     document.getElementById('swapModalContent').innerHTML=`
-        <h2>Swap</h2>
+        <div class="modal-header">
+            <h2>Swap</h2>
+            <button class="modal-close-btn" onclick="closeModal('swapModal')">×</button>
+        </div>
         <select id="swapChain">${chains}</select>
         <select id="swapFromToken" onchange="updateSwapTokens()"><option value="">Select token</option></select>
         <select id="swapToToken"><option value="">Select token</option></select>
@@ -791,7 +844,10 @@ async function getSwapQuote(){
 function showSendModal(){
     let chains=Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('');
     document.getElementById('sendModalContent').innerHTML=`
-        <h2>Send</h2>
+        <div class="modal-header">
+            <h2>Send</h2>
+            <button class="modal-close-btn" onclick="closeModal('sendModal')">×</button>
+        </div>
         <select id="sendChain" onchange="updateSendTokens()">${chains}</select>
         <select id="sendToken"></select>
         <input id="sendTo" placeholder="Address">
@@ -820,7 +876,14 @@ async function sendTransaction(){
     }catch(e){toast('Send failed')}
 }
 function showReceiveModal(){
-    document.getElementById('receiveModalContent').innerHTML=`<h2>Receive</h2><div id="qrcode"></div><p>${state.walletAddress||'No wallet address'}</p><button class="btn" onclick="navigator.clipboard.writeText('${state.walletAddress||''}')">Copy Address</button>`;
+    document.getElementById('receiveModalContent').innerHTML=`
+        <div class="modal-header">
+            <h2>Receive</h2>
+            <button class="modal-close-btn" onclick="closeModal('receiveModal')">×</button>
+        </div>
+        <div id="qrcode" style="text-align:center;"></div>
+        <div class="wallet-address-display" style="margin:12px 0;">${state.walletAddress||'No wallet address'}</div>
+        <button class="btn" onclick="navigator.clipboard.writeText('${state.walletAddress||''}')">Copy Address</button>`;
     document.getElementById('receiveModal').classList.add('open');
     if(state.walletAddress){
         new QRCode(document.getElementById("qrcode"), {
@@ -831,7 +894,15 @@ function showReceiveModal(){
     }
 }
 function showAddAddressModal(){
-    document.getElementById('addressModalContent').innerHTML=`<h2>Add Address</h2><input id="addrLabel" placeholder="Label"><input id="addrAddress" placeholder="Address"><select id="addrChain">${Object.keys(CFG.CHAINS).map(c=>`<option>${c}</option>`).join('')}</select><button class="btn" onclick="addAddress()">Save</button>`;
+    document.getElementById('addressModalContent').innerHTML=`
+        <div class="modal-header">
+            <h2>Add Address</h2>
+            <button class="modal-close-btn" onclick="closeModal('addressModal')">×</button>
+        </div>
+        <input id="addrLabel" placeholder="Label">
+        <input id="addrAddress" placeholder="Address">
+        <select id="addrChain">${Object.keys(CFG.CHAINS).map(c=>`<option>${c}</option>`).join('')}</select>
+        <button class="btn" onclick="addAddress()">Save</button>`;
     document.getElementById('addressModal').classList.add('open');
 }
 async function addAddress(){
@@ -878,7 +949,7 @@ function openTransactionsModal(){
     document.getElementById('transactionsModalContent').innerHTML = '<div class="spinner"></div>';
     document.getElementById('transactionsModal').classList.add('open');
     apiCall('/api/wallet/transactions').then(txs=>{
-        let html = '<h2>Recent Transactions</h2>';
+        let html = '<div class="modal-header"><h2>Recent Transactions</h2><button class="modal-close-btn" onclick="closeModal(\'transactionsModal\')">×</button></div>';
         if(txs.transactions.length){
             txs.transactions.forEach(tx=>{
                 html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);">
@@ -887,7 +958,7 @@ function openTransactionsModal(){
         } else html += '<p>No transactions yet.</p>';
         html += '<button class="btn btn-outline" onclick="closeModal(\'transactionsModal\')">Close</button>';
         document.getElementById('transactionsModalContent').innerHTML = html;
-    }).catch(()=>{ document.getElementById('transactionsModalContent').innerHTML = '<p>Failed to load transactions.</p>'; });
+    }).catch(()=>{ document.getElementById('transactionsModalContent').innerHTML = '<div class="modal-header"><h2>Error</h2><button class="modal-close-btn" onclick="closeModal(\'transactionsModal\')">×</button></div><p>Failed to load transactions.</p>'; });
 }
 async function connectWalletConnect(){
     if(!window.Web3Wallet) return toast('WalletConnect library not loaded');
@@ -929,8 +1000,8 @@ async function loadPortfolio(){
 function showPortfolioCreate(){
     document.getElementById('portfolioFullContent').innerHTML=`
         <h2>New Note</h2>
-        <input id="portName" placeholder="Title" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <textarea id="portContent" placeholder="Content" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;"></textarea>
+        <input id="portName" placeholder="Title">
+        <textarea id="portContent" placeholder="Content" rows="6"></textarea>
         <button class="btn" onclick="savePortfolioItem()">Save</button>
         <button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
 }
@@ -945,8 +1016,8 @@ async function editPortfolioItem(id){
     if(!item) return;
     document.getElementById('portfolioFullContent').innerHTML=`
         <h2>Edit Note</h2>
-        <input id="portName" value="${escapeHtml(item.name||'')}" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <textarea id="portContent" rows="6" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">${escapeHtml(item.content||'')}</textarea>
+        <input id="portName" value="${escapeHtml(item.name||'')}">
+        <textarea id="portContent" rows="6">${escapeHtml(item.content||'')}</textarea>
         <button class="btn" onclick="updatePortfolioItem('${id}')">Update</button>
         <button class="btn btn-outline" onclick="loadPortfolio()">Cancel</button>`;
 }
@@ -979,21 +1050,19 @@ async function loadWorkspaces(){
 }
 function openWorkspaceCreateModal(){
     document.getElementById('workspaceCreateModalContent').innerHTML=`
-        <h2>Create Work Area</h2>
-        <input id="wsName" placeholder="Name" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <input id="wsCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <button class="btn" onclick="createWorkspace()">Create</button>
-        <button class="btn btn-outline" onclick="closeModal('workspaceCreateModal')">Cancel</button>`;
+        <div class="modal-header"><h2>Create Work Area</h2><button class="modal-close-btn" onclick="closeModal('workspaceCreateModal')">×</button></div>
+        <input id="wsName" placeholder="Name">
+        <input id="wsCode" placeholder="Room code">
+        <button class="btn" onclick="createWorkspace()">Create</button>`;
     document.getElementById('workspaceCreateModal').classList.add('open');
 }
 function openWorkspaceJoinModal(){
     document.getElementById('workspaceJoinModalContent').innerHTML=`
-        <h2>Join Work Area</h2>
+        <div class="modal-header"><h2>Join Work Area</h2><button class="modal-close-btn" onclick="closeModal('workspaceJoinModal')">×</button></div>
         <p style="color:var(--warning)">Joining costs <b>${CFG.WORKSPACE_JOIN_COST} CLOSE</b> (on-chain burn).</p>
-        <input id="joinRoomCode" placeholder="Room code" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <input id="joinWalletPassword" type="password" placeholder="Wallet password" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:10px;">
-        <button class="btn" onclick="joinWorkspace()">Join & Pay ${CFG.WORKSPACE_JOIN_COST} CLOSE</button>
-        <button class="btn btn-outline" onclick="closeModal('workspaceJoinModal')">Cancel</button>`;
+        <input id="joinRoomCode" placeholder="Room code">
+        <input id="joinWalletPassword" type="password" placeholder="Wallet password">
+        <button class="btn" onclick="joinWorkspace()">Join & Pay ${CFG.WORKSPACE_JOIN_COST} CLOSE</button>`;
     document.getElementById('workspaceJoinModal').classList.add('open');
 }
 async function joinWorkspace(){
@@ -1015,7 +1084,7 @@ function openRoomChat(roomCode){
         </div>
         <div id="roomMessages" style="height:60vh;overflow-y:auto;border:1px solid var(--border);padding:10px;margin-bottom:10px;border-radius:12px;background:var(--bg-secondary);"></div>
         <div style="display:flex;gap:8px;">
-            <input id="roomMsgInput" placeholder="Type @CAPITAN for AI" style="flex:1;padding:10px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);">
+            <input id="roomMsgInput" placeholder="Type @CAPITAN for AI">
             <button class="btn" style="width:auto;" onclick="sendRoomMessage('${roomCode}')">Send</button>
         </div>`;
     loadRoomMessages(roomCode);
@@ -1077,14 +1146,14 @@ async function loadDeveloperPage(tab){
 async function createApiKey(){
     try{
         let res=await apiCall('/api/developer/keys',{method:'POST',body:JSON.stringify({})});
-        document.getElementById('apiKeyModalContent').innerHTML=`<h2>New API Key</h2><pre style="word-break:break-all;background:var(--bg-secondary);padding:10px;border-radius:8px;">${res.key}</pre><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');closeModal('apiKeyModal')">Copy & Close</button>`;
+        document.getElementById('apiKeyModalContent').innerHTML=`<div class="modal-header"><h2>New API Key</h2><button class="modal-close-btn" onclick="closeModal('apiKeyModal')">×</button></div><pre style="word-break:break-all;background:var(--bg-secondary);padding:10px;border-radius:8px;">${res.key}</pre><button class="btn" onclick="navigator.clipboard.writeText('${res.key}');closeModal('apiKeyModal')">Copy & Close</button>`;
         document.getElementById('apiKeyModal').classList.add('open');
         loadDeveloperPage('keys');
     }catch(e){toast('Failed to create key')}
 }
 async function revokeApiKey(id){ if(confirm('Revoke this key?')){await apiCall('/api/developer/keys/'+id,{method:'DELETE'});loadDeveloperPage('keys');} }
 function showCreateWebhook(){
-    document.getElementById('webhookModalContent').innerHTML=`<h2>Add Webhook</h2><input id="webhookUrl" placeholder="URL"><input id="webhookEvents" placeholder="Events (comma separated)" value="new_message"><button class="btn" onclick="createWebhook()">Save</button>`;
+    document.getElementById('webhookModalContent').innerHTML=`<div class="modal-header"><h2>Add Webhook</h2><button class="modal-close-btn" onclick="closeModal('webhookModal')">×</button></div><input id="webhookUrl" placeholder="URL"><input id="webhookEvents" placeholder="Events (comma separated)" value="new_message"><button class="btn" onclick="createWebhook()">Save</button>`;
     document.getElementById('webhookModal').classList.add('open');
 }
 async function createWebhook(){
@@ -1118,7 +1187,7 @@ async function openFounderDashboard(){
         <canvas id="userChart" width="400" height="150"></canvas>
         <canvas id="burnChart" width="400" height="150"></canvas>
         <h3>Users</h3>
-        <input id="adminSearch" placeholder="Search users..." oninput="searchAdminUsers()" style="width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:12px;">
+        <input id="adminSearch" placeholder="Search users..." oninput="searchAdminUsers()">
         <table class="admin-table" id="adminUserTable">
             <thead><tr><th>Email</th><th>Name</th><th>CLOSE</th><th>Staked</th><th>Tier</th><th>Actions</th></tr></thead>
             <tbody>${users.users.map(u=>`<tr><td>${u.email}</td><td>${u.name||''}</td><td>${u.close_balance}</td><td>${u.close_staked}</td><td>${u.stake_tier}</td><td><button onclick="adjustUserBalance('${u.id}')">Adjust</button> <button onclick="deleteUser('${u.id}')">Delete</button></td></tr>`).join('')}</tbody>
@@ -1168,7 +1237,10 @@ async function markAllRead(){
 // ==================== PROFILE / LEGAL ====================
 function openProfileModal(){
     document.getElementById('profileModalContent').innerHTML=`
-        <h2>Account</h2>
+        <div class="modal-header">
+            <h2>Account</h2>
+            <button class="modal-close-btn" onclick="closeModal('profileModal')">×</button>
+        </div>
         <div style="text-align:center;"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%2390e0ef'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%2390e0ef'/%3E%3C/svg%3E" class="profile-modal-avatar"></div>
         <p><strong>${state.user?.name||`Wallet ${state.walletAddress?.slice(0,6)}...`||'Guest'}</strong></p>
         <p>CLOSE Balance: ${state.closeBalance.toLocaleString()} ($${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)})</p>
@@ -1184,14 +1256,14 @@ function openProfileModal(){
 async function openPrivacyModal(){
     try{
         let d=await apiCall('/api/legal/privacy');
-        document.getElementById('privacyModalContent').innerHTML=`<h2>Privacy Policy</h2><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
+        document.getElementById('privacyModalContent').innerHTML=`<div class="modal-header"><h2>Privacy Policy</h2><button class="modal-close-btn" onclick="closeModal('privacyModal')">×</button></div><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('privacyModal')">Close</button>`;
         document.getElementById('privacyModal').classList.add('open');
     }catch(e){toast('Could not load privacy policy')}
 }
 async function openTermsModal(){
     try{
         let d=await apiCall('/api/legal/terms');
-        document.getElementById('termsModalContent').innerHTML=`<h2>Terms of Service</h2><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
+        document.getElementById('termsModalContent').innerHTML=`<div class="modal-header"><h2>Terms of Service</h2><button class="modal-close-btn" onclick="closeModal('termsModal')">×</button></div><div style="font-size:12px;max-height:60vh;overflow-y:auto;">${d.text}</div><button class="btn btn-outline" onclick="closeModal('termsModal')">Close</button>`;
         document.getElementById('termsModal').classList.add('open');
     }catch(e){toast('Could not load terms')}
 }
@@ -1246,7 +1318,10 @@ document.getElementById('founderEasterEgg').addEventListener('click', function(e
 });
 function showFounderLoginModal(){
     document.getElementById('founderLoginModalContent').innerHTML=`
-        <h2>Founder Access</h2>
+        <div class="modal-header">
+            <h2>Founder Access</h2>
+            <button class="modal-close-btn" onclick="closeModal('founderLoginModal')">×</button>
+        </div>
         <input id="founderKey" placeholder="Founder key">
         <button class="btn btn-gold" onclick="handleFounderLogin()">Verify</button>`;
     document.getElementById('founderLoginModal').classList.add('open');
