@@ -338,7 +338,7 @@
 // ==================== CONFIG ====================
 const CFG = {
     API: location.hostname==='localhost'?'http://localhost:8000':'https://capitan-ai-jxu8.onrender.com',
-    CLOSE_PRICE:0.00009776, BURN_PER_MSG:25, FREE_MSGS:3, MIN_PURCHASE:1.00,
+    BURN_PER_MSG:25, FREE_MSGS:3, MIN_PURCHASE:1.00,
     STAKE_BUILDER:4000000, STAKE_PRO:15000000, STAKE_ENTERPRISE:35000000,
     WORKSPACE_JOIN_COST:500,
     CHAINS: {
@@ -365,7 +365,8 @@ let state = {
     walletConnector: null,
     sessionWalletPassword: null,
     founderClickCount: 0,
-    pendingMessageText: null
+    pendingMessageText: null,
+    closePrice: parseFloat(localStorage.getItem('close_price')||'0.00009776')
 };
 
 const COLORS = ["#00b4d8","#a855f7","#f0b90b","#10b981","#f43f5e","#f97316","#8b5cf6","#ec4899","#06b6d4","#84cc16"];
@@ -508,7 +509,7 @@ function logout() {
     state.sessionWalletPassword=null;
     localStorage.removeItem('capitan_token'); localStorage.removeItem('capitan_user');
     updateUI(); renderMessages(); document.getElementById('app').style.display='none';
-    showWalletUnlockModal(); // show unlock modal instead of old login
+    showWalletUnlockModal();
 }
 
 // ==================== UI UPDATES ====================
@@ -525,7 +526,7 @@ function updateUI(){
     let badge = document.getElementById('closeBalanceBadge');
     if(logged){
         badge.style.display='flex';
-        document.getElementById('closeBalanceBadgeText').innerText=`${state.closeBalance.toLocaleString()} CLOSE ($${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)})`;
+        document.getElementById('closeBalanceBadgeText').innerText=`${state.closeBalance.toLocaleString()} CLOSE ($${(state.closeBalance*state.closePrice).toFixed(4)})`;
     } else badge.style.display='none';
 }
 
@@ -639,7 +640,10 @@ function hideAllViews(){
 }
 
 // ==================== OS WALLETS ====================
-function openWallet(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('walletFullPage').classList.add('open');renderWalletDashboard();}
+function openWallet(){hideAllViews();document.getElementById('chatView').style.display='none';document.getElementById('walletFullPage').classList.add('open');renderWalletDashboard();refreshClosePrice();}
+async function refreshClosePrice(){
+    try{ let res=await apiCall('/api/token/close-price'); state.closePrice=res.price; localStorage.setItem('close_price',res.price); updateUI(); }catch(e){}
+}
 async function renderWalletDashboard(){
     let c=document.getElementById('walletContainer');
     if(!state.user){ c.innerHTML='<div class="elite-wallet"><h2>OS Wallets</h2><p>Sign in to access your universal wallet.</p><button class="btn" onclick="showSignupModal()">Create Account</button></div>'; return; }
@@ -659,16 +663,18 @@ async function renderWalletDashboard(){
     }
     c.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
     try{
-        let [bal,stakes,txs,wallets,nfts,wcSessions,addresses,tickerData,newsData,portfolio,tokenList] = await Promise.allSettled([
+        let [bal,stakes,txs,wallets,nfts,wcSessions,addresses,tickerData,newsData,portfolio,tokenList,customTokens] = await Promise.allSettled([
             apiCall('/api/wallet/balance'), apiCall('/api/wallet/stakes'), apiCall('/api/wallet/transactions'),
             apiCall('/api/wallets'), apiCall('/api/wallet/nfts?chain=polygon'),
             apiCall('/api/walletconnect/sessions'), apiCall('/api/addresses'),
             apiCall('/api/market/crypto'), apiCall('/api/market/news'),
-            apiCall('/api/wallet/portfolio'), apiCall('/api/wallet/tokens')
+            apiCall('/api/wallet/refresh'), apiCall('/api/wallet/tokens'),
+            apiCall('/api/custom-tokens')
         ]);
-        bal=bal.value||{}; stakes=stakes.value||{}; txs=txs.value||{}; wallets=wallets.value||{}; nfts=nfts.value||{}; wcSessions=wcSessions.value||{}; addresses=addresses.value||{};
-        tickerData = tickerData.value||[]; newsData = newsData.value||[]; portfolio = portfolio.value||{}; tokenList = tokenList.value||{};
+        bal=bal.value||{}; wallets=wallets.value||{}; nfts=nfts.value||{}; wcSessions=wcSessions.value||{}; addresses=addresses.value||{};
+        tickerData = tickerData.value||[]; newsData = newsData.value||[]; portfolio = portfolio.value||{}; tokenList = tokenList.value||{}; customTokens = customTokens.value||{};
         state.closeBalance=bal.close_balance||0; state.closeStaked=bal.close_staked||0; state.stakeTier=bal.stake_tier||'none';
+        state.closePrice = portfolio.close_price || state.closePrice;
         localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
         updateUI();
 
@@ -695,14 +701,13 @@ async function renderWalletDashboard(){
         c.innerHTML=`
         <div class="elite-wallet">
             ${tickerHTML} ${newsHTML}
-            <!-- Wallet address card -->
             <div class="balance-card" style="flex-direction:column;align-items:flex-start;">
                 <span class="label" style="margin-bottom:8px;">Your Wallet Address</span>
                 <div class="wallet-address-display" id="walletAddressDisplay">${state.walletAddress}</div>
                 <button class="btn" style="width:auto;margin-top:8px;" onclick="navigator.clipboard.writeText('${state.walletAddress}');toast('Address copied!')">Copy Address</button>
             </div>
             <div class="balance-card"><div><span class="label">Total Portfolio</span><div class="amount" style="color:var(--accent)">$${totalUSD.toFixed(2)}</div></div></div>
-            <div class="balance-card"><div><span class="label">CLOSE Balance</span><div class="amount">${state.closeBalance.toLocaleString()} <small>CLOSE</small></div><div class="sub">$${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)} · 1 CLOSE = $${CFG.CLOSE_PRICE}</div></div></div>
+            <div class="balance-card"><div><span class="label">CLOSE Balance</span><div class="amount">${state.closeBalance.toLocaleString()} <small>CLOSE</small></div><div class="sub">$${(state.closeBalance*state.closePrice).toFixed(4)} · 1 CLOSE = $${state.closePrice.toFixed(8)}</div></div></div>
             <div class="balance-card"><div><span class="label">CLOSE Staked</span><div class="amount">${state.closeStaked.toLocaleString()} <small>CLOSE</small></div><div class="sub">Tier: ${state.stakeTier.toUpperCase()}</div></div></div>
             <div class="wallet-tabs">
                 <button class="wallet-tab active" data-tab="dashboard">Dashboard</button>
@@ -722,6 +727,7 @@ async function renderWalletDashboard(){
                     <button class="action-btn" onclick="showUnstakeModal()">Unstake</button>
                     <button class="action-btn" onclick="openWalletResearch()">AI Research</button>
                     <button class="action-btn" onclick="openTransactionsModal()">Transactions</button>
+                    <button class="action-btn" onclick="refreshBalances()">Refresh</button>
                 </div>
             </div>
             <div class="wallet-panel" id="panel-tokens"><div style="max-height:400px;overflow-y:auto;">${tokenRows||'No tokens found'}</div></div>
@@ -732,7 +738,11 @@ async function renderWalletDashboard(){
                 <h3>Gas Preset</h3><select id="gasPreset" onchange="saveGasPreset()"><option value="standard">Standard</option><option value="fast">Fast</option><option value="instant">Instant</option></select>
                 <h3 style="margin-top:16px;">Wallets</h3><div>${(wallets.wallets||[]).map(w=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;"><span>${w.label} (${w.address.slice(0,6)}...${w.address.slice(-4)}) ${w.active?'[active]':''}</span><div><button onclick="setActiveWallet('${w.id}')" style="background:none;border:none;color:var(--accent);cursor:pointer;">Set Active</button> <button onclick="deleteWallet('${w.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">Delete</button></div></div>`).join('')||'No wallets'}</div>
                 <button class="btn" onclick="createNewWallet()">+ Create New Wallet</button>
-                <h3 style="margin-top:16px;">Hardware Wallet</h3><p style="font-size:11px;">Connect your Ledger or Trezor via WebUSB (coming soon).</p>
+                <h3 style="margin-top:16px;">Custom Tokens</h3>
+                <div id="customTokensList">${customTokens.tokens?customTokens.tokens.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span>${t.symbol} (${t.address.slice(0,6)}...${t.address.slice(-4)})</span><button onclick="deleteCustomToken('${t.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;">X</button></div>`).join(''):'No custom tokens'}</div>
+                <button class="btn" onclick="showAddCustomTokenModal()">+ Add Custom Token</button>
+                <h3 style="margin-top:16px;">Wallet Security</h3>
+                <button class="btn" onclick="showChangePasswordModal()">Change Wallet Password</button>
             </div>
         </div>`;
         document.querySelectorAll('.wallet-tab').forEach(tab=>tab.addEventListener('click',function(){
@@ -743,86 +753,67 @@ async function renderWalletDashboard(){
         }));
     }catch(e){c.innerHTML='<p>Failed to load wallet.</p>'}
 }
+async function refreshBalances(){
+    toast('Refreshing balances...');
+    await apiCall('/api/wallet/refresh');
+    renderWalletDashboard();
+    toast('Balances updated');
+}
+function showAddCustomTokenModal(){
+    document.getElementById('addressModalContent').innerHTML = `
+        <div class="modal-header"><h2>Add Custom Token</h2><button class="modal-close-btn" onclick="closeModal('addressModal')">×</button></div>
+        <input id="customTokenAddress" placeholder="Contract address">
+        <input id="customTokenSymbol" placeholder="Symbol (e.g. USDT)">
+        <input id="customTokenDecimals" type="number" placeholder="Decimals (default 18)" value="18">
+        <button class="btn" onclick="addCustomToken()">Add Token</button>`;
+    document.getElementById('addressModal').classList.add('open');
+}
+async function addCustomToken(){
+    let address=document.getElementById('customTokenAddress').value.trim(), symbol=document.getElementById('customTokenSymbol').value.trim(), decimals=parseInt(document.getElementById('customTokenDecimals').value)||18;
+    if(!address) return toast('Address required');
+    try{
+        await apiCall('/api/custom-tokens',{method:'POST',body:JSON.stringify({address,symbol,decimals,chain:'polygon'})});
+        closeModal('addressModal'); renderWalletDashboard();
+    }catch(e){toast('Failed to add token')}
+}
+async function deleteCustomToken(id){
+    if(confirm('Remove this token?')){
+        await apiCall('/api/custom-tokens/'+id,{method:'DELETE'});
+        renderWalletDashboard();
+    }
+}
+function showChangePasswordModal(){
+    document.getElementById('stakeModalContent').innerHTML = `
+        <div class="modal-header"><h2>Change Wallet Password</h2><button class="modal-close-btn" onclick="closeModal('stakeModal')">×</button></div>
+        <input type="password" id="oldPassword" placeholder="Current password">
+        <input type="password" id="newPassword" placeholder="New password">
+        <button class="btn" onclick="changePassword()">Update</button>`;
+    document.getElementById('stakeModal').classList.add('open');
+}
+async function changePassword(){
+    let oldPwd=document.getElementById('oldPassword').value, newPwd=document.getElementById('newPassword').value;
+    if(!oldPwd||!newPwd) return toast('Both fields required');
+    try{
+        let encrypted = localStorage.getItem('os_encrypted');
+        let wallet = await ethers.Wallet.fromEncryptedJson(encrypted, oldPwd);
+        let newEncrypted = await wallet.encrypt(newPwd);
+        await apiCall('/api/wallet/update-seed',{method:'POST',body:JSON.stringify({encrypted_seed: newEncrypted})});
+        localStorage.setItem('os_encrypted', newEncrypted);
+        state.sessionWalletPassword = newPwd;
+        closeModal('stakeModal'); toast('Password updated');
+    }catch(e){toast('Incorrect current password')}
+}
 
-// Wallet action functions (with modal header X buttons)
-function showBuyModal(){
-    document.getElementById('buyCloseModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Buy CLOSE</h2>
-            <button class="modal-close-btn" onclick="closeModal('buyCloseModal')">×</button>
-        </div>
-        <p>Send your payment to the Hot Wallet address below, then paste TXID.</p>
-        <p style="font-size:11px;word-break:break-all;">0x109464E84bDD6552d76bcBbaEf03bDe8069C0698</p>
-        <input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash">
-        <button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
-    document.getElementById('buyCloseModal').classList.add('open');
-}
-async function purchaseClose(){
-    let usd=document.getElementById('purchaseUsd').value, tx=document.getElementById('txHash').value;
-    try{
-        let res=await apiCall('/api/wallet/purchase',{method:'POST',body:JSON.stringify({usd_amount:parseFloat(usd),tx_hash:tx})});
-        if(res.verified){
-            let bal = await apiCall('/api/wallet/balance');
-            state.closeBalance = bal.close_balance; state.closeStaked = bal.close_staked; state.stakeTier = bal.stake_tier;
-            localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
-            closeModal('buyCloseModal'); updateUI(); renderWalletDashboard(); toast('Purchased!');
-        } else toast('Payment not verified');
-    }catch(e){toast('Error')}
-}
-function showStakeModal(){
-    document.getElementById('stakeModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Stake CLOSE</h2>
-            <button class="modal-close-btn" onclick="closeModal('stakeModal')">×</button>
-        </div>
-        <input id="stakeAmount" type="number" placeholder="Amount">
-        <input id="stakePassword" type="password" placeholder="Wallet password">
-        <button class="btn" onclick="stakeClose()">Stake</button>`;
-    document.getElementById('stakeModal').classList.add('open');
-}
-async function stakeClose(){
-    let amount=document.getElementById('stakeAmount').value, pwd=document.getElementById('stakePassword').value;
-    try{
-        let res=await apiCall('/api/wallet/stake',{method:'POST',body:JSON.stringify({amount:parseInt(amount),password:pwd})});
-        let bal = await apiCall('/api/wallet/balance');
-        state.closeBalance = bal.close_balance; state.closeStaked = bal.close_staked; state.stakeTier = bal.stake_tier;
-        localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
-        closeModal('stakeModal'); updateUI(); renderWalletDashboard();
-    }catch(e){toast('Stake failed')}
-}
-function showUnstakeModal(){
-    document.getElementById('stakeModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Unstake</h2>
-            <button class="modal-close-btn" onclick="closeModal('stakeModal')">×</button>
-        </div>
-        <input id="unstakePassword" type="password" placeholder="Wallet password">
-        <button class="btn" onclick="unstakeClose()">Unstake All</button>`;
-    document.getElementById('stakeModal').classList.add('open');
-}
-async function unstakeClose(){
-    let pwd=document.getElementById('unstakePassword').value;
-    try{
-        let res=await apiCall('/api/wallet/unstake',{method:'POST',body:JSON.stringify({password:pwd})});
-        let bal = await apiCall('/api/wallet/balance');
-        state.closeBalance = bal.close_balance; state.closeStaked = bal.close_staked; state.stakeTier = bal.stake_tier;
-        localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier);
-        closeModal('stakeModal'); updateUI(); renderWalletDashboard();
-    }catch(e){toast('Unstake failed')}
-}
 function showSwapModal(){
     let chains=Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('');
-    document.getElementById('swapModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Swap</h2>
-            <button class="modal-close-btn" onclick="closeModal('swapModal')">×</button>
-        </div>
+    document.getElementById('swapModalContent').innerHTML = `
+        <div class="modal-header"><h2>Swap</h2><button class="modal-close-btn" onclick="closeModal('swapModal')">×</button></div>
         <select id="swapChain">${chains}</select>
         <select id="swapFromToken" onchange="updateSwapTokens()"><option value="">Select token</option></select>
         <select id="swapToToken"><option value="">Select token</option></select>
         <input id="swapAmount" placeholder="Amount">
-        <button class="btn" onclick="getSwapQuote()">Get Quote</button>
-        <div id="swapQuoteResult"></div>`;
+        <button class="btn" onclick="buildSwapTx()">Preview Swap</button>
+        <div id="swapPreview"></div>`;
     document.getElementById('swapModal').classList.add('open');
     updateSwapTokens();
 }
@@ -833,75 +824,116 @@ function updateSwapTokens(){
     document.getElementById('swapFromToken').innerHTML=options;
     document.getElementById('swapToToken').innerHTML=options;
 }
-async function getSwapQuote(){
+async function buildSwapTx(){
     let chain=document.getElementById('swapChain').value, from=document.getElementById('swapFromToken').value, to=document.getElementById('swapToToken').value, amount=document.getElementById('swapAmount').value;
     if(!from||!to||!amount) return toast('Fill all fields');
     try{
-        let res=await apiCall(`/api/swap/quote?chain=${chain}&from_token=${from}&to_token=${to}&amount=${amount}`);
-        document.getElementById('swapQuoteResult').innerHTML=`Estimated: <b>${res.to_amount} ${res.to_token}</b> (Gas: ${res.estimated_gas})`;
-    }catch(e){document.getElementById('swapQuoteResult').innerHTML='Quote failed'}
+        let res=await apiCall('/api/swap/build',{method:'POST',body:JSON.stringify({chain,from_token:from,to_token:to,amount,slippage:1})});
+        document.getElementById('swapPreview').innerHTML = `
+            <p>Swap ${res.from_amount} ${res.from_token} → ~${res.to_amount} ${res.to_token}</p>
+            <button class="btn" onclick="executeSwap('${chain}', '${res.tx.to}', '${res.tx.value||'0'}', '${res.tx.data}', '${res.tx.gas}')">Execute Swap</button>`;
+    }catch(e){ document.getElementById('swapPreview').innerHTML = `Error: ${e.message}`; }
+}
+async function executeSwap(chain, to, value, data, gas){
+    if(!state.sessionWalletPassword) return toast('Unlock wallet first');
+    let encrypted = localStorage.getItem('os_encrypted');
+    if(!encrypted) return toast('No wallet found');
+    try{
+        let wallet = await ethers.Wallet.fromEncryptedJson(encrypted, state.sessionWalletPassword);
+        let provider = new ethers.providers.JsonRpcProvider(CFG.CHAINS[chain].rpc);
+        let signer = wallet.connect(provider);
+        let tx = {
+            to: to,
+            value: ethers.BigNumber.from(value||'0'),
+            data: data,
+            gasLimit: ethers.BigNumber.from(gas||'300000')
+        };
+        let txResponse = await signer.sendTransaction(tx);
+        toast(`Swap sent! TX: ${txResponse.hash.slice(0,10)}...`);
+        closeModal('swapModal');
+        await apiCall('/api/wallet/transactions/create',{method:'POST',body:JSON.stringify({chain,tx_hash:txResponse.hash,from_address:wallet.address,to_address:to,amount:value||'0',token_symbol:'N/A'})});
+    }catch(e){toast('Swap failed: '+e.message)}
+}
+
+// ==================== BUY / STAKE / SEND / RECEIVE ====================
+function showBuyModal(){
+    document.getElementById('buyCloseModalContent').innerHTML=`
+        <div class="modal-header"><h2>Buy CLOSE</h2><button class="modal-close-btn" onclick="closeModal('buyCloseModal')">×</button></div>
+        <p>Send your payment to the Hot Wallet address below, then paste TXID.</p>
+        <p style="font-size:11px;word-break:break-all;">0x109464E84bDD6552d76bcBbaEf03bDe8069C0698</p>
+        <input id="purchaseUsd" type="number" value="1"><input id="txHash" placeholder="Transaction hash">
+        <button class="btn btn-gold" onclick="purchaseClose()">Verify & Buy</button>`;
+    document.getElementById('buyCloseModal').classList.add('open');
+}
+async function purchaseClose(){
+    let usd=document.getElementById('purchaseUsd').value, tx=document.getElementById('txHash').value;
+    try{
+        let res=await apiCall('/api/wallet/purchase',{method:'POST',body:JSON.stringify({usd_amount:parseFloat(usd),tx_hash:tx})});
+        if(res.verified){ toast('Purchased!'); closeModal('buyCloseModal'); renderWalletDashboard(); }
+        else toast('Payment not verified');
+    }catch(e){toast('Error')}
+}
+function showStakeModal(){
+    document.getElementById('stakeModalContent').innerHTML=`
+        <div class="modal-header"><h2>Stake CLOSE</h2><button class="modal-close-btn" onclick="closeModal('stakeModal')">×</button></div>
+        <input id="stakeAmount" type="number" placeholder="Amount"><input id="stakePassword" type="password" placeholder="Wallet password">
+        <button class="btn" onclick="stakeClose()">Stake</button>`;
+    document.getElementById('stakeModal').classList.add('open');
+}
+async function stakeClose(){
+    let amount=document.getElementById('stakeAmount').value, pwd=document.getElementById('stakePassword').value;
+    try{ await apiCall('/api/wallet/stake',{method:'POST',body:JSON.stringify({amount:parseInt(amount),password:pwd})}); closeModal('stakeModal'); renderWalletDashboard(); }
+    catch(e){toast('Stake failed')}
+}
+function showUnstakeModal(){
+    document.getElementById('stakeModalContent').innerHTML=`
+        <div class="modal-header"><h2>Unstake</h2><button class="modal-close-btn" onclick="closeModal('stakeModal')">×</button></div>
+        <input id="unstakePassword" type="password" placeholder="Wallet password"><button class="btn" onclick="unstakeClose()">Unstake All</button>`;
+    document.getElementById('stakeModal').classList.add('open');
+}
+async function unstakeClose(){
+    let pwd=document.getElementById('unstakePassword').value;
+    try{ await apiCall('/api/wallet/unstake',{method:'POST',body:JSON.stringify({password:pwd})}); closeModal('stakeModal'); renderWalletDashboard(); }
+    catch(e){toast('Unstake failed')}
 }
 function showSendModal(){
     let chains=Object.keys(CFG.CHAINS).map(c=>`<option value="${c}">${CFG.CHAINS[c].name}</option>`).join('');
     document.getElementById('sendModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Send</h2>
-            <button class="modal-close-btn" onclick="closeModal('sendModal')">×</button>
-        </div>
-        <select id="sendChain" onchange="updateSendTokens()">${chains}</select>
-        <select id="sendToken"></select>
-        <input id="sendTo" placeholder="Address">
-        <input id="sendAmount" placeholder="Amount">
-        <input id="sendPassword" type="password" placeholder="Wallet password">
+        <div class="modal-header"><h2>Send</h2><button class="modal-close-btn" onclick="closeModal('sendModal')">×</button></div>
+        <select id="sendChain" onchange="updateSendTokens()">${chains}</select><select id="sendToken"></select>
+        <input id="sendTo" placeholder="Address"><input id="sendAmount" placeholder="Amount"><input id="sendPassword" type="password" placeholder="Wallet password">
         <button class="btn" onclick="sendTransaction()">Send</button>`;
     document.getElementById('sendModal').classList.add('open');
     updateSendTokens();
 }
 function updateSendTokens(){
     let chain=document.getElementById('sendChain').value;
-    let tokens=CFG.CHAINS[chain]?.tokens||{};
-    document.getElementById('sendToken').innerHTML=Object.entries(tokens).map(([sym,addr])=>`<option value="${addr}">${sym}</option>`).join('');
+    document.getElementById('sendToken').innerHTML=Object.entries(CFG.CHAINS[chain]?.tokens||{}).map(([sym,addr])=>`<option value="${addr}">${sym}</option>`).join('');
 }
 async function sendTransaction(){
-    let chain=document.getElementById('sendChain').value, token=document.getElementById('sendToken').value;
-    let to=document.getElementById('sendTo').value, amount=document.getElementById('sendAmount').value, pwd=document.getElementById('sendPassword').value;
+    let chain=document.getElementById('sendChain').value, token=document.getElementById('sendToken').value, to=document.getElementById('sendTo').value, amount=document.getElementById('sendAmount').value, pwd=document.getElementById('sendPassword').value;
     if(!to||!amount||!pwd) return toast('Fill all fields');
     let wallets=await apiCall('/api/wallets');
     let active=wallets.wallets.find(w=>w.active)||wallets.wallets[0];
     if(!active) return toast('No wallet found');
     try{
         let res=await apiCall(`/api/wallet/${active.id}/send`,{method:'POST',body:JSON.stringify({to,amount,pwd,token_address:token})});
-        toast('Sent! TX: '+res.tx_hash);
-        closeModal('sendModal');
+        toast('Sent! TX: '+res.tx_hash); closeModal('sendModal');
     }catch(e){toast('Send failed')}
 }
 function showReceiveModal(){
     document.getElementById('receiveModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Receive</h2>
-            <button class="modal-close-btn" onclick="closeModal('receiveModal')">×</button>
-        </div>
+        <div class="modal-header"><h2>Receive</h2><button class="modal-close-btn" onclick="closeModal('receiveModal')">×</button></div>
         <div id="qrcode" style="text-align:center;"></div>
-        <div class="wallet-address-display" style="margin:12px 0;">${state.walletAddress||'No wallet address'}</div>
-        <button class="btn" onclick="navigator.clipboard.writeText('${state.walletAddress||''}')">Copy Address</button>`;
+        <div class="wallet-address-display">${state.walletAddress||'No address'}</div>
+        <button class="btn" onclick="navigator.clipboard.writeText('${state.walletAddress}')">Copy Address</button>`;
     document.getElementById('receiveModal').classList.add('open');
-    if(state.walletAddress){
-        new QRCode(document.getElementById("qrcode"), {
-            text: state.walletAddress, width: 150, height: 150,
-            colorDark : "#ffffff", colorLight : "transparent",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-    }
+    if(state.walletAddress){ new QRCode(document.getElementById("qrcode"),{text: state.walletAddress, width:150,height:150,colorDark:"#ffffff",colorLight:"transparent",correctLevel:QRCode.CorrectLevel.H}); }
 }
 function showAddAddressModal(){
     document.getElementById('addressModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Add Address</h2>
-            <button class="modal-close-btn" onclick="closeModal('addressModal')">×</button>
-        </div>
-        <input id="addrLabel" placeholder="Label">
-        <input id="addrAddress" placeholder="Address">
-        <select id="addrChain">${Object.keys(CFG.CHAINS).map(c=>`<option>${c}</option>`).join('')}</select>
+        <div class="modal-header"><h2>Add Address</h2><button class="modal-close-btn" onclick="closeModal('addressModal')">×</button></div>
+        <input id="addrLabel" placeholder="Label"><input id="addrAddress" placeholder="Address"><select id="addrChain">${Object.keys(CFG.CHAINS).map(c=>`<option>${c}</option>`).join('')}</select>
         <button class="btn" onclick="addAddress()">Save</button>`;
     document.getElementById('addressModal').classList.add('open');
 }
@@ -939,12 +971,6 @@ async function saveGasPreset(){
     await apiCall('/api/wallet/gas',{method:'POST',body:JSON.stringify({preset})});
     toast('Gas preset saved');
 }
-function openTxDetail(txHash){
-    if(!txHash) return;
-    apiCall('/api/transactions/'+txHash).then(tx=>{
-        alert(`TX: ${tx.tx_hash}\nFrom: ${tx.from}\nTo: ${tx.to}\nAmount: ${tx.amount||tx.value} ${tx.token||''}\nStatus: ${tx.status}\nExplorer: ${tx.explorer_url}`);
-    });
-}
 function openTransactionsModal(){
     document.getElementById('transactionsModalContent').innerHTML = '<div class="spinner"></div>';
     document.getElementById('transactionsModal').classList.add('open');
@@ -953,12 +979,12 @@ function openTransactionsModal(){
         if(txs.transactions.length){
             txs.transactions.forEach(tx=>{
                 html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);">
-                    <span>${tx.type.toUpperCase()}</span><span>${tx.amount.toLocaleString()} CLOSE</span><span>${new Date(tx.created).toLocaleDateString()}</span></div>`;
+                    <span>${tx.tx_hash.slice(0,8)}...</span><span>${tx.amount} ${tx.token}</span><span>${new Date(tx.created).toLocaleDateString()}</span></div>`;
             });
         } else html += '<p>No transactions yet.</p>';
         html += '<button class="btn btn-outline" onclick="closeModal(\'transactionsModal\')">Close</button>';
         document.getElementById('transactionsModalContent').innerHTML = html;
-    }).catch(()=>{ document.getElementById('transactionsModalContent').innerHTML = '<div class="modal-header"><h2>Error</h2><button class="modal-close-btn" onclick="closeModal(\'transactionsModal\')">×</button></div><p>Failed to load transactions.</p>'; });
+    }).catch(()=>{ document.getElementById('transactionsModalContent').innerHTML = '<p>Failed to load transactions.</p>'; });
 }
 async function connectWalletConnect(){
     if(!window.Web3Wallet) return toast('WalletConnect library not loaded');
@@ -1243,7 +1269,7 @@ function openProfileModal(){
         </div>
         <div style="text-align:center;"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%2390e0ef'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' fill='%2390e0ef'/%3E%3C/svg%3E" class="profile-modal-avatar"></div>
         <p><strong>${state.user?.name||`Wallet ${state.walletAddress?.slice(0,6)}...`||'Guest'}</strong></p>
-        <p>CLOSE Balance: ${state.closeBalance.toLocaleString()} ($${(state.closeBalance*CFG.CLOSE_PRICE).toFixed(4)})</p>
+        <p>CLOSE Balance: ${state.closeBalance.toLocaleString()} ($${(state.closeBalance*state.closePrice).toFixed(4)})</p>
         <p>Staked: ${state.closeStaked.toLocaleString()} | Tier: ${state.stakeTier.toUpperCase()}</p>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
             <button class="btn" onclick="closeModal('profileModal');openPrivacyModal()">Privacy Policy</button>
@@ -1318,10 +1344,7 @@ document.getElementById('founderEasterEgg').addEventListener('click', function(e
 });
 function showFounderLoginModal(){
     document.getElementById('founderLoginModalContent').innerHTML=`
-        <div class="modal-header">
-            <h2>Founder Access</h2>
-            <button class="modal-close-btn" onclick="closeModal('founderLoginModal')">×</button>
-        </div>
+        <div class="modal-header"><h2>Founder Access</h2><button class="modal-close-btn" onclick="closeModal('founderLoginModal')">×</button></div>
         <input id="founderKey" placeholder="Founder key">
         <button class="btn btn-gold" onclick="handleFounderLogin()">Verify</button>`;
     document.getElementById('founderLoginModal').classList.add('open');
@@ -1345,14 +1368,16 @@ async function init(){
     document.getElementById('toggleSidebarBtn').onclick=toggleSidebar;
     setTimeout(()=>{document.getElementById('splashScreen').classList.add('hide');document.getElementById('app').style.display='flex';},1600);
     if(state.token && state.user){
-        try{let data=await apiCall('/api/auth/me'); state.user=data; state.closeBalance=data.close_balance||0; state.closeStaked=data.close_staked||0; state.stakeTier=data.stake_tier||'none'; state.walletAddress=data.wallet_address||'';
-            localStorage.setItem('capitan_user',JSON.stringify(data)); localStorage.setItem('close_balance',state.closeBalance); localStorage.setItem('close_staked',state.closeStaked); localStorage.setItem('stake_tier',state.stakeTier); localStorage.setItem('wallet_address',state.walletAddress);
-            state.isGuest=false;}catch(e){logout();}
-    }else if(state.token && !state.user){state.isGuest=true;state.freeUsed=0;}
-    else{state.isGuest=true;}
+        try{let data=await apiCall('/api/auth/me'); state.user=data; state.closeBalance=data.close_balance||0; state.closeStaked=data.close_staked||0; state.stakeTier=data.stake_tier||'none'; state.walletAddress=data.wallet_address||''; }catch(e){logout();}
+    }
     if(!state.token && localStorage.getItem('os_encrypted')){ showWalletUnlockModal(); }
     updateUI(); renderMessages();
-    if(!state.token) setTimeout(()=>{if(!state.user&&!state.token&&state.messages.length===0)showBubblePrompt('Welcome! Create your OS Wallet to claim 2,000 CLOSE.',false);},5000);
+    refreshClosePrice();
+    setInterval(async ()=>{
+        if(state.user) {
+            try{ let res=await apiCall('/api/wallet/check-incoming',{method:'POST'}); if(res.new_transfers.length){ toast(`Incoming: ${res.new_transfers.length} new transfer(s)`); } }catch(e){}
+        }
+    }, 60000);
     setInterval(fetchNotifications,30000);
 }
 init();
