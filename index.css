@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #060a0f;
+  --bg-secondary: #0d1117;
+  --bg-tertiary: #161b22;
+  --surface: #0d1117;
+  --border: #21262d;
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  --sidebar-bg: #0d1117;
+  --input-bg: #0d1117;
+  --accent: #00b4d8;
+  --accent-dark: #0096c7;
+  --accent-glow: rgba(0, 180, 216, 0.25);
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --glass-bg: rgba(22, 27, 34, 0.85);
+  --glass-border: rgba(48, 54, 61, 0.6);
+}
+
+.light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --surface: #ffffff;
+  --border: #d0d7de;
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-tertiary: #8b949e;
+  --sidebar-bg: #f6f8fa;
+  --input-bg: #f6f8fa;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(208, 215, 222, 0.5);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.55;
+  height: 100vh;
+  overflow: hidden;
+}
+
+@keyframes logoShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-logo-shift {
+  animation: logoShift 4s ease infinite;
+}
+
+@keyframes splashPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.85; }
+}
+.animate-splash-pulse {
+  animation: splashPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.5s ease;
+}
+
+@keyframes messageSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-message-slide-in {
+  animation: messageSlideIn 0.25s ease;
+}
+
+@keyframes dotBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-8px); opacity: 1; }
+}
+.animate-dot-bounce {
+  animation: dotBounce 1.4s infinite;
+}
+
+@keyframes modalOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-modal-overlay-in {
+  animation: modalOverlayIn 0.3s ease;
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-modal-scale-in {
+  animation: modalScaleIn 0.2s ease;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.animate-toast-in {
+  animation: toastIn 0.3s ease;
+}
+
+@keyframes ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
